@@ -1,0 +1,313 @@
+/* VARIÁVEIS DE CORES - IGUAL AO HTML ORIGINAL */
+:root {
+  --primary: #31353e;
+  --accent: #e6a400;
+  --light-accent: #ffd166;
+  --light: #f8f9fa;
+  --dark: #333333;
+  --gray: #6c757d;
+  --light-gray: #e9ecef;
+  --yellow-500: #f59e0b;
+  --yellow-600: #d97706;
+  --shadow: rgba(49, 53, 62, 0.08);
+}
+
+/* CABEÇALHO PRINCIPAL */
+.cabecalho-adventus {
+  background-color: white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  width: 100%;
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+
+.cabecalho-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+.cabecalho-grid {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 0;
+}
+
+@media (min-width: 768px) {
+  .cabecalho-grid {
+    padding: 1rem 0;
+  }
+}
+
+/* LOGO */
+.cabecalho-logo {
+  flex: 0 0 auto;
+  padding-left: 0.5rem;
+}
+
+.logo-img {
+  height: 40px;
+  transition: opacity 0.3s ease;
+}
+
+.logo-img:hover {
+  opacity: 0.9;
+}
+
+@media (min-width: 768px) {
+  .logo-img {
+    height: 48px;
+  }
+  .cabecalho-logo {
+    padding-left: 0;
+  }
+}
+
+/* MENU DESKTOP */
+.cabecalho-nav-desktop {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .cabecalho-nav-desktop {
+    display: block;
+    flex: 1;
+  }
+
+  .nav-links {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 3.5rem;
+    max-width: 42rem;
+    margin: 0 auto;
+    font-size: 0.875rem;
+    font-weight: 500;
+  }
+
+  .nav-link {
+    display: flex;
+    align-items: center;
+    color: var(--dark);
+    padding: 0.5rem 0.25rem;
+    transition: color 0.3s ease;
+  }
+
+  .nav-link:hover {
+    color: var(--yellow-600);
+  }
+
+  .nav-icon {
+    color: var(--accent);
+    margin-right: 0.5rem;
+    font-size: 1rem;
+  }
+}
+
+/* ÁREA DIREITA DESKTOP */
+.cabecalho-direita-desktop {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .cabecalho-direita-desktop {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 1rem;
+    flex: 0 0 auto;
+  }
+
+  .rede-social {
+    color: var(--gray);
+    font-size: 1.125rem;
+    transition: color 0.3s ease;
+    margin-left: 0.5rem;
+  }
+
+  .rede-social:hover {
+    color: var(--yellow-600);
+  }
+
+  /* BOTÃO WHATSAPP DESKTOP */
+  .whatsapp-btn-desktop {
+    display: inline-flex;
+    align-items: center;
+    background: linear-gradient(to right, var(--yellow-500), var(--yellow-600));
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 9999px;
+    font-weight: 600;
+    font-size: 0.875rem;
+    text-decoration: none;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    white-space: nowrap;
+    margin-left: 0.5rem;
+  }
+
+  .whatsapp-btn-desktop:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+
+  .whatsapp-btn-desktop:active {
+    transform: translateY(0);
+  }
+
+  .whatsapp-text {
+    display: inline;
+  }
+
+  .whatsapp-icon-wrapper {
+    background-color: white;
+    color: var(--yellow-500);
+    border-radius: 50%;
+    padding: 0.25rem;
+    margin-left: 0.5rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+  }
+
+  .whatsapp-icon-wrapper i {
+    font-size: 0.75rem;
+  }
+}
+
+/* BOTÃO HAMBÚRGUER MOBILE */
+.cabecalho-hamburguer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 0.5rem;
+}
+
+@media (min-width: 768px) {
+  .cabecalho-hamburguer {
+    display: none;
+  }
+}
+
+.hamburguer-btn {
+  min-height: 44px;
+  min-width: 44px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  outline: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hamburguer-btn i {
+  font-size: 1.5rem;
+  color: var(--accent);
+}
+
+/* MENU MOBILE */
+.cabecalho-nav-mobile {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  z-index: 9999;
+  display: none;
+}
+
+.cabecalho-nav-mobile.mobile-menu-open {
+  display: block;
+}
+
+.mobile-link {
+  display: flex;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--light-gray);
+  color: var(--dark);
+  text-decoration: none;
+  transition: all 0.3s ease;
+}
+
+.mobile-link:hover {
+  background-color: #f9fafb;
+  color: var(--yellow-600);
+}
+
+.mobile-icon {
+  color: var(--accent);
+  margin-right: 0.75rem;
+  font-size: 1rem;
+  width: 20px;
+  text-align: center;
+}
+
+/* REDES SOCIAIS MOBILE */
+.mobile-redes-sociais {
+  display: flex;
+  justify-content: center;
+  padding: 1rem;
+  border-bottom: 1px solid var(--light-gray);
+}
+
+.mobile-rede-social {
+  color: var(--gray);
+  font-size: 1.25rem;
+  transition: color 0.3s ease;
+  margin: 0 0.75rem;
+}
+
+.mobile-rede-social:hover {
+  color: var(--yellow-600);
+}
+
+/* BOTÃO WHATSAPP MOBILE */
+.whatsapp-btn-mobile {
+  display: block;
+  padding: 1rem 1.5rem;
+  text-align: center;
+  color: var(--dark);
+  text-decoration: none;
+  transition: all 0.3s ease;
+}
+
+.whatsapp-btn-mobile:hover {
+  background-color: #f9fafb;
+  color: var(--yellow-600);
+}
+
+.whatsapp-btn-mobile span:first-child {
+  display: inline-flex;
+  align-items: center;
+  background: linear-gradient(to right, var(--yellow-500), var(--yellow-600));
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 9999px;
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+.whatsapp-icon-wrapper-mobile {
+  background-color: white;
+  color: var(--yellow-500);
+  border-radius: 50%;
+  padding: 0.25rem;
+  margin-left: 0.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+}
+
+.whatsapp-icon-wrapper-mobile i {
+  font-size: 0.875rem;
+}

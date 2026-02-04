@@ -1,0 +1,193 @@
+/* VARIÁVEIS DE CORES - CONSISTENTE COM O PROJETO */
+:root {
+  --primary: #31353e;
+  --accent: #e6a400;
+  --light-accent: #ffd166;
+  --light: #f8f9fa;
+  --dark: #333333;
+  --gray: #6c757d;
+  --light-gray: #e9ecef;
+  --filter-bg: #31353e;
+  --filter-text: white;
+  --filter-field-bg: white;
+  --filter-field-text: #333;
+  --shadow: rgba(49, 53, 62, 0.08);
+  --shadow-hover: rgba(49, 53, 62, 0.15);
+  --transition: all 0.3s ease;
+}
+
+/* WRAPPER EXTERNO PARA O FILTRO COM LARGURA TOTAL */
+.filtros-wrapper {
+  background-color: #31353e;
+  width: 100vw;
+  position: relative;
+  left: 50%;
+  right: 50%;
+  margin-left: -50vw;
+  margin-right: -50vw;
+  padding: 25px 0;
+  margin-bottom: 25px;
+}
+
+/* FILTROS SIMPLIFICADOS - COM FUNDO #31353E E CAMPOS BRANCOS */
+.filters-section {
+  background-color: var(--filter-bg);
+  border-radius: 12px;
+  box-shadow: 0 8px 25px rgba(49, 53, 62, 0.3);
+  padding: 25px;
+  color: var(--filter-text);
+}
+
+/* TÍTULO "BUSCAR" DESTACADO NO TOPO */
+.search-title {
+  color: var(--accent);
+  font-size: 24px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 25px;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding-bottom: 15px;
+  border-bottom: 2px solid rgba(230, 164, 0, 0.3);
+}
+
+.search-title i {
+  font-size: 26px;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+.filters-section .filter-label {
+  color: white;
+  font-weight: 600;
+  margin-bottom: 10px;
+  font-size: 15px;
+  display: block;
+}
+
+.filter-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+}
+
+/* CAMPOS COM FUNDO BRANCO - ALTURA FIXA */
+.filter-select,
+.filter-input {
+  padding: 14px 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  font-family: "Montserrat", sans-serif;
+  font-size: 15px;
+  background-color: var(--filter-field-bg);
+  color: var(--filter-field-text);
+  transition: var(--transition);
+  font-weight: 500;
+  height: 52px;
+  min-height: 52px;
+  box-sizing: border-box;
+  cursor: pointer;
+}
+
+.filter-select:focus,
+.filter-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(230, 164, 0, 0.4);
+  transform: translateY(-2px);
+}
+
+/* BOTÕES COM ALTURA FIXA */
+.filter-actions {
+  display: flex;
+  gap: 15px;
+  margin-top: 0;
+  grid-column: 1 / -1;
+  align-items: center;
+}
+
+/* BOTÕES REFEITOS COM EFEITO FUTURISTA - ALTURA FIXA */
+.btn {
+  padding: 14px 24px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-family: "Montserrat", sans-serif;
+  border: none;
+  cursor: pointer;
+  transition: var(--transition);
+  font-size: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  position: relative;
+  overflow: hidden;
+  z-index: 1;
+  height: 52px;
+  min-height: 52px;
+  box-sizing: border-box;
+}
+
+.btn::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.3),
+    transparent
+  );
+  transition: 0.5s;
+  z-index: -1;
+}
+
+.btn:hover::before {
+  left: 100%;
+}
+
+.btn-secondary {
+  background-color: rgba(255, 255, 255, 0.2);
+  color: white;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  flex: 1;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.btn-secondary:hover {
+  background-color: rgba(255, 255, 255, 0.3);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+}
+
+/* RESPONSIVIDADE */
+@media (min-width: 768px) {
+  .filter-grid {
+    grid-template-columns: repeat(5, 1fr); /* 5 COLUNAS NO DESKTOP */
+    gap: 15px;
+    align-items: end;
+  }
+}
+
+/* ESTILOS PARA OPTIONS */
+.filter-select option {
+  background-color: white;
+  color: #333;
+  padding: 8px;
+}
+
+.filter-select option:hover {
+  background-color: var(--accent);
+  color: white;
+}

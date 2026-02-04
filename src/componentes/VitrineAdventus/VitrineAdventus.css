@@ -1,0 +1,580 @@
+/* components/VitrineAdventus.css */
+/* ========== VITRINE ADVENTUS PREMIUM ========== */
+.showcase-premium-section {
+  padding: 5rem 1rem;
+  background: #31353e;
+  position: relative;
+  overflow: hidden;
+}
+
+.showcase-premium-section::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background:
+    radial-gradient(
+      circle at 20% 30%,
+      rgba(245, 158, 11, 0.05) 0%,
+      transparent 50%
+    ),
+    radial-gradient(
+      circle at 80% 70%,
+      rgba(251, 191, 36, 0.03) 0%,
+      transparent 50%
+    ),
+    url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org2000/svg'%3E%3Cpath d='M30 30m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0' fill='%23f59e0b' fill-opacity='0.05' fill-rule='evenodd'/%3E%3C/svg%3E");
+  pointer-events: none;
+}
+
+.showcase-premium-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  position: relative;
+}
+
+/* Header */
+.showcase-premium-header {
+  text-align: center;
+  margin-bottom: 4rem;
+}
+
+.showcase-premium-title {
+  font-size: 3.5rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, #ffffff 0%, #fbbf24 50%, #ffffff 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 1rem;
+  position: relative;
+  display: inline-block;
+}
+
+.showcase-premium-title::after {
+  content: "";
+  position: absolute;
+  bottom: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 150px;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #fbbf24, transparent);
+  border-radius: 2px;
+}
+
+.showcase-premium-subtitle {
+  font-size: 1.25rem;
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: 300;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+}
+
+/* Carrossel Container */
+.showcase-premium-carousel {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+}
+
+/* Track com os cards */
+.showcase-premium-track {
+  display: flex;
+  transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  padding: 20px 0;
+  will-change: transform;
+}
+
+/* Cards */
+.showcase-premium-card {
+  flex: 0 0 calc(33.333% - 1.5rem);
+  margin: 0 0.75rem;
+  position: relative;
+  border-radius: 24px;
+  overflow: hidden;
+  aspect-ratio: 3/4;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  text-decoration: none;
+}
+
+.showcase-premium-card:hover {
+  transform: translateY(-10px);
+  border-color: rgba(251, 191, 36, 0.3);
+  box-shadow:
+    0 25px 50px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(251, 191, 36, 0.2);
+}
+
+/* Imagem do card */
+.showcase-premium-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.6s ease;
+}
+
+.showcase-premium-card:hover .showcase-premium-image {
+  transform: scale(1.05);
+}
+
+/* Overlay de conteúdo */
+.showcase-premium-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.95) 0%,
+    rgba(0, 0, 0, 0.7) 50%,
+    rgba(0, 0, 0, 0.4) 75%,
+    transparent 100%
+  );
+  padding: 2rem;
+  z-index: 2;
+}
+
+/* ========== ETIQUETAS MINIMALISTAS ========== */
+.showcase-premium-badge {
+  position: absolute;
+  top: 1.2rem;
+  left: 1.2rem;
+  z-index: 3;
+}
+
+/* CLASSE BASE PARA TODOS OS SELOS */
+.premium-badge {
+  padding: 0.25rem 0.6rem !important;
+  border-radius: 12px !important;
+  font-size: 0.6rem !important;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: white !important;
+  line-height: 1.1;
+  height: auto;
+  min-height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  white-space: nowrap;
+}
+
+/* CORES DOS BADGES */
+.premium-badge-week {
+  background: #f59e0b !important;
+  border-color: rgba(255, 255, 255, 0.5) !important;
+}
+
+.premium-badge-new {
+  background: #10b981 !important;
+  border-color: rgba(255, 255, 255, 0.5) !important;
+}
+
+.premium-badge-price-drop {
+  background: #dc2626 !important;
+  border-color: rgba(255, 255, 255, 0.5) !important;
+}
+
+/* EFEITOS HOVER NOS BADGES */
+.showcase-premium-card:hover .premium-badge {
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.4);
+}
+
+.showcase-premium-card:hover .premium-badge-week {
+  background: #d97706 !important;
+}
+
+.showcase-premium-card:hover .premium-badge-new {
+  background: #0d966f !important;
+}
+
+.showcase-premium-card:hover .premium-badge-price-drop {
+  background: #b91c1c !important;
+}
+
+.premium-badge {
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+/* ====== SELO FINANCIÁVEL ====== */
+.financiable-badge-container {
+  position: absolute;
+  top: 1.2rem;
+  right: 1.2rem;
+  z-index: 3;
+}
+
+.financiable-badge {
+  padding: 0.25rem 0.6rem;
+  border-radius: 12px;
+  font-size: 0.6rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: #1a1a1a !important;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(245, 158, 11, 0.15);
+  box-shadow:
+    0 2px 6px rgba(0, 0, 0, 0.15),
+    0 1px 2px rgba(255, 255, 255, 0.6) inset;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  white-space: nowrap;
+}
+
+.financiable-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%);
+  border-radius: 50%;
+  flex-shrink: 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.financiable-icon::before {
+  content: "";
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(
+    circle at 30% 30%,
+    rgba(255, 255, 255, 0.4) 0%,
+    transparent 70%
+  );
+  pointer-events: none;
+}
+
+.check-icon {
+  color: white;
+  font-size: 0.55rem;
+  font-weight: 900;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+}
+
+.financiable-text {
+  font-size: 0.6rem;
+  font-weight: 500;
+  color: #1a1a1a;
+  white-space: nowrap;
+  letter-spacing: -0.01em;
+}
+
+/* Efeito hover no selo financiável */
+.showcase-premium-card:hover .financiable-badge {
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow:
+    0 3px 8px rgba(0, 0, 0, 0.2),
+    0 1px 3px rgba(255, 255, 255, 0.7) inset;
+  transform: translateY(-1px);
+  border-color: rgba(245, 158, 11, 0.25);
+}
+
+/* Versões do selo financiável */
+.financiable-badge-v2 {
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  box-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.18),
+    0 1px 2px rgba(255, 255, 255, 0.6) inset;
+}
+
+.financiable-badge-v3 {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.95) 0%,
+    rgba(255, 255, 255, 0.97) 100%
+  );
+  border: 1px solid rgba(245, 158, 11, 0.2);
+  position: relative;
+  overflow: hidden;
+}
+
+.financiable-badge-v3::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    135deg,
+    rgba(245, 158, 11, 0.03) 0%,
+    rgba(251, 191, 36, 0.02) 100%
+  );
+  z-index: 0;
+}
+
+.financiable-badge-v3 .financiable-icon,
+.financiable-badge-v3 .financiable-text {
+  position: relative;
+  z-index: 1;
+}
+
+/* Conteúdo do card */
+.showcase-premium-content {
+  position: relative;
+  z-index: 3;
+}
+
+.showcase-premium-card-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: white;
+  margin-bottom: 0.5rem;
+  line-height: 1.3;
+}
+
+.showcase-premium-card-location {
+  font-size: 1rem;
+  color: #fbbf24;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.showcase-premium-card-location i {
+  font-size: 0.9rem;
+}
+
+/* ====== CORREÇÃO DOS BOTÕES DE NAVEGAÇÃO ====== */
+/* Controles de navegação - APENAS DESKTOP */
+.showcase-premium-controls {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  transform: translateY(-50%);
+  display: flex;
+  justify-content: space-between;
+  padding: 0 1rem;
+  pointer-events: none;
+  z-index: 10;
+  display: none;
+}
+
+@media (min-width: 769px) {
+  .showcase-premium-controls {
+    display: flex;
+  }
+}
+
+.showcase-premium-nav {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: all;
+  border: none;
+  outline: none;
+  /* 🔹 REMOVER TODOS OS CONTORNOS PADRÕES DO NAVEGADOR */
+  box-shadow: none !important;
+  -webkit-tap-highlight-color: transparent !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
+}
+
+/* 🔹 ESTADO NORMAL - TRANSPARENTE E SUAVE */
+.showcase-premium-nav {
+  background: rgba(255, 255, 255, 0.1) !important;
+  backdrop-filter: blur(10px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  color: white !important;
+}
+
+/* 🔹 ESTADO HOVER - SUAVE ELEVAÇÃO E COR AMARELA SUTIL */
+.showcase-premium-nav:hover {
+  background: rgba(251, 191, 36, 0.2) !important;
+  border-color: rgba(251, 191, 36, 0.5) !important;
+  transform: scale(1.1) !important;
+  /* 🔹 NENHUM OUTLINE OU BOX-SHADOW DE FOCO */
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* 🔹 ESTADO ACTIVE/CLICK - PEQUENA REDUÇÃO */
+.showcase-premium-nav:active {
+  transform: scale(0.95) !important;
+  background: rgba(251, 191, 36, 0.3) !important;
+  border-color: rgba(251, 191, 36, 0.6) !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* 🔹 REMOVER COMPLETAMENTE O ESTADO DE FOCO PADRÃO */
+.showcase-premium-nav:focus,
+.showcase-premium-nav:focus-visible,
+.showcase-premium-nav:focus-within {
+  outline: none !important;
+  box-shadow: none !important;
+  border: 1px solid rgba(251, 191, 36, 0.5) !important;
+}
+
+/* Indicadores do carrossel */
+.showcase-premium-indicators {
+  display: flex;
+  justify-content: center;
+  gap: 0.75rem;
+  margin: 3rem 0 0 0;
+}
+
+.showcase-premium-indicator {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: none;
+  padding: 0;
+  /* 🔹 REMOVER CONTORNOS DOS INDICADORES TAMBÉM */
+  outline: none !important;
+  box-shadow: none !important;
+  -webkit-tap-highlight-color: transparent !important;
+}
+
+.showcase-premium-indicator.active {
+  background: #fbbf24;
+  transform: scale(1.2);
+}
+
+/* 🔹 REMOVER FOCO DOS INDICADORES */
+.showcase-premium-indicator:focus,
+.showcase-premium-indicator:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* ========== RESPONSIVIDADE ========== */
+
+/* Tablet */
+@media (max-width: 1024px) {
+  .showcase-premium-card {
+    flex: 0 0 calc(50% - 1.5rem);
+  }
+
+  .showcase-premium-title {
+    font-size: 2.75rem;
+  }
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .showcase-premium-section {
+    padding: 3rem 1rem;
+  }
+
+  .showcase-premium-header {
+    margin-bottom: 2.5rem;
+  }
+
+  .showcase-premium-title {
+    font-size: 2.25rem;
+  }
+
+  .showcase-premium-subtitle {
+    font-size: 1rem;
+    letter-spacing: 0.2em;
+  }
+
+  .showcase-premium-card {
+    flex: 0 0 calc(85% - 1rem);
+    margin: 0 0.5rem;
+  }
+
+  /* 🔹 ESCONDER CONTROLES NO MOBILE */
+  .showcase-premium-controls {
+    display: none !important;
+  }
+}
+
+/* Mobile pequeno */
+@media (max-width: 480px) {
+  .showcase-premium-card {
+    flex: 0 0 calc(90% - 0.5rem);
+    margin: 0 0.25rem;
+  }
+
+  .showcase-premium-title {
+    font-size: 1.875rem;
+  }
+
+  .showcase-premium-card-title {
+    font-size: 1.25rem;
+  }
+
+  .showcase-premium-card-location {
+    font-size: 0.9rem;
+  }
+}
+
+/* Mobile heading/text */
+.mobile-heading {
+  font-size: 1.75rem;
+  line-height: 1.3;
+  font-weight: 700;
+}
+
+.mobile-text {
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  letter-spacing: 0.01em;
+}
+
+@media (min-width: 768px) {
+  .mobile-heading {
+    font-size: 3.5rem;
+  }
+
+  .mobile-text {
+    font-size: 1rem;
+  }
+}
+
+/* No underline for links */
+.no-underline {
+  text-decoration: none;
+}
+
+/* Card hover effect */
+.card-hover {
+  transition: all 0.3s ease;
+}
+
+.card-hover:hover {
+  transform: translateY(-5px);
+}
+
+.card-hover:active {
+  transform: translateY(-2px);
+}

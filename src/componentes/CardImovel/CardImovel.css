@@ -1,0 +1,451 @@
+/* Estilos específicos para o card de imóvel - Copiados do HTML original */
+.property-card {
+  background-color: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(49, 53, 62, 0.08);
+  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.property-card:hover {
+  box-shadow: 0 8px 20px rgba(49, 53, 62, 0.15);
+  transform: translateY(-5px);
+}
+
+.property-image-wrapper {
+  position: relative;
+  height: 220px;
+  overflow: hidden;
+  background-color: white;
+}
+
+.property-image-container {
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  right: 15px;
+  bottom: 15px;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+  background-color: white;
+}
+
+.property-image-container img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s ease;
+}
+
+.property-card:hover .property-image-container img {
+  transform: scale(1.05);
+}
+
+/* Linha divisória vertical (aparece apenas em telas maiores) */
+.property-divider {
+  display: none;
+  position: absolute;
+  right: 0;
+  top: 30px;
+  bottom: 30px;
+  width: 1px;
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent,
+    transparent 5px,
+    #e9ecef 5px,
+    #e9ecef 10px
+  );
+}
+
+/* ETIQUETAS DE STATUS */
+.property-status {
+  position: absolute;
+  top: 22px;
+  left: 22px;
+  padding: 6px 14px;
+  border-radius: 16px;
+  font-size: 12px;
+  font-weight: 700;
+  color: white;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  z-index: 10;
+  transition: all 0.3s ease;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+  border: 3px solid rgba(255, 255, 255, 0.5);
+  overflow: hidden;
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  backdrop-filter: blur(5px);
+  animation: pulse 2s infinite;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.property-status::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.6),
+    transparent
+  );
+  transition: 0.7s;
+}
+
+.property-status:hover::before {
+  left: 100%;
+}
+
+.property-status:hover {
+  transform: scale(1.1) translateY(-5px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+.status-available {
+  background: linear-gradient(135deg, #00ff00 0%, #00cc00 100%);
+  border-color: rgba(255, 255, 255, 0.6);
+}
+
+.status-available:hover {
+  box-shadow:
+    0 0 20px rgba(0, 255, 0, 0.9),
+    0 0 30px rgba(0, 255, 0, 0.7),
+    0 0 40px rgba(0, 255, 0, 0.5);
+  animation: pulse-glow 1.5s infinite;
+}
+
+.status-sold {
+  background: linear-gradient(135deg, #ff0000 0%, #cc0000 100%);
+  border-color: rgba(255, 255, 255, 0.6);
+}
+
+.status-sold:hover {
+  box-shadow:
+    0 0 20px rgba(255, 0, 0, 0.9),
+    0 0 30px rgba(255, 0, 0, 0.7),
+    0 0 40px rgba(255, 0, 0, 0.5);
+  animation: pulse-glow 1.5s infinite;
+}
+
+.status-price-drop {
+  background: linear-gradient(135deg, #ff7700 0%, #cc5500 100%);
+  border-color: rgba(255, 255, 255, 0.6);
+}
+
+.status-price-drop:hover {
+  box-shadow:
+    0 0 20px rgba(255, 119, 0, 0.9),
+    0 0 30px rgba(255, 119, 0, 0.7),
+    0 0 40px rgba(255, 119, 0, 0.5);
+  animation: pulse-glow 1.5s infinite;
+}
+
+.property-status i {
+  font-size: 12px;
+  filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.4));
+}
+
+/* Animações para os badges */
+@keyframes pulse {
+  0% {
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+  }
+  50% {
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5);
+  }
+  100% {
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+  }
+}
+
+@keyframes pulse-glow {
+  0% {
+    box-shadow:
+      0 0 20px rgba(0, 255, 0, 0.9),
+      0 0 30px rgba(0, 255, 0, 0.7),
+      0 0 40px rgba(0, 255, 0, 0.5);
+  }
+  10% {
+    box-shadow:
+      0 0 30px rgba(0, 255, 0, 1),
+      0 0 40px rgba(0, 255, 0, 0.8),
+      0 0 50px rgba(0, 255, 0, 0.6);
+  }
+  10% {
+    box-shadow:
+      0 0 20px rgba(0, 255, 0, 0.9),
+      0 0 30px rgba(0, 255, 0, 0.7),
+      0 0 40px rgba(0, 255, 0, 0.5);
+  }
+}
+
+.property-content {
+  padding: 25px;
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+/* Informações em boxes com cantos arredondados */
+.property-info-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 15px;
+  align-items: center;
+}
+
+.property-tag {
+  background-color: rgba(49, 53, 62, 0.1);
+  color: #31353e;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 700;
+  display: inline-block;
+}
+
+.property-type-tag {
+  background-color: rgba(230, 164, 0, 0.15);
+  color: #e6a400;
+}
+
+/* Preço destacado */
+.property-price {
+  font-size: 26px;
+  font-weight: 800;
+  color: #31353e;
+  margin-bottom: 15px;
+  font-family: "Montserrat", sans-serif;
+}
+
+.property-title {
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 12px;
+  line-height: 1.4;
+  color: #333333;
+}
+
+.property-location {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #6c757d;
+  margin-bottom: 20px;
+  font-size: 15px;
+}
+
+.property-location i {
+  color: #c99c2a;
+  font-size: 15px;
+}
+
+/* 🔄 CARACTERÍSTICAS DO IMÓVEL - CORRIGIDO: Ícones mais próximos, alinhados à esquerda e FONTE MAIS FINA */
+.property-features {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px; /* REDUZIDO: Menos espaçamento entre ícones */
+  margin-bottom: 20px;
+  padding-top: 15px;
+  border-top: 1px dashed #e9ecef;
+  justify-content: flex-start; /* ALINHADO À ESQUERDA */
+  align-items: flex-start; /* Alinha no topo */
+}
+
+.feature {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px; /* Reduzi o gap vertical */
+  color: #6c757d;
+  font-size: 13px; /* Um pouco menor */
+  text-align: center;
+  min-width: 50px; /* MAIS COMPACTO */
+  flex: 0 1 auto; /* Não estica, só encolhe se necessário */
+}
+
+.feature i {
+  color: #e6a400;
+  font-size: 20px; /* Ícone um pouco menor */
+  width: auto;
+  text-align: center;
+  margin-bottom: 3px;
+}
+
+/* 🔥 NOVA CLASSE - FONTE MAIS FINA (LIGHT/NORMAL) */
+.feature-text {
+  font-weight: 400; /* 🔥 MUDEI PARA NORMAL/REGULAR (MAIS FINA) - Antes era 600 (semibold) */
+  color: #333333;
+  font-size: 14px;
+  line-height: 1.2;
+  white-space: nowrap; /* ← ESSA É A CHAVE! Impede quebra de linha */
+  text-align: center;
+  font-family: "Montserrat", sans-serif; /* Garante que use Montserrat */
+}
+
+/* Ações do card */
+.property-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: auto;
+  padding-top: 20px;
+  border-top: 1px solid #e9ecef;
+  width: 100%;
+}
+
+.condominium-badge {
+  background-color: rgba(49, 53, 62, 0.1);
+  color: #31353e;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.condominium-badge i {
+  color: #e6a400;
+  font-size: 14px;
+}
+
+/* BOTÃO DE DETALHES */
+.btn-details {
+  background-color: #31353e;
+  color: white;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-family: "Montserrat", sans-serif;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 15px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  position: relative;
+  overflow: hidden;
+  z-index: 1;
+  box-shadow: 0 5px 15px rgba(49, 53, 62, 0.3);
+  border: 0px solid rgba(49, 53, 62, 0.2);
+}
+
+.btn-details::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.4),
+    transparent
+  );
+  transition: 0.5s;
+  z-index: -1;
+}
+
+.btn-details:hover::before {
+  left: 100%;
+}
+
+.btn-details:hover {
+  background-color: #31353e;
+  transform: translateY(-3px);
+  box-shadow:
+    0 8px 25px rgba(49, 53, 62, 0.4),
+    0 0 20px rgba(49, 53, 62, 0.3);
+}
+
+/* Responsividade */
+@media (min-width: 768px) {
+  .property-card {
+    flex-direction: row;
+    min-height: 200px;
+  }
+
+  .property-image-wrapper {
+    width: 45%;
+    height: auto;
+    flex-shrink: 0;
+  }
+
+  .property-content {
+    width: 55%;
+    padding: 20px;
+  }
+
+  /* Linha divisória vertical - aparece apenas em telas maiores */
+  .property-divider {
+    display: block;
+  }
+
+  /* Ajuste das etiquetas para telas maiores */
+  .property-status {
+    top: 25px;
+    left: 25px;
+  }
+
+  /* Ajuste features para desktop */
+  .property-features {
+    gap: 12px; /* Um pouco mais de espaço no desktop */
+  }
+
+  .feature {
+    min-width: 55px;
+  }
+}
+
+@media (min-width: 992px) {
+  .property-image-wrapper {
+    width: 40%;
+  }
+
+  .property-content {
+    width: 60%;
+  }
+
+  .property-features {
+    gap: 15px; /* Espaço adequado para telas grandes */
+  }
+
+  .feature {
+    min-width: 60px;
+  }
+}
+
+/* CORREÇÃO DO BOTÃO "VER DETALHES" NO MOBILE */
+@media (max-width: 767px) {
+  .property-actions {
+    justify-content: center;
+  }
+
+  /* Ajuste features para mobile */
+  .property-features {
+    gap: 8px; /* Ainda menos espaço no mobile */
+    justify-content: space-around; /* Distribui melhor no mobile */
+  }
+
+  .feature {
+    min-width: 45px; /* Mais compacto no mobile */
+  }
+}

@@ -1,0 +1,280 @@
+/* Indicadores.css - ATUALIZADO */
+
+.performance-indicators {
+  padding: 4rem 1rem 5rem 1rem;
+  background: #31353e;
+  position: relative;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.performance-indicators::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background:
+    radial-gradient(
+      circle at 50% 0%,
+      rgba(251, 191, 36, 0.03) 0%,
+      transparent 50%
+    ),
+    radial-gradient(
+      circle at 90% 100%,
+      rgba(245, 158, 11, 0.02) 0%,
+      transparent 40%
+    );
+  pointer-events: none;
+}
+
+.performance-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 2;
+}
+
+/* SUBSTITUIÇÃO DAS CLASSES FOUNDATION */
+.performance-grid-container {
+  display: flex;
+  flex-wrap: wrap;
+  margin-left: -0.9375rem;
+  margin-right: -0.9375rem;
+}
+
+.performance-grid-item {
+  flex: 0 0 100%;
+  max-width: 100%;
+  padding-left: 0.9375rem;
+  padding-right: 0.9375rem;
+  margin-bottom: 0;
+}
+
+/* Desktop: 3 colunas lado a lado */
+@media (min-width: 40em) {
+  .performance-grid-item {
+    flex: 0 0 33.33333%;
+    max-width: 33.33333%;
+  }
+}
+
+/* O restante do seu CSS permanece igual... */
+
+.performance-item {
+  text-align: center;
+  padding: 2rem;
+  position: relative;
+}
+
+/* Linha divisória entre itens (desktop apenas) */
+.performance-item:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  right: -1.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1px;
+  height: 80px;
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    rgba(255, 255, 255, 0.1),
+    transparent
+  );
+}
+
+@media (max-width: 768px) {
+  .performance-item:not(:last-child)::after {
+    display: none;
+  }
+
+  .performance-item:not(:last-child)::before {
+    content: "";
+    position: absolute;
+    bottom: -1.5rem;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80px;
+    height: 1px;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.1),
+      transparent
+    );
+  }
+}
+
+.performance-number-container {
+  position: relative;
+  display: inline-block;
+  margin-bottom: 2rem;
+  width: 140px;
+  height: 140px;
+}
+
+.performance-number-bg {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 100px;
+  height: 100px;
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  z-index: 0;
+  pointer-events: none;
+  animation: ellipsePulse 3s ease-in-out infinite;
+}
+
+@keyframes ellipsePulse {
+  0%,
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+    box-shadow:
+      0 0 0 0 rgba(245, 158, 11, 0),
+      0 0 0 0 rgba(251, 191, 36, 0);
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.08);
+    box-shadow:
+      0 0 0 8px rgba(245, 158, 11, 0.1),
+      0 0 0 16px rgba(251, 191, 36, 0.05);
+  }
+}
+
+.performance-number-bg.show-glow::before {
+  animation: innerGlow 1.5s ease-out forwards;
+}
+
+@keyframes innerGlow {
+  0% {
+    background-position: -100% -100%;
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  80% {
+    background-position: 200% 200%;
+    opacity: 1;
+  }
+  100% {
+    background-position: 200% 200%;
+    opacity: 0;
+  }
+}
+
+.performance-number {
+  font-size: 3.5rem;
+  font-weight: 800;
+  color: #f59e0b;
+  line-height: 1;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+
+.performance-number::after {
+  content: "";
+  position: absolute;
+  bottom: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 40px;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #fbbf24, transparent);
+  border-radius: 1px;
+  opacity: 0.5;
+}
+
+.performance-text {
+  font-size: 1.125rem;
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 500;
+  line-height: 1.4;
+  max-width: 300px;
+  margin: 0 auto;
+  padding-top: 1rem;
+}
+
+.performance-item:hover .performance-number {
+  color: #fbbf24;
+}
+
+.performance-item:hover .performance-number::after {
+  width: 60px;
+  opacity: 0.8;
+}
+
+/* Responsividade */
+@media (max-width: 1024px) {
+  .performance-grid-container {
+    gap: 2rem;
+  }
+
+  .performance-number {
+    font-size: 3rem;
+  }
+
+  .performance-number-bg {
+    width: 90px;
+    height: 90px;
+  }
+
+  .performance-number-container {
+    width: 120px;
+    height: 120px;
+    margin-bottom: 1.5rem;
+  }
+
+  .performance-item:not(:last-child)::after {
+    height: 60px;
+  }
+}
+
+@media (max-width: 768px) {
+  .performance-indicators {
+    padding: 3rem 1rem 4rem 1rem;
+  }
+
+  .performance-grid-container {
+    flex-direction: column;
+    gap: 3rem;
+  }
+
+  .performance-grid-item {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .performance-item {
+    padding: 1.5rem;
+  }
+
+  .performance-number {
+    font-size: 2.75rem;
+  }
+
+  .performance-number-bg {
+    width: 80px;
+    height: 80px;
+  }
+
+  .performance-number-container {
+    width: 100px;
+    height: 100px;
+    margin-bottom: 1.5rem;
+  }
+
+  .performance-text {
+    font-size: 1.05rem;
+    max-width: 280px;
+  }
+}

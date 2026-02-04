@@ -1,0 +1,22 @@
+/* src/componentes/Layout/Layout.css */
+.layout-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.layout-main {
+  flex: 1; /* Faz o main ocupar espaço restante */
+  width: 100%;
+}
+
+/* Se quiser adicionar mais estilos globais: */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: "Montserrat", sans-serif;
+}

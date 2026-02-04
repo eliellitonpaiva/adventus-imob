@@ -1,0 +1,860 @@
+:root {
+  /* PALETA DE CORES DA ADVENTUS - ANALISADA CORRETAMENTE DO SITE */
+  --primary: #31353e; /* SUBSTITUÍDO: Azul escuro por #31353E */
+  --secondary: #31353e; /* SUBSTITUÍDO: Azul médio por #31353E */
+  --accent: #e6a400; /* Dourado para destaques */
+  --light-accent: #ffd166; /* Dourado claro */
+  --light: #f8f9fa; /* Cinza claro de fundo */
+  --dark: #333333; /* Texto escuro */
+  --gray: #6c757d; /* Texto cinza */
+  --light-gray: #e9ecef; /* Bordas claras */
+
+  /* CORES VIVAS E VIBRANTES para etiquetas - AGORA DE VERDADE */
+  --success: #00ff00; /* VERDE NEON SUPER VIVO para disponível */
+  --sold: #ff0000; /* VERMELHO VIVO INTENSO para vendido */
+  --price-drop: #ff7700; /* Laranja vivo para baixou preço */
+
+  /* Cores para filtros - AGORA COM #31353E */
+  --filter-bg: #31353e; /* COR ATUALIZADA PARA O FUNDO DOS FILTROS */
+  --filter-text: white; /* Texto branco nos filtros */
+  --filter-field-bg: white; /* Fundo BRANCO para os campos */
+  --filter-field-text: #333; /* Texto escuro nos campos */
+
+  --shadow: rgba(49, 53, 62, 0.08); /* Atualizado para usar #31353E */
+  --shadow-hover: rgba(49, 53, 62, 0.15); /* Atualizado para usar #31353E */
+  --transition: all 0.3s ease;
+
+  /* Efeitos neon REALMENTE VIVOS */
+  --neon-glow:
+    0 0 20px rgba(230, 164, 0, 0.9), 0 0 30px rgba(230, 164, 0, 0.7),
+    0 0 40px rgba(230, 164, 0, 0.5);
+  --neon-success:
+    0 0 20px rgba(0, 255, 0, 0.9), 0 0 30px rgba(0, 255, 0, 0.7),
+    0 0 40px rgba(0, 255, 0, 0.5);
+  --neon-sold:
+    0 0 20px rgba(255, 0, 0, 0.9), 0 0 30px rgba(255, 0, 0, 0.7),
+    0 0 40px rgba(255, 0, 0, 0.5);
+  --neon-price:
+    0 0 20px rgba(255, 119, 0, 0.9), 0 0 30px rgba(255, 119, 0, 0.7),
+    0 0 40px rgba(255, 119, 0, 0.5);
+}
+
+/* CORREÇÃO GLOBAL PARA EVITAR BARRA HORIZONTAL */
+html,
+body {
+  max-width: 100%;
+  width: 100%;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* APLICANDO FONTES MONT SERRAT PARA TODOS OS TEXTOS */
+body {
+  font-family: "Montserrat", sans-serif;
+  color: var(--dark);
+  background-color: var(--light);
+  line-height: 1.6;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: "Montserrat", sans-serif;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.container {
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+main {
+  width: 100%;
+}
+
+/* ========== TÍTULO DA PÁGINA ========== */
+.page-header {
+  padding: 50px 0 30px; /* AUMENTEI MUITO: 50px em cima, 30px embaixo */
+  text-align: center;
+}
+
+.page-header h1 {
+  font-size: 38px; /* AUMENTEI: de 22px para 32px */
+  color: var(--dark);
+  margin-bottom: 15px; /* AUMENTEI: de 5px para 15px */
+  font-weight: 800; /* Mudei de 700 para 800 (extra-bold) */
+  line-height: 1.4; /* Adicionei linha mais espaçada */
+}
+
+.page-subtitle {
+  color: var(--gray);
+  font-size: 15px;
+}
+
+/* ========== SEÇÃO DE FILTROS (FUNDO BORDA A BORDA) ========== */
+/* REGRA 1: .filters-bg (CASCA – FUNDO) */
+.filters-bg {
+  width: 100%;
+  background-color: #31353e;
+  padding: 25px 0;
+  margin-bottom: 25px;
+}
+
+/* REGRA 2: .container (LIMITADOR) já definido acima */
+
+/* REGRA 3: .filters-section (CONTEÚDO) */
+.filters-section {
+  background-color: var(--filter-bg);
+  border-radius: 12px;
+  box-shadow: 0 8px 25px rgba(49, 53, 62, 0.3);
+  padding: 25px;
+  color: var(--filter-text);
+}
+
+/* TÍTULO "BUSCAR" DESTACADO NO TOPO */
+.search-title {
+  color: var(--accent);
+  font-size: 24px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-top: -15px;
+  margin-bottom: 30px;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding-bottom: 15px;
+  border-bottom: 2px solid rgba(230, 164, 0, 0.3);
+}
+
+.search-title i {
+  font-size: 26px;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+.filters-section .filter-label {
+  color: white;
+  font-weight: 600;
+  margin-bottom: 10px;
+  font-size: 15px;
+  display: block;
+}
+
+.filter-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+}
+
+/* CAMPOS COM FUNDO BRANCO - AGORA REALMENTE BRANCOS - ALTURA FIXA */
+.filter-select,
+.filter-input {
+  padding: 14px 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  font-family: "Montserrat", sans-serif;
+  font-size: 15px;
+  background-color: var(--filter-field-bg); /* FUNDO BRANCO */
+  color: var(--filter-field-text); /* TEXTO ESCURO */
+  transition: var(--transition);
+  font-weight: 500;
+  height: 52px; /* ALTURA FIXA IGUAL AO BOTÃO */
+  min-height: 52px;
+  box-sizing: border-box;
+}
+
+.filter-select option {
+  background-color: white;
+  color: #333;
+  padding: 8px;
+}
+
+.filter-select:focus,
+.filter-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(230, 164, 0, 0.4);
+  transform: translateY(-2px);
+}
+
+/* BOTÕES COM ALTURA FIXA */
+.filter-actions {
+  display: flex;
+  gap: 15px;
+  margin-top: 0;
+  grid-column: 1 / -1;
+  align-items: center;
+}
+
+/* BOTÕES REFEITOS COM EFEITO FUTURISTA - ALTURA FIXA */
+.btn {
+  padding: 14px 24px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-family: "Montserrat", sans-serif;
+  border: none;
+  cursor: pointer;
+  transition: var(--transition);
+  font-size: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  position: relative;
+  overflow: hidden;
+  z-index: 1;
+  height: 52px; /* ALTURA FIXA IGUAL AOS CAMPOS */
+  min-height: 52px;
+  box-sizing: border-box;
+}
+
+.btn::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.3),
+    transparent
+  );
+  transition: 0.5s;
+  z-index: -1;
+}
+
+.btn:hover::before {
+  left: 100%;
+}
+
+.btn-primary {
+  background-color: var(--accent);
+  color: white;
+  flex: 1;
+  box-shadow: 0 5px 15px rgba(230, 164, 0, 0.4);
+  border: 2px solid rgba(230, 164, 0, 0.3);
+}
+
+.btn-primary:hover {
+  background-color: #d29400;
+  transform: translateY(-3px);
+  box-shadow: var(--neon-glow);
+}
+
+.btn-secondary {
+  background-color: rgba(255, 255, 255, 0.2);
+  color: white;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  flex: 1;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.btn-secondary:hover {
+  background-color: rgba(255, 255, 255, 0.3);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+}
+
+/* ========== LISTAGEM DE IMÓVEIS ========== */
+.listings-header {
+  margin: 30px 0 20px; /* APROXIMEI: menos margem */
+}
+
+.results-count {
+  font-size: 14px;
+  color: white; /* FONTE BRANCA */
+  font-weight: 700;
+  background-color: var(--accent); /* FUNDO AMARELO/DOURADO */
+  padding: 6px 12px; /* ESPAÇO INTERNO */
+  border-radius: 25px; /* CANTOS ARREDONDADOS */
+  display: inline-block; /* Para o fundo se ajustar ao texto */
+  box-shadow: 0 4px 12px rgba(230, 164, 0, 0.3); /* SOMBRA SUAVE */
+  border: 2px solid rgba(255, 255, 255, 0.2); /* BORDINHA BRANCA SUAVE */
+}
+
+.lista-imoveis {
+  display: flex;
+  flex-direction: column;
+  gap: 20px; /* AUMENTADO: de 25px para 40px entre cards */
+  margin-bottom: 60px; /* AUMENTADO: de 50px para 60px */
+  width: 100%;
+  max-width: 100%;
+}
+
+/* Cards de Imóveis - Layout Horizontal com imagem flutuante */
+.property-card {
+  background-color: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px var(--shadow);
+  transition: var(--transition);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  min-height: 400px;
+  max-width: 1300px; /* LARGURA MÁXIMA DOS CARDS */
+  margin: 0 auto; /* Centraliza o card */
+  width: 100%; /* Ocupa toda largura disponível */
+}
+
+.property-card:hover {
+  box-shadow: 0 8px 20px var(--shadow-hover);
+  transform: translateY(-5px);
+}
+
+.property-image-wrapper {
+  position: relative;
+  height: 220px;
+  overflow: hidden;
+  background-color: white;
+  max-width: 100%;
+}
+
+.property-image-container {
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  right: 15px;
+  bottom: 15px;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+  background-color: white;
+  max-width: 100%;
+}
+
+.property-image-container img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s ease;
+  max-width: 100%;
+}
+
+.property-card:hover .property-image-container img {
+  transform: scale(1.05);
+}
+
+/* Linha divisória vertical (aparece apenas em telas maiores) */
+.property-divider {
+  display: none;
+  position: absolute;
+  right: 0;
+  top: 30px;
+  bottom: 30px;
+  width: 1px;
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent,
+    transparent 5px,
+    var(--light-gray) 5px,
+    var(--light-gray) 10px
+  );
+}
+
+/* ETIQUETAS DE STATUS - AGORA COM CORES VIVAS DE VERDADE */
+.property-status {
+  position: absolute;
+  top: 20px; /* AJUSTADO: posição mais alta */
+  left: 20px; /* AJUSTADO: posição mais à esquerda */
+  padding: 8px 16px; /* DIMINUÍDO: etiquetas menores */
+  border-radius: 20px; /* Arredondamento menor */
+  font-size: 12px; /* DIMINUÍDO: fonte menor */
+  font-weight: 700; /* AJUSTADO: de 800 para 700 */
+  color: white;
+  letter-spacing: 0.5px; /* Reduzido espaçamento */
+  text-transform: uppercase;
+  z-index: 10;
+  transition: var(--transition);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); /* Sombra menor */
+  border: 2px solid rgba(255, 255, 255, 0.5); /* Borda mais fina */
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  gap: 6px; /* Espaço menor entre ícone e texto */
+  backdrop-filter: blur(8px); /* Blur menor */
+  animation: pulse 2s infinite;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3); /* Sombra de texto menor */
+}
+
+.property-status::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.6),
+    transparent
+  );
+  transition: 0.7s;
+}
+
+.property-status:hover::before {
+  left: 100%;
+}
+
+.property-status:hover {
+  transform: scale(1.1) translateY(-5px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+.status-available {
+  background: linear-gradient(135deg, var(--success) 0%, #00cc00 100%);
+  border-color: rgba(255, 255, 255, 0.6);
+}
+
+.status-available:hover {
+  box-shadow: var(--neon-success);
+  animation: pulse-glow 1.5s infinite;
+}
+
+.status-sold {
+  background: linear-gradient(135deg, var(--sold) 0%, #cc0000 100%);
+  border-color: rgba(255, 255, 255, 0.6);
+}
+
+.status-sold:hover {
+  box-shadow: var(--neon-sold);
+  animation: pulse-glow 1.5s infinite;
+}
+
+.status-price-drop {
+  background: linear-gradient(135deg, var(--price-drop) 0%, #cc5500 100%);
+  border-color: rgba(255, 255, 255, 0.6);
+}
+
+.status-price-drop:hover {
+  box-shadow: var(--neon-price);
+  animation: pulse-glow 1.5s infinite;
+}
+
+.property-status i {
+  font-size: 14px; /* AJUSTADO: ícone menor */
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+/* Animações para os badges */
+@keyframes pulse {
+  0% {
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+  }
+  50% {
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5);
+  }
+  100% {
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+  }
+}
+
+@keyframes pulse-glow {
+  0% {
+    box-shadow: var(--neon-success);
+  }
+  50% {
+    box-shadow:
+      0 0 30px rgba(0, 255, 0, 1),
+      0 0 40px rgba(0, 255, 0, 0.8),
+      0 0 50px rgba(0, 255, 0, 0.6);
+  }
+  100% {
+    box-shadow: var(--neon-success);
+  }
+}
+
+.property-content {
+  padding: 25px;
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  max-width: 100%;
+}
+
+/* Informações em boxes com cantos arredondados */
+.property-info-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 15px;
+  align-items: center;
+}
+
+.property-tag {
+  background-color: rgba(49, 53, 62, 0.1); /* Atualizado para #31353E */
+  color: var(--primary);
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 700;
+  display: inline-block;
+}
+
+.property-type-tag {
+  background-color: rgba(230, 164, 0, 0.15);
+  color: var(--accent);
+}
+
+/* Preço destacado */
+.property-price {
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--primary);
+  margin-bottom: 15px;
+  font-family: "Montserrat", sans-serif;
+}
+
+.property-title {
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 12px;
+  line-height: 1.4;
+  color: var(--dark);
+}
+
+.property-location {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--gray);
+  margin-bottom: 20px;
+  font-size: 15px;
+}
+
+.property-location i {
+  color: var(--accent);
+  font-size: 15px;
+}
+
+/* 🔄 CARACTERÍSTICAS DO IMÓVEL - REORGANIZADO COMO NO SITE ORIGINAL */
+/* Ícone em cima, texto embaixo (vertical) */
+.property-features {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px; /* Mais espaço entre os itens */
+  margin-bottom: 20px;
+  padding-top: 15px;
+  border-top: 1px dashed var(--light-gray);
+  max-width: 100%;
+}
+
+.feature {
+  display: flex;
+  flex-direction: column; /* 🔄 MUDANÇA PRINCIPAL: Coluna em vez de linha */
+  align-items: center; /* Centraliza horizontalmente */
+  gap: 5px; /* Espaço entre ícone e texto */
+  color: var(--gray);
+  font-size: 14px;
+  text-align: center; /* Centraliza o texto */
+  min-width: 60px; /* Largura mínima para organização */
+}
+
+.feature i {
+  color: var(--accent);
+  font-size: 22px; /* Ícone um pouco maior */
+  width: auto; /* Remove largura fixa anterior */
+  text-align: center;
+  margin-bottom: 2px;
+}
+
+.feature-value {
+  font-weight: 700;
+  color: var(--dark);
+  font-size: 15px;
+}
+
+/* Ações do card */
+.property-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: auto;
+  padding-top: 20px;
+  border-top: 1px solid var(--light-gray);
+  max-width: 100%;
+}
+
+.condominium-badge {
+  background-color: transparent;
+  color: var(--primary);
+  padding: 11px 12px; /* Ajuste fino para igualar altura */
+  border-radius: 50px;
+  font-size: 15px; /* Mesmo tamanho de fonte */
+  font-weight: 700; /* Mesmo peso (btn-details tem 700) */
+  display: flex;
+  align-items: center;
+  gap: 10px; /* Mesmo gap do btn-details */
+  border: 2px solid rgba(2, 4, 26, 0.7);
+  line-height: 1; /* Remove espaçamento extra entre linhas */
+}
+
+.condominium-badge i {
+  color: var(--accent);
+  font-size: 14px;
+}
+
+/* BOTÃO DE DETALHES REFEITO COM EFEITO FUTURISTA */
+.btn-details {
+  background-color: var(--primary);
+  color: white;
+  padding: 12px 24px;
+  border-radius: 50px;
+  font-weight: 700;
+  font-family: "Montserrat", sans-serif;
+  border: none;
+  cursor: pointer;
+  transition: var(--transition);
+  font-size: 15px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  position: relative;
+  overflow: hidden;
+  z-index: 1;
+  box-shadow: 0 5px 15px rgba(49, 53, 62, 0.3); /* Atualizado para #31353E */
+  border: 1px solid rgba(62, 57, 49, 0.2); /* Corrigido o valor da borda */
+}
+
+.btn-details::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.4),
+    transparent
+  );
+  transition: 0.5s;
+  z-index: -1;
+}
+
+.btn-details:hover::before {
+  left: 100%;
+}
+
+.btn-details:hover {
+  background-color: var(--secondary);
+  transform: translateY(-3px);
+  box-shadow:
+    0 8px 25px rgba(49, 53, 62, 0.4),
+    0 0 20px rgba(49, 53, 62, 0.3); /* Atualizado para #31353E */
+}
+
+/* Paginação */
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 60px;
+  max-width: 100%;
+}
+
+.page-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: white;
+  color: var(--dark);
+  border: 2px solid var(--light-gray);
+  cursor: pointer;
+  transition: var(--transition);
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.page-btn:hover:not(.active):not(.disabled) {
+  background-color: var(--light-gray);
+  border-color: var(--accent);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.page-btn.active {
+  background-color: var(--primary);
+  color: white;
+  border-color: var(--primary);
+  box-shadow: 0 4px 10px rgba(49, 53, 62, 0.3); /* Atualizado para #31353E */
+}
+
+.page-btn.disabled {
+  color: var(--gray);
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* Responsividade */
+@media (min-width: 768px) {
+  .filter-grid {
+    grid-template-columns: repeat(5, 1fr); /* 5 COLUNAS NO DESKTOP */
+    gap: 15px;
+    align-items: end; /* ALINHA TODOS OS ITENS NA BASE */
+    row-gap: 40px;
+  }
+
+  .property-card {
+    flex-direction: row;
+    min-height: 300px;
+    max-width: 1300px; /* MANTÉM LARGURA NO DESKTOP */
+  }
+
+  .property-image-wrapper {
+    width: 45%;
+    height: auto;
+    flex-shrink: 0;
+    max-width: 45%;
+  }
+
+  .property-content {
+    width: 55%;
+    padding: 30px;
+    max-width: 55%;
+  }
+
+  /* Linha divisória vertical - aparece apenas em telas maiores */
+  .property-divider {
+    display: block;
+  }
+
+  /* Ajuste das etiquetas para telas maiores */
+  .property-status {
+    top: 25px;
+    left: 25px;
+  }
+}
+
+@media (min-width: 992px) {
+  .property-image-wrapper {
+    width: 40%;
+    max-width: 40%;
+  }
+
+  .property-content {
+    width: 60%;
+    max-width: 60%;
+  }
+}
+
+/* Estados de carregamento e vazios */
+.no-results {
+  text-align: center;
+  padding: 60px 20px;
+  background-color: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px var(--shadow);
+}
+
+.no-results-icon {
+  font-size: 60px;
+  color: var(--light-gray);
+  margin-bottom: 20px;
+}
+
+.no-results h3 {
+  font-size: 22px;
+  margin-bottom: 10px;
+  color: var(--gray);
+  font-weight: 700;
+}
+
+.no-results p {
+  color: var(--gray);
+  max-width: 500px;
+  margin: 0 auto 25px;
+  font-size: 15px;
+}
+
+/* CORREÇÃO DO BOTÃO "VER DETALHES" NO MOBILE */
+@media (max-width: 767px) {
+  .property-actions {
+    flex-direction: column;
+    align-items: center; /* Centraliza horizontalmente */
+    gap: 10px; /* Menos espaço */
+  }
+
+  .condominium-badge {
+    width: auto; /* Largura automática pelo conteúdo */
+    min-width: 230px; /* Largura mínima elegante */
+    justify-content: center;
+    padding: 10px 18px; /* Padding reduzido */
+  }
+
+  .btn-details {
+    width: auto; /* Largura automática */
+    min-width: 230px; /* Um pouco maior que o badge */
+    justify-content: center;
+    padding: 11px 22px; /* Padding ajustado */
+  }
+
+  .btn-details i {
+    margin-right: 8px;
+  }
+}
+
+/* ========== RESPONSIVIDADE PARA O TÍTULO ========== */
+@media (max-width: 768px) {
+  .page-header {
+    padding: 35px 0 20px; /* Ajuste para mobile */
+  }
+
+  .page-header h1 {
+    font-size: 26px;
+    line-height: 1.3;
+  }
+
+  .listings-header {
+    margin: 30px 0 25px;
+  }
+
+  .results-count {
+    font-size: 16px;
+  }
+
+  .lista-imoveis {
+    gap: 30px; /* Ajuste para mobile */
+    margin-bottom: 50px;
+  }
+}
+
+@media (max-width: 480px) {
+  .page-header h1 {
+    font-size: 22px;
+  }
+
+  .lista-imoveis {
+    gap: 25px; /* Menos espaço em telas muito pequenas */
+  }
+
+  .container {
+    padding: 0 15px;
+  }
+}

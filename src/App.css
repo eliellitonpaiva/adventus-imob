@@ -1,0 +1,72 @@
+/* IMPORTAR E APLICAR FONTE MONT SERRAT EM TODO O PROJETO */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: "Montserrat", sans-serif;
+}
+
+body {
+  font-family: "Montserrat", sans-serif;
+  font-weight: 400;
+  color: #333333;
+  background-color: #f8f9fa;
+  line-height: 1.6;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: "Montserrat", sans-serif;
+  font-weight: 700;
+  color: #31353e;
+}
+
+strong,
+b {
+  font-weight: 700;
+}
+
+/* VARIÁVEIS DE CORES DA ADVENTUS */
+:root {
+  --primary: #31353e;
+  --secondary: #31353e;
+  --accent: #e6a400;
+  --light-accent: #ffd166;
+  --light: #f8f9fa;
+  --dark: #333333;
+  --gray: #6c757d;
+  --light-gray: #e9ecef;
+
+  /* CORES VIVAS */
+  --success: #00ff00;
+  --sold: #ff0000;
+  --price-drop: #ff7700;
+
+  /* Efeitos neon */
+  --neon-glow: 0 0 20px rgba(230, 164, 0, 0.9);
+  --neon-success: 0 0 20px rgba(0, 255, 0, 0.9);
+  --neon-sold: 0 0 20px rgba(255, 0, 0, 0.9);
+  --neon-price: 0 0 20px rgba(255, 119, 0, 0.9);
+
+  --transition: all 0.3s ease;
+}
+
+/* Estilos globais para o projeto Adventus */
+.container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+/* Remover estilos padrão do Vite que não precisamos */
+#root {
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+  text-align: left;
+}
