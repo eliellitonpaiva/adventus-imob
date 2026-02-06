@@ -6,12 +6,15 @@ import {
   StarIcon,
   PencilIcon,
   TrashIcon,
+  UserIcon,
 } from "@heroicons/react/24/outline";
 import Button from "../../componentes/ui/Button";
 import Input from "../../componentes/ui/Input";
+import { useNavigate } from "react-router-dom"; // ADICIONE ESTE IMPORT
 
 const Corretores = () => {
   const [searchTerm, setSearchTerm] = useState("");
+  const navigate = useNavigate(); // ADICIONE ESTA LINHA
 
   const corretores = [
     {
@@ -22,7 +25,7 @@ const Corretores = () => {
       status: "Ativo",
       imoveis: 12,
       rating: 4.8,
-      creci: "123456-SP",
+      creci: "123456-MA",
     },
     {
       id: 2,
@@ -32,7 +35,7 @@ const Corretores = () => {
       status: "Ativo",
       imoveis: 8,
       rating: 4.9,
-      creci: "654321-SP",
+      creci: "654321-MA",
     },
     {
       id: 3,
@@ -42,7 +45,7 @@ const Corretores = () => {
       status: "Férias",
       imoveis: 5,
       rating: 4.5,
-      creci: "789012-SP",
+      creci: "789012-MA",
     },
     {
       id: 4,
@@ -52,7 +55,7 @@ const Corretores = () => {
       status: "Ativo",
       imoveis: 15,
       rating: 4.7,
-      creci: "345678-SP",
+      creci: "345678-MA",
     },
     {
       id: 5,
@@ -62,7 +65,7 @@ const Corretores = () => {
       status: "Inativo",
       imoveis: 0,
       rating: 4.2,
-      creci: "901234-SP",
+      creci: "901234-MA",
     },
   ];
 
@@ -86,14 +89,27 @@ const Corretores = () => {
           <h1 className="text-3xl font-bold text-gray-900">Corretores</h1>
           <p className="text-gray-600 mt-2">Gerencie a equipe de corretores</p>
         </div>
-        <Button
-          variant="primary"
-          className="mt-4 sm:mt-0"
-          onClick={() => (window.location.href = "/admin/corretores/novo")}
-        >
-          <PlusIcon className="w-5 h-5 mr-2" />
-          Novo Corretor
-        </Button>
+
+        {/* BOTÕES LADO A LADO - ATUALIZADOS */}
+        <div className="flex space-x-3 mt-4 sm:mt-0">
+          {/* BOTÃO "VER CANDIDATOS" - VERDE E CORRIGIDO */}
+          <Button
+            variant="primary"
+            onClick={() => navigate("/admin/candidatos")} // ← CORRIGIDO AQUI
+          >
+            <UserIcon className="w-5 h-5 mr-2" />
+            Ver Candidatos
+          </Button>
+
+          {/* BOTÃO "NOVO CORRETOR" - MANTIDO */}
+          <Button
+            variant="outline"
+            onClick={() => navigate("/admin/corretores/novo")} // ← TAMBÉM CORRIGIDO
+          >
+            <PlusIcon className="w-5 h-5 mr-2" />
+            Novo Corretor
+          </Button>
+        </div>
       </div>
 
       {/* Search and Filters */}
@@ -161,24 +177,37 @@ const Corretores = () => {
                 </div>
               </div>
 
-              {/* Stats */}
+              {/* Stats - MODIFICADO COM DIVISÓRIA */}
               <div className="mt-6 pt-6 border-t border-gray-200">
                 <div className="flex items-center justify-between">
+                  {/* IMÓVEIS */}
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-gray-900">
+                    <div className="text-lg font-semibold text-gray-700">
                       {corretor.imoveis}
                     </div>
-                    <div className="text-sm text-gray-600">Imóveis</div>
+                    <div className="text-sm text-gray-500">Imóveis</div>
                   </div>
+
+                  {/* DIVISÓRIA VERTICAL */}
+                  <div className="h-12 w-px bg-gray-200"></div>
+
+                  {/* VENDAS */}
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-gray-900">
+                    <div className="text-lg font-semibold text-gray-700">
                       R$ 2.5M
                     </div>
-                    <div className="text-sm text-gray-600">Vendas (mês)</div>
+                    <div className="text-sm text-gray-500">Vendas (mês)</div>
                   </div>
+
+                  {/* DIVISÓRIA VERTICAL */}
+                  <div className="h-12 w-px bg-gray-200"></div>
+
+                  {/* LEADS */}
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-gray-900">15</div>
-                    <div className="text-sm text-gray-600">Leads</div>
+                    <div className="text-lg font-semibold text-gray-700">
+                      15
+                    </div>
+                    <div className="text-sm text-gray-500">Leads</div>
                   </div>
                 </div>
               </div>
@@ -188,8 +217,8 @@ const Corretores = () => {
             <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-end space-x-3">
               <button
                 onClick={() =>
-                  (window.location.href = `/admin/corretores/editar/${corretor.id}`)
-                }
+                  navigate(`/admin/corretores/editar/${corretor.id}`)
+                } // ← CORRIGIDO
                 className="p-2 text-gray-400 hover:text-blue-600 transition-colors"
                 title="Editar"
               >
@@ -202,7 +231,11 @@ const Corretores = () => {
               >
                 <TrashIcon className="w-5 h-5" />
               </button>
-              <Button variant="outline" size="sm">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate(`/admin/corretores/${corretor.id}`)} // ← CORRIGIDO
+              >
                 Ver Perfil
               </Button>
             </div>
@@ -217,7 +250,7 @@ const Corretores = () => {
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           <div className="text-center p-4 bg-blue-50 rounded-lg">
-            <div className="text-3xl font-bold text-blue-600">24</div>
+            <div className="text-3xl font-bold text-blue-600">3</div>
             <div className="text-sm text-blue-800 mt-1">Corretores Ativos</div>
           </div>
           <div className="text-center p-4 bg-green-50 rounded-lg">

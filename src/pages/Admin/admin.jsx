@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 
 const Dashboard = () => {
-  const [stats, setStats] = useState([
+  const [stats] = useState([
     {
       title: "Total de Imóveis",
       value: "156",
@@ -32,7 +32,7 @@ const Dashboard = () => {
     },
   ]);
 
-  // Ícones SVG inline
+  /* Ícones */
   const icons = {
     building: (
       <svg
@@ -42,10 +42,10 @@ const Dashboard = () => {
         viewBox="0 0 24 24"
       >
         <path
+          strokeWidth={2}
           strokeLinecap="round"
           strokeLinejoin="round"
-          strokeWidth={2}
-          d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+          d="M3 21h18M5 21V7a2 2 0 012-2h10a2 2 0 012 2v14"
         />
       </svg>
     ),
@@ -57,10 +57,10 @@ const Dashboard = () => {
         viewBox="0 0 24 24"
       >
         <path
+          strokeWidth={2}
           strokeLinecap="round"
           strokeLinejoin="round"
-          strokeWidth={2}
-          d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5 0c-.281.384-.5.819-.5 1.287 0 1.136-.906 2.058-2.025 2.058S16 18.136 16 17c0-.468-.219-.903-.5-1.287"
+          d="M12 4a4 4 0 100 8 4 4 0 000-8zM4 20a8 8 0 0116 0"
         />
       </svg>
     ),
@@ -72,10 +72,10 @@ const Dashboard = () => {
         viewBox="0 0 24 24"
       >
         <path
+          strokeWidth={2}
           strokeLinecap="round"
           strokeLinejoin="round"
-          strokeWidth={2}
-          d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+          d="M3 8l9 6 9-6M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
         />
       </svg>
     ),
@@ -87,103 +87,27 @@ const Dashboard = () => {
         viewBox="0 0 24 24"
       >
         <path
+          strokeWidth={2}
           strokeLinecap="round"
           strokeLinejoin="round"
-          strokeWidth={2}
-          d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+          d="M12 8c-2 0-3 1-3 2s1 2 3 2 3 1 3 2-1 2-3 2"
         />
       </svg>
     ),
-    arrowUp: (
-      <svg
-        className="w-4 h-4 text-green-500"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
-        />
-      </svg>
-    ),
-    arrowDown: (
-      <svg
-        className="w-4 h-4 text-red-500"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6"
-        />
-      </svg>
-    ),
-    clock: (
-      <svg
-        className="w-4 h-4 inline-block mr-1"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-        />
-      </svg>
-    ),
-    calendar: (
-      <svg
-        className="w-4 h-4 mr-2"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-        />
-      </svg>
-    ),
-    star: (
-      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-      </svg>
-    ),
+    arrowUp: <span className="text-green-600 font-semibold">▲</span>,
+    arrowDown: <span className="text-red-600 font-semibold">▼</span>,
   };
 
-  // Componente Button simples (substituto)
-  const Button = ({
-    children,
-    variant = "primary",
-    onClick,
-    className = "",
-  }) => {
-    const base =
-      "font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 inline-flex items-center justify-center px-4 py-2.5";
-    const variants = {
-      primary:
-        "bg-[#D4A24D] text-white hover:bg-[#c1923e] focus:ring-[#D4A24D]",
-      secondary:
-        "bg-[#31353E] text-white hover:bg-[#25282f] focus:ring-[#31353E]",
+  const Button = ({ children, variant = "primary" }) => {
+    const styles = {
+      primary: "bg-[#D4A24D] text-white hover:bg-[#c1923e]",
       outline:
-        "border border-[#D4A24D] text-[#D4A24D] hover:bg-[#D4A24D] hover:text-white focus:ring-[#D4A24D]",
-      ghost: "text-[#31353E] hover:bg-gray-100 focus:ring-gray-300",
+        "border border-[#D4A24D] text-[#D4A24D] hover:bg-[#D4A24D] hover:text-white",
     };
 
     return (
       <button
-        onClick={onClick}
-        className={`${base} ${variants[variant]} ${className}`}
+        className={`px-4 py-2 rounded-lg font-medium transition ${styles[variant]}`}
       >
         {children}
       </button>
@@ -191,122 +115,116 @@ const Dashboard = () => {
   };
 
   return (
-    <div>
-      {/* Header */}
-      <div className="mb-8">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between">
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto px-4 py-8 space-y-10">
+        {/* HEADER */}
+        <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-            <p className="text-gray-600 mt-2">
-              {icons.clock}
-              Última atualização: Hoje, 14:30
+            <p className="text-sm text-gray-500 mt-1">
+              Visão geral do seu CRM imobiliário
             </p>
           </div>
-          <div className="flex items-center space-x-3 mt-4 sm:mt-0">
-            <Button variant="outline">
-              {icons.calendar}
-              Este mês
-            </Button>
-            <Button variant="primary">Gerar Relatório</Button>
+          <div className="flex gap-3">
+            <Button variant="outline">Este mês</Button>
+            <Button>Gerar relatório</Button>
           </div>
-        </div>
-      </div>
+        </header>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        {stats.map((stat, index) => {
-          const statIcons = [
-            icons.building,
-            icons.users,
-            icons.envelope,
-            icons.currency,
-          ];
-          return (
-            <div
-              key={stat.title}
-              className="bg-white rounded-xl shadow-sm p-6 border border-gray-200 hover:shadow-md transition-shadow"
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">
-                    {stat.title}
-                  </p>
-                  <p className="text-2xl font-bold text-gray-900 mt-2">
-                    {stat.value}
-                  </p>
-                  <div className="flex items-center mt-2">
-                    {stat.trend === "up" ? icons.arrowUp : icons.arrowDown}
-                    <span
-                      className={`text-sm font-medium ml-1 ${stat.trend === "up" ? "text-green-600" : "text-red-600"}`}
-                    >
-                      {stat.change} este mês
-                    </span>
-                  </div>
-                </div>
-                <div className={`${stat.color} p-3 rounded-lg`}>
+        {/* KPIs / STATS */}
+        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {stats.map((stat, index) => {
+            const statIcons = [
+              icons.building,
+              icons.users,
+              icons.envelope,
+              icons.currency,
+            ];
+
+            return (
+              <div
+                key={stat.title}
+                className="bg-white border border-gray-200 rounded-2xl p-6
+                           hover:shadow-md transition
+                           flex flex-col items-center text-center"
+              >
+                {/* Ícone */}
+                <div className={`${stat.color} p-4 rounded-2xl mb-4 shadow-sm`}>
                   {statIcons[index]}
                 </div>
+
+                {/* Valor */}
+                <p className="text-3xl font-bold text-gray-900">{stat.value}</p>
+
+                {/* Título */}
+                <p className="text-sm text-gray-500 mt-1">{stat.title}</p>
+
+                {/* Tendência */}
+                <div className="flex items-center gap-1 mt-3 text-sm font-medium">
+                  {stat.trend === "up" ? icons.arrowUp : icons.arrowDown}
+                  <span
+                    className={
+                      stat.trend === "up" ? "text-green-600" : "text-red-600"
+                    }
+                  >
+                    {stat.change} no mês
+                  </span>
+                </div>
               </div>
+            );
+          })}
+        </section>
+
+        {/* CONTEÚDO INFERIOR */}
+        <section className="bg-white border border-gray-200 rounded-2xl p-6">
+          <h2 className="text-xl font-semibold text-gray-900 mb-1">
+            Acesso rápido
+          </h2>
+          <p className="text-gray-500 mb-6">
+            Atalhos para o que você mais usa no dia a dia
+          </p>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="rounded-xl bg-blue-50 p-5">
+              <h3 className="font-semibold text-blue-900 mb-3">Gestão</h3>
+              <ul className="space-y-2 text-blue-700">
+                <li>
+                  <a href="/admin/imoveis" className="hover:underline">
+                    Imóveis
+                  </a>
+                </li>
+                <li>
+                  <a href="/admin/corretores" className="hover:underline">
+                    Corretores
+                  </a>
+                </li>
+                <li>
+                  <a href="/admin/leads" className="hover:underline">
+                    Leads
+                  </a>
+                </li>
+              </ul>
             </div>
-          );
-        })}
-      </div>
 
-      {/* Conteúdo simplificado */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">
-          Bem-vindo ao Painel Admin
-        </h2>
-        <p className="text-gray-600 mb-6">
-          Gerencie seus imóveis, corretores e leads de forma eficiente.
-        </p>
+            <div className="rounded-xl bg-green-50 p-5">
+              <h3 className="font-semibold text-green-900 mb-3">
+                Resumo rápido
+              </h3>
+              <p className="text-sm text-gray-700 leading-relaxed">
+                • 156 imóveis ativos
+                <br />• 12 leads recebidos hoje
+              </p>
+            </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="p-4 bg-blue-50 rounded-lg">
-            <h3 className="font-semibold text-blue-800 mb-2">Acesso Rápido</h3>
-            <div className="space-y-2">
-              <a
-                href="/admin/imoveis"
-                className="block text-blue-600 hover:text-blue-800"
-              >
-                Imóveis
-              </a>
-              <a
-                href="/admin/corretores"
-                className="block text-blue-600 hover:text-blue-800"
-              >
-                Corretores
-              </a>
-              <a
-                href="/admin/leads"
-                className="block text-blue-600 hover:text-blue-800"
-              >
-                Leads
-              </a>
+            <div className="rounded-xl bg-[#D4A24D]/10 p-5">
+              <h3 className="font-semibold text-[#c1923e] mb-3">Insight</h3>
+              <p className="text-sm text-gray-700">
+                Responder um lead em até 15 minutos aumenta muito a chance de
+                fechamento.
+              </p>
             </div>
           </div>
-
-          <div className="p-4 bg-green-50 rounded-lg">
-            <h3 className="font-semibold text-green-800 mb-2">Estatísticas</h3>
-            <div className="space-y-2">
-              <div className="flex justify-between">
-                <span>Imóveis ativos:</span>
-                <span className="font-semibold">156</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Leads hoje:</span>
-                <span className="font-semibold">12</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="p-4 bg-[#D4A24D]/10 rounded-lg">
-            <h3 className="font-semibold text-[#c1923e] mb-2">Dicas</h3>
-            <p className="text-sm text-gray-700">
-              Revise os leads pendentes diariamente para aumentar a conversão.
-            </p>
-          </div>
-        </div>
+        </section>
       </div>
     </div>
   );
