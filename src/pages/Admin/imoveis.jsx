@@ -12,27 +12,274 @@ import {
   CheckCircleIcon,
   ClockIcon,
   CheckBadgeIcon,
+  ExclamationTriangleIcon,
+  ExclamationCircleIcon,
+  StarIcon,
+  ArrowTrendingUpIcon,
+  ArrowTrendingDownIcon,
+  ChartBarIcon,
+  InformationCircleIcon,
 } from "@heroicons/react/24/outline";
 import Button from "../../componentes/ui/Button";
 
 // Componente Modal Performance
 const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
-  // Dados de performance mockados
-  const metricsData = {
-    visualizacoes: 247,
-    cliquesWhatsApp: 48,
-    solicitacoesVisita: 12,
-    interessadosAtivos: 3,
-    status: "Em Negociação",
-    tempoNegociacao: "10 dias",
-    ultimaAtualizacao: "2 horas atrás",
+  // Estado para controlar a visibilidade do tooltip de informação
+  const [showTooltipInfo, setShowTooltipInfo] = useState(false);
+
+  // Estado local para controlar se o imóvel foi marcado como vendido DURANTE esta sessão do modal
+  // INICIA SEMPRE COMO FALSE - NUNCA baseado no status do imóvel
+  const [localMarcadoComoVendido, setLocalMarcadoComoVendido] = useState(false);
+
+  // Dados de performance mockados - DINÂMICOS baseado no estado de desempenho do imóvel
+  const getMetricsData = () => {
+    // Se o imóvel foi marcado como vendido, ajusta os dados
+    if (localMarcadoComoVendido) {
+      return {
+        visualizacoes: 247,
+        cliquesWhatsApp: 48,
+        solicitacoesVisita: 12,
+        interessadosAtivos: 0, // Zera interessados ativos quando vendido
+        status: "VENDIDO",
+        tempoNegociacao: "Concluído",
+        ultimaAtualizacao: "Agora mesmo",
+        engajamentoCalculado: 150, // Engajamento alto quando vendido
+      };
+    }
+
+    // Agora usamos o campo 'desempenho' do imóvel para determinar os dados
+    switch (imovel.desempenho) {
+      case "Excelente": // Engajamento ≥ 120%
+        return {
+          visualizacoes: 247,
+          cliquesWhatsApp: 48,
+          solicitacoesVisita: 12,
+          interessadosAtivos: 3,
+          status: "Em Negociação",
+          tempoNegociacao: "10 dias",
+          ultimaAtualizacao: "2 horas atrás",
+          engajamentoCalculado: 125, // Valor fixo para demonstração
+        };
+      case "Saudável": // Engajamento 80-119%
+        return {
+          visualizacoes: 180,
+          cliquesWhatsApp: 18,
+          solicitacoesVisita: 4,
+          interessadosAtivos: 2,
+          status: "Disponível",
+          tempoNegociacao: "5 dias",
+          ultimaAtualizacao: "1 hora atrás",
+          engajamentoCalculado: 95,
+        };
+      case "Atenção": // Engajamento 50-79%
+        return {
+          visualizacoes: 150,
+          cliquesWhatsApp: 10,
+          solicitacoesVisita: 2,
+          interessadosAtivos: 1,
+          status: "Disponível",
+          tempoNegociacao: "15 dias",
+          ultimaAtualizacao: "3 horas atrás",
+          engajamentoCalculado: 65,
+        };
+      case "Crítico": // Engajamento < 50%
+        return {
+          visualizacoes: 200,
+          cliquesWhatsApp: 6,
+          solicitacoesVisita: 1,
+          interessadosAtivos: 0,
+          status: "Disponível",
+          tempoNegociacao: "30 dias",
+          ultimaAtualizacao: "5 horas atrás",
+          engajamentoCalculado: 35,
+        };
+      default: // Default - Excelente
+        return {
+          visualizacoes: 247,
+          cliquesWhatsApp: 48,
+          solicitacoesVisita: 12,
+          interessadosAtivos: 3,
+          status: "Em Negociação",
+          tempoNegociacao: "10 dias",
+          ultimaAtualizacao: "2 horas atrás",
+          engajamentoCalculado: 125,
+        };
+    }
   };
 
-  // Dados do imóvel com imagem
+  const [metricsData, setMetricsData] = useState(getMetricsData());
+
+  // Atualiza os dados quando o estado de vendido muda
+  React.useEffect(() => {
+    setMetricsData(getMetricsData());
+  }, [localMarcadoComoVendido]);
+
+  // Cálculo do engajamento baseado na regra de negócio
+  const calcularEngajamento = () => {
+    // Retorna o engajamento pré-calculado baseado no estado
+    return metricsData.engajamentoCalculado;
+  };
+
+  const engajamento = calcularEngajamento();
+
+  // Função para determinar classificação do desempenho
+  const getClassificacaoDesempenho = () => {
+    // Se foi vendido, sempre mostra como Excelente
+    if (localMarcadoComoVendido) {
+      return {
+        label: "Excelente",
+        texto: "Imóvel vendido com sucesso!",
+        cor: "text-green-700",
+        corIcone: "text-yellow-500",
+        bgIcone: "bg-yellow-50",
+        Icone: StarIcon,
+        iconSize: "w-5 h-5",
+        marginBottom: "mb-2",
+      };
+    }
+
+    if (engajamento >= 120) {
+      return {
+        label: "Excelente",
+        texto: "Resultado acima do esperado",
+        cor: "text-green-700",
+        corIcone: "text-yellow-500",
+        bgIcone: "bg-yellow-50",
+        Icone: StarIcon,
+        iconSize: "w-5 h-5",
+        marginBottom: "mb-2", // MARGEM REDUZIDA
+      };
+    } else if (engajamento >= 80) {
+      return {
+        label: "Saudável",
+        texto: "Dentro da meta esperada",
+        cor: "text-blue-700",
+        corIcone: "text-green-500",
+        bgIcone: "bg-green-50",
+        Icone: CheckCircleIcon,
+        iconSize: "w-5 h-5",
+        marginBottom: "mb-2", // MARGEM REDUZIDA
+      };
+    } else if (engajamento >= 50) {
+      return {
+        label: "Atenção",
+        texto: "Abaixo do potencial esperado",
+        cor: "text-amber-700",
+        corIcone: "text-black",
+        bgIcone: "bg-amber-100",
+        Icone: ExclamationTriangleIcon,
+        iconSize: "w-5 h-5",
+        marginBottom: "mb-1", // MARGEM MUITO REDUZIDA (para Atenção)
+      };
+    } else {
+      return {
+        label: "Crítico",
+        texto: "Alto tráfego com baixa conversão",
+        cor: "text-red-700",
+        corIcone: "text-red-500",
+        bgIcone: "bg-red-50",
+        Icone: ExclamationCircleIcon,
+        iconSize: "w-5 h-5",
+        marginBottom: "mb-2", // MARGEM REDUZIDA
+      };
+    }
+  };
+
+  const classificacao = getClassificacaoDesempenho();
+  const ClassificacaoIcon = classificacao.Icone;
+
+  // Determinar cor e ícone do engajamento para outros usos
+  const getEngajamentoInfo = () => {
+    if (localMarcadoComoVendido || engajamento >= 120) {
+      return {
+        color: "text-green-600",
+        bgColor: "bg-green-100",
+        icon: ArrowTrendingUpIcon,
+        label: "Alto Engajamento",
+      };
+    } else if (engajamento >= 80) {
+      return {
+        color: "text-blue-600",
+        bgColor: "bg-blue-100",
+        icon: ArrowTrendingUpIcon,
+        label: "Bom Engajamento",
+      };
+    } else if (engajamento >= 50) {
+      return {
+        color: "text-amber-600",
+        bgColor: "bg-amber-100",
+        icon: ArrowTrendingDownIcon,
+        label: "Engajamento Médio",
+      };
+    } else {
+      return {
+        color: "text-red-600",
+        bgColor: "bg-red-100",
+        icon: ExclamationTriangleIcon,
+        label: "Baixo Engajamento",
+      };
+    }
+  };
+
+  // Gerar insights dinâmicos baseados no engajamento
+  const gerarInsights = () => {
+    const insights = [];
+
+    // Insight especial para imóvel vendido
+    if (localMarcadoComoVendido) {
+      insights.push("✅ Imóvel vendido com sucesso!");
+      insights.push("🎉 Parabéns pela venda concluída!");
+      insights.push("📊 Este imóvel teve excelente performance comercial.");
+      return insights;
+    }
+
+    // Insight baseado no engajamento
+    if (engajamento >= 120) {
+      insights.push(
+        "Imóvel está convertendo acima do esperado para o volume de tráfego.",
+      );
+    } else if (engajamento >= 80) {
+      insights.push("Imóvel dentro da média esperada de conversão.");
+    } else if (engajamento >= 50) {
+      insights.push(
+        "Imóvel abaixo do potencial esperado. Avaliar ajustes no anúncio.",
+      );
+    } else {
+      insights.push(
+        "Alto tráfego com baixa conversão. Ação corretiva recomendada.",
+      );
+    }
+
+    // Insight fixo sobre interessados
+    if (metricsData.interessadosAtivos > 0) {
+      insights.push(
+        `${metricsData.interessadosAtivos} interessado(s) ativo(s) necessitam follow-up imediato.`,
+      );
+    }
+
+    // Insight adicional baseado em métricas
+    const taxaConversao = (
+      ((metricsData.cliquesWhatsApp + metricsData.solicitacoesVisita) /
+        metricsData.visualizacoes) *
+      100
+    ).toFixed(1);
+    if (taxaConversao > 10) {
+      insights.push("Taxa de conversão excepcional (acima de 10%).");
+    }
+
+    return insights;
+  };
+
+  const insights = gerarInsights();
+  const engajamentoInfo = getEngajamentoInfo();
+  const EngajamentoIcon = engajamentoInfo.icon;
+
+  // Dados do imóvel com imagem NOVA
   const imovelCompleto = {
     ...imovel,
+    // NOVA IMAGEM DO LINK QUE VOCÊ ENVIOU
     imagemUrl:
-      "https://images.unsplash.com/photo-1568605114967-8130f3a36994?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&h=250&q=80",
+      "https://adventusimobiliaria.com.br/img/imovei/filename/5/WhatsApp%20Image%202022-09-19%20at%2016.39.15.jpeg",
   };
 
   // Paleta de cores Advents (azul noturno e amarelo dourado)
@@ -46,7 +293,7 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
     },
     amareloDourado: {
       bg: "bg-[#D4A24D]",
-      bgLight: "bg-[#FEF3C7]",
+      bgLight: "bg-[#FEF3C7]", // Amarelo claro da paleta
       text: "text-[#B45309]",
       border: "border-[#F59E0B]",
       gradient: "from-[#D4A24D]/20 to-transparent",
@@ -56,27 +303,41 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
   // Componente de Card de Métrica com cores sutis
   const MetricCard = ({ icon: Icon, value, label, color }) => (
     <div
-      className={`p-4 rounded-xl border ${color.border} ${color.bg} transition-all duration-200 hover:scale-[1.02] hover:shadow-md`}
+      className={`p-3 rounded-xl border ${color.border} ${color.bg} transition-all duration-200 hover:scale-[1.02] hover:shadow-md`}
     >
-      <div className="flex items-center gap-4">
-        <div className={`p-3 rounded-lg ${color.iconBg} ${color.iconText}`}>
-          <Icon className="w-6 h-6" />
+      <div className="flex items-center gap-3">
+        <div className={`p-2 rounded-lg ${color.iconBg} ${color.iconText}`}>
+          <Icon className="w-5 h-5" />
         </div>
         <div className="flex-1">
           {/* Número na cor azul noturno da paleta */}
-          <div className="text-2xl font-bold text-[#0F172A]">
+          <div className="text-xl font-bold text-[#0F172A]">
             {value.toLocaleString()}
           </div>
-          <div className="text-sm text-gray-600 mt-1">{label}</div>
+          <div className="text-xs text-gray-600 mt-1">{label}</div>
         </div>
       </div>
     </div>
   );
 
+  // Função para lidar com o clique em "Marcar como vendido"
+  const handleMarcarComoVendido = () => {
+    // Primeiro atualiza o estado local
+    setLocalMarcadoComoVendido(true);
+
+    // Chama a função de ação passada como prop
+    if (onAction) {
+      onAction("marcarVendido", imovel.id);
+    }
+
+    // NÃO FECHA O MODAL - permanece aberto
+  };
+
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+      {/* ALTURA ORIGINAL RESTAURADA: max-h-[90vh] */}
       <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden border border-gray-300">
-        {/* HEADER com Banner - Altura aumentada */}
+        {/* HEADER com Banner - ALTURA ORIGINAL RESTAURADA: h-56 */}
         <div className="relative">
           <div className="h-56 bg-gradient-to-r from-gray-800 to-gray-900 overflow-hidden">
             <img
@@ -99,25 +360,27 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
               <p className="text-gray-200 font-light">
                 {imovelCompleto.tipo} para{" "}
                 {imovelCompleto.finalidade.toLowerCase()}
+                {localMarcadoComoVendido && " - VENDIDO"}
               </p>
             </div>
           </div>
 
-          {/* Botão Fechar */}
+          {/* Botão Fechar - EM AMARELO */}
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 p-2 bg-black/30 backdrop-blur-md text-white rounded-lg hover:bg-black/50 transition-all duration-200"
+            className="absolute top-4 right-4 p-2 bg-[#D4A24D] text-white rounded-lg hover:bg-[#C19137] transition-all duration-200 shadow-md border border-amber-600"
+            title="Fechar"
           >
             <XMarkIcon className="w-5 h-5" />
           </button>
         </div>
 
-        {/* CONTEÚDO PRINCIPAL */}
+        {/* CONTEÚDO PRINCIPAL - PADDING ORIGINAL RESTAURADO: p-6 */}
         <div className="flex-1 overflow-y-auto p-6">
-          {/* Localização e Preço com Divisória */}
-          <div className="mb-8">
+          {/* Localização e Preço com Divisória - ENDEREÇO EM UMA LINHA */}
+          <div className="mb-6">
             {/* Divisória sutil */}
-            <div className="relative mb-4">
+            <div className="relative mb-3">
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-gray-300"></div>
               </div>
@@ -125,6 +388,11 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
                 <div className="bg-white pr-4">
                   <div className="text-3xl font-bold text-gray-900">
                     {imovelCompleto.preco}
+                    {localMarcadoComoVendido && (
+                      <span className="text-green-600 text-sm ml-2">
+                        ✓ VENDIDO
+                      </span>
+                    )}
                   </div>
                 </div>
                 <div className="bg-white pl-4">
@@ -135,25 +403,22 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
               </div>
             </div>
 
-            {/* Endereço - Menor e mais discreto */}
-            <div className="space-y-1">
-              <div className="flex items-center gap-2 text-gray-700 text-sm">
-                <div className="font-medium text-gray-900">
-                  {imovelCompleto.endereco}
-                </div>
+            {/* Endereço - NOVO FORMATO EM UMA LINHA COM DIVISÓRIA E BAIRRO */}
+            <div className="flex flex-wrap items-center gap-1.5 text-sm text-gray-700">
+              <div className="font-medium text-gray-900">
+                {imovelCompleto.endereco}
               </div>
-              <div className="flex items-center gap-3 text-gray-600 text-sm">
-                <span>{imovelCompleto.bairro}</span>
-                <span className="text-gray-400">•</span>
-                <span className="font-medium">
-                  {imovelCompleto.cidade} - {imovelCompleto.estado}
-                </span>
+              <span className="text-gray-400">•</span>
+              <div className="text-gray-600">{imovelCompleto.bairro}</div>
+              <span className="text-gray-400">|</span>
+              <div className="font-medium text-gray-900">
+                {imovelCompleto.cidade} - {imovelCompleto.estado}
               </div>
             </div>
           </div>
 
           {/* GRID DE MÉTRICAS - Cores suaves com fundo */}
-          <div className="mb-8">
+          <div className="mb-6">
             <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wider mb-4">
               Performance Comercial
             </h3>
@@ -191,15 +456,16 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
                   iconText: "text-purple-600",
                 }}
               />
+              {/* MUDANÇA: Interessados Ativos EM VERMELHO */}
               <MetricCard
                 icon={UserGroupIcon}
                 value={metricsData.interessadosAtivos}
                 label="Interessados Ativos"
                 color={{
-                  bg: "bg-gradient-to-br from-amber-50 to-amber-100/80",
-                  border: "border-amber-200",
-                  iconBg: "bg-amber-100",
-                  iconText: "text-amber-600",
+                  bg: "bg-gradient-to-br from-red-50 to-red-100/80",
+                  border: "border-red-200",
+                  iconBg: "bg-red-100",
+                  iconText: "text-red-600",
                 }}
               />
             </div>
@@ -208,115 +474,295 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
             </div>
           </div>
 
-          {/* BLOCO DE DECISÃO - Cores Advents */}
-          <div className="mb-8">
+          {/* BLOCO DE DECISÃO - CORREÇÕES FINAIS AQUI (AGORA CORRETO) */}
+          <div className="mb-6">
             <div
               className={`rounded-xl p-5 ${palette.amareloDourado.bgLight} border ${palette.amareloDourado.border}`}
             >
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div
-                    className={`p-3 rounded-lg ${palette.amareloDourado.bg} text-white`}
-                  >
-                    <ClockIcon className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm font-medium text-gray-700">
-                        Status:
-                      </span>
-                      <span
-                        className={`px-4 py-1.5 ${palette.azulNoturno.bgLight} text-white text-sm font-medium rounded-full border ${palette.azulNoturno.border}`}
+                {/* Coluna 1: Status e Tempo - CORRIGIDA DEFINITIVAMENTE */}
+                <div className="flex-1 pr-6 border-r border-amber-300">
+                  <div className="flex flex-col items-center justify-center text-center h-full">
+                    {/* APENAS STATUS SEM ÍCONE DE CLASSIFICAÇÃO */}
+                    <div className="mb-4">
+                      <div className="text-sm font-medium text-gray-700 mb-1">
+                        Status
+                      </div>
+                      {/* Status dinâmico - muda para VENDIDO quando marcado */}
+                      <div
+                        className={`px-3 py-1 ${localMarcadoComoVendido ? "bg-green-600 text-white" : palette.azulNoturno.bgLight + " text-white"} text-sm font-medium rounded-full uppercase`}
                       >
-                        {metricsData.status}
-                      </span>
+                        {localMarcadoComoVendido
+                          ? "VENDIDO"
+                          : metricsData.status}
+                      </div>
                     </div>
-                    <div className="text-sm text-gray-700 mt-2">
-                      ⏳ Tempo em negociação:{" "}
-                      <span className="font-bold">
-                        {metricsData.tempoNegociacao}
+
+                    {/* Dias de negociação EM UMA LINHA SÓ COM ÍCONE DE RELÓGIO */}
+                    <div className="flex items-center justify-center gap-2 text-sm text-gray-700">
+                      <ClockIcon className="w-4 h-4" />
+                      <span>
+                        <span className="font-medium">
+                          {localMarcadoComoVendido
+                            ? "Concluído"
+                            : metricsData.tempoNegociacao}
+                        </span>{" "}
+                        {localMarcadoComoVendido
+                          ? "negociação"
+                          : "em negociação"}
                       </span>
                     </div>
                   </div>
                 </div>
-                <div className="text-right">
-                  <div className="text-xs text-gray-600 font-medium">
-                    Engajamento
+
+                {/* Coluna 2: Conversão */}
+                <div className="flex-1 px-6 border-r border-amber-300">
+                  <div className="mb-2">
+                    <div className="text-sm font-medium text-gray-700 mb-1">
+                      Conversão
+                    </div>
+                    <div className="text-2xl font-bold text-gray-900">
+                      {engajamento}%
+                    </div>
                   </div>
-                  <div className="text-xl font-bold text-gray-900">84%</div>
-                  <div className="w-24 h-1.5 bg-gray-300 rounded-full overflow-hidden mt-1">
-                    <div className="h-full bg-green-500 w-3/4"></div>
+                  <div className="w-full h-2 bg-gray-300 rounded-full overflow-hidden mb-1">
+                    <div
+                      className={`h-full ${localMarcadoComoVendido || engajamento >= 100 ? "bg-green-500" : engajamento >= 80 ? "bg-blue-500" : engajamento >= 50 ? "bg-amber-500" : "bg-red-500"}`}
+                      style={{ width: `${Math.min(engajamento / 5, 100)}%` }}
+                    ></div>
+                  </div>
+                  <div className="text-xs text-gray-600">
+                    Meta: <span className="font-medium">5%</span> de conversão
+                  </div>
+                </div>
+
+                {/* Coluna 3: Resultado - AQUI FICAM OS ÍCONES DE CLASSIFICAÇÃO */}
+                <div className="flex-1 pl-6">
+                  <div className="flex flex-col items-center justify-center text-center h-full">
+                    {/* Ícone de classificação - MARGEM AJUSTADA (especialmente para "Atenção") */}
+                    <div className={`${classificacao.marginBottom || "mb-2"}`}>
+                      <div
+                        className={`p-1.5 rounded-lg ${classificacao.bgIcone} ${classificacao.corIcone} flex items-center justify-center mx-auto`}
+                      >
+                        <ClassificacaoIcon className="w-5 h-5" />
+                      </div>
+                    </div>
+
+                    {/* Texto da classificação */}
+                    <div className="mb-2">
+                      <div className={`text-lg font-bold ${classificacao.cor}`}>
+                        {classificacao.label}
+                      </div>
+                    </div>
+
+                    {/* Descrição */}
+                    <div className="mb-3">
+                      <div className="text-sm text-gray-700">
+                        {classificacao.texto}
+                      </div>
+                    </div>
+
+                    {/* Comparativo */}
+                    <div className="text-xs text-gray-600">
+                      Esperado: <span className="font-medium">24%</span> |
+                      Alcançado:{" "}
+                      <span className="font-medium">{engajamento}%</span>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* RESUMO RÁPIDO */}
+          {/* INSIGHTS RÁPIDOS DINÂMICOS */}
           <div className="mb-6">
             <h4 className="text-sm font-semibold text-gray-700 mb-3">
               📊 Insights Rápidos
             </h4>
             <div className="space-y-3">
-              <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-blue-50 to-blue-50/50 rounded-lg border border-blue-200">
-                <CheckCircleIcon className="w-5 h-5 text-green-500 flex-shrink-0" />
-                <span className="text-sm text-gray-700">
-                  <strong className="text-green-600">
-                    Taxa de conversão: 5.2%
-                  </strong>{" "}
-                  (acima da média do mercado)
-                </span>
-              </div>
-              <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-green-50 to-green-50/50 rounded-lg border border-green-200">
-                <CheckCircleIcon className="w-5 h-5 text-green-500 flex-shrink-0" />
-                <span className="text-sm text-gray-700">
-                  <strong className="text-green-600">
-                    12 solicitações de visita
-                  </strong>{" "}
-                  nos últimos 7 dias
-                </span>
-              </div>
-              <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-amber-50 to-amber-50/50 rounded-lg border border-amber-200">
-                <CheckCircleIcon className="w-5 h-5 text-amber-500 flex-shrink-0" />
-                <span className="text-sm text-gray-700">
-                  <strong className="text-amber-600">
-                    3 interessados ativos
-                  </strong>{" "}
-                  necessitam follow-up imediato
+              {insights.map((insight, index) => {
+                // Determinar cor e ícone baseado no tipo de insight
+                let Icon = CheckCircleIcon;
+                let bgColor = "from-blue-50 to-blue-50/50";
+                let borderColor = "border-blue-200";
+                let textColor = "text-gray-700";
+
+                if (localMarcadoComoVendido) {
+                  Icon = CheckBadgeIcon;
+                  bgColor = "from-green-50 to-green-50/50";
+                  borderColor = "border-green-200";
+                  textColor = "text-green-700";
+                } else if (
+                  insight.includes("acima do esperado") ||
+                  insight.includes("excepcional")
+                ) {
+                  Icon = ArrowTrendingUpIcon;
+                  bgColor = "from-green-50 to-green-50/50";
+                  borderColor = "border-green-200";
+                  textColor = "text-green-700";
+                } else if (
+                  insight.includes("abaixo") ||
+                  insight.includes("baixa conversão")
+                ) {
+                  Icon = ExclamationTriangleIcon;
+                  bgColor = "from-red-50 to-red-50/50";
+                  borderColor = "border-red-200";
+                  textColor = "text-red-700";
+                } else if (
+                  insight.includes("interessado") ||
+                  insight.includes("follow-up")
+                ) {
+                  Icon = UserGroupIcon;
+                  bgColor = "from-amber-50 to-amber-50/50";
+                  borderColor = "border-amber-200";
+                  textColor = "text-amber-700";
+                }
+
+                return (
+                  <div
+                    key={index}
+                    className={`flex items-center gap-3 p-3 bg-gradient-to-r ${bgColor} rounded-lg border ${borderColor}`}
+                  >
+                    <Icon className={`w-5 h-5 ${textColor} flex-shrink-0`} />
+                    <span className={`text-sm ${textColor}`}>{insight}</span>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Nota sobre métricas */}
+            <div className="mt-4 pt-4 border-t border-gray-200">
+              <div className="text-xs text-gray-500 text-center italic">
+                <span className="text-gray-600 font-medium">
+                  * Classificação automática baseada no engajamento
                 </span>
               </div>
             </div>
           </div>
         </div>
 
-        {/* AÇÕES - Footer REDUZIDO */}
-        <div className="border-t border-gray-300 p-4 bg-gradient-to-r from-gray-50 to-gray-100/50">
+        {/* AÇÕES - Footer COM BOTÃO "MARCAR COMO VENDIDO" ATUALIZADO */}
+        <div className="border-t border-gray-300 p-4 bg-gradient-to-r from-gray-50 to-gray-100/50 relative">
+          {/* Tooltip de Informação sobre o cálculo */}
+          {showTooltipInfo && (
+            <div className="absolute bottom-full left-4 mb-2 w-80 bg-white border border-gray-300 rounded-lg shadow-xl z-50 p-4">
+              {/* Seta do tooltip */}
+              <div className="absolute top-full left-6 transform -translate-x-1/2 border-8 border-transparent border-t-white"></div>
+
+              <div className="space-y-3">
+                {/* Título */}
+                <div className="flex items-center gap-2">
+                  <div className="p-1.5 bg-blue-100 rounded-lg">
+                    <InformationCircleIcon className="w-5 h-5 text-blue-600" />
+                  </div>
+                  <h5 className="font-bold text-gray-900 text-sm">
+                    Índice de Performance Comercial
+                  </h5>
+                </div>
+
+                {/* Descrição */}
+                <p className="text-gray-700 text-sm">
+                  Este indicador mostra o nível de interesse real gerado por
+                  este imóvel com base nas interações dos usuários.
+                </p>
+
+                {/* Critérios de pontuação */}
+                <div>
+                  <h6 className="font-semibold text-gray-800 text-sm mb-1">
+                    Critérios de pontuação:
+                  </h6>
+                  <ul className="text-gray-700 text-sm space-y-1 ml-2">
+                    <li className="flex items-start">
+                      <span className="text-blue-600 mr-2">•</span>
+                      <span>
+                        <strong>Visualização do imóvel:</strong> 1 ponto
+                      </span>
+                    </li>
+                    <li className="flex items-start">
+                      <span className="text-green-600 mr-2">•</span>
+                      <span>
+                        <strong>Clique no WhatsApp:</strong> 10 pontos
+                      </span>
+                    </li>
+                    <li className="flex items-start">
+                      <span className="text-purple-600 mr-2">•</span>
+                      <span>
+                        <strong>Solicitação de visita:</strong> 50 pontos
+                      </span>
+                    </li>
+                  </ul>
+                </div>
+
+                {/* Regra de cálculo */}
+                <div>
+                  <h6 className="font-semibold text-gray-800 text-sm mb-1">
+                    Regra de cálculo:
+                  </h6>
+                  <p className="text-gray-700 text-sm">
+                    A meta de 100% é atingida quando 5% do total de
+                    visualizações se convertem em ações comerciais ponderadas
+                    por pontuação.
+                  </p>
+                </div>
+
+                {/* Observação */}
+                <div className="pt-2 border-t border-gray-200">
+                  <p className="text-gray-700 text-sm italic">
+                    <strong>Observação:</strong> Quanto maior o índice, maior o
+                    potencial de conversão comercial do imóvel.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            {/* Texto reduzido para 5 palavras */}
-            <div className="text-sm text-gray-600">
-              <span className="font-medium text-gray-800">
-                Tomada de decisão estratégica
+            {/* RETÂNGULO ARREDONDADO COM TEXTO E ÍCONE - AMARELO CLARO DA PALETA */}
+            <div
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-amber-300 bg-amber-50 transition-all duration-200 hover:bg-amber-100 hover:border-amber-400 cursor-help"
+              onMouseEnter={() => setShowTooltipInfo(true)}
+              onMouseLeave={() => setShowTooltipInfo(false)}
+              onTouchStart={() => setShowTooltipInfo(!showTooltipInfo)}
+            >
+              {/* Ícone de informação */}
+              <div className="p-1 bg-amber-100 border border-amber-200 rounded-md">
+                <InformationCircleIcon className="w-3.5 h-3.5 text-amber-700" />
+              </div>
+
+              {/* Texto "Como calculamos a conversão" */}
+              <span className="text-xs font-medium text-amber-800 whitespace-nowrap">
+                Como calculamos a conversão
               </span>
             </div>
 
-            {/* Botões com mesma altura */}
+            {/* Botões com mesma altura - ESPAÇAMENTO AJUSTADO */}
             <div className="flex items-center gap-3">
-              {/* Botão Fechar - Azul noturno */}
+              {/* Botão Fechar - Azul noturno - MAIS PARA A ESQUERDA */}
               <button
                 onClick={onClose}
-                className={`px-5 py-2.5 text-white ${palette.azulNoturno.bg} border ${palette.azulNoturno.border} rounded-lg hover:opacity-90 transition-all duration-200 font-medium shadow-sm hover:shadow flex items-center gap-2`}
+                className={`px-4 py-2.5 text-white ${palette.azulNoturno.bg} border ${palette.azulNoturno.border} rounded-lg hover:opacity-90 transition-all duration-200 font-medium shadow-sm hover:shadow flex items-center gap-2 mr-2`}
               >
                 <XMarkIcon className="w-4 h-4" />
                 Fechar
               </button>
 
-              {/* Botão Marcar como Vendido - Sofisticado com ícone checkbox */}
+              {/* Botão Marcar como Vendido / VENDIDO - ESTADO DINÂMICO */}
               <button
-                onClick={() => onAction && onAction("marcarVendido", imovel.id)}
-                className={`px-5 py-2.5 bg-white text-gray-800 border border-gray-400 rounded-lg hover:bg-gray-50 transition-all duration-200 font-medium shadow-sm hover:shadow flex items-center gap-2`}
+                onClick={handleMarcarComoVendido}
+                disabled={localMarcadoComoVendido}
+                className={`px-4 py-2.5 ${localMarcadoComoVendido ? "bg-green-600 text-white hover:bg-green-700 cursor-default" : "bg-white text-gray-800 border border-gray-400 hover:bg-gray-50"} rounded-lg transition-all duration-200 font-medium shadow-sm hover:shadow flex items-center gap-2 ${localMarcadoComoVendido ? "opacity-90" : ""}`}
               >
-                <CheckBadgeIcon className="w-4 h-4 text-green-600" />
-                Marcar Vendido
+                {localMarcadoComoVendido ? (
+                  <>
+                    <CheckBadgeIcon className="w-4 h-4" />
+                    VENDIDO
+                  </>
+                ) : (
+                  <>
+                    <CheckBadgeIcon className="w-4 h-4 text-green-600" />
+                    Marcar como vendido
+                  </>
+                )}
               </button>
             </div>
           </div>
@@ -326,29 +772,33 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
   );
 };
 
-// Componente Wrapper para o botão Visualizar
-const BotaoVisualizarPerformance = ({ imovel }) => {
+// Componente Wrapper para o botão Desempenho
+const BotaoDesempenho = ({ imovel }) => {
   const [modalAberto, setModalAberto] = useState(false);
 
   const handleAcaoModal = (acao, imovelId) => {
     console.log(`Ação: ${acao} no imóvel ID: ${imovelId}`);
-    setModalAberto(false);
-    // Aqui você implementaria a lógica de ação (API call, etc.)
+
+    if (acao === "marcarVendido") {
+      // Aqui você implementaria a lógica de ação (API call, etc.)
+      // Atualizar o status do imóvel no backend
+      // NÃO fecha o modal aqui - isso é controlado dentro do modal
+    }
   };
 
   return (
     <>
-      {/* Botão Visualizar na tabela */}
+      {/* Botão Desempenho na tabela */}
       <div className="relative group">
         <button
           onClick={() => setModalAberto(true)}
           className="p-1.5 bg-gradient-to-r from-green-600 to-green-500 text-white rounded-lg hover:from-green-700 hover:to-green-600 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 shadow-sm"
-          title="Visualizar Performance"
+          title="Desempenho"
         >
-          <EyeIcon className="w-4 h-4" />
+          <ChartBarIcon className="w-4 h-4" />
         </button>
         <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none whitespace-nowrap z-10">
-          Dashboard Performance
+          Desempenho
           <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
         </div>
       </div>
@@ -365,7 +815,7 @@ const BotaoVisualizarPerformance = ({ imovel }) => {
   );
 };
 
-// O resto do código permanece exatamente igual...
+// Componente principal Imoveis
 const Imoveis = () => {
   // Estados para os filtros
   const [searchTerm, setSearchTerm] = useState("");
@@ -374,8 +824,9 @@ const Imoveis = () => {
   const [selectedStatus, setSelectedStatus] = useState("");
   const [selectedCidade, setSelectedCidade] = useState("");
 
-  // Dados dos imóveis
+  // Dados dos imóveis - COM OS 4 ESTADOS BEM DISTRIBUÍDOS
   const imoveisData = [
+    // GRUPO 1: EXCELENTE (IDs 1-3) - engajamento ≥ 120%
     {
       id: 1,
       codigo: "APT-001",
@@ -387,6 +838,7 @@ const Imoveis = () => {
       estado: "MA",
       status: "Disponível",
       preco: "R$ 250.000,00",
+      desempenho: "Excelente",
     },
     {
       id: 2,
@@ -399,6 +851,7 @@ const Imoveis = () => {
       estado: "MA",
       status: "Alugado",
       preco: "R$ 1.200,00/mês",
+      desempenho: "Excelente",
     },
     {
       id: 3,
@@ -409,9 +862,12 @@ const Imoveis = () => {
       bairro: "Jardim Glória City",
       cidade: "Imperatriz",
       estado: "MA",
-      status: "Vendido",
+      status: "Vendido", // Este é vendido na tabela, mas no modal começa como disponível
       preco: "R$ 180.000,00",
+      desempenho: "Excelente",
     },
+
+    // GRUPO 2: SAUDÁVEL (IDs 4-6) - engajamento 80-119%
     {
       id: 4,
       codigo: "TER-004",
@@ -423,6 +879,7 @@ const Imoveis = () => {
       estado: "MA",
       status: "Disponível",
       preco: "R$ 85.000,00",
+      desempenho: "Saudável",
     },
     {
       id: 5,
@@ -435,6 +892,7 @@ const Imoveis = () => {
       estado: "PA",
       status: "Reservado",
       preco: "R$ 320.000,00",
+      desempenho: "Saudável",
     },
     {
       id: 6,
@@ -447,7 +905,10 @@ const Imoveis = () => {
       estado: "MA",
       status: "Disponível",
       preco: "R$ 950,00/mês",
+      desempenho: "Saudável",
     },
+
+    // GRUPO 3: ATENÇÃO (IDs 7-9) - engajamento 50-79%
     {
       id: 7,
       codigo: "CS-007",
@@ -459,6 +920,7 @@ const Imoveis = () => {
       estado: "MA",
       status: "Vendido",
       preco: "R$ 210.000,00",
+      desempenho: "Atenção",
     },
     {
       id: 8,
@@ -471,6 +933,61 @@ const Imoveis = () => {
       estado: "MA",
       status: "Alugado",
       preco: "R$ 1.100,00/mês",
+      desempenho: "Atenção",
+    },
+    {
+      id: 9,
+      codigo: "CS-009",
+      finalidade: "Venda",
+      tipo: "Casa",
+      endereco: "Rua das Palmeiras, 321",
+      bairro: "Jardim Europa",
+      cidade: "Açailândia",
+      estado: "MA",
+      status: "Disponível",
+      preco: "R$ 280.000,00",
+      desempenho: "Atenção",
+    },
+
+    // GRUPO 4: CRÍTICO (IDs 10-12) - engajamento < 50%
+    {
+      id: 10,
+      codigo: "APT-010",
+      finalidade: "Aluguel",
+      tipo: "Apartamento",
+      endereco: "Rua dos Ipês, 789",
+      bairro: "Centro",
+      cidade: "Imperatriz",
+      estado: "MA",
+      status: "Disponível",
+      preco: "R$ 1.050,00/mês",
+      desempenho: "Crítico",
+    },
+    {
+      id: 11,
+      codigo: "TER-011",
+      finalidade: "Venda",
+      tipo: "Terreno",
+      endereco: "Av. Principal, 1500",
+      bairro: "Vila Nova",
+      cidade: "Itinga",
+      estado: "MA",
+      status: "Disponível",
+      preco: "R$ 75.000,00",
+      desempenho: "Crítico",
+    },
+    {
+      id: 12,
+      codigo: "CS-012",
+      finalidade: "Venda",
+      tipo: "Casa",
+      endereco: "Rua Nova Esperança, 550",
+      bairro: "Centro",
+      cidade: "Dom Eliseu",
+      estado: "PA",
+      status: "Disponível",
+      preco: "R$ 190.000,00",
+      desempenho: "Crítico",
     },
   ];
 
@@ -850,8 +1367,8 @@ const Imoveis = () => {
                     {/* Ações */}
                     <td className="w-[120px] p-3 text-center">
                       <div className="flex items-center justify-center gap-1.5">
-                        {/* Botão Visualizar Performance */}
-                        <BotaoVisualizarPerformance imovel={imovel} />
+                        {/* Botão Desempenho */}
+                        <BotaoDesempenho imovel={imovel} />
 
                         {/* Botão Editar */}
                         <div className="relative group">

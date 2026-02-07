@@ -9,10 +9,19 @@ const DetalheImovel = lazy(() => import("./pages/DetalheImovel"));
 
 // Lazy loading das páginas do ADMIN
 const AdminLayout = lazy(() => import("./componentes/admin/AdminLayout"));
-const AdminDashboard = lazy(() => import("./pages/admin/admin"));
-const AdminImoveis = lazy(() => import("./pages/admin/imoveis"));
-const AdminCorretores = lazy(() => import("./pages/admin/corretores"));
-const AdminLeads = lazy(() => import("./pages/admin/leads"));
+const AdminDashboard = lazy(() => import("./pages/Admin/admin"));
+const AdminImoveis = lazy(() => import("./pages/Admin/imoveis"));
+const AdminCorretores = lazy(() => import("./pages/Admin/corretores"));
+const AdminLeads = lazy(() => import("./pages/Admin/leads"));
+const AdminCandidatos = lazy(() => import("./pages/Admin/candidatos"));
+
+// Novas páginas para gerenciamento de localidades
+const AdminEstados = lazy(() => import("./pages/Admin/estados"));
+const AdminCidades = lazy(() => import("./pages/Admin/cidades"));
+const AdminBairros = lazy(() => import("./pages/Admin/bairros"));
+
+// Página de visitas
+const AdminVisitas = lazy(() => import("./pages/Admin/visitas"));
 
 // Páginas simples (mantenha como está)
 function Institucional() {
@@ -138,7 +147,6 @@ function AppRoutes() {
           />
 
           {/* ============ ROTAS DO ADMIN ============ */}
-          {/* IMPORTANTE: Estas rotas DEVEM ficar DEPOIS da rota 404 */}
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<AdminDashboard />} /> {/* /admin */}
             <Route path="imoveis" element={<AdminImoveis />} />{" "}
@@ -146,6 +154,18 @@ function AppRoutes() {
             <Route path="corretores" element={<AdminCorretores />} />{" "}
             {/* /admin/corretores */}
             <Route path="leads" element={<AdminLeads />} /> {/* /admin/leads */}
+            <Route path="candidatos" element={<AdminCandidatos />} />{" "}
+            {/* /admin/candidatos */}
+            {/* Novas rotas para gerenciamento de localidades */}
+            <Route path="estados" element={<AdminEstados />} />{" "}
+            {/* /admin/estados */}
+            <Route path="cidades" element={<AdminCidades />} />{" "}
+            {/* /admin/cidades */}
+            <Route path="bairros" element={<AdminBairros />} />{" "}
+            {/* /admin/bairros */}
+            {/* Nova rota para visitas */}
+            <Route path="visitas" element={<AdminVisitas />} />{" "}
+            {/* /admin/visitas */}
           </Route>
         </Routes>
       </Suspense>
