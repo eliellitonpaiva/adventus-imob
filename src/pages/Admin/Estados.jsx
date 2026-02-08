@@ -8,8 +8,11 @@ import {
   ChevronUpDownIcon,
 } from "@heroicons/react/24/outline";
 import Button from "../../componentes/ui/Button";
+import { useTheme } from "../../contexts/ThemeContext"; // Importando o contexto de tema
 
 const Estados = () => {
+  const { isDark } = useTheme(); // Hook para verificar se está no modo escuro
+
   // Dados de exemplo - APENAS MARANHÃO
   const [estados, setEstados] = useState([
     { id: 1, uf: "MA", nome: "Maranhão", regiao: "Nordeste" },
@@ -151,13 +154,46 @@ const Estados = () => {
     setEstadoEditando(null);
   };
 
+  // Funções de estilo baseadas no tema
+  const getBadgeClass = () => {
+    return isDark
+      ? "px-3 py-1 inline-flex text-xs leading-5 font-medium rounded-full bg-gray-700 text-gray-300"
+      : "px-3 py-1 inline-flex text-xs leading-5 font-medium rounded-full bg-gray-100 text-gray-800";
+  };
+
+  const getTooltipClass = () => {
+    return isDark
+      ? "absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-700 text-gray-300 text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap"
+      : "absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap";
+  };
+
+  const getTooltipArrowClass = () => {
+    return isDark
+      ? "absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-700"
+      : "absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-800";
+  };
+
+  const getSelectClass = () => {
+    return isDark
+      ? "w-full border border-gray-600 bg-gray-800 text-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 appearance-none"
+      : "w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 appearance-none";
+  };
+
   return (
-    <div className="p-6">
+    <div
+      className={`min-h-screen p-6 ${isDark ? "bg-gray-900" : "bg-gray-50"}`}
+    >
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Estados</h1>
-          <p className="text-gray-600">Gerencie os estados brasileiros</p>
+          <h1
+            className={`text-2xl font-bold ${isDark ? "text-gray-100" : "text-gray-900"}`}
+          >
+            Estados
+          </h1>
+          <p className={isDark ? "text-gray-400" : "text-gray-600"}>
+            Gerencie os estados brasileiros
+          </p>
         </div>
         <Button variant="primary" onClick={handleNovoEstado}>
           <PlusIcon className="w-4 h-4 mr-2" />
@@ -166,56 +202,118 @@ const Estados = () => {
       </div>
 
       {/* Tabela - USANDO CSS GRID PARA CONTROLE PRECISO */}
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+      <div
+        className={`rounded-lg border overflow-hidden ${
+          isDark ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"
+        }`}
+      >
         <div className="overflow-x-auto">
           {/* Cabeçalho da tabela com grid */}
-          <div className="grid grid-cols-5 gap-0 bg-gray-50 border-b border-gray-200">
-            <div className="p-4 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">
+          <div
+            className={`grid grid-cols-5 gap-0 border-b ${
+              isDark
+                ? "bg-gray-700 border-gray-600"
+                : "bg-gray-50 border-gray-200"
+            }`}
+          >
+            <div
+              className={`p-4 text-center text-xs font-semibold uppercase tracking-wider ${
+                isDark ? "text-gray-300" : "text-gray-500"
+              }`}
+            >
               ID
             </div>
-            <div className="p-4 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">
+            <div
+              className={`p-4 text-center text-xs font-semibold uppercase tracking-wider ${
+                isDark ? "text-gray-300" : "text-gray-500"
+              }`}
+            >
               UF
             </div>
-            <div className="p-4 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">
+            <div
+              className={`p-4 text-center text-xs font-semibold uppercase tracking-wider ${
+                isDark ? "text-gray-300" : "text-gray-500"
+              }`}
+            >
               Nome
             </div>
-            <div className="p-4 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">
+            <div
+              className={`p-4 text-center text-xs font-semibold uppercase tracking-wider ${
+                isDark ? "text-gray-300" : "text-gray-500"
+              }`}
+            >
               Região
             </div>
-            <div className="p-4 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">
+            <div
+              className={`p-4 text-center text-xs font-semibold uppercase tracking-wider ${
+                isDark ? "text-gray-300" : "text-gray-500"
+              }`}
+            >
               Ações
             </div>
           </div>
 
           {/* Corpo da tabela */}
-          <div className="divide-y divide-gray-200">
+          <div
+            className={
+              isDark ? "divide-y divide-gray-700" : "divide-y divide-gray-200"
+            }
+          >
             {estados.map((estado) => (
               <div
                 key={estado.id}
-                className="grid grid-cols-5 gap-0 hover:bg-gray-50"
+                className={`grid grid-cols-5 gap-0 ${
+                  isDark ? "hover:bg-gray-700/50" : "hover:bg-gray-50"
+                }`}
               >
-                <div className="p-4 flex items-center justify-center border-r border-gray-200">
-                  <div className="text-sm font-medium text-gray-900">
+                <div
+                  className={`p-4 flex items-center justify-center border-r ${
+                    isDark ? "border-gray-700" : "border-gray-200"
+                  }`}
+                >
+                  <div
+                    className={`text-sm font-medium ${
+                      isDark ? "text-gray-300" : "text-gray-900"
+                    }`}
+                  >
                     {estado.id}
                   </div>
                 </div>
 
-                <div className="p-4 flex items-center justify-center border-r border-gray-200">
-                  <div className="text-sm font-semibold text-gray-900">
+                <div
+                  className={`p-4 flex items-center justify-center border-r ${
+                    isDark ? "border-gray-700" : "border-gray-200"
+                  }`}
+                >
+                  <div
+                    className={`text-sm font-semibold ${
+                      isDark ? "text-gray-200" : "text-gray-900"
+                    }`}
+                  >
                     {estado.uf}
                   </div>
                 </div>
 
-                <div className="p-4 flex items-center justify-center border-r border-gray-200">
-                  <div className="text-sm text-gray-900 text-center">
+                <div
+                  className={`p-4 flex items-center justify-center border-r ${
+                    isDark ? "border-gray-700" : "border-gray-200"
+                  }`}
+                >
+                  <div
+                    className={`text-sm text-center ${
+                      isDark ? "text-gray-300" : "text-gray-900"
+                    }`}
+                  >
                     {estado.nome}
                   </div>
                 </div>
 
-                <div className="p-4 flex items-center justify-center border-r border-gray-200">
-                  <span className="px-3 py-1 inline-flex text-xs leading-5 font-medium rounded-full bg-gray-100 text-gray-800">
-                    {estado.regiao}
-                  </span>
+                <div
+                  className={`p-4 flex items-center justify-center border-r ${
+                    isDark ? "border-gray-700" : "border-gray-200"
+                  }`}
+                >
+                  <span className={getBadgeClass()}>{estado.regiao}</span>
                 </div>
 
                 <div className="p-4 flex items-center justify-center">
@@ -230,9 +328,9 @@ const Estados = () => {
                         <PencilIcon className="w-4 h-4" />
                       </button>
                       {/* Tooltip */}
-                      <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+                      <div className={getTooltipClass()}>
                         Editar
-                        <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-800"></div>
+                        <div className={getTooltipArrowClass()}></div>
                       </div>
                     </div>
 
@@ -246,9 +344,9 @@ const Estados = () => {
                         <TrashIcon className="w-4 h-4" />
                       </button>
                       {/* Tooltip */}
-                      <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+                      <div className={getTooltipClass()}>
                         Excluir
-                        <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-800"></div>
+                        <div className={getTooltipArrowClass()}></div>
                       </div>
                     </div>
                   </div>
@@ -262,9 +360,21 @@ const Estados = () => {
       {/* Modal para cadastro/edição */}
       {modalAberto && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
-            <div className="flex items-center justify-between p-6 border-b">
-              <h2 className="text-lg font-semibold text-gray-900">
+          <div
+            className={`rounded-lg shadow-xl w-full max-w-md ${
+              isDark ? "bg-gray-800 border border-gray-700" : "bg-white"
+            }`}
+          >
+            <div
+              className={`flex items-center justify-between p-6 border-b ${
+                isDark ? "border-gray-700" : "border-gray-200"
+              }`}
+            >
+              <h2
+                className={`text-lg font-semibold ${
+                  isDark ? "text-gray-100" : "text-gray-900"
+                }`}
+              >
                 {estadoEditando ? "Editar Estado" : "Novo Estado"}
               </h2>
               <button
@@ -272,7 +382,11 @@ const Estados = () => {
                   setModalAberto(false);
                   handleResetModal();
                 }}
-                className="p-1 hover:bg-gray-100 rounded-lg"
+                className={`p-1 rounded-lg ${
+                  isDark
+                    ? "hover:bg-gray-700 text-gray-400"
+                    : "hover:bg-gray-100"
+                }`}
               >
                 <XMarkIcon className="w-5 h-5" />
               </button>
@@ -281,7 +395,11 @@ const Estados = () => {
             <form onSubmit={handleSubmit}>
               <div className="p-6 space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label
+                    className={`block text-sm font-medium mb-1 ${
+                      isDark ? "text-gray-300" : "text-gray-700"
+                    }`}
+                  >
                     UF *
                   </label>
                   <div className="relative">
@@ -289,22 +407,36 @@ const Estados = () => {
                       name="uf"
                       value={formData.uf}
                       onChange={(e) => handleUfChange(e.target.value)}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 appearance-none"
+                      className={getSelectClass()}
                       required
                     >
-                      <option value="">Selecione uma UF</option>
+                      <option value="" className={isDark ? "bg-gray-800" : ""}>
+                        Selecione uma UF
+                      </option>
                       {estadosBrasileiros.map((estado) => (
-                        <option key={estado.uf} value={estado.uf}>
+                        <option
+                          key={estado.uf}
+                          value={estado.uf}
+                          className={isDark ? "bg-gray-800" : ""}
+                        >
                           {estado.uf}
                         </option>
                       ))}
                     </select>
-                    <ChevronUpDownIcon className="w-5 h-5 absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" />
+                    <ChevronUpDownIcon
+                      className={`w-5 h-5 absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none ${
+                        isDark ? "text-gray-500" : "text-gray-400"
+                      }`}
+                    />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label
+                    className={`block text-sm font-medium mb-1 ${
+                      isDark ? "text-gray-300" : "text-gray-700"
+                    }`}
+                  >
                     Nome do Estado *
                   </label>
                   <div className="relative">
@@ -312,22 +444,36 @@ const Estados = () => {
                       name="nome"
                       value={formData.nome}
                       onChange={(e) => handleNomeChange(e.target.value)}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 appearance-none"
+                      className={getSelectClass()}
                       required
                     >
-                      <option value="">Selecione um estado</option>
+                      <option value="" className={isDark ? "bg-gray-800" : ""}>
+                        Selecione um estado
+                      </option>
                       {estadosBrasileiros.map((estado) => (
-                        <option key={estado.nome} value={estado.nome}>
+                        <option
+                          key={estado.nome}
+                          value={estado.nome}
+                          className={isDark ? "bg-gray-800" : ""}
+                        >
                           {estado.nome}
                         </option>
                       ))}
                     </select>
-                    <ChevronUpDownIcon className="w-5 h-5 absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" />
+                    <ChevronUpDownIcon
+                      className={`w-5 h-5 absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none ${
+                        isDark ? "text-gray-500" : "text-gray-400"
+                      }`}
+                    />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label
+                    className={`block text-sm font-medium mb-1 ${
+                      isDark ? "text-gray-300" : "text-gray-700"
+                    }`}
+                  >
                     Região *
                   </label>
                   <div className="relative">
@@ -335,22 +481,38 @@ const Estados = () => {
                       name="regiao"
                       value={formData.regiao}
                       onChange={handleInputChange}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 appearance-none"
+                      className={getSelectClass()}
                       required
                     >
-                      <option value="">Selecione uma região</option>
+                      <option value="" className={isDark ? "bg-gray-800" : ""}>
+                        Selecione uma região
+                      </option>
                       {regioes.map((regiao) => (
-                        <option key={regiao} value={regiao}>
+                        <option
+                          key={regiao}
+                          value={regiao}
+                          className={isDark ? "bg-gray-800" : ""}
+                        >
                           {regiao}
                         </option>
                       ))}
                     </select>
-                    <ChevronUpDownIcon className="w-5 h-5 absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" />
+                    <ChevronUpDownIcon
+                      className={`w-5 h-5 absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none ${
+                        isDark ? "text-gray-500" : "text-gray-400"
+                      }`}
+                    />
                   </div>
                 </div>
               </div>
 
-              <div className="p-6 border-t bg-gray-50 flex justify-end gap-3">
+              <div
+                className={`p-6 border-t flex justify-end gap-3 ${
+                  isDark
+                    ? "border-gray-700 bg-gray-800"
+                    : "bg-gray-50 border-gray-200"
+                }`}
+              >
                 <Button
                   type="button"
                   variant="secondary"

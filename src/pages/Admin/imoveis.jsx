@@ -21,14 +21,16 @@ import {
   InformationCircleIcon,
 } from "@heroicons/react/24/outline";
 import Button from "../../componentes/ui/Button";
+import { useTheme } from "../../contexts/ThemeContext";
 
 // Componente Modal Performance
 const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
+  const { isDark } = useTheme();
+
   // Estado para controlar a visibilidade do tooltip de informação
   const [showTooltipInfo, setShowTooltipInfo] = useState(false);
 
   // Estado local para controlar se o imóvel foi marcado como vendido DURANTE esta sessão do modal
-  // INICIA SEMPRE COMO FALSE - NUNCA baseado no status do imóvel
   const [localMarcadoComoVendido, setLocalMarcadoComoVendido] = useState(false);
 
   // Dados de performance mockados - DINÂMICOS baseado no estado de desempenho do imóvel
@@ -39,17 +41,17 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
         visualizacoes: 247,
         cliquesWhatsApp: 48,
         solicitacoesVisita: 12,
-        interessadosAtivos: 0, // Zera interessados ativos quando vendido
+        interessadosAtivos: 0,
         status: "VENDIDO",
         tempoNegociacao: "Concluído",
         ultimaAtualizacao: "Agora mesmo",
-        engajamentoCalculado: 150, // Engajamento alto quando vendido
+        engajamentoCalculado: 150,
       };
     }
 
     // Agora usamos o campo 'desempenho' do imóvel para determinar os dados
     switch (imovel.desempenho) {
-      case "Excelente": // Engajamento ≥ 120%
+      case "Excelente":
         return {
           visualizacoes: 247,
           cliquesWhatsApp: 48,
@@ -58,9 +60,9 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
           status: "Em Negociação",
           tempoNegociacao: "10 dias",
           ultimaAtualizacao: "2 horas atrás",
-          engajamentoCalculado: 125, // Valor fixo para demonstração
+          engajamentoCalculado: 125,
         };
-      case "Saudável": // Engajamento 80-119%
+      case "Saudável":
         return {
           visualizacoes: 180,
           cliquesWhatsApp: 18,
@@ -71,7 +73,7 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
           ultimaAtualizacao: "1 hora atrás",
           engajamentoCalculado: 95,
         };
-      case "Atenção": // Engajamento 50-79%
+      case "Atenção":
         return {
           visualizacoes: 150,
           cliquesWhatsApp: 10,
@@ -82,7 +84,7 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
           ultimaAtualizacao: "3 horas atrás",
           engajamentoCalculado: 65,
         };
-      case "Crítico": // Engajamento < 50%
+      case "Crítico":
         return {
           visualizacoes: 200,
           cliquesWhatsApp: 6,
@@ -93,7 +95,7 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
           ultimaAtualizacao: "5 horas atrás",
           engajamentoCalculado: 35,
         };
-      default: // Default - Excelente
+      default:
         return {
           visualizacoes: 247,
           cliquesWhatsApp: 48,
@@ -116,7 +118,6 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
 
   // Cálculo do engajamento baseado na regra de negócio
   const calcularEngajamento = () => {
-    // Retorna o engajamento pré-calculado baseado no estado
     return metricsData.engajamentoCalculado;
   };
 
@@ -147,7 +148,7 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
         bgIcone: "bg-yellow-50",
         Icone: StarIcon,
         iconSize: "w-5 h-5",
-        marginBottom: "mb-2", // MARGEM REDUZIDA
+        marginBottom: "mb-2",
       };
     } else if (engajamento >= 80) {
       return {
@@ -158,7 +159,7 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
         bgIcone: "bg-green-50",
         Icone: CheckCircleIcon,
         iconSize: "w-5 h-5",
-        marginBottom: "mb-2", // MARGEM REDUZIDA
+        marginBottom: "mb-2",
       };
     } else if (engajamento >= 50) {
       return {
@@ -169,7 +170,7 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
         bgIcone: "bg-amber-100",
         Icone: ExclamationTriangleIcon,
         iconSize: "w-5 h-5",
-        marginBottom: "mb-1", // MARGEM MUITO REDUZIDA (para Atenção)
+        marginBottom: "mb-1",
       };
     } else {
       return {
@@ -180,7 +181,7 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
         bgIcone: "bg-red-50",
         Icone: ExclamationCircleIcon,
         iconSize: "w-5 h-5",
-        marginBottom: "mb-2", // MARGEM REDUZIDA
+        marginBottom: "mb-2",
       };
     }
   };
@@ -274,15 +275,14 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
   const engajamentoInfo = getEngajamentoInfo();
   const EngajamentoIcon = engajamentoInfo.icon;
 
-  // Dados do imóvel com imagem NOVA
+  // Dados do imóvel com imagem
   const imovelCompleto = {
     ...imovel,
-    // NOVA IMAGEM DO LINK QUE VOCÊ ENVIOU
     imagemUrl:
       "https://adventusimobiliaria.com.br/img/imovei/filename/5/WhatsApp%20Image%202022-09-19%20at%2016.39.15.jpeg",
   };
 
-  // Paleta de cores Advents (azul noturno e amarelo dourado)
+  // Paleta de cores Advents
   const palette = {
     azulNoturno: {
       bg: "bg-[#0F172A]",
@@ -293,7 +293,7 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
     },
     amareloDourado: {
       bg: "bg-[#D4A24D]",
-      bgLight: "bg-[#FEF3C7]", // Amarelo claro da paleta
+      bgLight: "bg-[#FEF3C7]",
       text: "text-[#B45309]",
       border: "border-[#F59E0B]",
       gradient: "from-[#D4A24D]/20 to-transparent",
@@ -303,18 +303,23 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
   // Componente de Card de Métrica com cores sutis
   const MetricCard = ({ icon: Icon, value, label, color }) => (
     <div
-      className={`p-3 rounded-xl border ${color.border} ${color.bg} transition-all duration-200 hover:scale-[1.02] hover:shadow-md`}
+      className={`p-3 rounded-xl border ${color.border} ${color.bg} transition-all duration-200 hover:scale-[1.02] hover:shadow-md ${isDark ? "dark:border-gray-700" : ""}`}
     >
       <div className="flex items-center gap-3">
         <div className={`p-2 rounded-lg ${color.iconBg} ${color.iconText}`}>
           <Icon className="w-5 h-5" />
         </div>
         <div className="flex-1">
-          {/* Número na cor azul noturno da paleta */}
-          <div className="text-xl font-bold text-[#0F172A]">
+          <div
+            className={`text-xl font-bold ${isDark ? "text-gray-200" : "text-[#0F172A]"}`}
+          >
             {value.toLocaleString()}
           </div>
-          <div className="text-xs text-gray-600 mt-1">{label}</div>
+          <div
+            className={`text-xs ${isDark ? "text-gray-400" : "text-gray-600"} mt-1`}
+          >
+            {label}
+          </div>
         </div>
       </div>
     </div>
@@ -322,22 +327,20 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
 
   // Função para lidar com o clique em "Marcar como vendido"
   const handleMarcarComoVendido = () => {
-    // Primeiro atualiza o estado local
     setLocalMarcadoComoVendido(true);
-
-    // Chama a função de ação passada como prop
     if (onAction) {
       onAction("marcarVendido", imovel.id);
     }
-
-    // NÃO FECHA O MODAL - permanece aberto
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
-      {/* ALTURA ORIGINAL RESTAURADA: max-h-[90vh] */}
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden border border-gray-300">
-        {/* HEADER com Banner - ALTURA ORIGINAL RESTAURADA: h-56 */}
+    <div
+      className={`fixed inset-0 ${isDark ? "bg-black/80" : "bg-black/60"} flex items-center justify-center z-50 p-4 backdrop-blur-sm`}
+    >
+      <div
+        className={`${isDark ? "bg-gray-900 border-gray-700" : "bg-white border-gray-300"} rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden border`}
+      >
+        {/* HEADER com Banner */}
         <div className="relative">
           <div className="h-56 bg-gradient-to-r from-gray-800 to-gray-900 overflow-hidden">
             <img
@@ -345,7 +348,6 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
               alt={imovelCompleto.codigo}
               className="w-full h-full object-cover opacity-90"
             />
-            {/* Overlay com gradiente da paleta Advents */}
             <div
               className={`absolute inset-0 bg-gradient-to-t ${palette.azulNoturno.gradient} to-transparent`}
             />
@@ -365,7 +367,7 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
             </div>
           </div>
 
-          {/* Botão Fechar - EM AMARELO */}
+          {/* Botão Fechar */}
           <button
             onClick={onClose}
             className="absolute top-4 right-4 p-2 bg-[#D4A24D] text-white rounded-lg hover:bg-[#C19137] transition-all duration-200 shadow-md border border-amber-600"
@@ -375,18 +377,21 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
           </button>
         </div>
 
-        {/* CONTEÚDO PRINCIPAL - PADDING ORIGINAL RESTAURADO: p-6 */}
+        {/* CONTEÚDO PRINCIPAL */}
         <div className="flex-1 overflow-y-auto p-6">
-          {/* Localização e Preço com Divisória - ENDEREÇO EM UMA LINHA */}
+          {/* Localização e Preço com Divisória */}
           <div className="mb-6">
-            {/* Divisória sutil */}
             <div className="relative mb-3">
               <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300"></div>
+                <div
+                  className={`w-full border-t ${isDark ? "border-gray-700" : "border-gray-300"}`}
+                ></div>
               </div>
               <div className="relative flex justify-between items-center">
-                <div className="bg-white pr-4">
-                  <div className="text-3xl font-bold text-gray-900">
+                <div className={`${isDark ? "bg-gray-900" : "bg-white"} pr-4`}>
+                  <div
+                    className={`text-3xl font-bold ${isDark ? "text-gray-100" : "text-gray-900"}`}
+                  >
                     {imovelCompleto.preco}
                     {localMarcadoComoVendido && (
                       <span className="text-green-600 text-sm ml-2">
@@ -395,31 +400,45 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
                     )}
                   </div>
                 </div>
-                <div className="bg-white pl-4">
-                  <div className="text-sm text-gray-600 bg-gray-50 px-3 py-1 rounded-lg">
+                <div className={`${isDark ? "bg-gray-900" : "bg-white"} pl-4`}>
+                  <div
+                    className={`text-sm ${isDark ? "text-gray-400 bg-gray-800" : "text-gray-600 bg-gray-50"} px-3 py-1 rounded-lg`}
+                  >
                     Valor do imóvel
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Endereço - NOVO FORMATO EM UMA LINHA COM DIVISÓRIA E BAIRRO */}
-            <div className="flex flex-wrap items-center gap-1.5 text-sm text-gray-700">
-              <div className="font-medium text-gray-900">
+            {/* Endereço */}
+            <div className="flex flex-wrap items-center gap-1.5 text-sm">
+              <div
+                className={`font-medium ${isDark ? "text-gray-200" : "text-gray-900"}`}
+              >
                 {imovelCompleto.endereco}
               </div>
-              <span className="text-gray-400">•</span>
-              <div className="text-gray-600">{imovelCompleto.bairro}</div>
-              <span className="text-gray-400">|</span>
-              <div className="font-medium text-gray-900">
+              <span className={isDark ? "text-gray-600" : "text-gray-400"}>
+                •
+              </span>
+              <div className={isDark ? "text-gray-400" : "text-gray-600"}>
+                {imovelCompleto.bairro}
+              </div>
+              <span className={isDark ? "text-gray-600" : "text-gray-400"}>
+                |
+              </span>
+              <div
+                className={`font-medium ${isDark ? "text-gray-200" : "text-gray-900"}`}
+              >
                 {imovelCompleto.cidade} - {imovelCompleto.estado}
               </div>
             </div>
           </div>
 
-          {/* GRID DE MÉTRICAS - Cores suaves com fundo */}
+          {/* GRID DE MÉTRICAS */}
           <div className="mb-6">
-            <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wider mb-4">
+            <h3
+              className={`text-sm font-semibold ${isDark ? "text-gray-300" : "text-gray-700"} uppercase tracking-wider mb-4`}
+            >
               Performance Comercial
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -428,9 +447,11 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
                 value={metricsData.visualizacoes}
                 label="Visualizações"
                 color={{
-                  bg: "bg-gradient-to-br from-blue-50 to-blue-100/80",
-                  border: "border-blue-200",
-                  iconBg: "bg-blue-100",
+                  bg: isDark
+                    ? "bg-gray-800"
+                    : "bg-gradient-to-br from-blue-50 to-blue-100/80",
+                  border: isDark ? "border-gray-700" : "border-blue-200",
+                  iconBg: isDark ? "bg-blue-900/50" : "bg-blue-100",
                   iconText: "text-blue-600",
                 }}
               />
@@ -439,9 +460,11 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
                 value={metricsData.cliquesWhatsApp}
                 label="Cliques WhatsApp"
                 color={{
-                  bg: "bg-gradient-to-br from-green-50 to-green-100/80",
-                  border: "border-green-200",
-                  iconBg: "bg-green-100",
+                  bg: isDark
+                    ? "bg-gray-800"
+                    : "bg-gradient-to-br from-green-50 to-green-100/80",
+                  border: isDark ? "border-gray-700" : "border-green-200",
+                  iconBg: isDark ? "bg-green-900/50" : "bg-green-100",
                   iconText: "text-green-600",
                 }}
               />
@@ -450,45 +473,50 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
                 value={metricsData.solicitacoesVisita}
                 label="Solicitações Visita"
                 color={{
-                  bg: "bg-gradient-to-br from-purple-50 to-purple-100/80",
-                  border: "border-purple-200",
-                  iconBg: "bg-purple-100",
+                  bg: isDark
+                    ? "bg-gray-800"
+                    : "bg-gradient-to-br from-purple-50 to-purple-100/80",
+                  border: isDark ? "border-gray-700" : "border-purple-200",
+                  iconBg: isDark ? "bg-purple-900/50" : "bg-purple-100",
                   iconText: "text-purple-600",
                 }}
               />
-              {/* MUDANÇA: Interessados Ativos EM VERMELHO */}
               <MetricCard
                 icon={UserGroupIcon}
                 value={metricsData.interessadosAtivos}
                 label="Interessados Ativos"
                 color={{
-                  bg: "bg-gradient-to-br from-red-50 to-red-100/80",
-                  border: "border-red-200",
-                  iconBg: "bg-red-100",
+                  bg: isDark
+                    ? "bg-gray-800"
+                    : "bg-gradient-to-br from-red-50 to-red-100/80",
+                  border: isDark ? "border-gray-700" : "border-red-200",
+                  iconBg: isDark ? "bg-red-900/50" : "bg-red-100",
                   iconText: "text-red-600",
                 }}
               />
             </div>
-            <div className="text-xs text-gray-500 mt-3 text-center">
+            <div
+              className={`text-xs ${isDark ? "text-gray-500" : "text-gray-500"} mt-3 text-center`}
+            >
               Última atualização: {metricsData.ultimaAtualizacao}
             </div>
           </div>
 
-          {/* BLOCO DE DECISÃO - CORREÇÕES FINAIS AQUI (AGORA CORRETO) */}
+          {/* BLOCO DE DECISÃO */}
           <div className="mb-6">
             <div
-              className={`rounded-xl p-5 ${palette.amareloDourado.bgLight} border ${palette.amareloDourado.border}`}
+              className={`rounded-xl p-5 ${palette.amareloDourado.bgLight} border ${palette.amareloDourado.border} ${isDark ? "dark:bg-amber-900/20 dark:border-amber-800" : ""}`}
             >
               <div className="flex items-center justify-between">
-                {/* Coluna 1: Status e Tempo - CORRIGIDA DEFINITIVAMENTE */}
+                {/* Coluna 1: Status e Tempo */}
                 <div className="flex-1 pr-6 border-r border-amber-300">
                   <div className="flex flex-col items-center justify-center text-center h-full">
-                    {/* APENAS STATUS SEM ÍCONE DE CLASSIFICAÇÃO */}
                     <div className="mb-4">
-                      <div className="text-sm font-medium text-gray-700 mb-1">
+                      <div
+                        className={`text-sm font-medium ${isDark ? "text-gray-300" : "text-gray-700"} mb-1`}
+                      >
                         Status
                       </div>
-                      {/* Status dinâmico - muda para VENDIDO quando marcado */}
                       <div
                         className={`px-3 py-1 ${localMarcadoComoVendido ? "bg-green-600 text-white" : palette.azulNoturno.bgLight + " text-white"} text-sm font-medium rounded-full uppercase`}
                       >
@@ -498,8 +526,9 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
                       </div>
                     </div>
 
-                    {/* Dias de negociação EM UMA LINHA SÓ COM ÍCONE DE RELÓGIO */}
-                    <div className="flex items-center justify-center gap-2 text-sm text-gray-700">
+                    <div
+                      className={`flex items-center justify-center gap-2 text-sm ${isDark ? "text-gray-300" : "text-gray-700"}`}
+                    >
                       <ClockIcon className="w-4 h-4" />
                       <span>
                         <span className="font-medium">
@@ -518,28 +547,35 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
                 {/* Coluna 2: Conversão */}
                 <div className="flex-1 px-6 border-r border-amber-300">
                   <div className="mb-2">
-                    <div className="text-sm font-medium text-gray-700 mb-1">
+                    <div
+                      className={`text-sm font-medium ${isDark ? "text-gray-300" : "text-gray-700"} mb-1`}
+                    >
                       Conversão
                     </div>
-                    <div className="text-2xl font-bold text-gray-900">
+                    <div
+                      className={`text-2xl font-bold ${isDark ? "text-gray-100" : "text-gray-900"}`}
+                    >
                       {engajamento}%
                     </div>
                   </div>
-                  <div className="w-full h-2 bg-gray-300 rounded-full overflow-hidden mb-1">
+                  <div
+                    className={`w-full h-2 ${isDark ? "bg-gray-700" : "bg-gray-300"} rounded-full overflow-hidden mb-1`}
+                  >
                     <div
                       className={`h-full ${localMarcadoComoVendido || engajamento >= 100 ? "bg-green-500" : engajamento >= 80 ? "bg-blue-500" : engajamento >= 50 ? "bg-amber-500" : "bg-red-500"}`}
                       style={{ width: `${Math.min(engajamento / 5, 100)}%` }}
                     ></div>
                   </div>
-                  <div className="text-xs text-gray-600">
+                  <div
+                    className={`text-xs ${isDark ? "text-gray-400" : "text-gray-600"}`}
+                  >
                     Meta: <span className="font-medium">5%</span> de conversão
                   </div>
                 </div>
 
-                {/* Coluna 3: Resultado - AQUI FICAM OS ÍCONES DE CLASSIFICAÇÃO */}
+                {/* Coluna 3: Resultado */}
                 <div className="flex-1 pl-6">
                   <div className="flex flex-col items-center justify-center text-center h-full">
-                    {/* Ícone de classificação - MARGEM AJUSTADA (especialmente para "Atenção") */}
                     <div className={`${classificacao.marginBottom || "mb-2"}`}>
                       <div
                         className={`p-1.5 rounded-lg ${classificacao.bgIcone} ${classificacao.corIcone} flex items-center justify-center mx-auto`}
@@ -548,22 +584,23 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
                       </div>
                     </div>
 
-                    {/* Texto da classificação */}
                     <div className="mb-2">
                       <div className={`text-lg font-bold ${classificacao.cor}`}>
                         {classificacao.label}
                       </div>
                     </div>
 
-                    {/* Descrição */}
                     <div className="mb-3">
-                      <div className="text-sm text-gray-700">
+                      <div
+                        className={`text-sm ${isDark ? "text-gray-300" : "text-gray-700"}`}
+                      >
                         {classificacao.texto}
                       </div>
                     </div>
 
-                    {/* Comparativo */}
-                    <div className="text-xs text-gray-600">
+                    <div
+                      className={`text-xs ${isDark ? "text-gray-400" : "text-gray-600"}`}
+                    >
                       Esperado: <span className="font-medium">24%</span> |
                       Alcançado:{" "}
                       <span className="font-medium">{engajamento}%</span>
@@ -576,46 +613,65 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
 
           {/* INSIGHTS RÁPIDOS DINÂMICOS */}
           <div className="mb-6">
-            <h4 className="text-sm font-semibold text-gray-700 mb-3">
+            <h4
+              className={`text-sm font-semibold ${isDark ? "text-gray-300" : "text-gray-700"} mb-3`}
+            >
               📊 Insights Rápidos
             </h4>
             <div className="space-y-3">
               {insights.map((insight, index) => {
-                // Determinar cor e ícone baseado no tipo de insight
                 let Icon = CheckCircleIcon;
-                let bgColor = "from-blue-50 to-blue-50/50";
-                let borderColor = "border-blue-200";
-                let textColor = "text-gray-700";
+                let bgColor = isDark
+                  ? "from-gray-800 to-gray-800/50"
+                  : "from-blue-50 to-blue-50/50";
+                let borderColor = isDark
+                  ? "border-gray-700"
+                  : "border-blue-200";
+                let textColor = isDark ? "text-gray-300" : "text-gray-700";
 
                 if (localMarcadoComoVendido) {
                   Icon = CheckBadgeIcon;
-                  bgColor = "from-green-50 to-green-50/50";
-                  borderColor = "border-green-200";
-                  textColor = "text-green-700";
+                  bgColor = isDark
+                    ? "from-green-900/30 to-green-900/20"
+                    : "from-green-50 to-green-50/50";
+                  borderColor = isDark
+                    ? "border-green-800"
+                    : "border-green-200";
+                  textColor = isDark ? "text-green-300" : "text-green-700";
                 } else if (
                   insight.includes("acima do esperado") ||
                   insight.includes("excepcional")
                 ) {
                   Icon = ArrowTrendingUpIcon;
-                  bgColor = "from-green-50 to-green-50/50";
-                  borderColor = "border-green-200";
-                  textColor = "text-green-700";
+                  bgColor = isDark
+                    ? "from-green-900/30 to-green-900/20"
+                    : "from-green-50 to-green-50/50";
+                  borderColor = isDark
+                    ? "border-green-800"
+                    : "border-green-200";
+                  textColor = isDark ? "text-green-300" : "text-green-700";
                 } else if (
                   insight.includes("abaixo") ||
                   insight.includes("baixa conversão")
                 ) {
                   Icon = ExclamationTriangleIcon;
-                  bgColor = "from-red-50 to-red-50/50";
-                  borderColor = "border-red-200";
-                  textColor = "text-red-700";
+                  bgColor = isDark
+                    ? "from-red-900/30 to-red-900/20"
+                    : "from-red-50 to-red-50/50";
+                  borderColor = isDark ? "border-red-800" : "border-red-200";
+                  textColor = isDark ? "text-red-300" : "text-red-700";
                 } else if (
                   insight.includes("interessado") ||
                   insight.includes("follow-up")
                 ) {
                   Icon = UserGroupIcon;
-                  bgColor = "from-amber-50 to-amber-50/50";
-                  borderColor = "border-amber-200";
-                  textColor = "text-amber-700";
+                  bgColor = isDark
+                    ? "from-amber-900/30 to-amber-900/20"
+                    : "from-amber-50 to-amber-50/50";
+                  borderColor = isDark
+                    ? "border-amber-800"
+                    : "border-amber-200";
+                  textColor = isDark ? "text-amber-300" : "text-amber-700";
                 }
 
                 return (
@@ -631,9 +687,19 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
             </div>
 
             {/* Nota sobre métricas */}
-            <div className="mt-4 pt-4 border-t border-gray-200">
-              <div className="text-xs text-gray-500 text-center italic">
-                <span className="text-gray-600 font-medium">
+            <div
+              className={`mt-4 pt-4 border-t ${isDark ? "border-gray-700" : "border-gray-200"}`}
+            >
+              <div
+                className={`text-xs ${isDark ? "text-gray-500" : "text-gray-500"} text-center italic`}
+              >
+                <span
+                  className={
+                    isDark
+                      ? "text-gray-400 font-medium"
+                      : "text-gray-600 font-medium"
+                  }
+                >
                   * Classificação automática baseada no engajamento
                 </span>
               </div>
@@ -641,37 +707,49 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
           </div>
         </div>
 
-        {/* AÇÕES - Footer COM BOTÃO "MARCAR COMO VENDIDO" ATUALIZADO */}
-        <div className="border-t border-gray-300 p-4 bg-gradient-to-r from-gray-50 to-gray-100/50 relative">
+        {/* AÇÕES - Footer */}
+        <div
+          className={`border-t ${isDark ? "border-gray-700 bg-gray-800" : "border-gray-300 bg-gradient-to-r from-gray-50 to-gray-100/50"} p-4 relative`}
+        >
           {/* Tooltip de Informação sobre o cálculo */}
           {showTooltipInfo && (
-            <div className="absolute bottom-full left-4 mb-2 w-80 bg-white border border-gray-300 rounded-lg shadow-xl z-50 p-4">
-              {/* Seta do tooltip */}
-              <div className="absolute top-full left-6 transform -translate-x-1/2 border-8 border-transparent border-t-white"></div>
+            <div
+              className={`absolute bottom-full left-4 mb-2 w-80 ${isDark ? "bg-gray-800 border-gray-700" : "bg-white border-gray-300"} rounded-lg shadow-xl z-50 p-4`}
+            >
+              <div className="absolute top-full left-6 transform -translate-x-1/2 border-8 border-transparent border-t-gray-800"></div>
 
               <div className="space-y-3">
-                {/* Título */}
                 <div className="flex items-center gap-2">
-                  <div className="p-1.5 bg-blue-100 rounded-lg">
+                  <div
+                    className={`p-1.5 ${isDark ? "bg-blue-900/50" : "bg-blue-100"} rounded-lg`}
+                  >
                     <InformationCircleIcon className="w-5 h-5 text-blue-600" />
                   </div>
-                  <h5 className="font-bold text-gray-900 text-sm">
+                  <h5
+                    className={`font-bold ${isDark ? "text-gray-200" : "text-gray-900"} text-sm`}
+                  >
                     Índice de Performance Comercial
                   </h5>
                 </div>
 
-                {/* Descrição */}
-                <p className="text-gray-700 text-sm">
+                <p
+                  className={
+                    isDark ? "text-gray-300 text-sm" : "text-gray-700 text-sm"
+                  }
+                >
                   Este indicador mostra o nível de interesse real gerado por
                   este imóvel com base nas interações dos usuários.
                 </p>
 
-                {/* Critérios de pontuação */}
                 <div>
-                  <h6 className="font-semibold text-gray-800 text-sm mb-1">
+                  <h6
+                    className={`font-semibold ${isDark ? "text-gray-300" : "text-gray-800"} text-sm mb-1`}
+                  >
                     Critérios de pontuação:
                   </h6>
-                  <ul className="text-gray-700 text-sm space-y-1 ml-2">
+                  <ul
+                    className={`${isDark ? "text-gray-300" : "text-gray-700"} text-sm space-y-1 ml-2`}
+                  >
                     <li className="flex items-start">
                       <span className="text-blue-600 mr-2">•</span>
                       <span>
@@ -693,21 +771,29 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
                   </ul>
                 </div>
 
-                {/* Regra de cálculo */}
                 <div>
-                  <h6 className="font-semibold text-gray-800 text-sm mb-1">
+                  <h6
+                    className={`font-semibold ${isDark ? "text-gray-300" : "text-gray-800"} text-sm mb-1`}
+                  >
                     Regra de cálculo:
                   </h6>
-                  <p className="text-gray-700 text-sm">
+                  <p
+                    className={
+                      isDark ? "text-gray-300 text-sm" : "text-gray-700 text-sm"
+                    }
+                  >
                     A meta de 100% é atingida quando 5% do total de
                     visualizações se convertem em ações comerciais ponderadas
                     por pontuação.
                   </p>
                 </div>
 
-                {/* Observação */}
-                <div className="pt-2 border-t border-gray-200">
-                  <p className="text-gray-700 text-sm italic">
+                <div
+                  className={`pt-2 border-t ${isDark ? "border-gray-700" : "border-gray-200"}`}
+                >
+                  <p
+                    className={`${isDark ? "text-gray-300" : "text-gray-700"} text-sm italic`}
+                  >
                     <strong>Observação:</strong> Quanto maior o índice, maior o
                     potencial de conversão comercial do imóvel.
                   </p>
@@ -717,27 +803,29 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
           )}
 
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            {/* RETÂNGULO ARREDONDADO COM TEXTO E ÍCONE - AMARELO CLARO DA PALETA */}
+            {/* RETÂNGULO ARREDONDADO COM TEXTO E ÍCONE */}
             <div
-              className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-amber-300 bg-amber-50 transition-all duration-200 hover:bg-amber-100 hover:border-amber-400 cursor-help"
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border ${isDark ? "border-amber-800 bg-amber-900/30 hover:bg-amber-900/50" : "border-amber-300 bg-amber-50 hover:bg-amber-100 hover:border-amber-400"} transition-all duration-200 cursor-help`}
               onMouseEnter={() => setShowTooltipInfo(true)}
               onMouseLeave={() => setShowTooltipInfo(false)}
               onTouchStart={() => setShowTooltipInfo(!showTooltipInfo)}
             >
-              {/* Ícone de informação */}
-              <div className="p-1 bg-amber-100 border border-amber-200 rounded-md">
+              <div
+                className={`p-1 ${isDark ? "bg-amber-900/50 border-amber-800" : "bg-amber-100 border-amber-200"} border rounded-md`}
+              >
                 <InformationCircleIcon className="w-3.5 h-3.5 text-amber-700" />
               </div>
 
-              {/* Texto "Como calculamos a conversão" */}
-              <span className="text-xs font-medium text-amber-800 whitespace-nowrap">
+              <span
+                className={`text-xs font-medium ${isDark ? "text-amber-300" : "text-amber-800"} whitespace-nowrap`}
+              >
                 Como calculamos a conversão
               </span>
             </div>
 
-            {/* Botões com mesma altura - ESPAÇAMENTO AJUSTADO */}
+            {/* Botões */}
             <div className="flex items-center gap-3">
-              {/* Botão Fechar - Azul noturno - MAIS PARA A ESQUERDA */}
+              {/* Botão Fechar */}
               <button
                 onClick={onClose}
                 className={`px-4 py-2.5 text-white ${palette.azulNoturno.bg} border ${palette.azulNoturno.border} rounded-lg hover:opacity-90 transition-all duration-200 font-medium shadow-sm hover:shadow flex items-center gap-2 mr-2`}
@@ -746,11 +834,11 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
                 Fechar
               </button>
 
-              {/* Botão Marcar como Vendido / VENDIDO - ESTADO DINÂMICO */}
+              {/* Botão Marcar como Vendido */}
               <button
                 onClick={handleMarcarComoVendido}
                 disabled={localMarcadoComoVendido}
-                className={`px-4 py-2.5 ${localMarcadoComoVendido ? "bg-green-600 text-white hover:bg-green-700 cursor-default" : "bg-white text-gray-800 border border-gray-400 hover:bg-gray-50"} rounded-lg transition-all duration-200 font-medium shadow-sm hover:shadow flex items-center gap-2 ${localMarcadoComoVendido ? "opacity-90" : ""}`}
+                className={`px-4 py-2.5 ${localMarcadoComoVendido ? "bg-green-600 text-white hover:bg-green-700 cursor-default" : isDark ? "bg-gray-700 text-gray-300 border-gray-600 hover:bg-gray-600" : "bg-white text-gray-800 border border-gray-400 hover:bg-gray-50"} rounded-lg transition-all duration-200 font-medium shadow-sm hover:shadow flex items-center gap-2 ${localMarcadoComoVendido ? "opacity-90" : ""}`}
               >
                 {localMarcadoComoVendido ? (
                   <>
@@ -778,11 +866,8 @@ const BotaoDesempenho = ({ imovel }) => {
 
   const handleAcaoModal = (acao, imovelId) => {
     console.log(`Ação: ${acao} no imóvel ID: ${imovelId}`);
-
     if (acao === "marcarVendido") {
-      // Aqui você implementaria a lógica de ação (API call, etc.)
-      // Atualizar o status do imóvel no backend
-      // NÃO fecha o modal aqui - isso é controlado dentro do modal
+      // Implemente a lógica de ação aqui
     }
   };
 
@@ -817,6 +902,8 @@ const BotaoDesempenho = ({ imovel }) => {
 
 // Componente principal Imoveis
 const Imoveis = () => {
+  const { isDark } = useTheme();
+
   // Estados para os filtros
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedTipo, setSelectedTipo] = useState("");
@@ -824,9 +911,8 @@ const Imoveis = () => {
   const [selectedStatus, setSelectedStatus] = useState("");
   const [selectedCidade, setSelectedCidade] = useState("");
 
-  // Dados dos imóveis - COM OS 4 ESTADOS BEM DISTRIBUÍDOS
+  // Dados dos imóveis
   const imoveisData = [
-    // GRUPO 1: EXCELENTE (IDs 1-3) - engajamento ≥ 120%
     {
       id: 1,
       codigo: "APT-001",
@@ -862,12 +948,10 @@ const Imoveis = () => {
       bairro: "Jardim Glória City",
       cidade: "Imperatriz",
       estado: "MA",
-      status: "Vendido", // Este é vendido na tabela, mas no modal começa como disponível
+      status: "Vendido",
       preco: "R$ 180.000,00",
       desempenho: "Excelente",
     },
-
-    // GRUPO 2: SAUDÁVEL (IDs 4-6) - engajamento 80-119%
     {
       id: 4,
       codigo: "TER-004",
@@ -907,8 +991,6 @@ const Imoveis = () => {
       preco: "R$ 950,00/mês",
       desempenho: "Saudável",
     },
-
-    // GRUPO 3: ATENÇÃO (IDs 7-9) - engajamento 50-79%
     {
       id: 7,
       codigo: "CS-007",
@@ -948,8 +1030,6 @@ const Imoveis = () => {
       preco: "R$ 280.000,00",
       desempenho: "Atenção",
     },
-
-    // GRUPO 4: CRÍTICO (IDs 10-12) - engajamento < 50%
     {
       id: 10,
       codigo: "APT-010",
@@ -994,7 +1074,6 @@ const Imoveis = () => {
   // Função para filtrar os imóveis
   const imoveisFiltrados = useMemo(() => {
     return imoveisData.filter((imovel) => {
-      // Filtro por texto (busca)
       const buscaMatch =
         searchTerm === "" ||
         imovel.codigo.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -1002,27 +1081,22 @@ const Imoveis = () => {
         imovel.bairro.toLowerCase().includes(searchTerm.toLowerCase()) ||
         imovel.cidade.toLowerCase().includes(searchTerm.toLowerCase());
 
-      // Filtro por tipo
       const tipoMatch =
         selectedTipo === "" ||
         imovel.tipo.toLowerCase() === selectedTipo.toLowerCase();
 
-      // Filtro por finalidade
       const finalidadeMatch =
         selectedFinalidade === "" ||
         imovel.finalidade.toLowerCase() === selectedFinalidade.toLowerCase();
 
-      // Filtro por status
       const statusMatch =
         selectedStatus === "" ||
         imovel.status.toLowerCase() === selectedStatus.toLowerCase();
 
-      // Filtro por cidade
       const cidadeMatch =
         selectedCidade === "" ||
         imovel.cidade.toLowerCase() === selectedCidade.toLowerCase();
 
-      // Retorna apenas se todos os filtros combinarem
       return (
         buscaMatch && tipoMatch && finalidadeMatch && statusMatch && cidadeMatch
       );
@@ -1050,21 +1124,39 @@ const Imoveis = () => {
 
   // Cores para os status
   const statusColors = {
-    Disponível: "bg-green-100 text-green-800",
-    Vendido: "bg-red-100 text-red-800",
-    Alugado: "bg-yellow-100 text-yellow-800",
-    Reservado: "bg-blue-100 text-blue-800",
+    Disponível: isDark
+      ? "bg-green-900/30 text-green-300 border border-green-800"
+      : "bg-green-100 text-green-800",
+    Vendido: isDark
+      ? "bg-red-900/30 text-red-300 border border-red-800"
+      : "bg-red-100 text-red-800",
+    Alugado: isDark
+      ? "bg-yellow-900/30 text-yellow-300 border border-yellow-800"
+      : "bg-yellow-100 text-yellow-800",
+    Reservado: isDark
+      ? "bg-blue-900/30 text-blue-300 border border-blue-800"
+      : "bg-blue-100 text-blue-800",
   };
 
   const tipoColors = {
-    Apartamento: "bg-blue-50 text-blue-700",
-    Casa: "bg-green-50 text-green-700",
-    Terreno: "bg-amber-50 text-amber-700",
+    Apartamento: isDark
+      ? "bg-blue-900/30 text-blue-300 border border-blue-800"
+      : "bg-blue-50 text-blue-700",
+    Casa: isDark
+      ? "bg-green-900/30 text-green-300 border border-green-800"
+      : "bg-green-50 text-green-700",
+    Terreno: isDark
+      ? "bg-amber-900/30 text-amber-300 border border-amber-800"
+      : "bg-amber-50 text-amber-700",
   };
 
   const finalidadeColors = {
-    Venda: "bg-purple-50 text-purple-700",
-    Aluguel: "bg-cyan-50 text-cyan-700",
+    Venda: isDark
+      ? "bg-purple-900/30 text-purple-300 border border-purple-800"
+      : "bg-purple-50 text-purple-700",
+    Aluguel: isDark
+      ? "bg-cyan-900/30 text-cyan-300 border border-cyan-800"
+      : "bg-cyan-50 text-cyan-700",
   };
 
   return (
@@ -1072,8 +1164,12 @@ const Imoveis = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Imóveis</h1>
-          <p className="text-gray-600 mt-2">
+          <h1
+            className={`text-3xl font-bold ${isDark ? "text-gray-100" : "text-gray-900"}`}
+          >
+            Imóveis
+          </h1>
+          <p className={`${isDark ? "text-gray-400" : "text-gray-600"} mt-2`}>
             Gerencie todos os imóveis cadastrados
           </p>
         </div>
@@ -1089,13 +1185,15 @@ const Imoveis = () => {
           {/* BUSCA POR TEXTO */}
           <div className="flex-1 max-w-xl">
             <div className="relative">
-              <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <MagnifyingGlassIcon
+                className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 ${isDark ? "text-gray-500" : "text-gray-400"}`}
+              />
               <input
                 type="text"
                 placeholder="Buscar por código (APT, CS, TER), endereço, bairro, cidade..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] shadow-sm"
+                className={`w-full pl-10 pr-4 py-2.5 ${isDark ? "bg-gray-800 border-gray-700 text-gray-200 placeholder-gray-500" : "bg-white border-gray-300 text-gray-900 placeholder-gray-500"} border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] shadow-sm transition-colors duration-200`}
               />
             </div>
           </div>
@@ -1106,7 +1204,7 @@ const Imoveis = () => {
             <select
               value={selectedTipo}
               onChange={(e) => setSelectedTipo(e.target.value)}
-              className="h-[42px] px-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] shadow-sm text-sm w-full sm:w-auto"
+              className={`h-[42px] px-3 ${isDark ? "bg-gray-800 border-gray-700 text-gray-200" : "bg-white border-gray-300 text-gray-900"} border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] shadow-sm text-sm w-full sm:w-auto transition-colors duration-200`}
             >
               <option value="">Todos os Tipos</option>
               <option value="apartamento">Apartamento</option>
@@ -1118,7 +1216,7 @@ const Imoveis = () => {
             <select
               value={selectedFinalidade}
               onChange={(e) => setSelectedFinalidade(e.target.value)}
-              className="h-[42px] px-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] shadow-sm text-sm w-full sm:w-auto"
+              className={`h-[42px] px-3 ${isDark ? "bg-gray-800 border-gray-700 text-gray-200" : "bg-white border-gray-300 text-gray-900"} border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] shadow-sm text-sm w-full sm:w-auto transition-colors duration-200`}
             >
               <option value="">Todas Finalidades</option>
               <option value="venda">Venda</option>
@@ -1129,7 +1227,7 @@ const Imoveis = () => {
             <select
               value={selectedStatus}
               onChange={(e) => setSelectedStatus(e.target.value)}
-              className="h-[42px] px-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] shadow-sm text-sm w-full sm:w-auto"
+              className={`h-[42px] px-3 ${isDark ? "bg-gray-800 border-gray-700 text-gray-200" : "bg-white border-gray-300 text-gray-900"} border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] shadow-sm text-sm w-full sm:w-auto transition-colors duration-200`}
             >
               <option value="">Todos Status</option>
               <option value="disponível">Disponível</option>
@@ -1142,7 +1240,7 @@ const Imoveis = () => {
             <select
               value={selectedCidade}
               onChange={(e) => setSelectedCidade(e.target.value)}
-              className="h-[42px] px-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] shadow-sm text-sm w-full sm:w-auto"
+              className={`h-[42px] px-3 ${isDark ? "bg-gray-800 border-gray-700 text-gray-200" : "bg-white border-gray-300 text-gray-900"} border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] shadow-sm text-sm w-full sm:w-auto transition-colors duration-200`}
             >
               <option value="">Todas Cidades</option>
               <option value="açailândia">Açailândia</option>
@@ -1159,7 +1257,7 @@ const Imoveis = () => {
               selectedCidade) && (
               <button
                 onClick={limparFiltros}
-                className="h-[42px] px-3 bg-gray-100 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
+                className={`h-[42px] px-3 ${isDark ? "bg-gray-700 text-gray-300 border-gray-600 hover:bg-gray-600" : "bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200"} border rounded-lg transition-colors duration-200 text-sm font-medium`}
               >
                 Limpar Filtros
               </button>
@@ -1169,10 +1267,22 @@ const Imoveis = () => {
 
         {/* Contador de resultados */}
         <div className="mt-4 flex items-center justify-between">
-          <div className="text-sm text-gray-600">
+          <div
+            className={`text-sm ${isDark ? "text-gray-400" : "text-gray-600"}`}
+          >
             Mostrando{" "}
-            <span className="font-semibold">{imoveisEncontrados}</span> de{" "}
-            <span className="font-semibold">{totalImoveis}</span> imóveis
+            <span
+              className={`font-semibold ${isDark ? "text-gray-300" : "text-gray-900"}`}
+            >
+              {imoveisEncontrados}
+            </span>{" "}
+            de{" "}
+            <span
+              className={`font-semibold ${isDark ? "text-gray-300" : "text-gray-900"}`}
+            >
+              {totalImoveis}
+            </span>{" "}
+            imóveis
           </div>
 
           {/* Indicador de filtros ativos */}
@@ -1181,30 +1291,42 @@ const Imoveis = () => {
             selectedFinalidade ||
             selectedStatus ||
             selectedCidade) && (
-            <div className="text-xs text-gray-500">
+            <div
+              className={`text-xs ${isDark ? "text-gray-500" : "text-gray-500"}`}
+            >
               Filtros ativos:
               {searchTerm && (
-                <span className="ml-2 px-2 py-1 bg-gray-100 rounded">
+                <span
+                  className={`ml-2 px-2 py-1 ${isDark ? "bg-gray-800 text-gray-300 border-gray-700" : "bg-gray-100 text-gray-700 border-gray-300"} rounded border`}
+                >
                   Busca: "{searchTerm}"
                 </span>
               )}
               {selectedTipo && (
-                <span className="ml-2 px-2 py-1 bg-gray-100 rounded">
+                <span
+                  className={`ml-2 px-2 py-1 ${isDark ? "bg-gray-800 text-gray-300 border-gray-700" : "bg-gray-100 text-gray-700 border-gray-300"} rounded border`}
+                >
                   Tipo: {selectedTipo}
                 </span>
               )}
               {selectedFinalidade && (
-                <span className="ml-2 px-2 py-1 bg-gray-100 rounded">
+                <span
+                  className={`ml-2 px-2 py-1 ${isDark ? "bg-gray-800 text-gray-300 border-gray-700" : "bg-gray-100 text-gray-700 border-gray-300"} rounded border`}
+                >
                   Finalidade: {selectedFinalidade}
                 </span>
               )}
               {selectedStatus && (
-                <span className="ml-2 px-2 py-1 bg-gray-100 rounded">
+                <span
+                  className={`ml-2 px-2 py-1 ${isDark ? "bg-gray-800 text-gray-300 border-gray-700" : "bg-gray-100 text-gray-700 border-gray-300"} rounded border`}
+                >
                   Status: {selectedStatus}
                 </span>
               )}
               {selectedCidade && (
-                <span className="ml-2 px-2 py-1 bg-gray-100 rounded">
+                <span
+                  className={`ml-2 px-2 py-1 ${isDark ? "bg-gray-800 text-gray-300 border-gray-700" : "bg-gray-100 text-gray-700 border-gray-300"} rounded border`}
+                >
                   Cidade: {selectedCidade}
                 </span>
               )}
@@ -1214,17 +1336,23 @@ const Imoveis = () => {
       </div>
 
       {/* Tabela com imóveis filtrados */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+      <div
+        className={`${isDark ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"} rounded-xl shadow-sm border overflow-hidden transition-colors duration-200`}
+      >
         <div className="overflow-x-auto">
           {imoveisFiltrados.length === 0 ? (
             <div className="py-12 text-center">
-              <div className="text-gray-400 mb-2">
+              <div
+                className={`${isDark ? "text-gray-600" : "text-gray-400"} mb-2`}
+              >
                 <MagnifyingGlassIcon className="w-12 h-12 mx-auto" />
               </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
+              <h3
+                className={`text-lg font-medium ${isDark ? "text-gray-200" : "text-gray-900"} mb-2`}
+              >
                 Nenhum imóvel encontrado
               </h3>
-              <p className="text-gray-600">
+              <p className={isDark ? "text-gray-400" : "text-gray-600"}>
                 {searchTerm ||
                 selectedTipo ||
                 selectedFinalidade ||
@@ -1240,7 +1368,7 @@ const Imoveis = () => {
                 selectedCidade) && (
                 <button
                   onClick={limparFiltros}
-                  className="mt-4 px-4 py-2 bg-[#D4A24D] text-white rounded-lg hover:bg-[#D4A24D]/90 transition-colors"
+                  className="mt-4 px-4 py-2 bg-[#D4A24D] text-white rounded-lg hover:bg-[#D4A24D]/90 transition-colors duration-200"
                 >
                   Limpar todos os filtros
                 </button>
@@ -1248,62 +1376,103 @@ const Imoveis = () => {
             </div>
           ) : (
             <table className="min-w-full table-fixed">
-              <thead className="bg-gray-50">
+              <thead className={isDark ? "bg-gray-900" : "bg-gray-50"}>
                 <tr>
-                  <th className="w-[60px] p-3 text-center text-xs font-semibold text-gray-800 uppercase tracking-wider border-r border-gray-200">
+                  <th
+                    className={`w-[60px] p-3 text-center text-xs font-semibold ${isDark ? "text-gray-300" : "text-gray-800"} uppercase tracking-wider border-r ${isDark ? "border-gray-700" : "border-gray-200"}`}
+                  >
                     ID
                   </th>
-                  <th className="w-[90px] p-3 text-center text-xs font-semibold text-gray-800 uppercase tracking-wider border-r border-gray-200">
+                  <th
+                    className={`w-[90px] p-3 text-center text-xs font-semibold ${isDark ? "text-gray-300" : "text-gray-800"} uppercase tracking-wider border-r ${isDark ? "border-gray-700" : "border-gray-200"}`}
+                  >
                     Código
                   </th>
-                  <th className="w-[90px] p-3 text-center text-xs font-semibold text-gray-800 uppercase tracking-wider border-r border-gray-200">
+                  <th
+                    className={`w-[90px] p-3 text-center text-xs font-semibold ${isDark ? "text-gray-300" : "text-gray-800"} uppercase tracking-wider border-r ${isDark ? "border-gray-700" : "border-gray-200"}`}
+                  >
                     Finalidade
                   </th>
-                  <th className="w-[90px] p-3 text-center text-xs font-semibold text-gray-800 uppercase tracking-wider border-r border-gray-200">
+                  <th
+                    className={`w-[90px] p-3 text-center text-xs font-semibold ${isDark ? "text-gray-300" : "text-gray-800"} uppercase tracking-wider border-r ${isDark ? "border-gray-700" : "border-gray-200"}`}
+                  >
                     Tipo
                   </th>
-                  <th className="w-[160px] p-3 text-center text-xs font-semibold text-gray-800 uppercase tracking-wider border-r border-gray-200">
+                  <th
+                    className={`w-[160px] p-3 text-center text-xs font-semibold ${isDark ? "text-gray-300" : "text-gray-800"} uppercase tracking-wider border-r ${isDark ? "border-gray-700" : "border-gray-200"}`}
+                  >
                     Endereço
                   </th>
-                  <th className="w-[130px] p-3 text-center text-xs font-semibold text-gray-800 uppercase tracking-wider border-r border-gray-200">
+                  <th
+                    className={`w-[130px] p-3 text-center text-xs font-semibold ${isDark ? "text-gray-300" : "text-gray-800"} uppercase tracking-wider border-r ${isDark ? "border-gray-700" : "border-gray-200"}`}
+                  >
                     Bairro
                   </th>
-                  <th className="w-[130px] p-3 text-center text-xs font-semibold text-gray-800 uppercase tracking-wider border-r border-gray-200">
+                  <th
+                    className={`w-[130px] p-3 text-center text-xs font-semibold ${isDark ? "text-gray-300" : "text-gray-800"} uppercase tracking-wider border-r ${isDark ? "border-gray-700" : "border-gray-200"}`}
+                  >
                     Cidade
                   </th>
-                  <th className="w-[60px] p-3 text-center text-xs font-semibold text-gray-800 uppercase tracking-wider border-r border-gray-200">
+                  <th
+                    className={`w-[60px] p-3 text-center text-xs font-semibold ${isDark ? "text-gray-300" : "text-gray-800"} uppercase tracking-wider border-r ${isDark ? "border-gray-700" : "border-gray-200"}`}
+                  >
                     Estado
                   </th>
-                  <th className="w-[90px] p-3 text-center text-xs font-semibold text-gray-800 uppercase tracking-wider border-r border-gray-200">
+                  <th
+                    className={`w-[90px] p-3 text-center text-xs font-semibold ${isDark ? "text-gray-300" : "text-gray-800"} uppercase tracking-wider border-r ${isDark ? "border-gray-700" : "border-gray-200"}`}
+                  >
                     Status
                   </th>
-                  <th className="w-[130px] p-3 text-center text-xs font-semibold text-gray-800 uppercase tracking-wider border-r border-gray-200">
+                  <th
+                    className={`w-[130px] p-3 text-center text-xs font-semibold ${isDark ? "text-gray-300" : "text-gray-800"} uppercase tracking-wider border-r ${isDark ? "border-gray-700" : "border-gray-200"}`}
+                  >
                     Preço
                   </th>
-                  <th className="w-[120px] p-3 text-center text-xs font-semibold text-gray-800 uppercase tracking-wider">
+                  <th
+                    className={`w-[120px] p-3 text-center text-xs font-semibold ${isDark ? "text-gray-300" : "text-gray-800"} uppercase tracking-wider`}
+                  >
                     Ações
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200">
+              <tbody
+                className={
+                  isDark ? "divide-gray-700" : "divide-gray-200 divide-y"
+                }
+              >
                 {imoveisFiltrados.map((imovel) => (
-                  <tr key={imovel.id} className="hover:bg-gray-50">
+                  <tr
+                    key={imovel.id}
+                    className={
+                      isDark ? "hover:bg-gray-700/50" : "hover:bg-gray-50"
+                    }
+                  >
                     {/* ID */}
-                    <td className="w-[60px] p-3 text-center border-r border-gray-200">
-                      <span className="font-medium text-gray-900 text-sm block">
+                    <td
+                      className={`w-[60px] p-3 text-center border-r ${isDark ? "border-gray-700" : "border-gray-200"}`}
+                    >
+                      <span
+                        className={`font-medium ${isDark ? "text-gray-300" : "text-gray-900"} text-sm block`}
+                      >
                         {imovel.id}
                       </span>
                     </td>
 
                     {/* Código */}
-                    <td className="w-[90px] p-3 text-center border-r border-gray-200">
-                      <span className="text-gray-900 text-sm block">
+                    <td
+                      className={`w-[90px] p-3 text-center border-r ${isDark ? "border-gray-700" : "border-gray-200"}`}
+                    >
+                      <span
+                        className={`${isDark ? "text-gray-300" : "text-gray-900"} text-sm block`}
+                      >
                         {imovel.codigo}
                       </span>
                     </td>
 
                     {/* Finalidade */}
-                    <td className="w-[90px] p-3 text-center border-r border-gray-200">
+                    <td
+                      className={`w-[90px] p-3 text-center border-r ${isDark ? "border-gray-700" : "border-gray-200"}`}
+                    >
                       <span
                         className={`px-2 py-1 rounded-full text-xs font-medium ${finalidadeColors[imovel.finalidade]} inline-block whitespace-nowrap`}
                       >
@@ -1312,44 +1481,64 @@ const Imoveis = () => {
                     </td>
 
                     {/* Tipo */}
-                    <td className="w-[90px] p-3 text-center border-r border-gray-200">
+                    <td
+                      className={`w-[90px] p-3 text-center border-r ${isDark ? "border-gray-700" : "border-gray-200"}`}
+                    >
                       <span
-                        className={`px-2 py-1 rounded-full text-xs font-medium ${tipoColors[imovel.tipo] || "bg-gray-100 text-gray-800"} inline-block whitespace-nowrap`}
+                        className={`px-2 py-1 rounded-full text-xs font-medium ${tipoColors[imovel.tipo] || (isDark ? "bg-gray-700 text-gray-300" : "bg-gray-100 text-gray-800")} inline-block whitespace-nowrap`}
                       >
                         {imovel.tipo}
                       </span>
                     </td>
 
                     {/* Endereço */}
-                    <td className="w-[160px] p-3 text-center border-r border-gray-200">
-                      <span className="text-gray-900 text-sm block">
+                    <td
+                      className={`w-[160px] p-3 text-center border-r ${isDark ? "border-gray-700" : "border-gray-200"}`}
+                    >
+                      <span
+                        className={`${isDark ? "text-gray-300" : "text-gray-900"} text-sm block`}
+                      >
                         {imovel.endereco}
                       </span>
                     </td>
 
                     {/* Bairro */}
-                    <td className="w-[130px] p-3 text-center border-r border-gray-200">
-                      <span className="text-gray-900 text-sm block">
+                    <td
+                      className={`w-[130px] p-3 text-center border-r ${isDark ? "border-gray-700" : "border-gray-200"}`}
+                    >
+                      <span
+                        className={`${isDark ? "text-gray-300" : "text-gray-900"} text-sm block`}
+                      >
                         {imovel.bairro}
                       </span>
                     </td>
 
                     {/* Cidade */}
-                    <td className="w-[130px] p-3 text-center border-r border-gray-200">
-                      <span className="text-gray-900 text-sm block">
+                    <td
+                      className={`w-[130px] p-3 text-center border-r ${isDark ? "border-gray-700" : "border-gray-200"}`}
+                    >
+                      <span
+                        className={`${isDark ? "text-gray-300" : "text-gray-900"} text-sm block`}
+                      >
                         {imovel.cidade}
                       </span>
                     </td>
 
                     {/* Estado */}
-                    <td className="w-[60px] p-3 text-center border-r border-gray-200">
-                      <span className="text-gray-900 text-sm block">
+                    <td
+                      className={`w-[60px] p-3 text-center border-r ${isDark ? "border-gray-700" : "border-gray-200"}`}
+                    >
+                      <span
+                        className={`${isDark ? "text-gray-300" : "text-gray-900"} text-sm block`}
+                      >
                         {imovel.estado}
                       </span>
                     </td>
 
                     {/* Status */}
-                    <td className="w-[90px] p-3 text-center border-r border-gray-200">
+                    <td
+                      className={`w-[90px] p-3 text-center border-r ${isDark ? "border-gray-700" : "border-gray-200"}`}
+                    >
                       <span
                         className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[imovel.status]} inline-block whitespace-nowrap`}
                       >
@@ -1358,8 +1547,12 @@ const Imoveis = () => {
                     </td>
 
                     {/* Preço */}
-                    <td className="w-[130px] p-3 text-center border-r border-gray-200">
-                      <span className="text-gray-900 text-sm block">
+                    <td
+                      className={`w-[130px] p-3 text-center border-r ${isDark ? "border-gray-700" : "border-gray-200"}`}
+                    >
+                      <span
+                        className={`${isDark ? "text-gray-300" : "text-gray-900"} text-sm block`}
+                      >
                         {imovel.preco}
                       </span>
                     </td>

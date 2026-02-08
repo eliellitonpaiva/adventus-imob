@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useLocation, NavLink } from "react-router-dom";
+import { useTheme } from "../../contexts/ThemeContext";
 
 // Componente MenuItem embutido para evitar problemas de importação
 const MenuItem = ({
@@ -10,6 +11,8 @@ const MenuItem = ({
   isCollapsed,
   isActive = false,
 }) => {
+  const { isDark } = useTheme();
+
   return (
     <NavLink
       to={to}
@@ -20,7 +23,11 @@ const MenuItem = ({
         ${
           navIsActive || isActive
             ? "bg-[#D4A24D]/20 text-[#D4A24D] border-l-4 border-[#D4A24D]"
-            : "text-gray-300 hover:bg-white/5 hover:text-white"
+            : `${
+                isDark
+                  ? "text-gray-300 hover:bg-gray-700 hover:text-white"
+                  : "text-gray-300 hover:bg-white/5 hover:text-white"
+              }`
         }
         relative
         text-sm font-semibold
@@ -28,7 +35,6 @@ const MenuItem = ({
       `}
       end={to === "/admin"}
       onClick={(e) => {
-        // Previne qualquer comportamento que possa recolher a sidebar
         e.stopPropagation();
       }}
     >
@@ -45,7 +51,6 @@ const MenuItem = ({
         </>
       )}
 
-      {/* Badge para modo recolhido */}
       {isCollapsed && badge !== undefined && (
         <span className="absolute top-1 right-1 bg-red-500 text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center">
           {badge > 9 ? "9+" : badge}
@@ -59,25 +64,21 @@ const MenuItem = ({
 const Sidebar = ({ onLogout, userName = "Adventus Imobiliária" }) => {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
+  const { isDark } = useTheme();
 
-  // Garantir que a sidebar NÃO recolha quando mudar de rota
   useEffect(() => {
-    // Este effect monitora mudanças de rota mas NÃO altera o estado collapsed
     console.log(
       "Rota alterada para:",
       location.pathname,
       "Sidebar collapsed:",
       collapsed,
     );
-    // Não faça nada aqui - deixe o collapsed como está
   }, [location.pathname, collapsed]);
 
-  // Função para controlar o recolhimento - APENAS pelo botão
   const handleToggleCollapse = () => {
     setCollapsed((prev) => !prev);
   };
 
-  // Ícones como componentes inline
   const HomeIcon = ({ className }) => (
     <svg
       className={className}
@@ -260,7 +261,6 @@ const Sidebar = ({ onLogout, userName = "Adventus Imobiliária" }) => {
     </svg>
   );
 
-  // NOVOS ÍCONES PARA ESTADOS, CIDADES E BAIRROS
   const MapIcon = ({ className }) => (
     <svg
       className={className}
@@ -330,20 +330,15 @@ const Sidebar = ({ onLogout, userName = "Adventus Imobiliária" }) => {
       badge: 8,
     },
     { icon: EnvelopeIcon, label: "Leads", to: "/admin/leads", badge: 23 },
-
-    // NOVO ITEM: VISITAS
     {
       icon: CalendarIcon,
       label: "Visitas",
       to: "/admin/visitas",
-      badge: 5, // Número de visitas pendentes
+      badge: 5,
     },
-
-    // NOVOS ITENS: HIERARQUIA GEOGRÁFICA
     { icon: MapIcon, label: "Estados", to: "/admin/estados" },
     { icon: LocationMarkerIcon, label: "Cidades", to: "/admin/cidades" },
     { icon: HomeModernIcon, label: "Bairros", to: "/admin/bairros" },
-
     { icon: ChartBarIcon, label: "Relatórios", to: "/admin/relatorios" },
     {
       icon: DocumentTextIcon,
@@ -364,19 +359,18 @@ const Sidebar = ({ onLogout, userName = "Adventus Imobiliária" }) => {
   return (
     <aside
       className={`
-      bg-[#31353E] text-white
-      flex flex-col h-screen
-      transition-all duration-300 ease-in-out
-      ${collapsed ? "w-20" : "w-64"}
-      sticky top-0
-      shadow-lg
-    `}
-      // Previne recolhimento ao clicar na sidebar
+        ${isDark ? "bg-gray-800 text-gray-200" : "bg-[#31353E] text-white"}
+        flex flex-col h-screen
+        transition-all duration-300 ease-in-out
+        ${collapsed ? "w-20" : "w-64"}
+        sticky top-0
+        shadow-lg
+        transition-colors duration-200
+      `}
       onClick={(e) => e.stopPropagation()}
     >
-      {/* Logo */}
       <div
-        className={`p-4 border-b border-gray-700 flex items-center ${collapsed ? "justify-center" : "justify-between"}`}
+        className={`p-4 border-b ${isDark ? "border-gray-700" : "border-gray-700"} flex items-center ${collapsed ? "justify-center" : "justify-between"}`}
       >
         {!collapsed ? (
           <div className="flex items-center space-x-3">
@@ -385,7 +379,11 @@ const Sidebar = ({ onLogout, userName = "Adventus Imobiliária" }) => {
             </div>
             <div>
               <h1 className="text-lg font-bold">Adventus Imobiliária</h1>
-              <p className="text-xs text-gray-400 mt-0.5">{userName}</p>
+              <p
+                className={`text-xs ${isDark ? "text-gray-400" : "text-gray-400"} mt-0.5`}
+              >
+                {userName}
+              </p>
             </div>
           </div>
         ) : (
@@ -394,15 +392,23 @@ const Sidebar = ({ onLogout, userName = "Adventus Imobiliária" }) => {
           </div>
         )}
 
-        {/* BOTÃO RECOLHER - ORIGINAL APENAS COM BORDA FININHA AMARELA */}
         {!collapsed && (
           <button
             onClick={handleToggleCollapse}
             className={`
-              text-gray-300 hover:text-[#D4A24D] hover:bg-white/10 
+              ${
+                isDark
+                  ? "text-gray-300 hover:text-[#D4A24D] hover:bg-gray-700"
+                  : "text-gray-300 hover:text-[#D4A24D] hover:bg-white/10"
+              }
               transition-all duration-200
               border border-[#D4A24D]/50
-              ml-auto bg-white/5 hover:bg-white/10 rounded-lg p-1.5
+              ${
+                isDark
+                  ? "bg-gray-700 hover:bg-gray-600"
+                  : "bg-white/5 hover:bg-white/10"
+              }
+              rounded-lg p-1.5
             `}
             title={collapsed ? "Expandir menu" : "Recolher menu"}
           >
@@ -411,16 +417,24 @@ const Sidebar = ({ onLogout, userName = "Adventus Imobiliária" }) => {
         )}
       </div>
 
-      {/* Botão para expandir quando sidebar está recolhida - MESMA APARÊNCIA */}
       {collapsed && (
         <div className="flex justify-center mt-4 px-3">
           <button
             onClick={handleToggleCollapse}
             className={`
-              text-gray-300 hover:text-[#D4A24D] hover:bg-white/10 
+              ${
+                isDark
+                  ? "text-gray-300 hover:text-[#D4A24D] hover:bg-gray-700"
+                  : "text-gray-300 hover:text-[#D4A24D] hover:bg-white/10"
+              }
               transition-all duration-200
               border border-[#D4A24D]/50
-              bg-white/5 hover:bg-white/10 rounded-lg p-1.5
+              ${
+                isDark
+                  ? "bg-gray-700 hover:bg-gray-600"
+                  : "bg-white/5 hover:bg-white/10"
+              }
+              rounded-lg p-1.5
               w-7 h-7 flex items-center justify-center
             `}
             title="Expandir menu"
@@ -430,20 +444,16 @@ const Sidebar = ({ onLogout, userName = "Adventus Imobiliária" }) => {
         </div>
       )}
 
-      {/* Menu Items - SCROLLBAR DISCRETA COM CSS PURO */}
       <nav
         className="flex-1 p-3 space-y-0.5 overflow-y-auto"
         style={{
-          /* Estilização da scrollbar para navegadores WebKit (Chrome, Safari) */
           scrollbarWidth: "thin",
-          scrollbarColor: "rgba(156, 163, 175, 0.3) transparent",
+          scrollbarColor: `${isDark ? "rgba(75, 85, 99, 0.3)" : "rgba(156, 163, 175, 0.3)"} transparent`,
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Estilo inline para scrollbar personalizada */}
         <style>
           {`
-            /* Para Chrome, Safari e Edge */
             nav::-webkit-scrollbar {
               width: 6px;
             }
@@ -454,25 +464,32 @@ const Sidebar = ({ onLogout, userName = "Adventus Imobiliária" }) => {
             }
             
             nav::-webkit-scrollbar-thumb {
-              background: rgba(156, 163, 175, 0.3);
+              background: ${
+                isDark ? "rgba(75, 85, 99, 0.3)" : "rgba(156, 163, 175, 0.3)"
+              };
               border-radius: 10px;
               opacity: 0;
               transition: opacity 0.3s ease, background 0.3s ease;
             }
             
             nav:hover::-webkit-scrollbar-thumb {
-              background: rgba(156, 163, 175, 0.5);
+              background: ${
+                isDark ? "rgba(75, 85, 99, 0.5)" : "rgba(156, 163, 175, 0.5)"
+              };
               opacity: 1;
             }
             
             nav::-webkit-scrollbar-thumb:hover {
-              background: rgba(156, 163, 175, 0.7);
+              background: ${
+                isDark ? "rgba(75, 85, 99, 0.7)" : "rgba(156, 163, 175, 0.7)"
+              };
             }
             
-            /* Para Firefox */
             nav {
               scrollbar-width: thin;
-              scrollbar-color: rgba(156, 163, 175, 0.3) transparent;
+              scrollbar-color: ${
+                isDark ? "rgba(75, 85, 99, 0.3)" : "rgba(156, 163, 175, 0.3)"
+              } transparent;
             }
           `}
         </style>
@@ -490,9 +507,8 @@ const Sidebar = ({ onLogout, userName = "Adventus Imobiliária" }) => {
         ))}
       </nav>
 
-      {/* Logout */}
       <div
-        className="p-3 border-t border-gray-700"
+        className={`p-3 border-t ${isDark ? "border-gray-700" : "border-gray-700"}`}
         onClick={(e) => e.stopPropagation()}
       >
         <button

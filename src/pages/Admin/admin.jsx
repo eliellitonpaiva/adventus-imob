@@ -1,34 +1,36 @@
 import React, { useState } from "react";
+import { useTheme } from "../../contexts/ThemeContext"; // Importando o contexto de tema
 
 const Dashboard = () => {
+  const { isDark } = useTheme(); // Hook para verificar se está no modo escuro
   const [stats] = useState([
     {
       title: "Total de Imóveis",
       value: "156",
       change: "+12%",
       trend: "up",
-      color: "bg-blue-500",
+      color: isDark ? "bg-blue-600" : "bg-blue-500",
     },
     {
       title: "Corretores Ativos",
       value: "24",
       change: "+8%",
       trend: "up",
-      color: "bg-green-500",
+      color: isDark ? "bg-green-600" : "bg-green-500",
     },
     {
       title: "Novos Leads",
       value: "89",
       change: "+23%",
       trend: "up",
-      color: "bg-purple-500",
+      color: isDark ? "bg-purple-600" : "bg-purple-500",
     },
     {
       title: "Faturamento",
       value: "R$ 245,8k",
       change: "-5%",
       trend: "down",
-      color: "bg-[#D4A24D]",
+      color: isDark ? "bg-amber-600" : "bg-[#D4A24D]",
     },
   ]);
 
@@ -94,15 +96,30 @@ const Dashboard = () => {
         />
       </svg>
     ),
-    arrowUp: <span className="text-green-600 font-semibold">▲</span>,
-    arrowDown: <span className="text-red-600 font-semibold">▼</span>,
+    arrowUp: (
+      <span
+        className={`${isDark ? "text-emerald-400" : "text-green-600"} font-semibold`}
+      >
+        ▲
+      </span>
+    ),
+    arrowDown: (
+      <span
+        className={`${isDark ? "text-rose-400" : "text-red-600"} font-semibold`}
+      >
+        ▼
+      </span>
+    ),
   };
 
   const Button = ({ children, variant = "primary" }) => {
     const styles = {
-      primary: "bg-[#D4A24D] text-white hover:bg-[#c1923e]",
-      outline:
-        "border border-[#D4A24D] text-[#D4A24D] hover:bg-[#D4A24D] hover:text-white",
+      primary: isDark
+        ? "bg-amber-600/80 text-white hover:bg-amber-600"
+        : "bg-[#D4A24D] text-white hover:bg-[#c1923e]",
+      outline: isDark
+        ? "border border-amber-500 text-amber-400 hover:bg-amber-900/30 hover:text-amber-300"
+        : "border border-[#D4A24D] text-[#D4A24D] bg-transparent hover:bg-[#D4A24D]/10", // MODIFICADO: fundo transparente no modo claro
     };
 
     return (
@@ -115,18 +132,35 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className={`min-h-screen ${isDark ? "bg-gray-900" : "bg-gray-50"}`}>
       <div className="max-w-7xl mx-auto px-4 py-8 space-y-10">
         {/* HEADER */}
         <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-            <p className="text-sm text-gray-500 mt-1">
+            <h1
+              className={`text-3xl font-bold ${isDark ? "text-gray-100" : "text-gray-900"}`}
+            >
+              Dashboard
+            </h1>
+            <p
+              className={`text-sm mt-1 ${isDark ? "text-gray-400" : "text-gray-500"}`}
+            >
               Visão geral do seu CRM imobiliário
             </p>
           </div>
           <div className="flex gap-3">
-            <Button variant="outline">Este mês</Button>
+            {/* Botão "Este mês" - CORRIGIDO: No modo claro, fundo transparente, só contorno e texto amarelo */}
+            <button
+              className={`px-4 py-2 rounded-lg font-medium transition ${
+                isDark
+                  ? "border border-amber-500 text-amber-400 hover:bg-amber-900/30 hover:text-amber-300"
+                  : "border border-[#D4A24D] text-[#D4A24D] bg-transparent hover:bg-[#D4A24D]/10"
+              }`}
+            >
+              Este mês
+            </button>
+
+            {/* Botão "Gerar relatório" - Usando o componente Button com estilos diferentes */}
             <Button>Gerar relatório</Button>
           </div>
         </header>
@@ -144,9 +178,9 @@ const Dashboard = () => {
             return (
               <div
                 key={stat.title}
-                className="bg-white border border-gray-200 rounded-2xl p-6
+                className={`${isDark ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"} border rounded-2xl p-6
                            hover:shadow-md transition
-                           flex flex-col items-center text-center"
+                           flex flex-col items-center text-center`}
               >
                 {/* Ícone */}
                 <div className={`${stat.color} p-4 rounded-2xl mb-4 shadow-sm`}>
@@ -154,17 +188,31 @@ const Dashboard = () => {
                 </div>
 
                 {/* Valor */}
-                <p className="text-3xl font-bold text-gray-900">{stat.value}</p>
+                <p
+                  className={`text-3xl font-bold ${isDark ? "text-gray-100" : "text-gray-900"}`}
+                >
+                  {stat.value}
+                </p>
 
                 {/* Título */}
-                <p className="text-sm text-gray-500 mt-1">{stat.title}</p>
+                <p
+                  className={`text-sm mt-1 ${isDark ? "text-gray-400" : "text-gray-500"}`}
+                >
+                  {stat.title}
+                </p>
 
                 {/* Tendência */}
                 <div className="flex items-center gap-1 mt-3 text-sm font-medium">
                   {stat.trend === "up" ? icons.arrowUp : icons.arrowDown}
                   <span
                     className={
-                      stat.trend === "up" ? "text-green-600" : "text-red-600"
+                      stat.trend === "up"
+                        ? isDark
+                          ? "text-emerald-400"
+                          : "text-green-600"
+                        : isDark
+                          ? "text-rose-400"
+                          : "text-red-600"
                     }
                   >
                     {stat.change} no mês
@@ -176,49 +224,84 @@ const Dashboard = () => {
         </section>
 
         {/* CONTEÚDO INFERIOR */}
-        <section className="bg-white border border-gray-200 rounded-2xl p-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-1">
+        <section
+          className={`${isDark ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"} border rounded-2xl p-6`}
+        >
+          <h2
+            className={`text-xl font-semibold ${isDark ? "text-gray-100" : "text-gray-900"} mb-1`}
+          >
             Acesso rápido
           </h2>
-          <p className="text-gray-500 mb-6">
+          <p className={`${isDark ? "text-gray-400" : "text-gray-500"} mb-6`}>
             Atalhos para o que você mais usa no dia a dia
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="rounded-xl bg-blue-50 p-5">
-              <h3 className="font-semibold text-blue-900 mb-3">Gestão</h3>
-              <ul className="space-y-2 text-blue-700">
+            <div
+              className={`rounded-xl ${isDark ? "bg-blue-900/20 border border-blue-800/30" : "bg-blue-50"} p-5`}
+            >
+              <h3
+                className={`font-semibold ${isDark ? "text-blue-300" : "text-blue-900"} mb-3`}
+              >
+                Gestão
+              </h3>
+              <ul
+                className={`space-y-2 ${isDark ? "text-blue-400" : "text-blue-700"}`}
+              >
                 <li>
-                  <a href="/admin/imoveis" className="hover:underline">
+                  <a
+                    href="/admin/imoveis"
+                    className={`hover:underline ${isDark ? "hover:text-blue-300" : "hover:text-blue-900"}`}
+                  >
                     Imóveis
                   </a>
                 </li>
                 <li>
-                  <a href="/admin/corretores" className="hover:underline">
+                  <a
+                    href="/admin/corretores"
+                    className={`hover:underline ${isDark ? "hover:text-blue-300" : "hover:text-blue-900"}`}
+                  >
                     Corretores
                   </a>
                 </li>
                 <li>
-                  <a href="/admin/leads" className="hover:underline">
+                  <a
+                    href="/admin/leads"
+                    className={`hover:underline ${isDark ? "hover:text-blue-300" : "hover:text-blue-900"}`}
+                  >
                     Leads
                   </a>
                 </li>
               </ul>
             </div>
 
-            <div className="rounded-xl bg-green-50 p-5">
-              <h3 className="font-semibold text-green-900 mb-3">
+            <div
+              className={`rounded-xl ${isDark ? "bg-emerald-900/20 border border-emerald-800/30" : "bg-green-50"} p-5`}
+            >
+              <h3
+                className={`font-semibold ${isDark ? "text-emerald-300" : "text-green-900"} mb-3`}
+              >
                 Resumo rápido
               </h3>
-              <p className="text-sm text-gray-700 leading-relaxed">
+              <p
+                className={`text-sm ${isDark ? "text-gray-300" : "text-gray-700"} leading-relaxed`}
+              >
                 • 156 imóveis ativos
                 <br />• 12 leads recebidos hoje
               </p>
             </div>
 
-            <div className="rounded-xl bg-[#D4A24D]/10 p-5">
-              <h3 className="font-semibold text-[#c1923e] mb-3">Insight</h3>
-              <p className="text-sm text-gray-700">
+            <div
+              className={`rounded-xl ${isDark ? "bg-amber-900/20 border border-amber-800/30" : "bg-[#D4A24D]/10"} p-5`}
+            >
+              <h3
+                className={`font-semibold ${isDark ? "text-amber-300" : "text-[#c1923e]"} mb-3`}
+              >
+                Insight
+              </h3>
+              <p
+                className={`text-sm ${isDark ? "text-gray-300" : "text-gray-700"}`}
+              >
                 Responder um lead em até 15 minutos aumenta muito a chance de
                 fechamento.
               </p>
