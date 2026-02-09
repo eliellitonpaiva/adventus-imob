@@ -23,6 +23,9 @@ import {
 import Button from "../../componentes/ui/Button";
 import { useTheme } from "../../contexts/ThemeContext";
 
+// Adicionando ícone de Troféu
+import { TrophyIcon } from "@heroicons/react/24/outline";
+
 // Componente Modal Performance
 const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
   const { isDark } = useTheme();
@@ -51,6 +54,43 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
 
     // Agora usamos o campo 'desempenho' do imóvel para determinar os dados
     switch (imovel.desempenho) {
+      case "Destaque":
+        // Verifica qual imóvel para definir o valor exato
+        if (imovel.id === 1) {
+          return {
+            visualizacoes: 320,
+            cliquesWhatsApp: 78,
+            solicitacoesVisita: 25,
+            interessadosAtivos: 5,
+            status: "Em Negociação",
+            tempoNegociacao: "3 dias",
+            ultimaAtualizacao: "1 hora atrás",
+            engajamentoCalculado: 158, // Faixa Destaque: ≥150%
+          };
+        } else if (imovel.id === 3) {
+          return {
+            visualizacoes: 285,
+            cliquesWhatsApp: 65,
+            solicitacoesVisita: 18,
+            interessadosAtivos: 4,
+            status: "Vendido",
+            tempoNegociacao: "Concluído",
+            ultimaAtualizacao: "2 horas atrás",
+            engajamentoCalculado: 162, // Faixa Destaque: ≥150%
+          };
+        } else {
+          // Fallback para outros imóveis Destaque
+          return {
+            visualizacoes: 320,
+            cliquesWhatsApp: 78,
+            solicitacoesVisita: 25,
+            interessadosAtivos: 5,
+            status: "Em Negociação",
+            tempoNegociacao: "3 dias",
+            ultimaAtualizacao: "1 hora atrás",
+            engajamentoCalculado: 158,
+          };
+        }
       case "Excelente":
         return {
           visualizacoes: 247,
@@ -60,7 +100,7 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
           status: "Em Negociação",
           tempoNegociacao: "10 dias",
           ultimaAtualizacao: "2 horas atrás",
-          engajamentoCalculado: 125,
+          engajamentoCalculado: 125, // Faixa Excelente: 120-149%
         };
       case "Saudável":
         return {
@@ -71,7 +111,7 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
           status: "Disponível",
           tempoNegociacao: "5 dias",
           ultimaAtualizacao: "1 hora atrás",
-          engajamentoCalculado: 95,
+          engajamentoCalculado: 107, // Faixa Saudável: 100-119%
         };
       case "Atenção":
         return {
@@ -82,7 +122,7 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
           status: "Disponível",
           tempoNegociacao: "15 dias",
           ultimaAtualizacao: "3 horas atrás",
-          engajamentoCalculado: 65,
+          engajamentoCalculado: 85, // Faixa Atenção: 80-99%
         };
       case "Crítico":
         return {
@@ -93,7 +133,7 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
           status: "Disponível",
           tempoNegociacao: "30 dias",
           ultimaAtualizacao: "5 horas atrás",
-          engajamentoCalculado: 35,
+          engajamentoCalculado: 35, // Faixa Crítico: 0-79%
         };
       default:
         return {
@@ -125,21 +165,38 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
 
   // Função para determinar classificação do desempenho
   const getClassificacaoDesempenho = () => {
-    // Se foi vendido, sempre mostra como Excelente
+    // Se foi vendido, sempre mostra como Destaque
     if (localMarcadoComoVendido) {
       return {
-        label: "Excelente",
+        label: "Destaque",
         texto: "Imóvel vendido com sucesso!",
         cor: "text-green-700",
         corIcone: "text-yellow-500",
         bgIcone: "bg-yellow-50",
-        Icone: StarIcon,
+        Icone: TrophyIcon,
         iconSize: "w-5 h-5",
         marginBottom: "mb-2",
       };
     }
 
-    if (engajamento >= 120) {
+    // NOVAS FAIXAS SEGUNDO ESPECIFICAÇÃO:
+    // 0% a 79%  → Status: "Crítico"
+    // 80% a 99% → Status: "Atenção"
+    // 100% a 119% → Status: "Saudável"
+    // 120% a 149% → Status: "Excelente"
+    // 150% ou mais → Status: "Destaque"
+    if (engajamento >= 150) {
+      return {
+        label: "Destaque",
+        texto: "Resultado excepcional fora da curva",
+        cor: "text-green-700",
+        corIcone: "text-yellow-600",
+        bgIcone: "bg-yellow-50",
+        Icone: TrophyIcon,
+        iconSize: "w-5 h-5",
+        marginBottom: "mb-2",
+      };
+    } else if (engajamento >= 120) {
       return {
         label: "Excelente",
         texto: "Resultado acima do esperado",
@@ -150,7 +207,7 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
         iconSize: "w-5 h-5",
         marginBottom: "mb-2",
       };
-    } else if (engajamento >= 80) {
+    } else if (engajamento >= 100) {
       return {
         label: "Saudável",
         texto: "Dentro da meta esperada",
@@ -161,7 +218,7 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
         iconSize: "w-5 h-5",
         marginBottom: "mb-2",
       };
-    } else if (engajamento >= 50) {
+    } else if (engajamento >= 80) {
       return {
         label: "Atenção",
         texto: "Abaixo do potencial esperado",
@@ -191,21 +248,28 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
 
   // Determinar cor e ícone do engajamento para outros usos
   const getEngajamentoInfo = () => {
-    if (localMarcadoComoVendido || engajamento >= 120) {
+    if (localMarcadoComoVendido || engajamento >= 150) {
+      return {
+        color: "text-green-600",
+        bgColor: "bg-green-100",
+        icon: ArrowTrendingUpIcon,
+        label: "Engajamento Excepcional",
+      };
+    } else if (engajamento >= 120) {
       return {
         color: "text-green-600",
         bgColor: "bg-green-100",
         icon: ArrowTrendingUpIcon,
         label: "Alto Engajamento",
       };
-    } else if (engajamento >= 80) {
+    } else if (engajamento >= 100) {
       return {
         color: "text-blue-600",
         bgColor: "bg-blue-100",
         icon: ArrowTrendingUpIcon,
         label: "Bom Engajamento",
       };
-    } else if (engajamento >= 50) {
+    } else if (engajamento >= 80) {
       return {
         color: "text-amber-600",
         bgColor: "bg-amber-100",
@@ -239,9 +303,9 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
       insights.push(
         "Imóvel está convertendo acima do esperado para o volume de tráfego.",
       );
-    } else if (engajamento >= 80) {
+    } else if (engajamento >= 100) {
       insights.push("Imóvel dentro da média esperada de conversão.");
-    } else if (engajamento >= 50) {
+    } else if (engajamento >= 80) {
       insights.push(
         "Imóvel abaixo do potencial esperado. Avaliar ajustes no anúncio.",
       );
@@ -550,7 +614,7 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
                     <div
                       className={`text-sm font-medium ${isDark ? "text-gray-300" : "text-gray-700"} mb-1`}
                     >
-                      Conversão
+                      Índice de Interesse do Imóvel
                     </div>
                     <div
                       className={`text-2xl font-bold ${isDark ? "text-gray-100" : "text-gray-900"}`}
@@ -596,14 +660,6 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
                       >
                         {classificacao.texto}
                       </div>
-                    </div>
-
-                    <div
-                      className={`text-xs ${isDark ? "text-gray-400" : "text-gray-600"}`}
-                    >
-                      Esperado: <span className="font-medium">24%</span> |
-                      Alcançado:{" "}
-                      <span className="font-medium">{engajamento}%</span>
                     </div>
                   </div>
                 </div>
@@ -728,7 +784,7 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
                   <h5
                     className={`font-bold ${isDark ? "text-gray-200" : "text-gray-900"} text-sm`}
                   >
-                    Índice de Performance Comercial
+                    Como calculamos este índice
                   </h5>
                 </div>
 
@@ -737,67 +793,33 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
                     isDark ? "text-gray-300 text-sm" : "text-gray-700 text-sm"
                   }
                 >
-                  Este indicador mostra o nível de interesse real gerado por
-                  este imóvel com base nas interações dos usuários.
+                  Este índice mostra o quanto o imóvel despertou interesse real
+                  em relação ao número de visualizações.
                 </p>
-
-                <div>
-                  <h6
-                    className={`font-semibold ${isDark ? "text-gray-300" : "text-gray-800"} text-sm mb-1`}
-                  >
-                    Critérios de pontuação:
-                  </h6>
-                  <ul
-                    className={`${isDark ? "text-gray-300" : "text-gray-700"} text-sm space-y-1 ml-2`}
-                  >
-                    <li className="flex items-start">
-                      <span className="text-blue-600 mr-2">•</span>
-                      <span>
-                        <strong>Visualização do imóvel:</strong> 1 ponto
-                      </span>
-                    </li>
-                    <li className="flex items-start">
-                      <span className="text-green-600 mr-2">•</span>
-                      <span>
-                        <strong>Clique no WhatsApp:</strong> 10 pontos
-                      </span>
-                    </li>
-                    <li className="flex items-start">
-                      <span className="text-purple-600 mr-2">•</span>
-                      <span>
-                        <strong>Solicitação de visita:</strong> 50 pontos
-                      </span>
-                    </li>
-                  </ul>
-                </div>
-
-                <div>
-                  <h6
-                    className={`font-semibold ${isDark ? "text-gray-300" : "text-gray-800"} text-sm mb-1`}
-                  >
-                    Regra de cálculo:
-                  </h6>
-                  <p
-                    className={
-                      isDark ? "text-gray-300 text-sm" : "text-gray-700 text-sm"
-                    }
-                  >
-                    A meta de 100% é atingida quando 5% do total de
-                    visualizações se convertem em ações comerciais ponderadas
-                    por pontuação.
-                  </p>
-                </div>
-
-                <div
-                  className={`pt-2 border-t ${isDark ? "border-gray-700" : "border-gray-200"}`}
+                <p
+                  className={
+                    isDark ? "text-gray-300 text-sm" : "text-gray-700 text-sm"
+                  }
                 >
-                  <p
-                    className={`${isDark ? "text-gray-300" : "text-gray-700"} text-sm italic`}
-                  >
-                    <strong>Observação:</strong> Quanto maior o índice, maior o
-                    potencial de conversão comercial do imóvel.
-                  </p>
-                </div>
+                  Consideramos diferentes tipos de interação, dando mais peso
+                  para ações que indicam maior intenção, como cliques no
+                  WhatsApp e solicitações de visita.
+                </p>
+                <p
+                  className={
+                    isDark ? "text-gray-300 text-sm" : "text-gray-700 text-sm"
+                  }
+                >
+                  Quando o índice chega a 100%, o imóvel atingiu o nível
+                  esperado de interesse.
+                </p>
+                <p
+                  className={
+                    isDark ? "text-gray-300 text-sm" : "text-gray-700 text-sm"
+                  }
+                >
+                  Valores acima disso indicam desempenho acima da média.
+                </p>
               </div>
             </div>
           )}
@@ -819,7 +841,7 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
               <span
                 className={`text-xs font-medium ${isDark ? "text-amber-300" : "text-amber-800"} whitespace-nowrap`}
               >
-                Como calculamos a conversão
+                Como calculamos este índice
               </span>
             </div>
 
@@ -924,7 +946,7 @@ const Imoveis = () => {
       estado: "MA",
       status: "Disponível",
       preco: "R$ 250.000,00",
-      desempenho: "Excelente",
+      desempenho: "Destaque", // Faixa Destaque: 158%
     },
     {
       id: 2,
@@ -950,7 +972,7 @@ const Imoveis = () => {
       estado: "MA",
       status: "Vendido",
       preco: "R$ 180.000,00",
-      desempenho: "Excelente",
+      desempenho: "Destaque", // Faixa Destaque: 162%
     },
     {
       id: 4,
