@@ -23,6 +23,9 @@ import {
 import Button from "../../componentes/ui/Button";
 import { useTheme } from "../../contexts/ThemeContext";
 
+// ADICIONE ESTE IMPORT:
+import { useNavigate } from "react-router-dom";
+
 // Adicionando ícone de Troféu
 import { TrophyIcon } from "@heroicons/react/24/outline";
 
@@ -922,9 +925,70 @@ const BotaoDesempenho = ({ imovel }) => {
   );
 };
 
+// Componente para Card de KPI
+const KPICard = ({ icon: Icon, title, value, colorScheme }) => {
+  const { isDark } = useTheme();
+
+  let iconText, iconBg, borderColor;
+
+  switch (colorScheme) {
+    case "slate":
+      iconText = isDark ? "text-slate-400" : "text-slate-600";
+      iconBg = isDark ? "bg-slate-800/50" : "bg-slate-100/50";
+      borderColor = isDark ? "border-l-slate-700" : "border-l-slate-200";
+      break;
+    case "green":
+      iconText = isDark ? "text-green-400" : "text-green-600";
+      iconBg = isDark ? "bg-green-900/20" : "bg-green-100/50";
+      borderColor = isDark ? "border-l-green-800/50" : "border-l-green-200";
+      break;
+    case "amber":
+      iconText = isDark ? "text-amber-400" : "text-amber-600";
+      iconBg = isDark ? "bg-amber-900/20" : "bg-amber-100/50";
+      borderColor = isDark ? "border-l-amber-800/50" : "border-l-amber-200";
+      break;
+    case "indigo":
+      iconText = isDark ? "text-indigo-400" : "text-indigo-600";
+      iconBg = isDark ? "bg-indigo-900/20" : "bg-indigo-100/50";
+      borderColor = isDark ? "border-l-indigo-800/50" : "border-l-indigo-200";
+      break;
+    default:
+      iconText = isDark ? "text-gray-400" : "text-gray-600";
+      iconBg = isDark ? "bg-gray-800/50" : "bg-gray-100/50";
+      borderColor = isDark ? "border-l-gray-700" : "border-l-gray-200";
+  }
+
+  return (
+    <div
+      className={`flex items-center gap-4 p-4 rounded-lg shadow-sm border transition-colors duration-200 border-l-4 ${borderColor} ${
+        isDark ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"
+      }`}
+    >
+      <div className={`p-3 rounded-full ${iconBg}`}>
+        <Icon className={`w-6 h-6 ${iconText}`} />
+      </div>
+      <div>
+        <div
+          className={`text-2xl font-bold ${
+            isDark ? "text-gray-100" : "text-gray-900"
+          }`}
+        >
+          {value}
+        </div>
+        <div
+          className={`text-sm ${isDark ? "text-gray-400" : "text-gray-600"}`}
+        >
+          {title}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // Componente principal Imoveis
 const Imoveis = () => {
   const { isDark } = useTheme();
+  const navigate = useNavigate(); // ADICIONADO: Hook de navegação
 
   // Estados para os filtros
   const [searchTerm, setSearchTerm] = useState("");
@@ -1093,6 +1157,16 @@ const Imoveis = () => {
     },
   ];
 
+  // Cálculo dos KPIs
+  const totalImoveis = imoveisData.length;
+  const disponiveis = imoveisData.filter(
+    (i) => i.status === "Disponível",
+  ).length;
+  const emNegociacaoReservados = imoveisData.filter(
+    (i) => i.status === "Reservado",
+  ).length;
+  const vendidos = imoveisData.filter((i) => i.status === "Vendido").length;
+
   // Função para filtrar os imóveis
   const imoveisFiltrados = useMemo(() => {
     return imoveisData.filter((imovel) => {
@@ -1141,7 +1215,6 @@ const Imoveis = () => {
   };
 
   // Contadores para mostrar quantos imóveis foram encontrados
-  const totalImoveis = imoveisData.length;
   const imoveisEncontrados = imoveisFiltrados.length;
 
   // Cores para os status
@@ -1195,10 +1268,44 @@ const Imoveis = () => {
             Gerencie todos os imóveis cadastrados
           </p>
         </div>
-        <Button variant="primary" className="mt-4 sm:mt-0">
+        <Button
+          variant="primary"
+          className="mt-4 sm:mt-0"
+          onClick={() => navigate("/admin/imoveis/novo")} // CORRIGIDO: Adicionada navegação
+        >
           <PlusIcon className="w-5 h-5 mr-2" />
           Novo Imóvel
         </Button>
+      </div>
+
+      {/* Bloco de KPIs */}
+      <div className="mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <KPICard
+            icon={ChartBarIcon}
+            title="Total de Imóveis"
+            value={totalImoveis}
+            colorScheme="slate"
+          />
+          <KPICard
+            icon={CheckCircleIcon}
+            title="Disponíveis"
+            value={disponiveis}
+            colorScheme="green"
+          />
+          <KPICard
+            icon={ClockIcon}
+            title="Em Negociação / Reservados"
+            value={emNegociacaoReservados}
+            colorScheme="amber"
+          />
+          <KPICard
+            icon={CheckBadgeIcon}
+            title="Vendidos"
+            value={vendidos}
+            colorScheme="indigo"
+          />
+        </div>
       </div>
 
       {/* Search - FILTROS INTERATIVOS */}
