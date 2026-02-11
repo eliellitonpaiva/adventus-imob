@@ -1268,14 +1268,25 @@ const Imoveis = () => {
             Gerencie todos os imóveis cadastrados
           </p>
         </div>
-        <Button
-          variant="primary"
-          className="mt-4 sm:mt-0"
-          onClick={() => navigate("/admin/imoveis/novo")} // CORRIGIDO: Adicionada navegação
-        >
-          <PlusIcon className="w-5 h-5 mr-2" />
-          Novo Imóvel
-        </Button>
+        <div className="flex items-center gap-3 mt-4 sm:mt-0">
+          {/* BOTÃO NOVO EMPREENDIMENTO - VERDE ESCURO (#15803D) */}
+          <Button
+            variant="secondary"
+            className="bg-[#15803D] hover:bg-[#166534] text-white border-none"
+            onClick={() => navigate("/admin/cadastrar-empreendimento")}
+          >
+            <PlusIcon className="w-5 h-5 mr-2" />
+            Novo Empreendimento
+          </Button>
+          {/* Botão Novo Imóvel existente */}
+          <Button
+            variant="primary"
+            onClick={() => navigate("/admin/imoveis/novo")}
+          >
+            <PlusIcon className="w-5 h-5 mr-2" />
+            Novo Imóvel
+          </Button>
+        </div>
       </div>
 
       {/* Bloco de KPIs */}

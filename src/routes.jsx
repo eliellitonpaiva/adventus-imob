@@ -31,6 +31,11 @@ const AdminVisitas = lazy(() => import("./pages/Admin/visitas"));
 // ========== PÁGINAS DE CADASTRO ADMIN ==========
 const CadastrarImovel = lazy(() => import("./pages/Admin/CadastrarImovel"));
 
+// 🔥 FIX: Import com caminho ABSOLUTO e extensão .jsx
+const CadastrarEmpreendimento = lazy(
+  () => import("/src/pages/Admin/CadastrarEmpreendimento.jsx"),
+);
+
 // ========== Páginas simples ==========
 function Institucional() {
   return (
@@ -154,8 +159,14 @@ function AppRoutes() {
               <Route index element={<AdminDashboard />} />
               <Route path="imoveis" element={<AdminImoveis />} />
 
-              {/* Rota para cadastrar novo imóvel */}
+              {/* Rotas de imóveis */}
               <Route path="imoveis/novo" element={<CadastrarImovel />} />
+
+              {/* 🔥 FIX: Rota simplificada SEM subpastas */}
+              <Route
+                path="cadastrar-empreendimento"
+                element={<CadastrarEmpreendimento />}
+              />
 
               <Route path="corretores" element={<AdminCorretores />} />
               <Route path="leads" element={<AdminLeads />} />

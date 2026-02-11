@@ -25,9 +25,6 @@ const ComprarImovel = () => {
     priceRange: "all",
   });
 
-  // REMOVI: Estados complexos de paginação
-  // REMOVI: isFilteredSearch, paginaAtual, totalImoveis, imoveisPorPagina
-
   useEffect(() => {
     const loadFiltersFromStorage = () => {
       try {
@@ -73,7 +70,7 @@ const ComprarImovel = () => {
     }
   }, []);
 
-  // FUNÇÃO SIMPLIFICADA: Busca TODOS os imóveis de uma vez
+  // FUNÇÃO ATUALIZADA: Agora lê tanto de 'dependencias' quanto de 'caracteristicas'
   const fetchImoveis = async (filtros) => {
     setLoading(true);
     setError(null);
@@ -97,17 +94,23 @@ const ComprarImovel = () => {
       if (filtros.propertyType !== "all") {
         query = query.eq("tipo", filtros.propertyType);
       }
+
+      // 🔥 CORREÇÃO: Filtro de quartos agora suporta ambas as estruturas
       if (filtros.bedrooms !== "all") {
         const quartosNum = parseInt(filtros.bedrooms);
-        query = query.gte("caracteristicas->quartos", quartosNum.toString());
+        // Tenta filtrar pela nova coluna 'dependencias', se falhar usa 'caracteristicas'
+        query = query.or(
+          `dependencias->>dormitorios.gte.${quartosNum},caracteristicas->>quartos.gte.${quartosNum}`,
+        );
       }
+
       if (filtros.priceRange !== "all") {
         const [min, max] = filtros.priceRange.split("-").map(Number);
         if (min) query = query.gte("preco", min);
         if (max) query = query.lte("preco", max);
       }
 
-      // 3. Executar consulta - SEM LIMITE, SEM RANGE
+      // 3. Executar consulta
       const { data, error: supabaseError } = await query;
 
       if (supabaseError) throw supabaseError;
@@ -164,6 +167,28 @@ const ComprarImovel = () => {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     }).format(valorNumerico);
+  };
+
+  // 🔥 FUNÇÃO ATUALIZADA: Extrai os dados corretamente priorizando 'dependencias'
+  // Agora incluindo os campos area_total e area_construida
+  const extrairDadosImovel = (imovel) => {
+    const caracteristicas = imovel.caracteristicas || {};
+    const dependencias = imovel.dependencias || {};
+
+    // PRIORIDADE 1: Usar dados da nova coluna 'dependencias'
+    // PRIORIDADE 2: Se não existir, usar dados da coluna 'caracteristicas'
+    return {
+      // Campos já existentes
+      quartos: dependencias.dormitorios || caracteristicas.quartos || "0",
+      suites: dependencias.suites || caracteristicas.suites || "0",
+      banheiros: dependencias.banheiros || caracteristicas.banheiros || "0",
+      vagas: dependencias.vagas || caracteristicas.vagas || "0",
+
+      // 🆕 NOVOS CAMPOS - Área Total e Área Construída
+      areaTotal: dependencias.area_total || caracteristicas.areaTotal || "0",
+      areaConstruida:
+        dependencias.area_construida || caracteristicas.areaConstruida || "0",
+    };
   };
 
   // Determinar status
@@ -248,26 +273,26 @@ const ComprarImovel = () => {
             <section className="lista-imoveis">
               {imoveis.length > 0 ? (
                 imoveis.map((imovel) => {
-                  const caracteristicas = imovel.caracteristicas || {};
-                  const quartos = caracteristicas.quartos || "0";
-                  const suites = caracteristicas.suites || "0";
-                  const banheiros = caracteristicas.banheiros || "0";
-                  const vagas = caracteristicas.vagas || "0";
+                  // 🔥 CORREÇÃO: Usa a nova função para extrair os dados
+                  const dados = extrairDadosImovel(imovel);
 
                   return (
                     <CardImovel
                       key={imovel.id}
+                      id={imovel.id}
                       status={getStatus(imovel)}
                       tipo={imovel.tipo?.toUpperCase() || "CASA"}
                       finalidade="VENDA"
                       preco={formatPrice(imovel.preco)}
                       titulo={imovel.titulo || "Imóvel sem título"}
                       localizacao={`${imovel.bairro || ""} • ${imovel.cidade || ""}${imovel.estado ? ` / ${imovel.estado}` : ""}`}
-                      quartos={quartos}
-                      suites={suites}
-                      banheiros={banheiros}
-                      vagas={vagas}
-                      // ✅ IMPORTANTE: Agora busca o campo em_condominio do banco!
+                      quartos={dados.quartos}
+                      suites={dados.suites}
+                      banheiros={dados.banheiros}
+                      vagas={dados.vagas}
+                      // 🆕 NOVOS CAMPOS - Passando para o CardImovel
+                      areaTotal={dados.areaTotal}
+                      areaConstruida={dados.areaConstruida}
                       emCondominio={imovel.em_condominio || false}
                       imagem={
                         imovel.imagem_url ||
@@ -315,7 +340,7 @@ const ComprarImovel = () => {
           </>
         )}
 
-        {/* ✅ PAGINAÇÃO FIXA RESTAURADA (como estava antes) */}
+        {/* PAGINAÇÃO FIXA */}
         {!loading && !error && imoveis.length > 0 && (
           <div className="pagination">
             <button className="page-btn disabled">
@@ -332,7 +357,7 @@ const ComprarImovel = () => {
         )}
       </main>
 
-      {/* ESTILOS (mantidos iguais) */}
+      {/* ESTILOS */}
       <style jsx="true" global="true">{`
         .page-header-mobile-optimized {
           padding: 1.5rem 0 !important;

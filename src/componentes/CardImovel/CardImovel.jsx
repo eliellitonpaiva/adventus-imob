@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 
 const CardImovel = ({
+  id, // ← ADICIONADO: ID do imóvel vindo do banco de dados
   status = "available",
   tipo = "CASA",
   finalidade = "VENDA",
@@ -131,9 +132,9 @@ const CardImovel = ({
             )}
           </div>
 
-          {/* LADO DIREITO: SEMPRE MOSTRA O BOTÃO "VER DETALHES" */}
+          {/* LADO DIREITO: SEMPRE MOSTRA O BOTÃO "VER DETALHES" COM ID DINÂMICO */}
           <Link
-            to="/imovel/1"
+            to={`/imovel/${id}`} // ← CORRIGIDO: AGORA USA O ID REAL DO IMÓVEL
             className="bg-gray-800 text-white px-6 py-3 rounded-lg font-bold font-sans border-none cursor-pointer transition-all duration-300 ease-in-out text-sm flex items-center gap-2.5 relative overflow-hidden shadow-lg hover:shadow-2xl hover:-translate-y-1 border-0 border-gray-800/20 group/btn"
           >
             <span className="relative z-10 flex items-center gap-2.5">
