@@ -1,4 +1,3 @@
-// Filtros.jsx - VERSÃO FINAL: COM BOTÃO BUSCAR ORIGINAL E LAYOUT CORRETO
 import React, { useState, useEffect, useRef } from "react";
 
 const Filtros = ({ onFilterChange, initialFilters = {} }) => {
@@ -13,6 +12,20 @@ const Filtros = ({ onFilterChange, initialFilters = {} }) => {
     parking: "all",
     priceRange: "all",
   });
+
+  // CIDADES FIXAS
+  const cidadesFixas = ["Açailândia", "Imperatriz", "São Luís", "Itinga"];
+
+  // BAIRROS FIXOS (por cidade)
+  const bairrosPorCidade = {
+    Açailândia: ["Centro", "Barra Azul", "Jardim Glória", "Getat"],
+    Imperatriz: ["Centro", "Laranjeiras", "Colinas Park", "Jardim de Alá"],
+    "São Luís": ["Centro", "Calhau", "Renascença", "São Francisco"],
+    Itinga: ["Centro", "Vila Nova", "Boa Esperança"],
+  };
+
+  // BAIRROS DISPONÍVEIS baseado na cidade selecionada
+  const [bairrosDisponiveis, setBairrosDisponiveis] = useState([]);
 
   // Rastrear quais filtros foram inicializados pelo Hero
   const [initializedFromHero, setInitializedFromHero] = useState({
@@ -36,10 +49,27 @@ const Filtros = ({ onFilterChange, initialFilters = {} }) => {
   const purposeRef = useRef(null);
   const condominiumRef = useRef(null);
 
+  // ====================
+  // EFEITOS
+  // ====================
+
+  // Atualizar bairros disponíveis quando cidade mudar
+  useEffect(() => {
+    if (
+      filters.city &&
+      filters.city !== "all" &&
+      bairrosPorCidade[filters.city]
+    ) {
+      setBairrosDisponiveis(bairrosPorCidade[filters.city]);
+    } else {
+      setBairrosDisponiveis([]);
+    }
+  }, [filters.city]);
+
   // INICIALIZAR COM OS FILTROS RECEBIDOS DO HERO
   useEffect(() => {
     if (initialFilters && Object.keys(initialFilters).length > 0) {
-      console.log("Filtros recebidos:", initialFilters);
+      console.log("Filtros recebidos do Hero:", initialFilters);
 
       // Identificar quais campos vieram preenchidos do Hero
       const newInitializedState = { ...initializedFromHero };
@@ -55,7 +85,7 @@ const Filtros = ({ onFilterChange, initialFilters = {} }) => {
         ...initialFilters,
       }));
 
-      // Aplicar foco visual após um pequeno delay
+      // Aplicar contorno amarelo após um pequeno delay
       setTimeout(() => {
         const refs = {
           purpose: purposeRef,
@@ -74,22 +104,28 @@ const Filtros = ({ onFilterChange, initialFilters = {} }) => {
             initialFilters[key] !== "all" &&
             refs[key]?.current
           ) {
-            refs[key].current.classList.add("hero-initialized-active");
+            // Aplicar contorno amarelo (borda) em vez de sombra
+            refs[key].current.classList.add(
+              "!border-[#D4A24D]", // Borda amarela
+              "!border-2", // Espessura da borda
+              "animate-pulse", // Efeito de pulsação
+            );
           }
         });
       }, 100);
     }
   }, [initialFilters]);
 
+  // Função principal para alterar filtros
   const handleChange = (name, value) => {
-    // Remover o estilo ativo quando o usuário mudar manualmente
+    // Remover o contorno amarelo quando o usuário mudar manualmente
     if (initializedFromHero[name]) {
       setInitializedFromHero((prev) => ({
         ...prev,
         [name]: false,
       }));
 
-      // Remover classe de ativo
+      // Remover contorno amarelo
       const refs = {
         purpose: purposeRef,
         city: cityRef,
@@ -102,18 +138,34 @@ const Filtros = ({ onFilterChange, initialFilters = {} }) => {
       };
 
       if (refs[name] && refs[name].current) {
-        refs[name].current.classList.remove("hero-initialized-active");
+        refs[name].current.classList.remove(
+          "!border-[#D4A24D]",
+          "!border-2",
+          "animate-pulse",
+        );
       }
     }
 
-    const updated = { ...filters, [name]: value };
-    setFilters(updated);
-    onFilterChange && onFilterChange(updated);
+    // Se mudar cidade, resetar bairro
+    if (name === "city") {
+      const updated = { ...filters, [name]: value, neighborhood: "all" };
+      setFilters(updated);
+      // Atualização automática em tempo real (sem clicar em Buscar)
+      onFilterChange && onFilterChange(updated);
+    } else {
+      const updated = { ...filters, [name]: value };
+      setFilters(updated);
+      // Atualização automática em tempo real (sem clicar em Buscar)
+      onFilterChange && onFilterChange(updated);
+    }
   };
 
+  // Função que deve ser chamada ao clicar em "Buscar"
   const handleSearch = () => {
-    // Apenas notifica que os filtros foram aplicados
-    onFilterChange && onFilterChange(filters);
+    if (onFilterChange) {
+      // Envia o objeto `filters` (com todos os valores) para o componente pai
+      onFilterChange(filters);
+    }
   };
 
   const clearFilters = () => {
@@ -142,7 +194,7 @@ const Filtros = ({ onFilterChange, initialFilters = {} }) => {
       priceRange: false,
     });
 
-    // Remover classes de ativo de todos os refs
+    // Remover contorno amarelo de todos os refs
     [
       purposeRef,
       cityRef,
@@ -154,12 +206,16 @@ const Filtros = ({ onFilterChange, initialFilters = {} }) => {
       condominiumRef,
     ].forEach((ref) => {
       if (ref.current) {
-        ref.current.classList.remove("hero-initialized-active");
+        ref.current.classList.remove(
+          "!border-[#D4A24D]",
+          "!border-2",
+          "animate-pulse",
+        );
       }
     });
   };
 
-  // Verifica se um filtro deve ter estilo ativo
+  // Verifica se um filtro deve ter contorno amarelo
   const shouldBeActive = (fieldName) => {
     return (
       initializedFromHero[fieldName] &&
@@ -171,52 +227,38 @@ const Filtros = ({ onFilterChange, initialFilters = {} }) => {
   // Verifica se o campo tem valor
   const hasValue = (field) => filters[field] !== "all";
 
-  // Classes condicionais para os selects - IGUAL AO HERO
-  const getSelectClass = (fieldName, ref) => {
-    const baseClass =
-      "w-full pl-12 pr-10 py-3.5 border-2 border-gray-300 rounded-xl bg-white text-gray-800 font-medium form-select-identical focus:outline-none focus:border-[#D4A24D] focus:ring-2 focus:ring-[#D4A24D]/10 transition-all duration-300 cursor-pointer";
+  // Classes condicionais para os selects - SETAS MENORES
+  const getSelectClass = (fieldName) => {
+    const baseClasses =
+      "w-full pl-12 pr-8 py-3.5 border-2 border-gray-300 rounded-xl bg-white text-gray-800 font-medium focus:outline-none focus:border-[#D4A24D] focus:ring-2 focus:ring-[#D4A24D]/10 transition-all duration-300 cursor-pointer appearance-none";
+
     const heroActiveClass = shouldBeActive(fieldName)
-      ? "!border-[#D4A24D] !ring-2 !ring-[#D4A24D]/10 hero-initialized-active"
+      ? "!border-[#D4A24D] !border-2 animate-pulse"
       : "";
 
-    return `${baseClass} ${heroActiveClass}`;
+    return `${baseClasses} ${heroActiveClass}`;
+  };
+
+  // Estilo inline para as setinhas
+  const getSelectStyle = (fieldName) => {
+    // Setinha normal (cinza)
+    const normalArrow =
+      'url(\'data:image/svg+xml;charset=utf-8,%3Csvg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 16 16" stroke="%239ca3af"%3E%3Cpath stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6l4 4 4-4"%3E%3C/path%3E%3C/svg%3E\')';
+
+    // Setinha quando o select tem valor (amarela)
+    const activeArrow =
+      'url(\'data:image/svg+xml;charset=utf-8,%3Csvg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 16 16" stroke="%23D4A24D"%3E%3Cpath stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6l4 4 4-4"%3E%3C/path%3E%3C/svg%3E\')';
+
+    return {
+      backgroundImage: hasValue(fieldName) ? activeArrow : normalArrow,
+      backgroundRepeat: "no-repeat",
+      backgroundPosition: "right 12px center",
+      backgroundSize: "14px",
+    };
   };
 
   return (
     <>
-      {/* ESTILOS GLOBAIS - IGUAIS AO HERO */}
-      <style jsx="true" global="true">{`
-        .form-select-identical {
-          appearance: none;
-          background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23a0aec0'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
-          background-repeat: no-repeat;
-          background-position: right 20px center;
-          background-size: 20px;
-        }
-
-        .form-select-identical:focus {
-          background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23D4A24D'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
-        }
-
-        .hero-initialized-active {
-          border-color: #d4a24d !important;
-          box-shadow: 0 0 0 3px rgba(212, 162, 77, 0.2) !important;
-          animation: pulse-gold 2s infinite;
-        }
-
-        @keyframes pulse-gold {
-          0% {
-            box-shadow: 0 0 0 0 rgba(212, 162, 77, 0.4);
-          }
-          70% {
-            box-shadow: 0 0 0 6px rgba(212, 162, 77, 0);
-          }
-          100% {
-            box-shadow: 0 0 0 0 rgba(212, 162, 77, 0);
-          }
-        }
-      `}</style>
-
       {/* SEÇÃO DE FILTROS - LAYOUT ORIGINAL COM BOTÃO BUSCAR */}
       <section
         className="w-full rounded-2xl bg-white/90 backdrop-blur-sm p-6 relative overflow-hidden"
@@ -247,7 +289,7 @@ const Filtros = ({ onFilterChange, initialFilters = {} }) => {
           Buscar
         </div>
 
-        {/* 👉 NOVO: Badge indicando que filtros foram pré-selecionados */}
+        {/* 👉 Badge indicando que filtros foram pré-selecionados */}
         {Object.values(initializedFromHero).some((val) => val === true) && (
           <div className="absolute top-6 right-6 z-20">
             <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-[#e6a400]/10 text-[#e6a400] border border-[#e6a400]/30">
@@ -270,7 +312,8 @@ const Filtros = ({ onFilterChange, initialFilters = {} }) => {
             ></i>
             <select
               ref={purposeRef}
-              className={getSelectClass("purpose", purposeRef)}
+              className={getSelectClass("purpose")}
+              style={getSelectStyle("purpose")}
               value={filters.purpose}
               onChange={(e) => handleChange("purpose", e.target.value)}
             >
@@ -289,7 +332,8 @@ const Filtros = ({ onFilterChange, initialFilters = {} }) => {
             ></i>
             <select
               ref={propertyTypeRef}
-              className={getSelectClass("propertyType", propertyTypeRef)}
+              className={getSelectClass("propertyType")}
+              style={getSelectStyle("propertyType")}
               value={filters.propertyType}
               onChange={(e) => handleChange("propertyType", e.target.value)}
             >
@@ -310,14 +354,17 @@ const Filtros = ({ onFilterChange, initialFilters = {} }) => {
             ></i>
             <select
               ref={cityRef}
-              className={getSelectClass("city", cityRef)}
+              className={getSelectClass("city")}
+              style={getSelectStyle("city")}
               value={filters.city}
               onChange={(e) => handleChange("city", e.target.value)}
             >
               <option value="all">Cidade</option>
-              <option value="Açailândia">Açailândia</option>
-              <option value="Imperatriz">Imperatriz</option>
-              <option value="São Luís">São Luís</option>
+              {cidadesFixas.map((cidade) => (
+                <option key={cidade} value={cidade}>
+                  {cidade}
+                </option>
+              ))}
             </select>
           </div>
 
@@ -330,15 +377,22 @@ const Filtros = ({ onFilterChange, initialFilters = {} }) => {
             ></i>
             <select
               ref={neighborhoodRef}
-              className={getSelectClass("neighborhood", neighborhoodRef)}
+              className={getSelectClass("neighborhood")}
+              style={getSelectStyle("neighborhood")}
               value={filters.neighborhood}
               onChange={(e) => handleChange("neighborhood", e.target.value)}
+              disabled={!filters.city || filters.city === "all"}
             >
-              <option value="all">Bairro</option>
-              <option value="Centro">Centro</option>
-              <option value="Barra Azul">Barra Azul</option>
-              <option value="Jardim Glória">Jardim Glória</option>
-              <option value="Getat">Getat</option>
+              <option value="all">
+                {!filters.city || filters.city === "all"
+                  ? "Bairro"
+                  : "Todos bairros"}
+              </option>
+              {bairrosDisponiveis.map((bairro) => (
+                <option key={bairro} value={bairro}>
+                  {bairro}
+                </option>
+              ))}
             </select>
           </div>
 
@@ -351,7 +405,8 @@ const Filtros = ({ onFilterChange, initialFilters = {} }) => {
             ></i>
             <select
               ref={condominiumRef}
-              className={getSelectClass("condominium", condominiumRef)}
+              className={getSelectClass("condominium")}
+              style={getSelectStyle("condominium")}
               value={filters.condominium}
               onChange={(e) => handleChange("condominium", e.target.value)}
             >
@@ -370,7 +425,8 @@ const Filtros = ({ onFilterChange, initialFilters = {} }) => {
             ></i>
             <select
               ref={bedroomsRef}
-              className={getSelectClass("bedrooms", bedroomsRef)}
+              className={getSelectClass("bedrooms")}
+              style={getSelectStyle("bedrooms")}
               value={filters.bedrooms}
               onChange={(e) => handleChange("bedrooms", e.target.value)}
             >
@@ -391,7 +447,8 @@ const Filtros = ({ onFilterChange, initialFilters = {} }) => {
             ></i>
             <select
               ref={parkingRef}
-              className={getSelectClass("parking", parkingRef)}
+              className={getSelectClass("parking")}
+              style={getSelectStyle("parking")}
               value={filters.parking}
               onChange={(e) => handleChange("parking", e.target.value)}
             >
@@ -411,7 +468,8 @@ const Filtros = ({ onFilterChange, initialFilters = {} }) => {
             ></i>
             <select
               ref={priceRangeRef}
-              className={getSelectClass("priceRange", priceRangeRef)}
+              className={getSelectClass("priceRange")}
+              style={getSelectStyle("priceRange")}
               value={filters.priceRange}
               onChange={(e) => handleChange("priceRange", e.target.value)}
             >
@@ -420,6 +478,9 @@ const Filtros = ({ onFilterChange, initialFilters = {} }) => {
               <option value="100000-200000">R$ 100.000 – R$ 200.000</option>
               <option value="200000-300000">R$ 200.000 – R$ 300.000</option>
               <option value="300000+">Acima de R$ 300.000</option>
+              <option value="300000-500000">R$ 300.000 – R$ 500.000</option>
+              <option value="500000-1000000">R$ 500.000 – R$ 1.000.000</option>
+              <option value="1000000-999999999">Acima de R$ 1.000.000</option>
             </select>
           </div>
 

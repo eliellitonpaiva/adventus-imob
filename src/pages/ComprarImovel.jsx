@@ -1,25 +1,39 @@
 import { useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
-
 import Filtros from "../componentes/Filtros/Filtros";
 import CardImovel from "../componentes/CardImovel/CardImovel";
+import { supabase } from "/src/lib/supabase";
 import "./ComprarImovel.css";
 
 const ComprarImovel = () => {
   const location = useLocation();
-
-  // filtros que vêm do Hero
   const [initialFilters, setInitialFilters] = useState({});
 
+  // Estados
+  const [imoveis, setImoveis] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Filtros ativos - MAIS SIMPLES
+  const [filtrosAtivos, setFiltrosAtivos] = useState({
+    purpose: "buy",
+    propertyType: "all",
+    city: "all",
+    neighborhood: "all",
+    bedrooms: "all",
+    parking: "all",
+    priceRange: "all",
+  });
+
+  // REMOVI: Estados complexos de paginação
+  // REMOVI: isFilteredSearch, paginaAtual, totalImoveis, imoveisPorPagina
+
   useEffect(() => {
-    // 👉 Ao montar: ler filtros do localStorage
     const loadFiltersFromStorage = () => {
       try {
         const savedFilters = localStorage.getItem("hero_filters");
         if (savedFilters) {
           const parsed = JSON.parse(savedFilters);
-
-          // Só usar se for do tipo "comprar"
           if (parsed.tipo === "comprar") {
             const heroFilters = {
               purpose: "buy",
@@ -30,39 +44,157 @@ const ComprarImovel = () => {
               parking: parsed.filtros.parking || "all",
               priceRange: parsed.filtros.priceRange || "all",
             };
-
             setInitialFilters(heroFilters);
+            setFiltrosAtivos(heroFilters);
+            return heroFilters;
           }
         }
       } catch (error) {
         console.error("Erro ao ler localStorage:", error);
       }
+      return null;
     };
 
-    loadFiltersFromStorage();
-  }, []); // Executa apenas ao montar
+    const savedFilters = loadFiltersFromStorage();
+    if (savedFilters) {
+      fetchImoveis(savedFilters);
+    } else {
+      const defaultFilters = {
+        purpose: "buy",
+        propertyType: "all",
+        city: "all",
+        neighborhood: "all",
+        bedrooms: "all",
+        parking: "all",
+        priceRange: "all",
+      };
+      setFiltrosAtivos(defaultFilters);
+      fetchImoveis(defaultFilters);
+    }
+  }, []);
+
+  // FUNÇÃO SIMPLIFICADA: Busca TODOS os imóveis de uma vez
+  const fetchImoveis = async (filtros) => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      console.log("🟡 Buscando imóveis com filtros:", filtros);
+
+      // 1. Consulta SIMPLES no Supabase
+      let query = supabase
+        .from("imoveis")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      // 2. Aplicar filtros básicos
+      if (filtros.city !== "all") {
+        query = query.eq("cidade", filtros.city);
+      }
+      if (filtros.neighborhood !== "all") {
+        query = query.eq("bairro", filtros.neighborhood);
+      }
+      if (filtros.propertyType !== "all") {
+        query = query.eq("tipo", filtros.propertyType);
+      }
+      if (filtros.bedrooms !== "all") {
+        const quartosNum = parseInt(filtros.bedrooms);
+        query = query.gte("caracteristicas->quartos", quartosNum.toString());
+      }
+      if (filtros.priceRange !== "all") {
+        const [min, max] = filtros.priceRange.split("-").map(Number);
+        if (min) query = query.gte("preco", min);
+        if (max) query = query.lte("preco", max);
+      }
+
+      // 3. Executar consulta - SEM LIMITE, SEM RANGE
+      const { data, error: supabaseError } = await query;
+
+      if (supabaseError) throw supabaseError;
+
+      console.log(`✅ ${data?.length || 0} imóveis encontrados`);
+      setImoveis(data || []);
+    } catch (err) {
+      console.error("💥 Erro ao buscar imóveis:", err);
+      setError("Erro ao carregar os imóveis. Tente novamente.");
+      setImoveis([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleFilterChange = (novosFiltros) => {
+    if (novosFiltros.purpose === "all") {
+      novosFiltros.purpose = "buy";
+    }
+    setFiltrosAtivos(novosFiltros);
+    fetchImoveis(novosFiltros);
+  };
 
   useEffect(() => {
-    // 👉 Retorno de limpeza: ao desmontar, remover filtros do localStorage
     return () => {
       localStorage.removeItem("hero_filters");
     };
-  }, []); // Executa apenas ao desmontar
+  }, []);
 
-  // imagens mock
-  const imagensOtimizadas = [
-    "https://images.unsplash.com/photo-1613490493576-7fde63acd811?auto=format&fit=crop&w=400&h=300&q=60",
-    "https://images.unsplash.com/photo-1518780664697-55e3ad937233?auto=format&fit=crop&w=400&h=300&q=60",
-    "https://images.unsplash.com/photo-1570129477492-45c003edd2be?auto=format&fit=crop&w=400&h=300&q=60",
-  ];
+  // Função para formatar preço
+  const formatPrice = (price) => {
+    if (!price || price === "0" || price === "0.00") {
+      return "Preço sob consulta";
+    }
+
+    let valorNumerico;
+    if (typeof price === "string") {
+      const stringLimpa = price
+        .replace(/[^\d,.-]/g, "")
+        .replace(".", "")
+        .replace(",", ".");
+      valorNumerico = parseFloat(stringLimpa);
+    } else {
+      valorNumerico = Number(price);
+    }
+
+    if (isNaN(valorNumerico) || !isFinite(valorNumerico)) {
+      return "Preço sob consulta";
+    }
+
+    return new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(valorNumerico);
+  };
+
+  // Determinar status
+  const getStatus = (imovel) => {
+    if (imovel.status === "vendido") return "sold";
+    if (imovel.status === "destaque") return "price-drop";
+    return "available";
+  };
+
+  const handleClearFilters = () => {
+    const filtrosResetados = {
+      purpose: "buy",
+      propertyType: "all",
+      city: "all",
+      neighborhood: "all",
+      bedrooms: "all",
+      parking: "all",
+      priceRange: "all",
+    };
+    setFiltrosAtivos(filtrosResetados);
+    fetchImoveis(filtrosResetados);
+  };
 
   return (
     <>
-      {/* TÍTULO - CONTAINER COM ALTURA REDUZIDA NO MOBILE */}
+      {/* TÍTULO */}
       <div className="container">
         <div className="page-header-mobile-optimized">
           <h1 className="page-header-title">
-            186 imóveis prontos para aluguel e venda, escolha o seu
+            {loading ? "Carregando..." : `${imoveis.length} imóveis`} para
+            compra
           </h1>
         </div>
       </div>
@@ -70,120 +202,167 @@ const ComprarImovel = () => {
       {/* FILTROS */}
       <section className="filters-bg">
         <div className="container">
-          <Filtros initialFilters={initialFilters} />
+          <Filtros
+            initialFilters={initialFilters}
+            onFilterChange={handleFilterChange}
+          />
         </div>
       </section>
 
-      {/* LISTAGEM */}
+      {/* LISTAGEM DE IMÓVEIS */}
       <main className="container">
-        <div className="listings-header">
-          <div className="results-count">3 imóveis encontrados</div>
-        </div>
+        {loading && (
+          <div style={{ textAlign: "center", padding: "3rem", color: "#666" }}>
+            <p>Buscando imóveis...</p>
+          </div>
+        )}
 
-        <section className="lista-imoveis">
-          <CardImovel
-            status="available"
-            tipo="CASA"
-            finalidade="VENDA"
-            preco="R$ 850.000"
-            titulo="Casa moderna em condomínio fechado"
-            localizacao="Centro • Açailândia / MA"
-            quartos={3}
-            suites={1}
-            banheiros={2}
-            vagas={2}
-            emCondominio={true}
-            imagem={imagensOtimizadas[0]}
-          />
+        {error && !loading && (
+          <div style={{ textAlign: "center", padding: "3rem", color: "red" }}>
+            <p>{error}</p>
+            <button
+              onClick={() => fetchImoveis(filtrosAtivos)}
+              style={{
+                marginTop: "1rem",
+                padding: "0.5rem 1rem",
+                backgroundColor: "#1a365d",
+                color: "white",
+                border: "none",
+                borderRadius: "4px",
+                cursor: "pointer",
+              }}
+            >
+              Tentar novamente
+            </button>
+          </div>
+        )}
 
-          <CardImovel
-            status="price-drop"
-            tipo="APARTAMENTO"
-            finalidade="VENDA"
-            preco="R$ 620.000"
-            titulo="Apartamento com vista privilegiada"
-            localizacao="Getat • Açailândia / MA"
-            quartos={2}
-            suites={1}
-            banheiros={2}
-            vagas={1}
-            emCondominio={true}
-            imagem={imagensOtimizadas[1]}
-          />
+        {!loading && !error && (
+          <>
+            <div className="listings-header">
+              <div className="results-count">
+                {`${imoveis.length} ${imoveis.length === 1 ? "imóvel encontrado" : "imóveis encontrados"}`}
+              </div>
+            </div>
 
-          <CardImovel
-            status="sold"
-            tipo="CASA"
-            finalidade="VENDA"
-            preco="R$ 1.200.000"
-            titulo="Casa alto padrão com piscina"
-            localizacao="Centro • Açailândia / MA"
-            quartos={4}
-            suites={2}
-            banheiros={4}
-            vagas={3}
-            emCondominio={true}
-            imagem={imagensOtimizadas[2]}
-          />
-        </section>
+            <section className="lista-imoveis">
+              {imoveis.length > 0 ? (
+                imoveis.map((imovel) => {
+                  const caracteristicas = imovel.caracteristicas || {};
+                  const quartos = caracteristicas.quartos || "0";
+                  const suites = caracteristicas.suites || "0";
+                  const banheiros = caracteristicas.banheiros || "0";
+                  const vagas = caracteristicas.vagas || "0";
 
-        {/* PAGINAÇÃO — NÃO MEXIDA */}
-        <div className="pagination">
-          <button className="page-btn disabled">
-            <i className="fas fa-chevron-left"></i>
-          </button>
-          <button className="page-btn active">1</button>
-          <button className="page-btn">2</button>
-          <button className="page-btn">3</button>
-          <button className="page-btn">4</button>
-          <button className="page-btn">
-            <i className="fas fa-chevron-right"></i>
-          </button>
-        </div>
+                  return (
+                    <CardImovel
+                      key={imovel.id}
+                      status={getStatus(imovel)}
+                      tipo={imovel.tipo?.toUpperCase() || "CASA"}
+                      finalidade="VENDA"
+                      preco={formatPrice(imovel.preco)}
+                      titulo={imovel.titulo || "Imóvel sem título"}
+                      localizacao={`${imovel.bairro || ""} • ${imovel.cidade || ""}${imovel.estado ? ` / ${imovel.estado}` : ""}`}
+                      quartos={quartos}
+                      suites={suites}
+                      banheiros={banheiros}
+                      vagas={vagas}
+                      // ✅ IMPORTANTE: Agora busca o campo em_condominio do banco!
+                      emCondominio={imovel.em_condominio || false}
+                      imagem={
+                        imovel.imagem_url ||
+                        "https://images.unsplash.com/photo-1568605114967-8130f3a36994?auto=format&fit=crop&w=400&h=300&q=60"
+                      }
+                    />
+                  );
+                })
+              ) : (
+                <div
+                  style={{
+                    textAlign: "center",
+                    gridColumn: "1/-1",
+                    padding: "4rem",
+                    width: "100%",
+                  }}
+                >
+                  <p
+                    style={{
+                      fontSize: "1.2rem",
+                      color: "#666",
+                      marginBottom: "2rem",
+                    }}
+                  >
+                    Nenhum imóvel disponível para compra no momento.
+                  </p>
+                  <button
+                    onClick={handleClearFilters}
+                    style={{
+                      padding: "0.75rem 2rem",
+                      backgroundColor: "#1a365d",
+                      color: "white",
+                      border: "none",
+                      borderRadius: "4px",
+                      cursor: "pointer",
+                      fontSize: "1rem",
+                      fontWeight: "500",
+                    }}
+                  >
+                    Limpar filtros
+                  </button>
+                </div>
+              )}
+            </section>
+          </>
+        )}
+
+        {/* ✅ PAGINAÇÃO FIXA RESTAURADA (como estava antes) */}
+        {!loading && !error && imoveis.length > 0 && (
+          <div className="pagination">
+            <button className="page-btn disabled">
+              <i className="fas fa-chevron-left"></i>
+            </button>
+            <button className="page-btn active">1</button>
+            <button className="page-btn">2</button>
+            <button className="page-btn">3</button>
+            <button className="page-btn">4</button>
+            <button className="page-btn">
+              <i className="fas fa-chevron-right"></i>
+            </button>
+          </div>
+        )}
       </main>
 
-      {/* ESTILOS INLINE PARA REDUZIR ALTURA DO CONTAINER NO MOBILE */}
+      {/* ESTILOS (mantidos iguais) */}
       <style jsx="true" global="true">{`
-        /* CONTAINER DO TÍTULO OTIMIZADO PARA MOBILE */
         .page-header-mobile-optimized {
-          padding: 1.5rem 0 !important; /* Reduzido de 3rem para 1.5rem */
+          padding: 1.5rem 0 !important;
           text-align: center;
         }
-
-        /* TÍTULO RESPONSIVO */
         .page-header-title {
-          font-size: 1.75rem !important; /* Menor em mobile */
-          line-height: 1.3 !important; /* Reduz espaçamento entre linhas */
+          font-size: 1.75rem !important;
+          line-height: 1.3 !important;
           margin: 0 !important;
           color: #1a365d;
           font-weight: 700;
         }
-
-        /* DESKTOP: Mantém tamanho original */
         @media (min-width: 768px) {
           .page-header-mobile-optimized {
-            padding: 3rem 0 !important; /* Volta ao original em desktop */
+            padding: 3rem 0 !important;
           }
-
           .page-header-title {
-            font-size: 2.5rem !important; /* Tamanho original em desktop */
+            font-size: 2.5rem !important;
             line-height: 1.4 !important;
           }
         }
-
-        /* MOBILE PEQUENO: Ainda mais compacto */
         @media (max-width: 480px) {
           .page-header-mobile-optimized {
-            padding: 1rem 0 !important; /* Ainda mais compacto */
+            padding: 1rem 0 !important;
           }
-
           .page-header-title {
-            font-size: 1.5rem !important; /* Menor ainda em telas pequenas */
+            font-size: 1.5rem !important;
             line-height: 1.25 !important;
           }
         }
-
-        /* GARANTIR QUE O CONTAINER NÃO TENHA ESPAÇO EXTRA */
         .page-header-mobile-optimized * {
           margin: 0;
           padding: 0;

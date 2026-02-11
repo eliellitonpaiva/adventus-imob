@@ -1,5 +1,7 @@
-import React, { useState } from "react";
+// src/pages/CadastrarImovel.js (ou onde estiver seu arquivo)
+import React, { useState, useEffect } from "react"; // ADICIONE useEffect AQUI
 import { useNavigate } from "react-router-dom";
+import { ExclamationTriangleIcon } from "@heroicons/react/24/outline";
 import {
   ArrowLeftIcon,
   HomeIcon,
@@ -13,9 +15,56 @@ import {
 } from "@heroicons/react/24/outline";
 import Button from "../../componentes/ui/Button";
 import { useTheme } from "../../contexts/ThemeContext";
+import { supabase } from "../../lib/supabase"; // ADICIONE ESTE IMPORT (AJUSTE O CAMINHO)
+
 const CadastrarImovel = () => {
   const navigate = useNavigate();
   const { isDark } = useTheme();
+  const [loading, setLoading] = useState(false);
+  const [submitMessage, setSubmitMessage] = useState({ type: "", text: "" }); // 'success' | 'error'
+
+  // =============== ADICIONE ESTE useEffect PARA TESTAR A CONEXÃO ===============
+  useEffect(() => {
+    console.log(
+      "🔍 Testando conexão com Supabase a partir do CadastrarImovel...",
+    );
+
+    const testarConexao = async () => {
+      try {
+        // Tenta fazer uma consulta simples. O erro "tabela não existe" é esperado.
+        const { data, error } = await supabase
+          .from("imoveis")
+          .select("count", { count: "exact", head: true });
+
+        if (error) {
+          // Código de erro "42P01" significa "tabela não existe". É o esperado agora!
+          if (error.code === "42P01") {
+            console.log(
+              "✅ CONEXÃO COM SUPABASE OK! A tabela 'imoveis' ainda não foi criada (isso é normal).",
+            );
+            console.log(
+              "📌 Próximo passo: criar as tabelas no banco de dados.",
+            );
+          } else {
+            // Outro erro (ex.: problema de rede, chave inválida)
+            console.error("❌ Erro na conexão com Supabase:", error.message);
+          }
+        } else {
+          console.log(
+            "✅✅ Conexão perfeita! Tabela já existe com",
+            data,
+            "registros.",
+          );
+        }
+      } catch (err) {
+        console.error("❌ Erro inesperado no teste:", err);
+      }
+    };
+
+    testarConexao();
+  }, []);
+  // =============== FIM DO BLOCO DE TESTE ===============
+
   // Estados do formulário - ATUALIZADO COM NOVOS ACCORDIONS
   const [formData, setFormData] = useState({
     // Seção 1: Informações Gerais
@@ -26,6 +75,7 @@ const CadastrarImovel = () => {
     preco: "",
     status: "disponivel",
     financiado: false,
+    emCondominio: false, // NOVO CAMPO ADICIONADO AQUI
     proprietarioId: "",
     corretorId: "",
     ocultarPreco: false,
@@ -124,21 +174,22 @@ const CadastrarImovel = () => {
       sistemaIncendio: false,
     },
   });
-  // Estados para controle dos accordions - AGORA SÓ UM PODE ESTAR ABERTO
+
+  // Estados para controle dos accordions...
   const [accordionOpen, setAccordionOpen] = useState({
-    caracteristicas: true, // Começa aberto
+    caracteristicas: true,
     infraestrutura: false,
     acabamentos: false,
     areaLazer: false,
     localizacaoVizinhanca: false,
     segurancaUtilidades: false,
   });
-  // Estado para loading do CEP
+
+  // Estado para loading do CEP...
   const [cepLoading, setCepLoading] = useState(false);
   const [cepError, setCepError] = useState("");
-  // ==============================================
-  // OPÇÕES PARA SELECTS
-  // ==============================================
+
+  // OPÇÕES PARA SELECTS...
   const tiposImovel = [
     { value: "casa", label: "Casa" },
     { value: "apartamento", label: "Apartamento" },
@@ -149,6 +200,7 @@ const CadastrarImovel = () => {
     { value: "fazenda", label: "Fazenda" },
     { value: "galpao", label: "Galpão" },
   ];
+
   const estadosBrasil = [
     { value: "AC", label: "Acre" },
     { value: "AL", label: "Alagoas" },
@@ -178,6 +230,7 @@ const CadastrarImovel = () => {
     { value: "SE", label: "Sergipe" },
     { value: "TO", label: "Tocantins" },
   ];
+
   const pisos = [
     { value: "porcelanato", label: "Porcelanato" },
     { value: "ceramica", label: "Cerâmica" },
@@ -187,21 +240,23 @@ const CadastrarImovel = () => {
     { value: "granito", label: "Granito" },
     { value: "marmore", label: "Mármore" },
   ];
-  // Dados de exemplo - substitua por chamadas à sua API
+
+  // Dados de exemplo...
   const proprietarios = [
     { id: "1", nome: "Maria Silva" },
     { id: "2", nome: "João Santos" },
     { id: "3", nome: "Ana Oliveira" },
   ];
+
   const corretores = [
     { id: "101", nome: "Carlos Souza" },
     { id: "102", nome: "Ana Pereira" },
     { id: "103", nome: "Roberto Lima" },
   ];
-  // Função para buscar CEP usando fetch
+
+  // Função para buscar CEP...
   const buscarCep = async (cep) => {
     const cepLimpo = cep.replace(/\D/g, "");
-
     if (cepLimpo.length !== 8) {
       setCepError("CEP deve ter 8 dígitos");
       return;
@@ -212,18 +267,12 @@ const CadastrarImovel = () => {
       const response = await fetch(
         `https://viacep.com.br/ws/${cepLimpo}/json/`,
       );
-
-      if (!response.ok) {
-        throw new Error("Erro na resposta da API");
-      }
-
+      if (!response.ok) throw new Error("Erro na resposta da API");
       const data = await response.json();
-
       if (data.erro) {
         setCepError("CEP não encontrado");
         return;
       }
-      // Preenche automaticamente os campos com os dados do CEP
       setFormData((prev) => ({
         ...prev,
         endereco: data.logradouro || "",
@@ -239,16 +288,11 @@ const CadastrarImovel = () => {
       setCepLoading(false);
     }
   };
-  // Handler para mudanças no CEP
+
+  // Handler para mudanças no CEP...
   const handleCepChange = (e) => {
     const { value } = e.target;
-
-    // Atualiza o estado
-    setFormData((prev) => ({
-      ...prev,
-      cep: value,
-    }));
-    // Busca automática quando o CEP estiver completo
+    setFormData((prev) => ({ ...prev, cep: value }));
     const cepLimpo = value.replace(/\D/g, "");
     if (cepLimpo.length === 8) {
       buscarCep(value);
@@ -256,7 +300,8 @@ const CadastrarImovel = () => {
       setCepError("");
     }
   };
-  // Handlers
+
+  // Handlers...
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     if (name.includes(".")) {
@@ -275,7 +320,8 @@ const CadastrarImovel = () => {
       }));
     }
   };
-  // FUNÇÃO CORRIGIDA: UM ABRE, OUTRO FECHA
+
+  // FUNÇÃO CORRIGIDA: UM ABRE, OUTRO FECHA...
   const toggleAccordion = (section) => {
     setAccordionOpen((prev) => {
       const newState = {
@@ -286,20 +332,83 @@ const CadastrarImovel = () => {
         localizacaoVizinhanca: false,
         segurancaUtilidades: false,
       };
-
-      // Se o accordion já está aberto, fecha todos (toggle off)
-      // Se não está aberto, abre apenas este (toggle on)
       newState[section] = !prev[section];
-
       return newState;
     });
   };
-  const handleSubmit = (e) => {
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Aqui seria a integração com o Supabase
-    console.log("Dados para cadastro:", formData);
-    alert("Imóvel cadastrado com sucesso! (Dados no console)");
+    console.log("🔍 [1] VALOR DE formData.codigo NO INÍCIO:", formData.codigo); // ← ADICIONE ESTA LINHA AQUI
+    setLoading(true);
+    setSubmitMessage({ type: "", text: "" });
+
+    const dadosParaSupabase = {
+      // Seção 1: Informações Gerais
+      codigo: formData.codigo,
+      titulo: formData.titulo,
+      finalidade_venda: formData.finalidade.venda,
+      finalidade_aluguel: formData.finalidade.aluguel,
+      tipo: formData.tipo,
+      preco: formData.preco ? parseFloat(formData.preco) : null,
+      status: formData.status,
+      financiado: formData.financiado,
+      em_condominio: formData.emCondominio, // NOVO CAMPO ADICIONADO AQUI
+      proprietario_id: formData.proprietarioId || null,
+      corretor_id: formData.corretorId || null,
+      ocultar_preco: formData.ocultarPreco,
+
+      // Seção 2: Localização
+      cep: formData.cep,
+      endereco: formData.endereco,
+      numero: formData.numero,
+      complemento: formData.complemento,
+      bairro: formData.bairro,
+      cidade: formData.cidade,
+      estado: formData.estado,
+      ocultar_numero: formData.ocultarNumero,
+      ocultar_endereco: formData.ocultarEndereco,
+
+      // Seção 3: Etiquetas (JSON)
+      etiquetas: formData.etiquetas,
+
+      // Seção 4: Características e Estrutura (JSON)
+      caracteristicas: formData.caracteristicas,
+      infraestrutura: formData.infraestrutura,
+      acabamentos: formData.acabamentos,
+
+      // Novos accordions (JSON)
+      area_lazer: formData.areaLazer,
+      localizacao_vizinhanca: formData.localizacaoVizinhanca,
+      seguranca_utilidades: formData.segurancaUtilidades,
+    };
+    try {
+      const { data, error } = await supabase
+        .from("imoveis")
+        .insert([dadosParaSupabase])
+        .select();
+
+      if (error) throw error;
+
+      setSubmitMessage({
+        type: "success",
+        text: `Imóvel "${formData.titulo}" cadastrado com sucesso! Código: ${formData.codigo}`,
+      });
+
+      setTimeout(() => {
+        navigate("/admin/imoveis");
+      }, 3000);
+    } catch (error) {
+      setSubmitMessage({
+        type: "error",
+        text: error.message || "Ocorreu um erro inesperado.",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
+
+  // MANTENHA ESTAS FUNÇÕES EXATAMENTE COMO ESTÃO
   const handleCancel = () => {
     if (
       window.confirm(
@@ -309,6 +418,7 @@ const CadastrarImovel = () => {
       navigate("/admin/imoveis");
     }
   };
+
   // Formatar preço para exibição
   const formatPrice = (price) => {
     if (!price) return "";
@@ -317,16 +427,15 @@ const CadastrarImovel = () => {
       currency: "BRL",
     });
   };
+
   // ==============================================
   // FUNÇÕES DE CORES - TOTALMENTE REVISADAS
   // ==============================================
   const getBgClass = () => (isDark ? "bg-gray-900" : "bg-white");
   const getBorderClass = () => (isDark ? "border-gray-700" : "border-gray-200");
-  // CORREÇÃO COMPLETA: No modo claro, textos PRETOS, não cinza
   const getTextClass = () => (isDark ? "text-gray-100" : "text-gray-900");
   const getTextSecondaryClass = () =>
     isDark ? "text-gray-400" : "text-gray-600";
-  // CORREÇÃO CRÍTICA: No modo claro, hover deve manter bg-white (não cinza)
   const getHoverBgClass = () =>
     isDark ? "hover:bg-gray-800" : "hover:bg-white";
   const getInputBgClass = () => (isDark ? "bg-gray-800" : "bg-white");
@@ -340,13 +449,10 @@ const CadastrarImovel = () => {
   const getIconBgClass = () => (isDark ? "bg-[#D4A24D]/20" : "bg-[#D4A24D]/10");
   const getIconColorClass = () =>
     isDark ? "text-[#D4A24D]" : "text-[#D4A24D]";
-  // CORREÇÃO DEFINITIVA PARA ACCORDIONS NO MODO CLARO
-  // No modo claro: cinza MUITO ESCURO para boa legibilidade
   const getAccordionTitleClass = () =>
     isDark ? "text-gray-100" : "text-gray-800";
   const getAccordionSubtitleClass = () =>
     isDark ? "text-gray-400" : "text-gray-600";
-  // CORREÇÃO PARA CONTADORES (+/-) - No modo claro: bordas cinza claro, texto cinza escuro
   const getCounterButtonClass = () =>
     isDark
       ? "bg-gray-900 border-gray-600 hover:bg-gray-700 text-gray-300"
@@ -355,7 +461,6 @@ const CadastrarImovel = () => {
     isDark
       ? "bg-gray-800 border-gray-700 text-gray-200"
       : "bg-white border-gray-300 text-gray-900";
-  // Cores para status badges
   const getStatusColor = (status) => {
     const baseColors = {
       disponivel: {
@@ -379,33 +484,44 @@ const CadastrarImovel = () => {
       ? baseColors[status]?.dark || "bg-gray-800 text-gray-300"
       : baseColors[status]?.light || "bg-gray-100 text-gray-800";
   };
-  // Cores para etiquetas financiáveis
   const getFinanciavelColor = () =>
     isDark
       ? "bg-blue-900/30 text-blue-300 border border-blue-800"
       : "bg-blue-100 text-blue-800";
-  // Nova classe para checkboxes custom
   const getCheckboxClass = () =>
-    `appearance-none h-5 w-5 border rounded transition-colors focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/50 focus:ring-offset-2 ${isDark ? "bg-gray-800" : "bg-white"} ${getCheckboxBorderClass()} checked:bg-[#D4A24D] checked:border-[#D4A24D] relative checked:after:absolute checked:after:content-[''] checked:after:h-[0.625rem] checked:after:w-[0.3125rem] checked:after:rotate-45 checked:after:translate-x-[0.375rem] checked:after:translate-y-[0.125rem] checked:after:border-solid checked:after:border-white checked:after:border-width-0 checked:after:border-r-2 checked:after:border-b-2`;
-  // Nova classe para radios custom
+    `appearance-none h-5 w-5 border rounded transition-colors focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/50 focus:ring-offset-2 ${
+      isDark ? "bg-gray-800" : "bg-white"
+    } ${getCheckboxBorderClass()} checked:bg-[#D4A24D] checked:border-[#D4A24D] relative checked:after:absolute checked:after:content-[''] checked:after:h-[0.625rem] checked:after:w-[0.3125rem] checked:after:rotate-45 checked:after:translate-x-[0.375rem] checked:after:translate-y-[0.125rem] checked:after:border-solid checked:after:border-white checked:after:border-width-0 checked:after:border-r-2 checked:after:border-b-2`;
   const getRadioClass = () =>
-    `appearance-none h-4 w-4 rounded-full border transition-colors focus:outline-none focus:ring-2 focus:ring-[#D4A24D] focus:ring-offset-2 ${isDark ? "bg-gray-800 border-gray-600" : "bg-white border-gray-300"} checked:bg-[#D4A24D] checked:border-[#D4A24D] relative checked:before:content-[''] checked:before:absolute checked:before:rounded-full checked:before:bg-white checked:before:w-2 checked:before:h-2 checked:before:top-1 checked:before:left-1`;
-  // Nova classe para options de select
+    `appearance-none h-4 w-4 rounded-full border transition-colors focus:outline-none focus:ring-2 focus:ring-[#D4A24D] focus:ring-offset-2 ${
+      isDark ? "bg-gray-800 border-gray-600" : "bg-white border-gray-300"
+    } checked:bg-[#D4A24D] checked:border-[#D4A24D] relative checked:before:content-[''] checked:before:absolute checked:before:rounded-full checked:before:bg-white checked:before:w-2 checked:before:h-2 checked:before:top-1 checked:before:left-1`;
   const getOptionBgClass = () => (isDark ? "bg-gray-800" : "bg-white");
+
   return (
     <div
-      className={`min-h-screen transition-colors duration-200 ${isDark ? "bg-gray-900" : "bg-gradient-to-b from-[#D4A24D]/5 to-[#31353E]/5"}`}
+      className={`min-h-screen transition-colors duration-200 ${
+        isDark
+          ? "bg-gray-900"
+          : "bg-gradient-to-b from-[#D4A24D]/5 to-[#31353E]/5"
+      }`}
     >
       {/* Header da Página */}
       <div
-        className={`border-b px-4 py-4 transition-colors duration-200 ${isDark ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"}`}
+        className={`border-b px-4 py-4 transition-colors duration-200 ${
+          isDark ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"
+        }`}
       >
         <div className="max-w-7xl mx-auto">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="flex items-center space-x-4">
               <button
                 onClick={() => navigate("/admin/imoveis")}
-                className={`p-2 rounded-lg transition-colors ${isDark ? "hover:bg-gray-700 text-gray-300" : "hover:bg-gray-100 text-gray-600"}`}
+                className={`p-2 rounded-lg transition-colors ${
+                  isDark
+                    ? "hover:bg-gray-700 text-gray-300"
+                    : "hover:bg-gray-100 text-gray-600"
+                }`}
               >
                 <ArrowLeftIcon className="w-5 h-5" />
               </button>
@@ -426,7 +542,9 @@ const CadastrarImovel = () => {
             {/* Status Preview */}
             <div className="flex items-center space-x-4">
               <div
-                className={`px-3 py-1.5 rounded-full text-sm font-medium ${getStatusColor(formData.status)}`}
+                className={`px-3 py-1.5 rounded-full text-sm font-medium ${getStatusColor(
+                  formData.status,
+                )}`}
               >
                 {formData.status === "disponivel" && "Disponível"}
                 {formData.status === "reservado" && "Reservado"}
@@ -724,6 +842,24 @@ const CadastrarImovel = () => {
                   Imóvel financiável
                 </label>
               </div>
+
+              {/* Em Condomínio - NOVO CAMPO ADICIONADO */}
+              <div className="flex items-center space-x-3 pt-6">
+                <input
+                  type="checkbox"
+                  id="emCondominio"
+                  name="emCondominio"
+                  checked={formData.emCondominio}
+                  onChange={handleChange}
+                  className={getCheckboxClass()}
+                />
+                <label
+                  htmlFor="emCondominio"
+                  className={`text-sm transition-colors ${getTextClass()}`}
+                >
+                  Imóvel em condomínio
+                </label>
+              </div>
             </div>
           </div>
           {/* SEÇÃO 2: Localização Aprimorada */}
@@ -910,7 +1046,6 @@ const CadastrarImovel = () => {
                 >
                   Configurações de Privacidade
                 </h3>
-
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <label className="flex items-center space-x-3">
                     <input
@@ -967,7 +1102,11 @@ const CadastrarImovel = () => {
                   <p className={`text-sm transition-colors ${getTextClass()}`}>
                     {formData.ocultarEndereco
                       ? `${formData.bairro || "Bairro"}, ${formData.cidade || "Cidade"}`
-                      : `${formData.endereco || "Endereço"}${!formData.ocultarNumero && formData.numero ? `, ${formData.numero}` : ""}, ${formData.bairro || "Bairro"}`}
+                      : `${formData.endereco || "Endereço"}${
+                          !formData.ocultarNumero && formData.numero
+                            ? `, ${formData.numero}`
+                            : ""
+                        }, ${formData.bairro || "Bairro"}`}
                   </p>
                 </div>
               </div>
@@ -997,7 +1136,11 @@ const CadastrarImovel = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {/* Destaque da Semana */}
               <label
-                className={`flex items-center space-x-3 p-4 border rounded-lg transition-all duration-200 cursor-pointer ${getBorderClass()} ${getHoverBgClass()} ${isDark ? "hover:border-[#D4A24D]/50" : "hover:border-[#D4A24D]"}`}
+                className={`flex items-center space-x-3 p-4 border rounded-lg transition-all duration-200 cursor-pointer ${getBorderClass()} ${getHoverBgClass()} ${
+                  isDark
+                    ? "hover:border-[#D4A24D]/50"
+                    : "hover:border-[#D4A24D]"
+                }`}
               >
                 <input
                   type="checkbox"
@@ -1021,7 +1164,11 @@ const CadastrarImovel = () => {
               </label>
               {/* Novo no Site */}
               <label
-                className={`flex items-center space-x-3 p-4 border rounded-lg transition-all duration-200 cursor-pointer ${getBorderClass()} ${getHoverBgClass()} ${isDark ? "hover:border-[#D4A24D]/50" : "hover:border-[#D4A24D]"}`}
+                className={`flex items-center space-x-3 p-4 border rounded-lg transition-all duration-200 cursor-pointer ${getBorderClass()} ${getHoverBgClass()} ${
+                  isDark
+                    ? "hover:border-[#D4A24D]/50"
+                    : "hover:border-[#D4A24D]"
+                }`}
               >
                 <input
                   type="checkbox"
@@ -1045,7 +1192,11 @@ const CadastrarImovel = () => {
               </label>
               {/* Baixou o Preço */}
               <label
-                className={`flex items-center space-x-3 p-4 border rounded-lg transition-all duration-200 cursor-pointer ${getBorderClass()} ${getHoverBgClass()} ${isDark ? "hover:border-[#D4A24D]/50" : "hover:border-[#D4A24D]"}`}
+                className={`flex items-center space-x-3 p-4 border rounded-lg transition-all duration-200 cursor-pointer ${getBorderClass()} ${getHoverBgClass()} ${
+                  isDark
+                    ? "hover:border-[#D4A24D]/50"
+                    : "hover:border-[#D4A24D]"
+                }`}
               >
                 <input
                   type="checkbox"
@@ -1069,7 +1220,11 @@ const CadastrarImovel = () => {
               </label>
               {/* Financiável (Etiqueta) */}
               <label
-                className={`flex items-center space-x-3 p-4 border rounded-lg transition-all duration-200 cursor-pointer ${getBorderClass()} ${getHoverBgClass()} ${isDark ? "hover:border-[#D4A24D]/50" : "hover:border-[#D4A24D]"}`}
+                className={`flex items-center space-x-3 p-4 border rounded-lg transition-all duration-200 cursor-pointer ${getBorderClass()} ${getHoverBgClass()} ${
+                  isDark
+                    ? "hover:border-[#D4A24D]/50"
+                    : "hover:border-[#D4A24D]"
+                }`}
               >
                 <input
                   type="checkbox"
@@ -1095,7 +1250,7 @@ const CadastrarImovel = () => {
           </div>
           {/* SEÇÃO 4: Accordions */}
           <div className="space-y-4">
-            {/* Accordion 1: Características do Imóvel - CORES CORRIGIDAS */}
+            {/* Accordion 1: Características do Imóvel */}
             <div
               className={`rounded-xl border overflow-hidden transition-colors duration-200 ${getBgClass()} ${getBorderClass()}`}
             >
@@ -1109,7 +1264,6 @@ const CadastrarImovel = () => {
                     <HomeIcon className={`w-5 h-5 ${getIconColorClass()}`} />
                   </div>
                   <div className="text-left">
-                    {/* CORES CORRETAS PARA MODO CLARO */}
                     <h3
                       className={`text-lg font-semibold transition-colors ${getAccordionTitleClass()}`}
                     >
@@ -1123,7 +1277,9 @@ const CadastrarImovel = () => {
                   </div>
                 </div>
                 <div
-                  className={`transform transition-transform ${accordionOpen.caracteristicas ? "rotate-180" : ""}`}
+                  className={`transform transition-transform ${
+                    accordionOpen.caracteristicas ? "rotate-180" : ""
+                  }`}
                 >
                   <svg
                     className={`w-6 h-6 transition-colors ${getTextSecondaryClass()}`}
@@ -1145,7 +1301,7 @@ const CadastrarImovel = () => {
                   className={`px-6 pb-6 border-t pt-6 transition-colors duration-200 ${getBgClass()} ${getBorderClass()}`}
                 >
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {/* Quartos - CORES CORRETAS */}
+                    {/* Quartos */}
                     <div>
                       <label
                         className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
@@ -1200,7 +1356,7 @@ const CadastrarImovel = () => {
                         </button>
                       </div>
                     </div>
-                    {/* Banheiros - CORES CORRETAS */}
+                    {/* Banheiros */}
                     <div>
                       <label
                         className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
@@ -1255,7 +1411,7 @@ const CadastrarImovel = () => {
                         </button>
                       </div>
                     </div>
-                    {/* Suítes - CORES CORRETAS */}
+                    {/* Suítes */}
                     <div>
                       <label
                         className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
@@ -1310,7 +1466,7 @@ const CadastrarImovel = () => {
                         </button>
                       </div>
                     </div>
-                    {/* Vagas de Garagem - CORES CORRETAS */}
+                    {/* Vagas de Garagem */}
                     <div>
                       <label
                         className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
@@ -1419,7 +1575,7 @@ const CadastrarImovel = () => {
                 </div>
               )}
             </div>
-            {/* Accordion 2: Infraestrutura - CORES CORRIGIDAS */}
+            {/* Accordion 2: Infraestrutura */}
             <div
               className={`rounded-xl border overflow-hidden transition-colors duration-200 ${getBgClass()} ${getBorderClass()}`}
             >
@@ -1448,7 +1604,9 @@ const CadastrarImovel = () => {
                   </div>
                 </div>
                 <div
-                  className={`transform transition-transform ${accordionOpen.infraestrutura ? "rotate-180" : ""}`}
+                  className={`transform transition-transform ${
+                    accordionOpen.infraestrutura ? "rotate-180" : ""
+                  }`}
                 >
                   <svg
                     className={`w-6 h-6 transition-colors ${getTextSecondaryClass()}`}
@@ -1506,7 +1664,7 @@ const CadastrarImovel = () => {
                 </div>
               )}
             </div>
-            {/* Accordion 3: Acabamentos - CORES CORRIGIDAS */}
+            {/* Accordion 3: Acabamentos */}
             <div
               className={`rounded-xl border overflow-hidden transition-colors duration-200 ${getBgClass()} ${getBorderClass()}`}
             >
@@ -1535,7 +1693,9 @@ const CadastrarImovel = () => {
                   </div>
                 </div>
                 <div
-                  className={`transform transition-transform ${accordionOpen.acabamentos ? "rotate-180" : ""}`}
+                  className={`transform transition-transform ${
+                    accordionOpen.acabamentos ? "rotate-180" : ""
+                  }`}
                 >
                   <svg
                     className={`w-6 h-6 transition-colors ${getTextSecondaryClass()}`}
@@ -1674,7 +1834,7 @@ const CadastrarImovel = () => {
                 </div>
               )}
             </div>
-            {/* NOVO ACCORDION 4: Área de Lazer - CORES CORRIGIDAS */}
+            {/* NOVO ACCORDION 4: Área de Lazer */}
             <div
               className={`rounded-xl border overflow-hidden transition-colors duration-200 ${getBgClass()} ${getBorderClass()}`}
             >
@@ -1701,7 +1861,9 @@ const CadastrarImovel = () => {
                   </div>
                 </div>
                 <div
-                  className={`transform transition-transform ${accordionOpen.areaLazer ? "rotate-180" : ""}`}
+                  className={`transform transition-transform ${
+                    accordionOpen.areaLazer ? "rotate-180" : ""
+                  }`}
                 >
                   <svg
                     className={`w-6 h-6 transition-colors ${getTextSecondaryClass()}`}
@@ -1755,7 +1917,7 @@ const CadastrarImovel = () => {
                 </div>
               )}
             </div>
-            {/* NOVO ACCORDION 5: Localização e Vizinhança - CORES CORRIGIDAS */}
+            {/* NOVO ACCORDION 5: Localização e Vizinhança */}
             <div
               className={`rounded-xl border overflow-hidden transition-colors duration-200 ${getBgClass()} ${getBorderClass()}`}
             >
@@ -1782,7 +1944,9 @@ const CadastrarImovel = () => {
                   </div>
                 </div>
                 <div
-                  className={`transform transition-transform ${accordionOpen.localizacaoVizinhanca ? "rotate-180" : ""}`}
+                  className={`transform transition-transform ${
+                    accordionOpen.localizacaoVizinhanca ? "rotate-180" : ""
+                  }`}
                 >
                   <svg
                     className={`w-6 h-6 transition-colors ${getTextSecondaryClass()}`}
@@ -1836,7 +2000,7 @@ const CadastrarImovel = () => {
                 </div>
               )}
             </div>
-            {/* NOVO ACCORDION 6: Segurança e Utilidades - CORES CORRIGIDAS */}
+            {/* NOVO ACCORDION 6: Segurança e Utilidades */}
             <div
               className={`rounded-xl border overflow-hidden transition-colors duration-200 ${getBgClass()} ${getBorderClass()}`}
             >
@@ -1865,7 +2029,9 @@ const CadastrarImovel = () => {
                   </div>
                 </div>
                 <div
-                  className={`transform transition-transform ${accordionOpen.segurancaUtilidades ? "rotate-180" : ""}`}
+                  className={`transform transition-transform ${
+                    accordionOpen.segurancaUtilidades ? "rotate-180" : ""
+                  }`}
                 >
                   <svg
                     className={`w-6 h-6 transition-colors ${getTextSecondaryClass()}`}
@@ -1920,12 +2086,38 @@ const CadastrarImovel = () => {
               )}
             </div>
           </div>
-          {/* SEÇÃO 5: Ações - COM BOTÃO CANCELAR VERMELHO */}
+
+          {/* ========== ADICIONE O BLOCO DE FEEDBACK AQUI ========== */}
+          {submitMessage.text && (
+            <div
+              className={`mb-6 p-4 rounded-lg border ${
+                submitMessage.type === "success"
+                  ? "bg-green-50 border-green-200 text-green-800"
+                  : "bg-red-50 border-red-200 text-red-800"
+              }`}
+            >
+              <div className="flex items-center">
+                {submitMessage.type === "success" ? (
+                  <CheckCircleIcon className="w-5 h-5 mr-2 text-green-600" />
+                ) : (
+                  <ExclamationTriangleIcon className="w-5 h-5 mr-2 text-red-600" />
+                )}
+                <p className="font-medium">{submitMessage.text}</p>
+              </div>
+              {submitMessage.type === "success" && (
+                <p className="mt-1 text-sm opacity-80">
+                  Você será redirecionado para a lista de imóveis em alguns
+                  segundos...
+                </p>
+              )}
+            </div>
+          )}
+          {/* ========== FIM DO BLOCO DE FEEDBACK ========== */}
+          {/* SEÇÃO 5: Ações */}
           <div
             className={`rounded-xl border p-6 transition-colors duration-200 ${getBgClass()} ${getBorderClass()}`}
           >
             <div className="flex flex-col sm:flex-row justify-end space-y-4 sm:space-y-0 sm:space-x-4">
-              {/* BOTÃO CANCELAR VERMELHO SÓLIDO */}
               <button
                 type="button"
                 onClick={handleCancel}
@@ -1933,16 +2125,27 @@ const CadastrarImovel = () => {
               >
                 Cancelar
               </button>
-
               <Button
                 type="submit"
                 variant="primary"
                 size="lg"
                 className="px-8"
+                disabled={loading} // DESABILITA O BOTÃO DURANTE O CARREGAMENTO
               >
                 <div className="flex items-center space-x-2">
-                  <CheckCircleIcon className="w-5 h-5" />
-                  <span>Salvar Imóvel</span>
+                  {loading ? (
+                    // 👇 Quando ESTIVER carregando (TRUE)
+                    <>
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                      <span>Salvando...</span>
+                    </>
+                  ) : (
+                    // 👇 Quando NÃO ESTIVER carregando (FALSE)
+                    <>
+                      <CheckCircleIcon className="w-5 h-5" />
+                      <span>Salvar Imóvel</span>
+                    </>
+                  )}
                 </div>
               </Button>
             </div>
@@ -1952,4 +2155,5 @@ const CadastrarImovel = () => {
     </div>
   );
 };
+
 export default CadastrarImovel;
