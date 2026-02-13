@@ -1,18 +1,26 @@
 import { Link } from "react-router-dom";
 
 const CardImovel = ({
-  id, // ← ADICIONADO: ID do imóvel vindo do banco de dados
+  id,
+  slug,
   status = "available",
   tipo = "CASA",
   finalidade = "VENDA",
   preco = "R$ 850.000",
-  titulo = "Casa moderna em condomínio fechado",
+  titulo = "Casa moderna em condomínio fechado", // ← AGORA RECEBE O TÍTULO AUTOMÁTICO!
   localizacao = "Centro • Torres / RS",
+  bairro = "", // 🔥 NOVO!
+  cidade = "", // 🔥 NOVO!
+  estado = "", // 🔥 NOVO!
   quartos = 3,
   suites = 1,
   banheiros = 2,
   vagas = 2,
   emCondominio = true,
+  empreendimento = null,
+  unidade = "",
+  bloco = "",
+  andar = "",
   imagem = "https://images.unsplash.com/photo-1568605114967-8130f3a36994?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=300&q=60",
 }) => {
   const statusMap = {
@@ -35,13 +43,26 @@ const CardImovel = ({
     },
   };
 
-  const statusData = statusMap[status];
+  const statusData = statusMap[status] || statusMap.available;
+
+  const montarUnidadeCompleta = () => {
+    const partes = [];
+    if (unidade) partes.push(`Apto ${unidade}`);
+    if (andar) {
+      const andarLimpo = andar.toString().replace("º", "");
+      partes.push(`${andarLimpo}º andar`);
+    }
+    if (bloco) partes.push(`Bloco ${bloco}`);
+    return partes.join(" • ");
+  };
+
+  const unidadeCompleta = montarUnidadeCompleta();
 
   return (
     <article className="bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 ease-in-out hover:-translate-y-2 flex flex-col relative md:min-h-[200px] md:flex-row group w-full max-w-sm mx-auto md:max-w-none">
       {/* STATUS BADGE */}
       <div
-        className={`absolute top-5 left-5 md:top-6 md:left-6 px-4 py-2 rounded-2xl text-xs font-bold text-white uppercase tracking-wider z-10 transition-all duration-300 ease-in-out hover:scale-110 hover:-translate-y-1 border-2 border-white/50 backdrop-blur-sm flex items-center gap-1.5 shadow-2xl ${statusData.className} animate-pulse hover:animate-none hover:shadow-glow`}
+        className={`absolute top-5 left-5 md:top-6 md:left-6 px-4 py-2 rounded-2xl text-xs font-bold text-white uppercase tracking-wider z-10 transition-all duration-300 ease-in-out hover:scale-110 hover:-translate-y-1 border-2 border-white/50 backdrop-blur-sm flex items-center gap-1.5 shadow-2xl ${statusData.className}`}
       >
         <i className={`${statusData.icon} text-xs drop-shadow-md`}></i>
         {statusData.label}
@@ -56,9 +77,6 @@ const CardImovel = ({
             className="w-full h-full object-cover transition-transform duration-500 ease-in-out group-hover:scale-105"
           />
         </div>
-
-        {/* DIVIDER PARA DESKTOP */}
-        <div className="hidden md:block absolute right-0 top-8 bottom-8 w-px bg-gradient-to-b from-transparent via-gray-300 to-transparent bg-[length:1px_10px] bg-repeat-y"></div>
       </div>
 
       {/* CONTEÚDO */}
@@ -73,131 +91,134 @@ const CardImovel = ({
           </span>
         </div>
 
-        {/* PREÇO NO LUGAR CORRETO */}
+        {/* PREÇO */}
         <div className="text-2xl font-extrabold text-gray-800 font-sans mb-4">
           {preco}
         </div>
 
-        {/* TÍTULO */}
-        <h3 className="text-xl font-bold mb-3 text-gray-800 leading-relaxed">
+        {/* TÍTULO - AGORA MOSTRA O TÍTULO AUTOMÁTICO CORRETO! */}
+        <h3 className="text-xl font-bold text-gray-800 leading-relaxed mb-2">
           {titulo}
         </h3>
 
+        {/* UNIDADE */}
+        {unidadeCompleta && (
+          <div className="flex items-start gap-2 text-gray-600 text-sm mb-2">
+            <div className="w-4 flex items-center justify-center flex-shrink-0">
+              <i className="fas fa-door-open text-amber-500 text-xs"></i>
+            </div>
+            <span className="leading-tight">{unidadeCompleta}</span>
+          </div>
+        )}
+
+        {/* EMPREENDIMENTO */}
+        {empreendimento?.nome && (
+          <div className="flex items-start gap-2 mb-2">
+            <div className="w-4 flex items-center justify-center flex-shrink-0">
+              <i className="fas fa-building text-amber-500 text-xs"></i>
+            </div>
+            <div className="bg-amber-100/90 px-2 py-0.5 rounded-lg inline-flex items-center">
+              <span className="leading-tight font-medium text-amber-800 text-[11px]">
+                {empreendimento.nome}
+              </span>
+              {empreendimento.tipo === "edificio" && (
+                <span className="ml-1.5 text-[9px] bg-amber-200/80 text-amber-700 px-1 py-0.5 rounded-full">
+                  Edifício
+                </span>
+              )}
+              {empreendimento.tipo === "condominio" && (
+                <span className="ml-1.5 text-[9px] bg-amber-200/80 text-amber-700 px-1 py-0.5 rounded-full">
+                  Condomínio
+                </span>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* LOCALIZAÇÃO */}
-        <div className="flex items-center gap-2 text-gray-600 mb-5 text-sm">
-          <i className="fas fa-map-marker-alt text-amber-500 text-sm"></i>
-          {localizacao}
+        <div className="flex items-start gap-2 text-gray-500 text-sm mb-5">
+          <div className="w-4 flex items-center justify-center flex-shrink-0">
+            <i className="fas fa-map-marker-alt text-amber-500 text-xs"></i>
+          </div>
+          <span className="leading-tight">{localizacao}</span>
         </div>
 
         {/* FEATURES */}
-        <div className="flex flex-wrap gap-2.5 mb-6 pt-4 border-t border-dashed border-gray-200 justify-start items-start">
-          <div className="flex flex-col items-center gap-1 text-gray-600 text-xs min-w-[50px] md:min-w-[55px] lg:min-w-[60px] flex-shrink-0">
-            <i className="fas fa-bed text-amber-500 text-lg md:text-xl mb-0.5"></i>
-            <span className="font-normal text-gray-800 text-sm leading-tight font-sans whitespace-nowrap text-center">
-              {quartos} Quarto{quartos !== 1 ? "s" : ""}
-            </span>
-          </div>
+        <div className="flex flex-wrap gap-4 mb-6 pt-4 border-t border-dashed border-gray-200">
+          {/* QUARTOS */}
+          {quartos > 0 && (
+            <div className="flex items-center gap-2 text-sm text-gray-700">
+              <div className="w-4 flex items-center justify-center flex-shrink-0">
+                <i className="fas fa-bed text-amber-500 text-xs"></i>
+              </div>
+              <span>
+                {quartos} Quarto{quartos !== 1 ? "s" : ""}
+              </span>
+            </div>
+          )}
 
-          <div className="flex flex-col items-center gap-1 text-gray-600 text-xs min-w-[50px] md:min-w-[55px] lg:min-w-[60px] flex-shrink-0">
-            <i className="fas fa-bath text-amber-500 text-lg md:text-xl mb-0.5"></i>
-            <span className="font-normal text-gray-800 text-sm leading-tight font-sans whitespace-nowrap text-center">
-              {banheiros} Banheiro{banheiros !== 1 ? "s" : ""}
-            </span>
-          </div>
+          {/* BANHEIROS */}
+          {banheiros > 0 && (
+            <div className="flex items-center gap-2 text-sm text-gray-700">
+              <div className="w-4 flex items-center justify-center flex-shrink-0">
+                <i className="fas fa-bath text-amber-500 text-xs"></i>
+              </div>
+              <span>
+                {banheiros} Banheiro{banheiros !== 1 ? "s" : ""}
+              </span>
+            </div>
+          )}
 
-          <div className="flex flex-col items-center gap-1 text-gray-600 text-xs min-w-[50px] md:min-w-[55px] lg:min-w-[60px] flex-shrink-0">
-            <i className="fas fa-shower text-amber-500 text-lg md:text-xl mb-0.5"></i>
-            <span className="font-normal text-gray-800 text-sm leading-tight font-sans whitespace-nowrap text-center">
-              {suites} Suíte{suites !== 1 ? "s" : ""}
-            </span>
-          </div>
+          {/* SUÍTES */}
+          {suites > 0 && (
+            <div className="flex items-center gap-2 text-sm text-gray-700">
+              <div className="w-4 flex items-center justify-center flex-shrink-0">
+                <i className="fas fa-crown text-amber-500 text-xs"></i>
+              </div>
+              <span>
+                {suites} Suíte{suites !== 1 ? "s" : ""}
+              </span>
+            </div>
+          )}
 
-          <div className="flex flex-col items-center gap-1 text-gray-600 text-xs min-w-[50px] md:min-w-[55px] lg:min-w-[60px] flex-shrink-0">
-            <i className="fas fa-car text-amber-500 text-lg md:text-xl mb-0.5"></i>
-            <span className="font-normal text-gray-800 text-sm leading-tight font-sans whitespace-nowrap text-center">
-              {vagas} Vaga{vagas !== 1 ? "s" : ""}
-            </span>
-          </div>
+          {/* VAGAS */}
+          {vagas > 0 && (
+            <div className="flex items-center gap-2 text-sm text-gray-700">
+              <div className="w-4 flex items-center justify-center flex-shrink-0">
+                <i className="fas fa-car text-amber-500 text-xs"></i>
+              </div>
+              <span>
+                {vagas} Vaga{vagas !== 1 ? "s" : ""}
+              </span>
+            </div>
+          )}
         </div>
 
-        {/* AÇÕES - CORRIGIDO: BOTÃO SEMPRE VISÍVEL + ETIQUETA CONDICIONAL */}
+        {/* AÇÕES */}
         <div className="flex justify-between items-center mt-auto pt-5 border-t border-gray-200">
-          {/* LADO ESQUERDO: ETIQUETA "EM CONDOMÍNIO" (SE FOR TRUE) */}
-          <div className="flex items-center">
-            {emCondominio && (
-              <div className="bg-gray-100 text-gray-800 px-4 py-2 rounded-2xl text-sm font-semibold flex items-center gap-2">
-                <i className="fas fa-building text-amber-500 text-sm"></i>
+          <div>
+            {emCondominio && !empreendimento?.nome && (
+              <div className="flex items-start gap-2 text-gray-600 text-sm">
+                <div className="w-4 flex items-center justify-center flex-shrink-0">
+                  <i className="fas fa-building text-amber-500 text-xs"></i>
+                </div>
                 <span>Em condomínio</span>
               </div>
             )}
           </div>
 
-          {/* LADO DIREITO: SEMPRE MOSTRA O BOTÃO "VER DETALHES" COM ID DINÂMICO */}
+          {/* LINK COM SLUG */}
           <Link
-            to={`/imovel/${id}`} // ← CORRIGIDO: AGORA USA O ID REAL DO IMÓVEL
-            className="bg-gray-800 text-white px-6 py-3 rounded-lg font-bold font-sans border-none cursor-pointer transition-all duration-300 ease-in-out text-sm flex items-center gap-2.5 relative overflow-hidden shadow-lg hover:shadow-2xl hover:-translate-y-1 border-0 border-gray-800/20 group/btn"
+            to={`/imovel/${slug || id}`}
+            className="bg-gray-800 text-white px-6 py-3 rounded-lg font-bold text-sm flex items-center gap-2 shadow-lg hover:shadow-2xl hover:-translate-y-1 transition-all duration-300"
           >
-            <span className="relative z-10 flex items-center gap-2.5">
-              <i className="fas fa-eye text-sm"></i>
-              Ver Detalhes
-            </span>
-            <span className="absolute inset-0 -left-full w-full h-full bg-gradient-to-r from-transparent via-white/40 to-transparent transition-all duration-500 ease-in-out group-hover/btn:left-full"></span>
+            <div className="w-4 flex items-center justify-center flex-shrink-0">
+              <i className="fas fa-eye text-xs"></i>
+            </div>
+            Ver Detalhes
           </Link>
         </div>
       </div>
-
-      {/* ESTILOS EMBUTIDOS PARA ANIMAÇÕES ESPECÍFICAS */}
-      <style jsx>{`
-        @keyframes pulse {
-          0%,
-          100% {
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
-          }
-          50% {
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5);
-          }
-        }
-
-        .animate-pulse {
-          animation: pulse 2s infinite;
-        }
-
-        .hover\:shadow-glow:hover {
-          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-        }
-
-        .bg-gradient-to-br.from-green-400.to-green-600.hover\:shadow-glow:hover {
-          box-shadow:
-            0 0 20px rgba(0, 255, 0, 0.9),
-            0 0 30px rgba(0, 255, 0, 0.7),
-            0 0 40px rgba(0, 255, 0, 0.5);
-        }
-
-        .bg-gradient-to-br.from-red-400.to-red-600.hover\:shadow-glow:hover {
-          box-shadow:
-            0 0 20px rgba(255, 0, 0, 0.9),
-            0 0 30px rgba(255, 0, 0, 0.7),
-            0 0 40px rgba(255, 0, 0, 0.5);
-        }
-
-        .bg-gradient-to-br.from-orange-400.to-orange-600.hover\:shadow-glow:hover {
-          box-shadow:
-            0 0 20px rgba(255, 119, 0, 0.9),
-            0 0 30px rgba(255, 119, 0, 0.7),
-            0 0 40px rgba(255, 119, 0, 0.5);
-        }
-
-        .bg-\[length\:1px_10px\] {
-          background-size: 1px 10px;
-        }
-
-        @media (max-width: 767px) {
-          .flex-wrap > * {
-            flex: 1;
-            min-width: 45px;
-          }
-        }
-      `}</style>
     </article>
   );
 };

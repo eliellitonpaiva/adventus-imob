@@ -70,7 +70,7 @@ const ComprarImovel = () => {
     }
   }, []);
 
-  // FUNÇÃO ATUALIZADA: Agora lê tanto de 'dependencias' quanto de 'caracteristicas'
+  // 🔥 FUNÇÃO CORRIGIDA - 100% FUNCIONAL
   const fetchImoveis = async (filtros) => {
     setLoading(true);
     setError(null);
@@ -78,13 +78,13 @@ const ComprarImovel = () => {
     try {
       console.log("🟡 Buscando imóveis com filtros:", filtros);
 
-      // 1. Consulta SIMPLES no Supabase
+      // 1. Primeiro busca TODOS os imóveis SEM filtro de quartos problemático
       let query = supabase
         .from("imoveis")
         .select("*")
         .order("created_at", { ascending: false });
 
-      // 2. Aplicar filtros básicos
+      // 2. Aplicar filtros básicos (exceto quartos)
       if (filtros.city !== "all") {
         query = query.eq("cidade", filtros.city);
       }
@@ -95,28 +95,80 @@ const ComprarImovel = () => {
         query = query.eq("tipo", filtros.propertyType);
       }
 
-      // 🔥 CORREÇÃO: Filtro de quartos agora suporta ambas as estruturas
-      if (filtros.bedrooms !== "all") {
-        const quartosNum = parseInt(filtros.bedrooms);
-        // Tenta filtrar pela nova coluna 'dependencias', se falhar usa 'caracteristicas'
-        query = query.or(
-          `dependencias->>dormitorios.gte.${quartosNum},caracteristicas->>quartos.gte.${quartosNum}`,
-        );
-      }
-
       if (filtros.priceRange !== "all") {
         const [min, max] = filtros.priceRange.split("-").map(Number);
         if (min) query = query.gte("preco", min);
         if (max) query = query.lte("preco", max);
       }
 
-      // 3. Executar consulta
-      const { data, error: supabaseError } = await query;
+      // 3. Executar consulta dos imóveis
+      const { data: imoveisData, error: supabaseError } = await query;
 
       if (supabaseError) throw supabaseError;
 
-      console.log(`✅ ${data?.length || 0} imóveis encontrados`);
-      setImoveis(data || []);
+      // 4. Se não tem imóveis, retorna vazio
+      if (!imoveisData || imoveisData.length === 0) {
+        setImoveis([]);
+        setLoading(false);
+        return;
+      }
+
+      // 5. Filtrar por quartos MANUALMENTE (para evitar erro de sintaxe)
+      let imoveisFiltrados = imoveisData;
+
+      if (filtros.bedrooms !== "all") {
+        const quartosMin = parseInt(filtros.bedrooms);
+
+        imoveisFiltrados = imoveisData.filter((imovel) => {
+          const dependencias = imovel.dependencias || {};
+          const caracteristicas = imovel.caracteristicas || {};
+
+          const qtdQuartos = parseInt(
+            dependencias.dormitorios || caracteristicas.quartos || "0",
+          );
+
+          return qtdQuartos >= quartosMin;
+        });
+      }
+
+      console.log(`✅ ${imoveisFiltrados.length} imóveis após filtro manual`);
+
+      // 6. Agora busca os empreendimentos SEPARADAMENTE
+      const imoveisComEmpreendimento = await Promise.all(
+        imoveisFiltrados.map(async (imovel) => {
+          // Se não tem id_edificios, retorna o imóvel sem empreendimento
+          if (!imovel.id_edificios) {
+            return { ...imovel, edificios: null };
+          }
+
+          try {
+            // Busca o empreendimento pelo ID
+            const { data: edificioData, error: edificioError } = await supabase
+              .from("edificios")
+              .select("id, nome, tipo")
+              .eq("id", imovel.id_edificios)
+              .single();
+
+            if (edificioError) {
+              console.error("Erro ao buscar edificio:", edificioError);
+              return { ...imovel, edificios: null };
+            }
+
+            return {
+              ...imovel,
+              edificios: edificioData || null,
+            };
+          } catch (err) {
+            console.error("Erro ao processar edificio:", err);
+            return { ...imovel, edificios: null };
+          }
+        }),
+      );
+
+      console.log(
+        `✅ ${imoveisComEmpreendimento?.length || 0} imóveis com empreendimentos`,
+      );
+      setImoveis(imoveisComEmpreendimento || []);
     } catch (err) {
       console.error("💥 Erro ao buscar imóveis:", err);
       setError("Erro ao carregar os imóveis. Tente novamente.");
@@ -169,29 +221,55 @@ const ComprarImovel = () => {
     }).format(valorNumerico);
   };
 
-  // 🔥 FUNÇÃO ATUALIZADA: Extrai os dados corretamente priorizando 'dependencias'
-  // Agora incluindo os campos area_total e area_construida
   const extrairDadosImovel = (imovel) => {
     const caracteristicas = imovel.caracteristicas || {};
     const dependencias = imovel.dependencias || {};
 
-    // PRIORIDADE 1: Usar dados da nova coluna 'dependencias'
-    // PRIORIDADE 2: Se não existir, usar dados da coluna 'caracteristicas'
     return {
-      // Campos já existentes
       quartos: dependencias.dormitorios || caracteristicas.quartos || "0",
       suites: dependencias.suites || caracteristicas.suites || "0",
       banheiros: dependencias.banheiros || caracteristicas.banheiros || "0",
       vagas: dependencias.vagas || caracteristicas.vagas || "0",
-
-      // 🆕 NOVOS CAMPOS - Área Total e Área Construída
       areaTotal: dependencias.area_total || caracteristicas.areaTotal || "0",
       areaConstruida:
         dependencias.area_construida || caracteristicas.areaConstruida || "0",
     };
   };
 
-  // Determinar status
+  // =============== 🎯 FUNÇÃO PARA GERAR TÍTULO DO CARD (CORRIGIDA!) ===============
+  const gerarTituloCard = (imovel) => {
+    // 🔥 TÍTULO SIMPLES E DIRETO
+    if (!imovel) return "Imóvel";
+
+    const tipo = imovel.tipo || "imóvel";
+    const bairro = imovel.bairro ? imovel.bairro.replace(/ /g, "-") : "";
+    const cidade = imovel.cidade || "";
+    const estado = imovel.estado || "";
+
+    // ✅ CASO 1: Tem bairro, cidade e estado (formato completo)
+    if (bairro && cidade && estado) {
+      return `${tipo} ${bairro}-${cidade}-${estado}`;
+    }
+
+    // ✅ CASO 2: Tem cidade e estado (sem bairro)
+    if (cidade && estado) {
+      return `${tipo} ${cidade}-${estado}`;
+    }
+
+    // ✅ CASO 3: Tem só cidade
+    if (cidade) {
+      return `${tipo} ${cidade}`;
+    }
+
+    // ✅ CASO 4: Tem só estado
+    if (estado) {
+      return `${tipo} - ${estado}`;
+    }
+
+    // ✅ CASO 5: Fallback - usa título manual ou genérico
+    return imovel.titulo || `${tipo} em localização privilegiada`;
+  };
+
   const getStatus = (imovel) => {
     if (imovel.status === "vendido") return "sold";
     if (imovel.status === "destaque") return "price-drop";
@@ -238,23 +316,27 @@ const ComprarImovel = () => {
       <main className="container">
         {loading && (
           <div style={{ textAlign: "center", padding: "3rem", color: "#666" }}>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#D4A24D] mx-auto mb-4"></div>
             <p>Buscando imóveis...</p>
           </div>
         )}
 
         {error && !loading && (
           <div style={{ textAlign: "center", padding: "3rem", color: "red" }}>
-            <p>{error}</p>
+            <i className="fas fa-exclamation-circle text-5xl text-red-500 mb-4"></i>
+            <p className="text-lg mb-4">{error}</p>
             <button
               onClick={() => fetchImoveis(filtrosAtivos)}
               style={{
                 marginTop: "1rem",
-                padding: "0.5rem 1rem",
-                backgroundColor: "#1a365d",
+                padding: "0.75rem 2rem",
+                backgroundColor: "#D4A24D",
                 color: "white",
                 border: "none",
-                borderRadius: "4px",
+                borderRadius: "8px",
                 cursor: "pointer",
+                fontSize: "1rem",
+                fontWeight: "600",
               }}
             >
               Tentar novamente
@@ -273,27 +355,46 @@ const ComprarImovel = () => {
             <section className="lista-imoveis">
               {imoveis.length > 0 ? (
                 imoveis.map((imovel) => {
-                  // 🔥 CORREÇÃO: Usa a nova função para extrair os dados
                   const dados = extrairDadosImovel(imovel);
+
+                  // 🔥 TÍTULO OTIMIZADO PARA O CARD - CORRIGIDO!
+                  const tituloCard = gerarTituloCard(imovel);
+
+                  // 🔍 DEBUG - Vê o título do card
+                  console.log(
+                    `🏠 Card: ${tituloCard} | Slug: ${imovel.slug || "❌ NÃO TEM SLUG!"}`,
+                  );
+                  console.log(
+                    `📍 Localização: ${imovel.bairro || ""} • ${imovel.cidade || ""} / ${imovel.estado || ""}`,
+                  );
 
                   return (
                     <CardImovel
                       key={imovel.id}
                       id={imovel.id}
+                      slug={imovel.slug}
                       status={getStatus(imovel)}
                       tipo={imovel.tipo?.toUpperCase() || "CASA"}
                       finalidade="VENDA"
                       preco={formatPrice(imovel.preco)}
-                      titulo={imovel.titulo || "Imóvel sem título"}
-                      localizacao={`${imovel.bairro || ""} • ${imovel.cidade || ""}${imovel.estado ? ` / ${imovel.estado}` : ""}`}
+                      // ===== PROPS CORRIGIDAS E OTIMIZADAS =====
+                      titulo={tituloCard} // ✅ AGORA USA O TÍTULO AUTOMÁTICO!
+                      localizacao={`${imovel.bairro || ""}${imovel.bairro && imovel.cidade ? " • " : ""}${imovel.cidade || ""}${imovel.estado ? ` / ${imovel.estado}` : ""}`}
+                      bairro={imovel.bairro} // 🔥 NOVO - Passa o bairro!
+                      cidade={imovel.cidade} // 🔥 NOVO - Passa a cidade!
+                      estado={imovel.estado} // 🔥 NOVO - Passa o estado!
+                      // ===========================================
                       quartos={dados.quartos}
                       suites={dados.suites}
                       banheiros={dados.banheiros}
                       vagas={dados.vagas}
-                      // 🆕 NOVOS CAMPOS - Passando para o CardImovel
                       areaTotal={dados.areaTotal}
                       areaConstruida={dados.areaConstruida}
                       emCondominio={imovel.em_condominio || false}
+                      empreendimento={imovel.edificios || null}
+                      unidade={imovel.unidade || ""}
+                      andar={imovel.andar || ""}
+                      bloco={imovel.bloco || ""}
                       imagem={
                         imovel.imagem_url ||
                         "https://images.unsplash.com/photo-1568605114967-8130f3a36994?auto=format&fit=crop&w=400&h=300&q=60"
@@ -308,8 +409,12 @@ const ComprarImovel = () => {
                     gridColumn: "1/-1",
                     padding: "4rem",
                     width: "100%",
+                    backgroundColor: "white",
+                    borderRadius: "12px",
+                    boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
                   }}
                 >
+                  <i className="fas fa-home text-6xl text-gray-300 mb-4"></i>
                   <p
                     style={{
                       fontSize: "1.2rem",
@@ -323,14 +428,21 @@ const ComprarImovel = () => {
                     onClick={handleClearFilters}
                     style={{
                       padding: "0.75rem 2rem",
-                      backgroundColor: "#1a365d",
+                      backgroundColor: "#D4A24D",
                       color: "white",
                       border: "none",
-                      borderRadius: "4px",
+                      borderRadius: "8px",
                       cursor: "pointer",
                       fontSize: "1rem",
-                      fontWeight: "500",
+                      fontWeight: "600",
+                      transition: "all 0.3s ease",
                     }}
+                    onMouseEnter={(e) =>
+                      (e.target.style.backgroundColor = "#C4933E")
+                    }
+                    onMouseLeave={(e) =>
+                      (e.target.style.backgroundColor = "#D4A24D")
+                    }
                   >
                     Limpar filtros
                   </button>
@@ -391,6 +503,17 @@ const ComprarImovel = () => {
         .page-header-mobile-optimized * {
           margin: 0;
           padding: 0;
+        }
+        .animate-spin {
+          animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+          from {
+            transform: rotate(0deg);
+          }
+          to {
+            transform: rotate(360deg);
+          }
         }
       `}</style>
     </>

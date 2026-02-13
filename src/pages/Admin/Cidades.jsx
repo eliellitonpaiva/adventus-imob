@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   PlusIcon,
   PencilIcon,
@@ -10,36 +10,14 @@ import {
   ChevronUpDownIcon,
 } from "@heroicons/react/24/outline";
 import Button from "../../componentes/ui/Button";
-import { useTheme } from "../../contexts/ThemeContext"; // Importando o contexto de tema
+import { useTheme } from "../../contexts/ThemeContext";
+import { supabase } from "../../lib/supabase";
 
 const Cidades = () => {
-  const { isDark } = useTheme(); // Hook para verificar se está no modo escuro
+  const { isDark } = useTheme();
 
-  // Dados de exemplo (seus dados)
-  const [cidades, setCidades] = useState([
-    {
-      id: 1,
-      nome: "Açailândia",
-      estado: "MA",
-      populacao: "108 MIL PESSOAS",
-      ativo: true,
-    },
-    {
-      id: 2,
-      nome: "Imperatriz",
-      estado: "MA",
-      populacao: "300 MIL PESSOAS",
-      ativo: true,
-    },
-    {
-      id: 3,
-      nome: "Itinga",
-      estado: "MA",
-      populacao: "50 MIL PESSOAS",
-      ativo: true,
-    },
-  ]);
-
+  const [cidades, setCidades] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [busca, setBusca] = useState("");
   const [filtroEstado, setFiltroEstado] = useState("todos");
   const [modalAberto, setModalAberto] = useState(false);
@@ -50,7 +28,145 @@ const Cidades = () => {
     populacao: "",
   });
 
-  // TODOS OS ESTADOS BRASILEIROS (26 estados + Distrito Federal)
+  const fetchCidades = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from("cidades")
+        .select("*")
+        .order("nome");
+
+      if (error) throw error;
+
+      const cidadesFormatadas = data.map((cidade) => ({
+        ...cidade,
+        estado: cidade.uf,
+      }));
+
+      setCidades(cidadesFormatadas || []);
+    } catch (error) {
+      console.error("Erro ao buscar cidades:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchCidades();
+  }, []);
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const gerarSlug = (nome, uf) => {
+    return (
+      nome
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^\w\s-]/g, "")
+        .replace(/\s+/g, "-")
+        .replace(/-+/g, "-")
+        .trim() + `-${uf.toLowerCase()}`
+    );
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    try {
+      const dadosParaSalvar = {
+        nome: formData.nome,
+        uf: formData.estado,
+        slug: gerarSlug(formData.nome, formData.estado),
+      };
+
+      if (formData.populacao?.trim()) {
+        dadosParaSalvar.populacao = formData.populacao.trim();
+      }
+
+      if (cidadeEditando) {
+        const { error } = await supabase
+          .from("cidades")
+          .update(dadosParaSalvar)
+          .eq("id", cidadeEditando.id);
+        if (error) throw error;
+      } else {
+        dadosParaSalvar.ativo = true;
+        const { error } = await supabase
+          .from("cidades")
+          .insert([dadosParaSalvar]);
+        if (error) throw error;
+      }
+
+      await fetchCidades();
+      handleResetModal();
+      setModalAberto(false);
+    } catch (error) {
+      console.error("❌ Erro ao salvar cidade:", error);
+      alert(`Erro ao salvar cidade: ${error.message}`);
+    }
+  };
+
+  const handleExcluir = async (id) => {
+    if (!window.confirm("Tem certeza que deseja excluir esta cidade?")) return;
+    try {
+      const { error } = await supabase.from("cidades").delete().eq("id", id);
+      if (error) throw error;
+      await fetchCidades();
+    } catch (error) {
+      console.error("❌ Erro ao excluir cidade:", error);
+      alert(`Erro ao excluir cidade: ${error.message}`);
+    }
+  };
+
+  const handleToggleAtivo = async (id, ativoAtual) => {
+    try {
+      const { error } = await supabase
+        .from("cidades")
+        .update({ ativo: !ativoAtual })
+        .eq("id", id);
+      if (error) throw error;
+      await fetchCidades();
+    } catch (error) {
+      console.error("❌ Erro ao atualizar status:", error);
+    }
+  };
+
+  const handleEditar = (cidade) => {
+    setCidadeEditando(cidade);
+    setFormData({
+      nome: cidade.nome,
+      estado: cidade.estado,
+      populacao: cidade.populacao || "",
+    });
+    setModalAberto(true);
+  };
+
+  const handleNovaCidade = () => {
+    setCidadeEditando(null);
+    setFormData({ nome: "", estado: "", populacao: "" });
+    setModalAberto(true);
+  };
+
+  const handleResetModal = () => {
+    setFormData({ nome: "", estado: "", populacao: "" });
+    setCidadeEditando(null);
+  };
+
+  const cidadesFiltradas = cidades.filter((cidade) => {
+    const buscaMatch = cidade.nome?.toLowerCase().includes(busca.toLowerCase());
+    const estadoMatch =
+      filtroEstado === "todos" || cidade.estado === filtroEstado;
+    return buscaMatch && estadoMatch;
+  });
+
+  const estadosUnicos = [
+    ...new Set(cidades.map((c) => c.estado).filter(Boolean)),
+  ].sort();
+
   const estados = [
     { uf: "AC", nome: "Acre" },
     { uf: "AL", nome: "Alagoas" },
@@ -81,97 +197,25 @@ const Cidades = () => {
     { uf: "TO", nome: "Tocantins" },
   ];
 
-  // Filtrar cidades
-  const cidadesFiltradas = cidades.filter((cidade) => {
-    const buscaMatch = cidade.nome.toLowerCase().includes(busca.toLowerCase());
-
-    const estadoMatch =
-      filtroEstado === "todos" || cidade.estado === filtroEstado;
-
-    return buscaMatch && estadoMatch;
-  });
-
-  // CORREÇÃO: Função mais simples para manipular input
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-
-    if (cidadeEditando) {
-      // Editar cidade existente
-      setCidades((prev) =>
-        prev.map((cidade) =>
-          cidade.id === cidadeEditando.id
-            ? { ...cidade, ...formData, ativo: cidade.ativo }
-            : cidade,
-        ),
-      );
-    } else {
-      // Adicionar nova cidade
-      const novaCidade = {
-        id: Math.max(...cidades.map((c) => c.id)) + 1,
-        ...formData,
-        ativo: true,
-      };
-      setCidades((prev) => [...prev, novaCidade]);
-    }
-
-    // Limpar e fechar modal
-    handleResetModal();
-    setModalAberto(false);
-  };
-
-  const handleEditar = (cidade) => {
-    setCidadeEditando(cidade);
-    setFormData({
-      nome: cidade.nome,
-      estado: cidade.estado,
-      populacao: cidade.populacao,
-    });
-    setModalAberto(true);
-  };
-
-  const handleExcluir = (id) => {
-    if (window.confirm("Tem certeza que deseja excluir esta cidade?")) {
-      setCidades((prev) => prev.filter((cidade) => cidade.id !== id));
-    }
-  };
-
-  const handleToggleAtivo = (id) => {
-    setCidades((prev) =>
-      prev.map((cidade) =>
-        cidade.id === id ? { ...cidade, ativo: !cidade.ativo } : cidade,
-      ),
+  if (loading) {
+    return (
+      <div
+        className={`min-h-screen p-6 flex items-center justify-center ${isDark ? "bg-gray-900" : "bg-gray-50"}`}
+      >
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-[#D4A24D] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className={isDark ? "text-gray-400" : "text-gray-600"}>
+            Carregando cidades...
+          </p>
+        </div>
+      </div>
     );
-  };
-
-  const handleNovaCidade = () => {
-    setCidadeEditando(null);
-    handleResetModal();
-    setModalAberto(true);
-  };
-
-  // FUNÇÃO PARA RESETAR O MODAL
-  const handleResetModal = () => {
-    setFormData({
-      nome: "",
-      estado: "",
-      populacao: "",
-    });
-    setCidadeEditando(null);
-  };
-
-  // Estados únicos para filtro
-  const estadosUnicos = [...new Set(cidades.map((c) => c.estado))].sort();
+  }
 
   return (
     <div
       className={`min-h-screen p-6 ${isDark ? "bg-gray-900" : "bg-gray-50"}`}
     >
-      {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
         <div>
           <h1
@@ -189,7 +233,6 @@ const Cidades = () => {
         </Button>
       </div>
 
-      {/* Filtros - CORRIGIDO: Input substituído por input nativo */}
       <div
         className={`rounded-lg border p-4 mb-6 ${
           isDark ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"
@@ -203,7 +246,6 @@ const Cidades = () => {
                   isDark ? "text-gray-500" : "text-gray-400"
                 }`}
               />
-              {/* CORREÇÃO: Input nativo com tema adequado */}
               <input
                 type="text"
                 placeholder="Buscar por nome da cidade..."
@@ -211,7 +253,7 @@ const Cidades = () => {
                 onChange={(e) => setBusca(e.target.value)}
                 className={`w-full pl-10 pr-4 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 ${
                   isDark
-                    ? "bg-gray-800 border-gray-600 text-gray-200 placeholder-gray-500"
+                    ? "bg-gray-700 border-gray-600 text-gray-200 placeholder-gray-500"
                     : "bg-white border-gray-300 text-gray-900 placeholder-gray-500"
                 }`}
               />
@@ -224,7 +266,7 @@ const Cidades = () => {
             <select
               className={`border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 ${
                 isDark
-                  ? "border-gray-600 bg-gray-800 text-gray-200"
+                  ? "border-gray-600 bg-gray-700 text-gray-200"
                   : "border-gray-300 bg-white text-gray-900"
               }`}
               value={filtroEstado}
@@ -232,7 +274,7 @@ const Cidades = () => {
             >
               <option
                 value="todos"
-                className={isDark ? "bg-gray-800" : "bg-white"}
+                className={isDark ? "bg-gray-700" : "bg-white"}
               >
                 Todos os estados
               </option>
@@ -240,7 +282,7 @@ const Cidades = () => {
                 <option
                   key={estado}
                   value={estado}
-                  className={isDark ? "bg-gray-800" : "bg-white"}
+                  className={isDark ? "bg-gray-700" : "bg-white"}
                 >
                   {estado}
                 </option>
@@ -250,14 +292,12 @@ const Cidades = () => {
         </div>
       </div>
 
-      {/* Tabela - NOVO LAYOUT COM CSS GRID */}
       <div
         className={`rounded-lg border overflow-hidden ${
           isDark ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"
         }`}
       >
         <div className="overflow-x-auto">
-          {/* Cabeçalho da tabela com grid - 6 COLUNAS */}
           <div
             className={`grid grid-cols-6 gap-0 border-b ${
               isDark
@@ -309,129 +349,111 @@ const Cidades = () => {
             </div>
           </div>
 
-          {/* Corpo da tabela */}
           <div
             className={
               isDark ? "divide-y divide-gray-700" : "divide-y divide-gray-200"
             }
           >
-            {cidadesFiltradas.map((cidade) => (
+            {cidadesFiltradas.length > 0 ? (
+              cidadesFiltradas.map((cidade) => (
+                <div
+                  key={cidade.id}
+                  className={`grid grid-cols-6 gap-0 ${
+                    isDark ? "hover:bg-gray-700/50" : "hover:bg-gray-50"
+                  }`}
+                >
+                  <div
+                    className={`p-4 flex items-center justify-center border-r ${
+                      isDark ? "border-gray-700" : "border-gray-200"
+                    }`}
+                  >
+                    <span
+                      className={`text-sm font-mono ${isDark ? "text-gray-300" : "text-gray-600"}`}
+                    >
+                      {cidade.id.substring(0, 8)}...
+                    </span>
+                  </div>
+                  <div
+                    className={`p-4 flex items-center justify-center border-r ${
+                      isDark ? "border-gray-700" : "border-gray-200"
+                    }`}
+                  >
+                    <span
+                      className={`text-sm font-medium ${isDark ? "text-gray-200" : "text-gray-900"}`}
+                    >
+                      {cidade.nome}
+                    </span>
+                  </div>
+                  <div
+                    className={`p-4 flex items-center justify-center border-r ${
+                      isDark ? "border-gray-700" : "border-gray-200"
+                    }`}
+                  >
+                    <span
+                      className={`text-sm font-semibold ${isDark ? "text-gray-200" : "text-gray-900"}`}
+                    >
+                      {cidade.estado}
+                    </span>
+                  </div>
+                  <div
+                    className={`p-4 flex items-center justify-center border-r ${
+                      isDark ? "border-gray-700" : "border-gray-200"
+                    }`}
+                  >
+                    <span
+                      className={`text-sm ${isDark ? "text-gray-300" : "text-gray-700"}`}
+                    >
+                      {cidade.populacao || "-"}
+                    </span>
+                  </div>
+                  <div
+                    className={`p-4 flex items-center justify-center border-r ${
+                      isDark ? "border-gray-700" : "border-gray-200"
+                    }`}
+                  >
+                    <button
+                      onClick={() => handleToggleAtivo(cidade.id, cidade.ativo)}
+                      className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
+                        cidade.ativo
+                          ? isDark
+                            ? "bg-green-900/30 text-green-400 border border-green-800"
+                            : "bg-green-100 text-green-800"
+                          : isDark
+                            ? "bg-red-900/30 text-red-400 border border-red-800"
+                            : "bg-red-100 text-red-800"
+                      }`}
+                    >
+                      {cidade.ativo ? "Ativa" : "Inativa"}
+                    </button>
+                  </div>
+                  <div className="p-4 flex items-center justify-center">
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => handleEditar(cidade)}
+                        className="p-2 bg-[#D4A24D] text-white rounded-lg hover:bg-[#D4A24D]/90 transition-colors"
+                      >
+                        <PencilIcon className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handleExcluir(cidade.id)}
+                        className="p-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                      >
+                        <TrashIcon className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : (
               <div
-                key={cidade.id}
-                className={`grid grid-cols-6 gap-0 ${
-                  isDark ? "hover:bg-gray-700/50" : "hover:bg-gray-50"
-                }`}
+                className={`p-8 text-center ${isDark ? "text-gray-400" : "text-gray-600"}`}
               >
-                {/* ID */}
-                <div
-                  className={`p-4 flex items-center justify-center border-r ${
-                    isDark ? "border-gray-700" : "border-gray-200"
-                  }`}
-                >
-                  <div
-                    className={`text-sm font-medium ${
-                      isDark ? "text-gray-300" : "text-gray-900"
-                    }`}
-                  >
-                    {cidade.id}
-                  </div>
-                </div>
-
-                {/* Cidade */}
-                <div
-                  className={`p-4 flex items-center justify-center border-r ${
-                    isDark ? "border-gray-700" : "border-gray-200"
-                  }`}
-                >
-                  <div
-                    className={`text-sm font-medium text-center ${
-                      isDark ? "text-gray-300" : "text-gray-900"
-                    }`}
-                  >
-                    {cidade.nome}
-                  </div>
-                </div>
-
-                {/* Estado */}
-                <div
-                  className={`p-4 flex items-center justify-center border-r ${
-                    isDark ? "border-gray-700" : "border-gray-200"
-                  }`}
-                >
-                  <div
-                    className={`text-sm font-semibold ${
-                      isDark ? "text-gray-200" : "text-gray-900"
-                    }`}
-                  >
-                    {cidade.estado}
-                  </div>
-                </div>
-
-                {/* População */}
-                <div
-                  className={`p-4 flex items-center justify-center border-r ${
-                    isDark ? "border-gray-700" : "border-gray-200"
-                  }`}
-                >
-                  <div
-                    className={`text-sm text-center ${
-                      isDark ? "text-gray-300" : "text-gray-900"
-                    }`}
-                  >
-                    {cidade.populacao}
-                  </div>
-                </div>
-
-                {/* Status */}
-                <div
-                  className={`p-4 flex items-center justify-center border-r ${
-                    isDark ? "border-gray-700" : "border-gray-200"
-                  }`}
-                >
-                  <button
-                    onClick={() => handleToggleAtivo(cidade.id)}
-                    className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
-                      cidade.ativo
-                        ? isDark
-                          ? "bg-green-900/30 text-green-400 border border-green-800"
-                          : "bg-green-100 text-green-800"
-                        : isDark
-                          ? "bg-red-900/30 text-red-400 border border-red-800"
-                          : "bg-red-100 text-red-800"
-                    }`}
-                  >
-                    {cidade.ativo ? "Ativa" : "Inativa"}
-                  </button>
-                </div>
-
-                {/* Ações */}
-                <div className="p-4 flex items-center justify-center">
-                  <div className="flex items-center justify-center gap-2">
-                    {/* Botão Editar */}
-                    <button
-                      onClick={() => handleEditar(cidade)}
-                      className="p-2 bg-[#D4A24D] text-white rounded-lg hover:bg-[#D4A24D]/90 transition-colors"
-                      aria-label="Editar"
-                    >
-                      <PencilIcon className="w-4 h-4" />
-                    </button>
-
-                    {/* Botão Excluir */}
-                    <button
-                      onClick={() => handleExcluir(cidade.id)}
-                      className="p-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-                      aria-label="Excluir"
-                    >
-                      <TrashIcon className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
+                Nenhuma cidade encontrada.
               </div>
-            ))}
+            )}
           </div>
         </div>
 
-        {/* Total de registros */}
         <div
           className={`px-6 py-4 border-t ${
             isDark
@@ -442,28 +464,11 @@ const Cidades = () => {
           <div
             className={`text-sm ${isDark ? "text-gray-400" : "text-gray-700"}`}
           >
-            Mostrando{" "}
-            <span
-              className={`font-medium ${
-                isDark ? "text-gray-300" : "text-gray-900"
-              }`}
-            >
-              {cidadesFiltradas.length}
-            </span>{" "}
-            de{" "}
-            <span
-              className={`font-medium ${
-                isDark ? "text-gray-300" : "text-gray-900"
-              }`}
-            >
-              {cidades.length}
-            </span>{" "}
-            cidades
+            Mostrando {cidadesFiltradas.length} de {cidades.length} cidades
           </div>
         </div>
       </div>
 
-      {/* Modal de cadastro/edição */}
       {modalAberto && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div
@@ -477,13 +482,10 @@ const Cidades = () => {
               }`}
             >
               <h3
-                className={`text-lg font-semibold ${
-                  isDark ? "text-gray-100" : "text-gray-900"
-                }`}
+                className={`text-lg font-semibold ${isDark ? "text-gray-100" : "text-gray-900"}`}
               >
                 {cidadeEditando ? "Editar Cidade" : "Nova Cidade"}
               </h3>
-              {/* CORREÇÃO: Botão de fechar amarelo com X branco */}
               <button
                 onClick={() => {
                   setModalAberto(false);
@@ -499,9 +501,7 @@ const Cidades = () => {
               <div className="p-6 space-y-4">
                 <div>
                   <label
-                    className={`block text-sm font-medium mb-1 ${
-                      isDark ? "text-gray-300" : "text-gray-700"
-                    }`}
+                    className={`block text-sm font-medium mb-1 ${isDark ? "text-gray-300" : "text-gray-700"}`}
                   >
                     Nome da Cidade *
                   </label>
@@ -513,7 +513,7 @@ const Cidades = () => {
                     placeholder="Ex: Açailândia"
                     className={`w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 ${
                       isDark
-                        ? "border-gray-600 bg-gray-800 text-gray-200 placeholder-gray-500"
+                        ? "border-gray-600 bg-gray-700 text-gray-200 placeholder-gray-500"
                         : "border-gray-300 bg-white text-gray-900 placeholder-gray-500"
                     }`}
                     required
@@ -522,9 +522,7 @@ const Cidades = () => {
 
                 <div>
                   <label
-                    className={`block text-sm font-medium mb-1 ${
-                      isDark ? "text-gray-300" : "text-gray-700"
-                    }`}
+                    className={`block text-sm font-medium mb-1 ${isDark ? "text-gray-300" : "text-gray-700"}`}
                   >
                     Estado *
                   </label>
@@ -535,14 +533,14 @@ const Cidades = () => {
                       onChange={handleInputChange}
                       className={`w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 appearance-none ${
                         isDark
-                          ? "border-gray-600 bg-gray-800 text-gray-200"
+                          ? "border-gray-600 bg-gray-700 text-gray-200"
                           : "border-gray-300 bg-white text-gray-900"
                       }`}
                       required
                     >
                       <option
                         value=""
-                        className={isDark ? "bg-gray-800" : "bg-white"}
+                        className={isDark ? "bg-gray-700" : "bg-white"}
                       >
                         Selecione um estado
                       </option>
@@ -550,7 +548,7 @@ const Cidades = () => {
                         <option
                           key={estado.uf}
                           value={estado.uf}
-                          className={isDark ? "bg-gray-800" : "bg-white"}
+                          className={isDark ? "bg-gray-700" : "bg-white"}
                         >
                           {estado.nome} ({estado.uf})
                         </option>
@@ -566,9 +564,7 @@ const Cidades = () => {
 
                 <div>
                   <label
-                    className={`block text-sm font-medium mb-1 ${
-                      isDark ? "text-gray-300" : "text-gray-700"
-                    }`}
+                    className={`block text-sm font-medium mb-1 ${isDark ? "text-gray-300" : "text-gray-700"}`}
                   >
                     População
                   </label>
@@ -580,7 +576,7 @@ const Cidades = () => {
                     placeholder="Ex: 108 MIL PESSOAS"
                     className={`w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 ${
                       isDark
-                        ? "border-gray-600 bg-gray-800 text-gray-200 placeholder-gray-500"
+                        ? "border-gray-600 bg-gray-700 text-gray-200 placeholder-gray-500"
                         : "border-gray-300 bg-white text-gray-900 placeholder-gray-500"
                     }`}
                   />

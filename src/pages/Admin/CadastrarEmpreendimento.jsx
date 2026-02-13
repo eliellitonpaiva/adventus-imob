@@ -10,6 +10,10 @@ import {
   BuildingLibraryIcon,
   HomeModernIcon,
   HomeIcon,
+  BuildingOffice2Icon,
+  CalendarIcon,
+  Squares2X2Icon,
+  TruckIcon,
 } from "@heroicons/react/24/outline";
 import Button from "../../componentes/ui/Button";
 import { useTheme } from "../../contexts/ThemeContext";
@@ -18,6 +22,7 @@ import { supabase } from "../../lib/supabase";
 const CadastrarEmpreendimento = () => {
   const navigate = useNavigate();
   const { isDark } = useTheme();
+
   const [loading, setLoading] = useState(false);
   const [submitMessage, setSubmitMessage] = useState({ type: "", text: "" });
 
@@ -32,9 +37,15 @@ const CadastrarEmpreendimento = () => {
     cidade: "",
     estado: "",
     cep: "",
+    // Campos Edifício
     ano_construcao: "",
     numero_andares: "",
     total_unidades: "",
+    // NOVOS CAMPOS - Edifício
+    construtora: "",
+    ano_lancamento: "",
+    area_terreno: "",
+    vagas_garagem: "",
   });
 
   // =============== OPÇÕES PARA SELECTS ===============
@@ -133,7 +144,10 @@ const CadastrarEmpreendimento = () => {
   // =============== HANDLERS ===============
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
   };
 
   // =============== BUSCAR CEP ===============
@@ -146,18 +160,22 @@ const CadastrarEmpreendimento = () => {
       setCepError("CEP deve ter 8 dígitos");
       return;
     }
+
     setCepLoading(true);
     setCepError("");
+
     try {
       const response = await fetch(
         `https://viacep.com.br/ws/${cepLimpo}/json/`,
       );
       if (!response.ok) throw new Error("Erro na resposta da API");
       const data = await response.json();
+
       if (data.erro) {
         setCepError("CEP não encontrado");
         return;
       }
+
       setFormData((prev) => ({
         ...prev,
         endereco: data.logradouro || "",
@@ -176,6 +194,7 @@ const CadastrarEmpreendimento = () => {
   const handleCepChange = (e) => {
     const { value } = e.target;
     setFormData((prev) => ({ ...prev, cep: value }));
+
     const cepLimpo = value.replace(/\D/g, "");
     if (cepLimpo.length === 8) {
       buscarCep(value);
@@ -206,30 +225,43 @@ const CadastrarEmpreendimento = () => {
     }
 
     try {
+      // Preparar dados para inserção - incluindo os novos campos
+      const dadosParaInserir = {
+        nome: formData.nome,
+        tipo: formData.tipo,
+        endereco: formData.endereco,
+        numero: formData.numero,
+        complemento: formData.complemento,
+        bairro: formData.bairro,
+        cidade: formData.cidade,
+        estado: formData.estado,
+        cep: formData.cep,
+        // Campos existentes
+        ano_construcao: formData.ano_construcao
+          ? parseInt(formData.ano_construcao)
+          : null,
+        numero_andares: formData.numero_andares
+          ? parseInt(formData.numero_andares)
+          : null,
+        total_unidades: formData.total_unidades
+          ? parseInt(formData.total_unidades)
+          : null,
+        // NOVOS CAMPOS
+        construtora: formData.construtora || null,
+        ano_lancamento: formData.ano_lancamento
+          ? parseInt(formData.ano_lancamento)
+          : null,
+        area_terreno: formData.area_terreno
+          ? parseFloat(formData.area_terreno)
+          : null,
+        vagas_garagem: formData.vagas_garagem
+          ? parseInt(formData.vagas_garagem)
+          : null,
+      };
+
       const { data, error } = await supabase
         .from("edificios")
-        .insert([
-          {
-            nome: formData.nome,
-            tipo: formData.tipo,
-            endereco: formData.endereco,
-            numero: formData.numero,
-            complemento: formData.complemento,
-            bairro: formData.bairro,
-            cidade: formData.cidade,
-            estado: formData.estado,
-            cep: formData.cep,
-            ano_construcao: formData.ano_construcao
-              ? parseInt(formData.ano_construcao)
-              : null,
-            numero_andares: formData.numero_andares
-              ? parseInt(formData.numero_andares)
-              : null,
-            total_unidades: formData.total_unidades
-              ? parseInt(formData.total_unidades)
-              : null,
-          },
-        ])
+        .insert([dadosParaInserir])
         .select();
 
       if (error) throw error;
@@ -297,29 +329,29 @@ const CadastrarEmpreendimento = () => {
             {formData.tipo && (
               <div
                 className={`
-                px-4 py-2 rounded-full text-sm font-medium flex items-center gap-2
-                ${
-                  formData.tipo === "edificio"
-                    ? isDark
-                      ? "bg-blue-900/30 text-blue-300 border border-blue-800"
-                      : "bg-blue-100 text-blue-800 border border-blue-300"
-                    : ""
-                }
-                ${
-                  formData.tipo === "condominio"
-                    ? isDark
-                      ? "bg-green-900/30 text-green-300 border border-green-800"
-                      : "bg-green-100 text-green-800 border border-green-300"
-                    : ""
-                }
-                ${
-                  formData.tipo === "residencial"
-                    ? isDark
-                      ? "bg-purple-900/30 text-purple-300 border border-purple-800"
-                      : "bg-purple-100 text-purple-800 border border-purple-300"
-                    : ""
-                }
-              `}
+                  px-4 py-2 rounded-full text-sm font-medium flex items-center gap-2
+                  ${
+                    formData.tipo === "edificio"
+                      ? isDark
+                        ? "bg-blue-900/30 text-blue-300 border border-blue-800"
+                        : "bg-blue-100 text-blue-800 border border-blue-300"
+                      : ""
+                  }
+                  ${
+                    formData.tipo === "condominio"
+                      ? isDark
+                        ? "bg-green-900/30 text-green-300 border border-green-800"
+                        : "bg-green-100 text-green-800 border border-green-300"
+                      : ""
+                  }
+                  ${
+                    formData.tipo === "residencial"
+                      ? isDark
+                        ? "bg-purple-900/30 text-purple-300 border border-purple-800"
+                        : "bg-purple-100 text-purple-800 border border-purple-300"
+                      : ""
+                  }
+                `}
               >
                 {formData.tipo === "edificio" && (
                   <>
@@ -372,7 +404,6 @@ const CadastrarEmpreendimento = () => {
               {tiposEmpreendimento.map((tipo) => {
                 const Icon = tipo.icon;
                 const isSelected = formData.tipo === tipo.value;
-
                 return (
                   <label
                     key={tipo.value}
@@ -413,46 +444,50 @@ const CadastrarEmpreendimento = () => {
                       className="sr-only"
                       required
                     />
-
                     <div className="flex items-start space-x-4">
                       <div
                         className={`
-                        p-3 rounded-xl
-                        ${
-                          isSelected
-                            ? isDark
-                              ? `bg-${tipo.value === "edificio" ? "blue" : tipo.value === "condominio" ? "green" : "purple"}-900/50`
-                              : tipo.lightBg
-                            : isDark
-                              ? "bg-gray-700"
-                              : "bg-gray-100"
-                        }
-                      `}
+                          p-3 rounded-xl
+                          ${
+                            isSelected
+                              ? isDark
+                                ? `bg-${
+                                    tipo.value === "edificio"
+                                      ? "blue"
+                                      : tipo.value === "condominio"
+                                        ? "green"
+                                        : "purple"
+                                  }-900/50`
+                                : tipo.lightBg
+                              : isDark
+                                ? "bg-gray-700"
+                                : "bg-gray-100"
+                          }
+                        `}
                       >
                         <Icon
                           className={`
-                          w-8 h-8
-                          ${
-                            isSelected
-                              ? tipo.value === "edificio"
-                                ? isDark
-                                  ? "text-blue-300"
-                                  : "text-blue-600"
-                                : tipo.value === "condominio"
+                            w-8 h-8
+                            ${
+                              isSelected
+                                ? tipo.value === "edificio"
                                   ? isDark
-                                    ? "text-green-300"
-                                    : "text-green-600"
-                                  : isDark
-                                    ? "text-purple-300"
-                                    : "text-purple-600"
-                              : isDark
-                                ? "text-gray-400"
-                                : "text-gray-500"
-                          }
-                        `}
+                                    ? "text-blue-300"
+                                    : "text-blue-600"
+                                  : tipo.value === "condominio"
+                                    ? isDark
+                                      ? "text-green-300"
+                                      : "text-green-600"
+                                    : isDark
+                                      ? "text-purple-300"
+                                      : "text-purple-600"
+                                : isDark
+                                  ? "text-gray-400"
+                                  : "text-gray-500"
+                            }
+                          `}
                         />
                       </div>
-
                       <div className="flex-1">
                         <div
                           className={`font-semibold text-base ${getTextClass()}`}
@@ -466,26 +501,25 @@ const CadastrarEmpreendimento = () => {
                         </div>
                       </div>
                     </div>
-
                     {isSelected && (
                       <div className="absolute top-3 right-3">
                         <CheckCircleIcon
                           className={`
-                          w-5 h-5
-                          ${
-                            tipo.value === "edificio"
-                              ? isDark
-                                ? "text-blue-300"
-                                : "text-blue-600"
-                              : tipo.value === "condominio"
+                            w-5 h-5
+                            ${
+                              tipo.value === "edificio"
                                 ? isDark
-                                  ? "text-green-300"
-                                  : "text-green-600"
-                                : isDark
-                                  ? "text-purple-300"
-                                  : "text-purple-600"
-                          }
-                        `}
+                                  ? "text-blue-300"
+                                  : "text-blue-600"
+                                : tipo.value === "condominio"
+                                  ? isDark
+                                    ? "text-green-300"
+                                    : "text-green-600"
+                                  : isDark
+                                    ? "text-purple-300"
+                                    : "text-purple-600"
+                            }
+                          `}
                         />
                       </div>
                     )}
@@ -531,11 +565,11 @@ const CadastrarEmpreendimento = () => {
                   required
                   placeholder="Ex: Edifício Copan, Condomínio Alphaville, Residencial Parque"
                   className={`
-                    w-full px-4 py-3 text-base
-                    border-2 rounded-lg
-                    focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D]
-                    transition-all duration-200
-                    ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()} ${getPlaceholderClass()}
+                    w-full px-4 py-3 text-base border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-all duration-200
+                    ${getInputBgClass()}
+                    ${getInputBorderClass()}
+                    ${getInputTextClass()}
+                    ${getPlaceholderClass()}
                   `}
                 />
               </div>
@@ -558,11 +592,11 @@ const CadastrarEmpreendimento = () => {
                       placeholder="00000-000"
                       maxLength="9"
                       className={`
-                        w-full px-4 py-3
-                        border-2 rounded-lg
-                        focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D]
-                        transition-all duration-200
-                        ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()} ${getPlaceholderClass()}
+                        w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-all duration-200
+                        ${getInputBgClass()}
+                        ${getInputBorderClass()}
+                        ${getInputTextClass()}
+                        ${getPlaceholderClass()}
                       `}
                     />
                     {cepLoading && (
@@ -594,11 +628,11 @@ const CadastrarEmpreendimento = () => {
                     onChange={handleChange}
                     placeholder="Ex: Rua das Flores"
                     className={`
-                      w-full px-4 py-3
-                      border-2 rounded-lg
-                      focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D]
-                      transition-all duration-200
-                      ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()} ${getPlaceholderClass()}
+                      w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-all duration-200
+                      ${getInputBgClass()}
+                      ${getInputBorderClass()}
+                      ${getInputTextClass()}
+                      ${getPlaceholderClass()}
                     `}
                   />
                 </div>
@@ -619,15 +653,14 @@ const CadastrarEmpreendimento = () => {
                     onChange={handleChange}
                     placeholder="123"
                     className={`
-                      w-full px-4 py-3
-                      border-2 rounded-lg
-                      focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D]
-                      transition-all duration-200
-                      ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()} ${getPlaceholderClass()}
+                      w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-all duration-200
+                      ${getInputBgClass()}
+                      ${getInputBorderClass()}
+                      ${getInputTextClass()}
+                      ${getPlaceholderClass()}
                     `}
                   />
                 </div>
-
                 <div>
                   <label
                     className={`block text-sm font-medium mb-2 ${getTextSecondaryClass()}`}
@@ -641,15 +674,14 @@ const CadastrarEmpreendimento = () => {
                     onChange={handleChange}
                     placeholder="Ex: Bloco A, Torre 2"
                     className={`
-                      w-full px-4 py-3
-                      border-2 rounded-lg
-                      focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D]
-                      transition-all duration-200
-                      ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()} ${getPlaceholderClass()}
+                      w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-all duration-200
+                      ${getInputBgClass()}
+                      ${getInputBorderClass()}
+                      ${getInputTextClass()}
+                      ${getPlaceholderClass()}
                     `}
                   />
                 </div>
-
                 <div>
                   <label
                     className={`block text-sm font-medium mb-2 ${getTextSecondaryClass()}`}
@@ -663,11 +695,11 @@ const CadastrarEmpreendimento = () => {
                     onChange={handleChange}
                     placeholder="Ex: Centro"
                     className={`
-                      w-full px-4 py-3
-                      border-2 rounded-lg
-                      focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D]
-                      transition-all duration-200
-                      ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()} ${getPlaceholderClass()}
+                      w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-all duration-200
+                      ${getInputBgClass()}
+                      ${getInputBorderClass()}
+                      ${getInputTextClass()}
+                      ${getPlaceholderClass()}
                     `}
                   />
                 </div>
@@ -689,15 +721,14 @@ const CadastrarEmpreendimento = () => {
                     required
                     placeholder="Ex: São Paulo"
                     className={`
-                      w-full px-4 py-3
-                      border-2 rounded-lg
-                      focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D]
-                      transition-all duration-200
-                      ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()} ${getPlaceholderClass()}
+                      w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-all duration-200
+                      ${getInputBgClass()}
+                      ${getInputBorderClass()}
+                      ${getInputTextClass()}
+                      ${getPlaceholderClass()}
                     `}
                   />
                 </div>
-
                 <div>
                   <label
                     className={`block text-sm font-medium mb-2 ${getTextSecondaryClass()}`}
@@ -710,18 +741,17 @@ const CadastrarEmpreendimento = () => {
                     onChange={handleChange}
                     required
                     className={`
-                      w-full px-4 py-3
-                      border-2 rounded-lg
-                      focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D]
-                      transition-all duration-200 appearance-none
-                      ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()}
+                      w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-all duration-200 appearance-none
+                      ${getInputBgClass()}
+                      ${getInputBorderClass()}
+                      ${getInputTextClass()}
                     `}
                     style={{
                       backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236B7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`,
-                      backgroundPosition: `right 0.75rem center`,
-                      backgroundSize: `1.5em 1.5em`,
-                      backgroundRepeat: `no-repeat`,
-                      paddingRight: `2.5rem`,
+                      backgroundPosition: "right 0.75rem center",
+                      backgroundSize: "1.5em 1.5em",
+                      backgroundRepeat: "no-repeat",
+                      paddingRight: "2.5rem",
                     }}
                   >
                     <option value="" className={getOptionBgClass()}>
@@ -749,7 +779,7 @@ const CadastrarEmpreendimento = () => {
             >
               <div className="flex items-center space-x-3 mb-6">
                 <div className={`p-2 rounded-lg ${getIconBgClass()}`}>
-                  <BuildingOfficeIcon
+                  <BuildingOffice2Icon
                     className={`w-6 h-6 ${getIconColorClass()}`}
                   />
                 </div>
@@ -763,7 +793,8 @@ const CadastrarEmpreendimento = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* PRIMEIRA LINHA - Campos existentes */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                 <div>
                   <label
                     className={`block text-sm font-medium mb-2 ${getTextSecondaryClass()}`}
@@ -777,15 +808,14 @@ const CadastrarEmpreendimento = () => {
                     onChange={handleChange}
                     placeholder="Ex: 2020"
                     className={`
-                      w-full px-4 py-3
-                      border-2 rounded-lg
-                      focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D]
-                      transition-all duration-200
-                      ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()} ${getPlaceholderClass()}
+                      w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-all duration-200
+                      ${getInputBgClass()}
+                      ${getInputBorderClass()}
+                      ${getInputTextClass()}
+                      ${getPlaceholderClass()}
                     `}
                   />
                 </div>
-
                 <div>
                   <label
                     className={`block text-sm font-medium mb-2 ${getTextSecondaryClass()}`}
@@ -799,15 +829,14 @@ const CadastrarEmpreendimento = () => {
                     onChange={handleChange}
                     placeholder="Ex: 20"
                     className={`
-                      w-full px-4 py-3
-                      border-2 rounded-lg
-                      focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D]
-                      transition-all duration-200
-                      ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()} ${getPlaceholderClass()}
+                      w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-all duration-200
+                      ${getInputBgClass()}
+                      ${getInputBorderClass()}
+                      ${getInputTextClass()}
+                      ${getPlaceholderClass()}
                     `}
                   />
                 </div>
-
                 <div>
                   <label
                     className={`block text-sm font-medium mb-2 ${getTextSecondaryClass()}`}
@@ -821,14 +850,144 @@ const CadastrarEmpreendimento = () => {
                     onChange={handleChange}
                     placeholder="Ex: 120"
                     className={`
-                      w-full px-4 py-3
-                      border-2 rounded-lg
-                      focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D]
-                      transition-all duration-200
-                      ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()} ${getPlaceholderClass()}
+                      w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-all duration-200
+                      ${getInputBgClass()}
+                      ${getInputBorderClass()}
+                      ${getInputTextClass()}
+                      ${getPlaceholderClass()}
                     `}
                   />
                 </div>
+              </div>
+
+              {/* NOVA LINHA - Construtora e Ano de Lançamento */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <div>
+                  <label
+                    className={`block text-sm font-medium mb-2 ${getTextSecondaryClass()}`}
+                  >
+                    Construtora
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <BuildingOffice2Icon
+                        className={`h-5 w-5 ${getTextSecondaryClass()}`}
+                      />
+                    </div>
+                    <input
+                      type="text"
+                      name="construtora"
+                      value={formData.construtora}
+                      onChange={handleChange}
+                      placeholder="Ex: Construtora ABC"
+                      className={`
+                        w-full pl-10 pr-4 py-3 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-all duration-200
+                        ${getInputBgClass()}
+                        ${getInputBorderClass()}
+                        ${getInputTextClass()}
+                        ${getPlaceholderClass()}
+                      `}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label
+                    className={`block text-sm font-medium mb-2 ${getTextSecondaryClass()}`}
+                  >
+                    Ano de lançamento
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <CalendarIcon
+                        className={`h-5 w-5 ${getTextSecondaryClass()}`}
+                      />
+                    </div>
+                    <input
+                      type="number"
+                      name="ano_lancamento"
+                      value={formData.ano_lancamento}
+                      onChange={handleChange}
+                      placeholder="Ex: 2024"
+                      className={`
+                        w-full pl-10 pr-4 py-3 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-all duration-200
+                        ${getInputBgClass()}
+                        ${getInputBorderClass()}
+                        ${getInputTextClass()}
+                        ${getPlaceholderClass()}
+                      `}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* NOVA LINHA - Área do Terreno e Vagas de Garagem */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label
+                    className={`block text-sm font-medium mb-2 ${getTextSecondaryClass()}`}
+                  >
+                    Área do terreno (m²)
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <Squares2X2Icon
+                        className={`h-5 w-5 ${getTextSecondaryClass()}`}
+                      />
+                    </div>
+                    <input
+                      type="number"
+                      name="area_terreno"
+                      value={formData.area_terreno}
+                      onChange={handleChange}
+                      placeholder="Ex: 1500"
+                      step="0.01"
+                      className={`
+                        w-full pl-10 pr-4 py-3 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-all duration-200
+                        ${getInputBgClass()}
+                        ${getInputBorderClass()}
+                        ${getInputTextClass()}
+                        ${getPlaceholderClass()}
+                      `}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label
+                    className={`block text-sm font-medium mb-2 ${getTextSecondaryClass()}`}
+                  >
+                    Vagas de garagem
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <TruckIcon
+                        className={`h-5 w-5 ${getTextSecondaryClass()}`}
+                      />
+                    </div>
+                    <input
+                      type="number"
+                      name="vagas_garagem"
+                      value={formData.vagas_garagem}
+                      onChange={handleChange}
+                      placeholder="Ex: 100"
+                      className={`
+                        w-full pl-10 pr-4 py-3 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-all duration-200
+                        ${getInputBgClass()}
+                        ${getInputBorderClass()}
+                        ${getInputTextClass()}
+                        ${getPlaceholderClass()}
+                      `}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Dica informativa */}
+              <div className="mt-4 p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
+                <p className="text-xs text-blue-700 dark:text-blue-300">
+                  <span className="font-medium">ℹ️</span> Os campos acima
+                  (construtora, ano de lançamento, área do terreno e vagas de
+                  garagem) são informações complementares do edifício.
+                </p>
               </div>
             </div>
           )}
@@ -836,7 +995,9 @@ const CadastrarEmpreendimento = () => {
           {/* SEÇÃO: INFORMAÇÃO PARA CONDOMÍNIO */}
           {formData.tipo === "condominio" && (
             <div
-              className={`rounded-xl border p-6 ${getCardBgClass()} ${getBorderClass()} shadow-sm bg-gradient-to-r ${isDark ? "from-gray-800 to-gray-900" : "from-green-50 to-white"}`}
+              className={`rounded-xl border p-6 ${getCardBgClass()} ${getBorderClass()} shadow-sm bg-gradient-to-r ${
+                isDark ? "from-gray-800 to-gray-900" : "from-green-50 to-white"
+              }`}
             >
               <div className="flex items-start space-x-4">
                 <div
@@ -868,7 +1029,9 @@ const CadastrarEmpreendimento = () => {
           {/* SEÇÃO: INFORMAÇÃO PARA RESIDENCIAL */}
           {formData.tipo === "residencial" && (
             <div
-              className={`rounded-xl border p-6 ${getCardBgClass()} ${getBorderClass()} shadow-sm bg-gradient-to-r ${isDark ? "from-gray-800 to-gray-900" : "from-purple-50 to-white"}`}
+              className={`rounded-xl border p-6 ${getCardBgClass()} ${getBorderClass()} shadow-sm bg-gradient-to-r ${
+                isDark ? "from-gray-800 to-gray-900" : "from-purple-50 to-white"
+              }`}
             >
               <div className="flex items-start space-x-4">
                 <div
@@ -901,17 +1064,17 @@ const CadastrarEmpreendimento = () => {
           {submitMessage.text && (
             <div
               className={`
-              p-4 rounded-lg border-2
-              ${
-                submitMessage.type === "success"
-                  ? isDark
-                    ? "bg-green-900/20 border-green-800 text-green-300"
-                    : "bg-green-50 border-green-300 text-green-800"
-                  : isDark
-                    ? "bg-red-900/20 border-red-800 text-red-300"
-                    : "bg-red-50 border-red-300 text-red-800"
-              }
-            `}
+                p-4 rounded-lg border-2
+                ${
+                  submitMessage.type === "success"
+                    ? isDark
+                      ? "bg-green-900/20 border-green-800 text-green-300"
+                      : "bg-green-50 border-green-300 text-green-800"
+                    : isDark
+                      ? "bg-red-900/20 border-red-800 text-red-300"
+                      : "bg-red-50 border-red-300 text-red-800"
+                }
+              `}
             >
               <div className="flex items-center">
                 {submitMessage.type === "success" ? (

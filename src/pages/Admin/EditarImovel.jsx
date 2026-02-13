@@ -1,13 +1,12 @@
-// src/pages/CadastrarImovel.js
+// E:\DEV\react\adventus-imob\src\pages\Admin\EditarImovel.jsx
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { ExclamationTriangleIcon } from "@heroicons/react/24/outline";
 import {
   ArrowLeftIcon,
   HomeIcon,
   MapPinIcon,
   TagIcon,
-  WrenchScrewdriverIcon,
   PaintBrushIcon,
   CheckCircleIcon,
   SunIcon,
@@ -17,7 +16,6 @@ import {
   SparklesIcon,
   HeartIcon,
   CubeTransparentIcon,
-  BeakerIcon,
   LightBulbIcon,
   BuildingOfficeIcon,
   PlusIcon,
@@ -25,71 +23,20 @@ import {
 import Button from "../../componentes/ui/Button";
 import { useTheme } from "../../contexts/ThemeContext";
 import { supabase } from "../../lib/supabase";
-import { slugify } from "../../lib/slugify"; // 🔥 IMPORT DO SLUG!
 
-const CadastrarImovel = () => {
+const EditarImovel = () => {
   const navigate = useNavigate();
+  const { id } = useParams();
   const { isDark } = useTheme();
   const [loading, setLoading] = useState(false);
+  const [loadingDados, setLoadingDados] = useState(true);
   const [submitMessage, setSubmitMessage] = useState({ type: "", text: "" });
 
   // =============== BUSCAR EMPREENDIMENTOS ===============
   const [empreendimentos, setEmpreendimentos] = useState([]);
 
-  useEffect(() => {
-    const fetchEmpreendimentos = async () => {
-      const { data } = await supabase
-        .from("edificios")
-        .select("id, nome, tipo, bairro, cidade")
-        .order("nome");
-      setEmpreendimentos(data || []);
-    };
-    fetchEmpreendimentos();
-  }, []);
-
-  // =============== TESTE DE CONEXÃO ===============
-  useEffect(() => {
-    console.log("🔍 Testando conexão com Supabase...");
-
-    const testarConexao = async () => {
-      try {
-        const { data, error } = await supabase
-          .from("imoveis")
-          .select("count", { count: "exact", head: true });
-
-        if (error) {
-          if (error.code === "42P01") {
-            console.log(
-              "✅ CONEXÃO COM SUPABASE OK! Tabela 'imoveis' ainda não criada.",
-            );
-          } else {
-            console.error("❌ Erro na conexão:", error.message);
-          }
-        } else {
-          console.log("✅✅ Conexão perfeita!");
-        }
-      } catch (err) {
-        console.error("❌ Erro inesperado:", err);
-      }
-    };
-
-    testarConexao();
-  }, []);
-
-  // =============== FUNÇÃO PARA EXTRAIR DADOS DO IMÓVEL ===============
-  const extrairDadosImovel = (formData) => {
-    return {
-      quartos: formData.dependencias?.dormitorios || 0,
-      areaTotal: formData.dependencias?.area_total || 0,
-      bairro: formData.bairro || "",
-      cidade: formData.cidade || "",
-      estado: formData.estado || "",
-    };
-  };
-
   // =============== ESTADO DO FORMULÁRIO ===============
   const [formData, setFormData] = useState({
-    // Seção 1: Informações Gerais
     codigo: "",
     titulo: "",
     finalidade: { venda: true, aluguel: false },
@@ -101,17 +48,12 @@ const CadastrarImovel = () => {
     proprietarioId: "",
     corretorId: "",
     ocultarPreco: false,
-    slug: "", // 🔥 CAMPO SLUG ADICIONADO!
-
-    // 🆕 VÍNCULO COM EMPREENDIMENTO (CORRIGIDO)
     empreendimento_id: "",
     unidade: "",
     andar: "",
     lote: "",
     bloco: "",
     quadra: "",
-
-    // NOVA SEÇÃO: Dependências do Imóvel
     dependencias: {
       dormitorios: "",
       banheiros: "",
@@ -120,8 +62,6 @@ const CadastrarImovel = () => {
       area_total: "",
       area_construida: "",
     },
-
-    // Seção 2: Localização Aprimorada
     cep: "",
     endereco: "",
     numero: "",
@@ -131,18 +71,13 @@ const CadastrarImovel = () => {
     estado: "",
     ocultarNumero: false,
     ocultarEndereco: false,
-
-    // Seção 3: Etiquetas
     etiquetas: {
       destaqueSemana: false,
       novoSite: false,
       baixouPreco: false,
       financiável: false,
     },
-
-    // ============ ACCORDION 1: CARACTERÍSTICAS DO IMÓVEL ============
     caracteristicas: {
-      // 📐 Medidas e Dimensões
       areaUtil: "",
       areaPrivativa: "",
       frenteTerreno: "",
@@ -150,11 +85,8 @@ const CadastrarImovel = () => {
       lateralEsquerda: "",
       lateralDireita: "",
       peDireito: "",
-      // Lote específico
       topografia: "",
       esquina: false,
-
-      // 🏗 Estrutura do Imóvel
       tipoConstrucao: "",
       anoConstrucao: "",
       reformadoRecentemente: false,
@@ -162,8 +94,6 @@ const CadastrarImovel = () => {
       imovelAverbado: false,
       financiavel: false,
       aceitaPermuta: false,
-
-      // ⚡ Infraestrutura interna
       tipoIluminacao: "",
       tipoTelhado: "",
       forroLaje: false,
@@ -171,8 +101,6 @@ const CadastrarImovel = () => {
       caixaDAgua: "",
       sistemaEsgoto: "",
       aquecimentoAgua: "",
-
-      // 🏘 Informações estratégicas
       posicaoSolar: "",
       ventilacaoCruzada: false,
       vistaLivre: false,
@@ -181,8 +109,6 @@ const CadastrarImovel = () => {
       esquinaInfo: false,
       condominioTaxaMensal: "",
     },
-
-    // ============ INFRAESTRUTURA (ANTIGO) - MANTIDO PARA COMPATIBILIDADE ============
     infraestrutura: {
       agua: false,
       energia: false,
@@ -199,10 +125,7 @@ const CadastrarImovel = () => {
       cameraSeguranca: false,
       alarme: false,
     },
-
-    // ============ ACCORDION 2: ACABAMENTOS ============
     acabamentos: {
-      // 🔹 Pisos
       pisoPorcelanato: false,
       pisoCeramica: false,
       pisoLaminado: false,
@@ -213,35 +136,25 @@ const CadastrarImovel = () => {
       pisoMarmore: false,
       pisoGranito: false,
       pisoFrio: false,
-
-      // 🔹 Revestimentos de parede
       revestimentoAzulejo: false,
       revestimentoPastilha: false,
       revestimentoPorcelanato: false,
       revestimentoPedraNatural: false,
       revestimentoPapelParede: false,
       revestimento3D: false,
-
-      // 🔹 Teto e forro
       tetoGessoRebaixado: false,
       tetoSancaGesso: false,
       tetoForroPVC: false,
       tetoLaje: false,
-
-      // 🔹 Esquadrias e portas
       portaMadeiraMaciça: false,
       portaLaqueada: false,
       esquadriaAluminio: false,
       esquadriaPVC: false,
       portaPivotante: false,
-
-      // 🔹 Bancadas
       bancadaGranito: false,
       bancadaMarmore: false,
       bancadaQuartzo: false,
       bancadaNanoglass: false,
-
-      // Campos antigos (mantidos para compatibilidade)
       piso: "",
       azulejo: "",
       porta: "",
@@ -256,8 +169,6 @@ const CadastrarImovel = () => {
       lavabo: false,
       dependenciaEmpregada: false,
     },
-
-    // ============ ACCORDION 3: ÁREA DE LAZER ============
     areaLazer: {
       piscina: false,
       churrasqueira: false,
@@ -276,8 +187,6 @@ const CadastrarImovel = () => {
       espacoPet: false,
       brinquedoteca: false,
     },
-
-    // ============ ACCORDION 4: LOCALIZAÇÃO E VIZINHANÇA ============
     localizacaoVizinhanca: {
       proximoCentro: false,
       proximoSupermercado: false,
@@ -293,8 +202,6 @@ const CadastrarImovel = () => {
       ruaTranquila: false,
       regiaoValorizada: false,
     },
-
-    // ============ ACCORDION 5: SEGURANÇA ============
     seguranca: {
       portaoEletronico: false,
       interfone: false,
@@ -308,8 +215,6 @@ const CadastrarImovel = () => {
       condominioFechado: false,
       murosAltos: false,
     },
-
-    // ============ ACCORDION 6: ARMÁRIOS E ARMAZENAMENTO ============
     armariosArmazenamento: {
       armarioCozinhaPlanejado: false,
       armariosEmbutidos: false,
@@ -321,8 +226,6 @@ const CadastrarImovel = () => {
       roupeiro: false,
       maleiro: false,
     },
-
-    // ============ ACCORDION 7: SERVIÇOS E UTILIDADES ============
     servicosUtilidades: {
       aguaEncanada: false,
       energiaEletrica: false,
@@ -338,8 +241,6 @@ const CadastrarImovel = () => {
       elevador: false,
       coletaLixo: false,
     },
-
-    // ============ ACCORDION 8: DIFERENCIAIS DO IMÓVEL ============
     diferenciais: {
       varanda: false,
       sacada: false,
@@ -352,119 +253,140 @@ const CadastrarImovel = () => {
       mezanino: false,
       vistaPanoramica: false,
     },
-
-    // ============ NOVOS CAMPOS ADICIONADOS ============
     descricao: "",
     observacoes: "",
     iptu_anual: "",
   });
 
-  // =============== CONTROLE DOS ACCORDIONS ===============
-  const [accordionOpen, setAccordionOpen] = useState({
-    caracteristicas: false,
-    acabamentos: false,
-    areaLazer: false,
-    localizacaoVizinhanca: false,
-    seguranca: false,
-    armariosArmazenamento: false,
-    servicosUtilidades: false,
-    diferenciais: false,
-  });
+  // =============== CARREGAR DADOS DO IMÓVEL ===============
+  useEffect(() => {
+    carregarImovel();
+    carregarEmpreendimentos();
+  }, [id]);
 
-  // =============== ESTADOS DE CARREGAMENTO ===============
+  const carregarImovel = async () => {
+    try {
+      setLoadingDados(true);
+      const { data, error } = await supabase
+        .from("imoveis")
+        .select("*")
+        .eq("id", id)
+        .single();
+
+      if (error) throw error;
+
+      setFormData({
+        codigo: data.codigo || "",
+        titulo: data.titulo || "",
+        finalidade: {
+          venda: data.finalidade_venda || false,
+          aluguel: data.finalidade_aluguel || false,
+        },
+        tipo: data.tipo || "",
+        preco: data.preco || "",
+        status: data.status || "disponivel",
+        financiado: data.financiado || false,
+        emCondominio: data.em_condominio || false,
+        proprietarioId: data.proprietario_id || "",
+        corretorId: data.corretor_id || "",
+        ocultarPreco: data.ocultar_preco || false,
+        empreendimento_id: data.id_edificios || "",
+        unidade: data.unidade || "",
+        andar: data.andar || "",
+        lote: data.lote || "",
+        bloco: data.bloco || "",
+        quadra: data.quadra || "",
+        dependencias: {
+          dormitorios: data.quartos || "",
+          banheiros: data.banheiros || "",
+          suites: data.suites || "",
+          vagas: data.vagas || "",
+          area_total: data.area_total || "",
+          area_construida: data.area_construida || "",
+        },
+        cep: data.cep || "",
+        endereco: data.endereco || "",
+        numero: data.numero || "",
+        complemento: data.complemento || "",
+        bairro: data.bairro || "",
+        cidade: data.cidade || "",
+        estado: data.estado || "",
+        ocultarNumero: data.ocultar_numero || false,
+        ocultarEndereco: data.ocultar_endereco || false,
+        etiquetas: data.etiquetas || {
+          destaqueSemana: false,
+          novoSite: false,
+          baixouPreco: false,
+          financiável: false,
+        },
+        caracteristicas: data.caracteristicas || {
+          areaUtil: "",
+          areaPrivativa: "",
+          frenteTerreno: "",
+          fundo: "",
+          lateralEsquerda: "",
+          lateralDireita: "",
+          peDireito: "",
+          topografia: "",
+          esquina: false,
+          tipoConstrucao: "",
+          anoConstrucao: "",
+          reformadoRecentemente: false,
+          numeroPavimentos: "",
+          imovelAverbado: false,
+          financiavel: false,
+          aceitaPermuta: false,
+          tipoIluminacao: "",
+          tipoTelhado: "",
+          forroLaje: false,
+          sistemaEletricoNovo: false,
+          caixaDAgua: "",
+          sistemaEsgoto: "",
+          aquecimentoAgua: "",
+          posicaoSolar: "",
+          ventilacaoCruzada: false,
+          vistaLivre: false,
+          vistaPermanente: false,
+          ruaSemSaida: false,
+          esquinaInfo: false,
+          condominioTaxaMensal: "",
+        },
+        infraestrutura: data.infraestrutura || {},
+        acabamentos: data.acabamentos || {},
+        areaLazer: data.area_lazer || {},
+        localizacaoVizinhanca: data.localizacao_vizinhanca || {},
+        seguranca: data.seguranca || {},
+        armariosArmazenamento: data.armarios_armazenamento || {},
+        servicosUtilidades: data.servicos_utilidades || {},
+        diferenciais: data.diferenciais || {},
+        descricao: data.descricao || "",
+        observacoes: data.observacoes || "",
+        iptu_anual: data.iptu_anual || "",
+      });
+    } catch (error) {
+      console.error("Erro ao carregar imóvel:", error);
+      setSubmitMessage({
+        type: "error",
+        text: "Erro ao carregar dados do imóvel. Tente novamente.",
+      });
+    } finally {
+      setLoadingDados(false);
+    }
+  };
+
+  // =============== CARREGAR EMPREENDIMENTOS ===============
+  const carregarEmpreendimentos = async () => {
+    const { data } = await supabase
+      .from("edificios")
+      .select("id, nome, tipo, bairro, cidade")
+      .order("nome");
+    setEmpreendimentos(data || []);
+  };
+
+  // =============== FUNÇÕES DE BUSCA CEP ===============
   const [cepLoading, setCepLoading] = useState(false);
   const [cepError, setCepError] = useState("");
 
-  // =============== OPÇÕES PARA SELECTS ===============
-  const tiposImovel = [
-    { value: "casa", label: "Casa" },
-    { value: "apartamento", label: "Apartamento" },
-    { value: "terreno", label: "Terreno" },
-    { value: "comercial", label: "Comercial" },
-    { value: "sobrado", label: "Sobrado" },
-    { value: "kitnet", label: "Kitnet" },
-    { value: "fazenda", label: "Fazenda" },
-    { value: "galpao", label: "Galpão" },
-  ];
-
-  const estadosBrasil = [
-    { value: "AC", label: "Acre" },
-    { value: "AL", label: "Alagoas" },
-    { value: "AP", label: "Amapá" },
-    { value: "AM", label: "Amazonas" },
-    { value: "BA", label: "Bahia" },
-    { value: "CE", label: "Ceará" },
-    { value: "DF", label: "Distrito Federal" },
-    { value: "ES", label: "Espírito Santo" },
-    { value: "GO", label: "Goiás" },
-    { value: "MA", label: "Maranhão" },
-    { value: "MT", label: "Mato Grosso" },
-    { value: "MS", label: "Mato Grosso do Sul" },
-    { value: "MG", label: "Minas Gerais" },
-    { value: "PA", label: "Pará" },
-    { value: "PB", label: "Paraíba" },
-    { value: "PR", label: "Paraná" },
-    { value: "PE", label: "Pernambuco" },
-    { value: "PI", label: "Piauí" },
-    { value: "RJ", label: "Rio de Janeiro" },
-    { value: "RN", label: "Rio Grande do Norte" },
-    { value: "RS", label: "Rio Grande do Sul" },
-    { value: "RO", label: "Rondônia" },
-    { value: "RR", label: "Roraima" },
-    { value: "SC", label: "Santa Catarina" },
-    { value: "SP", label: "São Paulo" },
-    { value: "SE", label: "Sergipe" },
-    { value: "TO", label: "Tocantins" },
-  ];
-
-  const topografiaOpcoes = [
-    { value: "plano", label: "Plano" },
-    { value: "aclive", label: "Aclive" },
-    { value: "declive", label: "Declive" },
-  ];
-
-  const tipoConstrucaoOpcoes = [
-    { value: "alvenaria_estrutural", label: "Alvenaria Estrutural" },
-    { value: "concreto_armado", label: "Concreto Armado" },
-    { value: "steel_frame", label: "Steel Frame" },
-    { value: "wood_frame", label: "Wood Frame" },
-    { value: "container", label: "Container" },
-  ];
-
-  const sistemaEsgotoOpcoes = [
-    { value: "rede_publica", label: "Rede Pública" },
-    { value: "fossa_septica", label: "Fossa Séptica" },
-    { value: "fossa_filtro", label: "Fossa e Filtro" },
-  ];
-
-  const aquecimentoAguaOpcoes = [
-    { value: "gas", label: "Gás" },
-    { value: "solar", label: "Solar" },
-    { value: "eletrico", label: "Elétrico" },
-    { value: "central", label: "Central" },
-  ];
-
-  const posicaoSolarOpcoes = [
-    { value: "nascente", label: "Nascente" },
-    { value: "poente", label: "Poente" },
-    { value: "norte", label: "Norte" },
-    { value: "sul", label: "Sul" },
-  ];
-
-  // Dados de exemplo
-  const proprietarios = [
-    { id: "1", nome: "Maria Silva" },
-    { id: "2", nome: "João Santos" },
-    { id: "3", nome: "Ana Oliveira" },
-  ];
-
-  const corretores = [
-    { id: "101", nome: "Carlos Souza" },
-    { id: "102", nome: "Ana Pereira" },
-    { id: "103", nome: "Roberto Lima" },
-  ];
-
-  // =============== FUNÇÕES DE BUSCA CEP ===============
   const buscarCep = async (cep) => {
     const cepLimpo = cep.replace(/\D/g, "");
     if (cepLimpo.length !== 8) {
@@ -529,6 +451,18 @@ const CadastrarImovel = () => {
     }
   };
 
+  // =============== CONTROLE DOS ACCORDIONS ===============
+  const [accordionOpen, setAccordionOpen] = useState({
+    caracteristicas: false,
+    acabamentos: false,
+    areaLazer: false,
+    localizacaoVizinhanca: false,
+    seguranca: false,
+    armariosArmazenamento: false,
+    servicosUtilidades: false,
+    diferenciais: false,
+  });
+
   const toggleAccordion = (section) => {
     setAccordionOpen((prev) => ({
       ...prev,
@@ -536,62 +470,13 @@ const CadastrarImovel = () => {
     }));
   };
 
-  // =============== FUNÇÃO PARA GERAR SLUG HÍBRIDO ===============
-  const gerarSlug = (formData) => {
-    const dados = extrairDadosImovel(formData);
-
-    // 🔥 BASE DO SLUG COM PALAVRAS-CHAVE PRINCIPAIS
-    let slugBase = "";
-
-    if (formData.tipo) {
-      slugBase += formData.tipo;
-    }
-
-    if (dados.cidade) {
-      slugBase += ` ${dados.cidade}`;
-    }
-
-    if (dados.quartos && dados.quartos > 0) {
-      slugBase += ` ${dados.quartos}-quartos`;
-    }
-
-    if (dados.areaTotal && dados.areaTotal > 0) {
-      slugBase += ` ${dados.areaTotal}-m`;
-    }
-
-    // Se não tiver nenhuma informação, usa título ou código como fallback
-    if (!slugBase.trim()) {
-      slugBase = formData.titulo || `imovel-${formData.codigo}`;
-    }
-
-    // 🔥 SLUG HÍBRIDO: palavras-chave + código do imóvel
-    const slug = `${slugify(slugBase)}-${formData.codigo || "sem-codigo"}`;
-
-    return slug;
-  };
-
-  // =============== SUBMIT CORRIGIDO COM SLUG HÍBRIDO ===============
+  // =============== SUBMIT ===============
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setSubmitMessage({ type: "", text: "" });
 
-    // 🔥 GERA O SLUG HÍBRIDO AUTOMATICAMENTE!
-    const slug = gerarSlug(formData);
-    console.log("🔨 Slug híbrido gerado:", slug);
-    console.log(
-      "📍 Base do slug:",
-      formData.tipo,
-      formData.cidade,
-      formData.dependencias.dormitorios,
-      "quartos",
-      formData.dependencias.area_total,
-      "m²",
-    );
-    console.log("🏷️ Código:", formData.codigo);
-
     const dadosParaSupabase = {
-      // ===== INFORMAÇÕES GERAIS =====
       codigo: formData.codigo,
       titulo: formData.titulo,
       finalidade_venda: formData.finalidade.venda,
@@ -604,19 +489,12 @@ const CadastrarImovel = () => {
       proprietario_id: formData.proprietarioId || null,
       corretor_id: formData.corretorId || null,
       ocultar_preco: formData.ocultarPreco,
-
-      // ===== SLUG HÍBRIDO 🔥 =====
-      slug: slug,
-
-      // ===== VÍNCULO COM EMPREENDIMENTO =====
       id_edificios: formData.empreendimento_id || null,
       unidade: formData.unidade || "",
       andar: formData.andar ? parseInt(formData.andar) : 0,
       lote: formData.lote || "",
       bloco: formData.bloco || "",
       quadra: formData.quadra || "",
-
-      // ===== DEPENDÊNCIAS =====
       quartos: parseInt(formData.dependencias.dormitorios) || 0,
       suites: parseInt(formData.dependencias.suites) || 0,
       banheiros: parseInt(formData.dependencias.banheiros) || 0,
@@ -624,14 +502,10 @@ const CadastrarImovel = () => {
       area_total: parseFloat(formData.dependencias.area_total) || 0,
       area_construida: parseFloat(formData.dependencias.area_construida) || 0,
       area_privativa: parseFloat(formData.caracteristicas.areaPrivativa) || 0,
-
-      // ===== CUSTOS MENSAIS/ANUAIS =====
       condominio_mensal:
         parseFloat(formData.caracteristicas.condominioTaxaMensal) || 0,
       iptu_anual: parseFloat(formData.iptu_anual) || 0,
       data_disponibilidade: null,
-
-      // ===== LOCALIZAÇÃO =====
       cep: formData.cep,
       endereco: formData.endereco,
       numero: formData.numero,
@@ -641,20 +515,9 @@ const CadastrarImovel = () => {
       estado: formData.estado,
       ocultar_numero: formData.ocultarNumero,
       ocultar_endereco: formData.ocultarEndereco,
-
-      // ===== DESCRIÇÃO E OBSERVAÇÕES =====
       descricao: formData.descricao || "",
       observacoes: formData.observacoes || "",
-
-      // ===== ETIQUETAS =====
-      etiquetas: {
-        destaqueSemana: formData.etiquetas.destaqueSemana || false,
-        novoSite: formData.etiquetas.novoSite || false,
-        baixouPreco: formData.etiquetas.baixouPreco || false,
-        financiavel: formData.etiquetas.financiável || false,
-      },
-
-      // ===== CARACTERÍSTICAS (JSONB) =====
+      etiquetas: formData.etiquetas,
       caracteristicas: {
         ...formData.caracteristicas,
         areaUtil: formData.caracteristicas.areaUtil
@@ -676,8 +539,6 @@ const CadastrarImovel = () => {
           ? parseFloat(formData.caracteristicas.condominioTaxaMensal)
           : 0,
       },
-
-      // ===== DEMAIS JSONBs =====
       infraestrutura: formData.infraestrutura || {},
       acabamentos: formData.acabamentos || {},
       area_lazer: formData.areaLazer || {},
@@ -686,8 +547,6 @@ const CadastrarImovel = () => {
       armarios_armazenamento: formData.armariosArmazenamento || {},
       servicos_utilidades: formData.servicosUtilidades || {},
       diferenciais: formData.diferenciais || {},
-
-      // ===== DEPENDÊNCIAS (JSONB) =====
       dependencias: {
         dormitorios: formData.dependencias.dormitorios || 0,
         banheiros: formData.dependencias.banheiros || 0,
@@ -696,24 +555,25 @@ const CadastrarImovel = () => {
         area_total: formData.dependencias.area_total || 0,
         area_construida: formData.dependencias.area_construida || 0,
       },
+      updated_at: new Date(),
     };
 
     try {
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from("imoveis")
-        .insert([dadosParaSupabase])
-        .select();
+        .update(dadosParaSupabase)
+        .eq("id", id);
 
       if (error) throw error;
 
       setSubmitMessage({
         type: "success",
-        text: `Imóvel "${formData.titulo}" cadastrado com sucesso! Código: ${formData.codigo}`,
+        text: `Imóvel "${formData.titulo}" atualizado com sucesso!`,
       });
 
       setTimeout(() => {
         navigate("/admin/imoveis");
-      }, 3000);
+      }, 2000);
     } catch (error) {
       console.error("Erro detalhado:", error);
       setSubmitMessage({
@@ -733,14 +593,6 @@ const CadastrarImovel = () => {
     ) {
       navigate("/admin/imoveis");
     }
-  };
-
-  const formatPrice = (price) => {
-    if (!price) return "";
-    return Number(price).toLocaleString("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    });
   };
 
   // =============== FUNÇÕES DE CORES (TEMA) ===============
@@ -774,6 +626,62 @@ const CadastrarImovel = () => {
     isDark
       ? "bg-gray-800 border-gray-700 text-gray-200"
       : "bg-white border-gray-300 text-gray-900";
+  const getOptionBgClass = () => (isDark ? "bg-gray-800" : "bg-white");
+
+  // =============== OPÇÕES PARA SELECTS ===============
+  const tiposImovel = [
+    { value: "casa", label: "Casa" },
+    { value: "apartamento", label: "Apartamento" },
+    { value: "terreno", label: "Terreno" },
+    { value: "comercial", label: "Comercial" },
+    { value: "sobrado", label: "Sobrado" },
+    { value: "kitnet", label: "Kitnet" },
+    { value: "fazenda", label: "Fazenda" },
+    { value: "galpao", label: "Galpão" },
+  ];
+
+  const estadosBrasil = [
+    { value: "AC", label: "Acre" },
+    { value: "AL", label: "Alagoas" },
+    { value: "AP", label: "Amapá" },
+    { value: "AM", label: "Amazonas" },
+    { value: "BA", label: "Bahia" },
+    { value: "CE", label: "Ceará" },
+    { value: "DF", label: "Distrito Federal" },
+    { value: "ES", label: "Espírito Santo" },
+    { value: "GO", label: "Goiás" },
+    { value: "MA", label: "Maranhão" },
+    { value: "MT", label: "Mato Grosso" },
+    { value: "MS", label: "Mato Grosso do Sul" },
+    { value: "MG", label: "Minas Gerais" },
+    { value: "PA", label: "Pará" },
+    { value: "PB", label: "Paraíba" },
+    { value: "PR", label: "Paraná" },
+    { value: "PE", label: "Pernambuco" },
+    { value: "PI", label: "Piauí" },
+    { value: "RJ", label: "Rio de Janeiro" },
+    { value: "RN", label: "Rio Grande do Norte" },
+    { value: "RS", label: "Rio Grande do Sul" },
+    { value: "RO", label: "Rondônia" },
+    { value: "RR", label: "Roraima" },
+    { value: "SC", label: "Santa Catarina" },
+    { value: "SP", label: "São Paulo" },
+    { value: "SE", label: "Sergipe" },
+    { value: "TO", label: "Tocantins" },
+  ];
+
+  const proprietarios = [
+    { id: "1", nome: "Maria Silva" },
+    { id: "2", nome: "João Santos" },
+    { id: "3", nome: "Ana Oliveira" },
+  ];
+
+  const corretores = [
+    { id: "101", nome: "Carlos Souza" },
+    { id: "102", nome: "Ana Pereira" },
+    { id: "103", nome: "Roberto Lima" },
+  ];
+
   const getStatusColor = (status) => {
     const baseColors = {
       disponivel: {
@@ -797,19 +705,38 @@ const CadastrarImovel = () => {
       ? baseColors[status]?.dark || "bg-gray-800 text-gray-300"
       : baseColors[status]?.light || "bg-gray-100 text-gray-800";
   };
+
   const getFinanciavelColor = () =>
     isDark
       ? "bg-blue-900/30 text-blue-300 border border-blue-800"
       : "bg-blue-100 text-blue-800";
+
   const getCheckboxClass = () =>
     `appearance-none h-5 w-5 border rounded transition-colors focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/50 focus:ring-offset-2 ${
       isDark ? "bg-gray-800" : "bg-white"
     } ${getCheckboxBorderClass()} checked:bg-[#D4A24D] checked:border-[#D4A24D] relative checked:after:absolute checked:after:content-[''] checked:after:h-[0.625rem] checked:after:w-[0.3125rem] checked:after:rotate-45 checked:after:translate-x-[0.375rem] checked:after:translate-y-[0.125rem] checked:after:border-solid checked:after:border-white checked:after:border-width-0 checked:after:border-r-2 checked:after:border-b-2`;
-  const getOptionBgClass = () => (isDark ? "bg-gray-800" : "bg-white");
 
-  // =============== PREVIEW DO SLUG EM TEMPO REAL ===============
-  const slugPreview =
-    formData.tipo || formData.codigo ? gerarSlug(formData) : "";
+  const formatPrice = (price) => {
+    if (!price) return "";
+    return Number(price).toLocaleString("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    });
+  };
+
+  // =============== LOADING ===============
+  if (loadingDados) {
+    return (
+      <div className="p-6 flex justify-center items-center h-64">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#D4A24D] mx-auto"></div>
+          <p className={`mt-4 ${isDark ? "text-gray-300" : "text-gray-600"}`}>
+            Carregando dados do imóvel...
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -842,13 +769,12 @@ const CadastrarImovel = () => {
                 <h1
                   className={`text-2xl font-bold transition-colors ${getTextClass()}`}
                 >
-                  Cadastrar Imóvel
+                  Editar Imóvel
                 </h1>
                 <p
                   className={`text-sm transition-colors ${getTextSecondaryClass()}`}
                 >
-                  Preencha todos os campos para cadastrar um novo imóvel no
-                  sistema
+                  Altere os dados do imóvel e clique em salvar
                 </p>
               </div>
             </div>
@@ -877,40 +803,6 @@ const CadastrarImovel = () => {
       {/* Conteúdo Principal */}
       <div className="max-w-7xl mx-auto px-4 py-6">
         <form onSubmit={handleSubmit} className="space-y-8">
-          {/* ========== PREVIEW DO SLUG ========== */}
-          {slugPreview && (
-            <div
-              className={`rounded-xl border p-4 transition-colors duration-200 ${isDark ? "bg-gray-800 border-gray-700" : "bg-gray-50 border-gray-200"}`}
-            >
-              <div className="flex items-start space-x-3">
-                <div className={`p-1.5 rounded-lg ${getIconBgClass()}`}>
-                  <TagIcon className={`w-4 h-4 ${getIconColorClass()}`} />
-                </div>
-                <div className="flex-1">
-                  <p
-                    className={`text-xs font-medium mb-1 ${getTextSecondaryClass()}`}
-                  >
-                    🔗 SLUG HÍBRIDO (URL AMIGÁVEL)
-                  </p>
-                  <p
-                    className={`font-mono text-sm break-all ${getTextClass()}`}
-                  >
-                    imovel/{slugPreview}
-                  </p>
-                  <p
-                    className={`text-xs mt-1 ${isDark ? "text-gray-500" : "text-gray-500"}`}
-                  >
-                    ⚡ Gerado automaticamente com{" "}
-                    {formData.tipo ? "tipo, " : ""}
-                    {formData.cidade ? "cidade, " : ""}
-                    {formData.dependencias.dormitorios ? "quartos, " : ""}
-                    {formData.dependencias.area_total ? "área" : ""} + código
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-
           {/* ========== SEÇÃO 1: INFORMAÇÕES GERAIS ========== */}
           <div
             className={`rounded-xl border p-6 transition-colors duration-200 ${getBgClass()} ${getBorderClass()}`}
@@ -1207,7 +1099,7 @@ const CadastrarImovel = () => {
               </div>
             </div>
 
-            {/* ========== 🆕 BLOCO VÍNCULO COM EMPREENDIMENTO ========== */}
+            {/* BLOCO VÍNCULO COM EMPREENDIMENTO */}
             {formData.emCondominio && (
               <div
                 className={`col-span-3 mt-6 p-5 border rounded-lg transition-colors duration-200 ${
@@ -2194,7 +2086,7 @@ const CadastrarImovel = () => {
 
           {/* ========== SEÇÃO 5: ACCORDIONS ========== */}
           <div className="space-y-4">
-            {/* ===== ACCORDION 1: CARACTERÍSTICAS DO IMÓVEL ===== */}
+            {/* ACCORDION 1: CARACTERÍSTICAS DO IMÓVEL */}
             <div
               className={`rounded-xl border overflow-hidden transition-colors duration-200 ${getBgClass()} ${getBorderClass()}`}
             >
@@ -2383,15 +2275,24 @@ const CadastrarImovel = () => {
                             <option value="" className={getOptionBgClass()}>
                               Selecione
                             </option>
-                            {topografiaOpcoes.map((opcao) => (
-                              <option
-                                key={opcao.value}
-                                value={opcao.value}
-                                className={getOptionBgClass()}
-                              >
-                                {opcao.label}
-                              </option>
-                            ))}
+                            <option
+                              value="plano"
+                              className={getOptionBgClass()}
+                            >
+                              Plano
+                            </option>
+                            <option
+                              value="aclive"
+                              className={getOptionBgClass()}
+                            >
+                              Aclive
+                            </option>
+                            <option
+                              value="declive"
+                              className={getOptionBgClass()}
+                            >
+                              Declive
+                            </option>
                           </select>
                         </div>
                         <div className="flex items-center pt-6">
@@ -2441,15 +2342,24 @@ const CadastrarImovel = () => {
                             <option value="" className={getOptionBgClass()}>
                               Selecione
                             </option>
-                            {tipoConstrucaoOpcoes.map((opcao) => (
-                              <option
-                                key={opcao.value}
-                                value={opcao.value}
-                                className={getOptionBgClass()}
-                              >
-                                {opcao.label}
-                              </option>
-                            ))}
+                            <option
+                              value="alvenaria_estrutural"
+                              className={getOptionBgClass()}
+                            >
+                              Alvenaria Estrutural
+                            </option>
+                            <option
+                              value="concreto_armado"
+                              className={getOptionBgClass()}
+                            >
+                              Concreto Armado
+                            </option>
+                            <option
+                              value="steel_frame"
+                              className={getOptionBgClass()}
+                            >
+                              Steel Frame
+                            </option>
                           </select>
                         </div>
                         <div>
@@ -2485,7 +2395,7 @@ const CadastrarImovel = () => {
                         </div>
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
-                        <label className="flex items-center space-x-3 p-3 border rounded-lg cursor-pointer transition-all duration-200 ${getBorderClass()} ${getHoverBgClass()}">
+                        <label className="flex items-center space-x-3 p-3 border rounded-lg cursor-pointer transition-all duration-200">
                           <input
                             type="checkbox"
                             name="caracteristicas.reformadoRecentemente"
@@ -2501,7 +2411,7 @@ const CadastrarImovel = () => {
                             Reformado recentemente?
                           </span>
                         </label>
-                        <label className="flex items-center space-x-3 p-3 border rounded-lg cursor-pointer transition-all duration-200 ${getBorderClass()} ${getHoverBgClass()}">
+                        <label className="flex items-center space-x-3 p-3 border rounded-lg cursor-pointer transition-all duration-200">
                           <input
                             type="checkbox"
                             name="caracteristicas.imovelAverbado"
@@ -2515,7 +2425,7 @@ const CadastrarImovel = () => {
                             Imóvel averbado?
                           </span>
                         </label>
-                        <label className="flex items-center space-x-3 p-3 border rounded-lg cursor-pointer transition-all duration-200 ${getBorderClass()} ${getHoverBgClass()}">
+                        <label className="flex items-center space-x-3 p-3 border rounded-lg cursor-pointer transition-all duration-200">
                           <input
                             type="checkbox"
                             name="caracteristicas.financiavel"
@@ -2529,7 +2439,7 @@ const CadastrarImovel = () => {
                             Financiável?
                           </span>
                         </label>
-                        <label className="flex items-center space-x-3 p-3 border rounded-lg cursor-pointer transition-all duration-200 ${getBorderClass()} ${getHoverBgClass()}">
+                        <label className="flex items-center space-x-3 p-3 border rounded-lg cursor-pointer transition-all duration-200">
                           <input
                             type="checkbox"
                             name="caracteristicas.aceitaPermuta"
@@ -2619,15 +2529,24 @@ const CadastrarImovel = () => {
                             <option value="" className={getOptionBgClass()}>
                               Selecione
                             </option>
-                            {sistemaEsgotoOpcoes.map((opcao) => (
-                              <option
-                                key={opcao.value}
-                                value={opcao.value}
-                                className={getOptionBgClass()}
-                              >
-                                {opcao.label}
-                              </option>
-                            ))}
+                            <option
+                              value="rede_publica"
+                              className={getOptionBgClass()}
+                            >
+                              Rede Pública
+                            </option>
+                            <option
+                              value="fossa_septica"
+                              className={getOptionBgClass()}
+                            >
+                              Fossa Séptica
+                            </option>
+                            <option
+                              value="fossa_filtro"
+                              className={getOptionBgClass()}
+                            >
+                              Fossa e Filtro
+                            </option>
                           </select>
                         </div>
                         <div>
@@ -2645,20 +2564,32 @@ const CadastrarImovel = () => {
                             <option value="" className={getOptionBgClass()}>
                               Selecione
                             </option>
-                            {aquecimentoAguaOpcoes.map((opcao) => (
-                              <option
-                                key={opcao.value}
-                                value={opcao.value}
-                                className={getOptionBgClass()}
-                              >
-                                {opcao.label}
-                              </option>
-                            ))}
+                            <option value="gas" className={getOptionBgClass()}>
+                              Gás
+                            </option>
+                            <option
+                              value="solar"
+                              className={getOptionBgClass()}
+                            >
+                              Solar
+                            </option>
+                            <option
+                              value="eletrico"
+                              className={getOptionBgClass()}
+                            >
+                              Elétrico
+                            </option>
+                            <option
+                              value="central"
+                              className={getOptionBgClass()}
+                            >
+                              Central
+                            </option>
                           </select>
                         </div>
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                        <label className="flex items-center space-x-3 p-3 border rounded-lg cursor-pointer transition-all duration-200 ${getBorderClass()} ${getHoverBgClass()}">
+                        <label className="flex items-center space-x-3 p-3 border rounded-lg cursor-pointer transition-all duration-200">
                           <input
                             type="checkbox"
                             name="caracteristicas.forroLaje"
@@ -2672,7 +2603,7 @@ const CadastrarImovel = () => {
                             Forro em laje?
                           </span>
                         </label>
-                        <label className="flex items-center space-x-3 p-3 border rounded-lg cursor-pointer transition-all duration-200 ${getBorderClass()} ${getHoverBgClass()}">
+                        <label className="flex items-center space-x-3 p-3 border rounded-lg cursor-pointer transition-all duration-200">
                           <input
                             type="checkbox"
                             name="caracteristicas.sistemaEletricoNovo"
@@ -2719,15 +2650,27 @@ const CadastrarImovel = () => {
                             <option value="" className={getOptionBgClass()}>
                               Selecione
                             </option>
-                            {posicaoSolarOpcoes.map((opcao) => (
-                              <option
-                                key={opcao.value}
-                                value={opcao.value}
-                                className={getOptionBgClass()}
-                              >
-                                {opcao.label}
-                              </option>
-                            ))}
+                            <option
+                              value="nascente"
+                              className={getOptionBgClass()}
+                            >
+                              Nascente
+                            </option>
+                            <option
+                              value="poente"
+                              className={getOptionBgClass()}
+                            >
+                              Poente
+                            </option>
+                            <option
+                              value="norte"
+                              className={getOptionBgClass()}
+                            >
+                              Norte
+                            </option>
+                            <option value="sul" className={getOptionBgClass()}>
+                              Sul
+                            </option>
                           </select>
                         </div>
                         <div>
@@ -2749,7 +2692,7 @@ const CadastrarImovel = () => {
                         </div>
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
-                        <label className="flex items-center space-x-3 p-3 border rounded-lg cursor-pointer transition-all duration-200 ${getBorderClass()} ${getHoverBgClass()}">
+                        <label className="flex items-center space-x-3 p-3 border rounded-lg cursor-pointer transition-all duration-200">
                           <input
                             type="checkbox"
                             name="caracteristicas.ventilacaoCruzada"
@@ -2763,7 +2706,7 @@ const CadastrarImovel = () => {
                             Ventilação cruzada
                           </span>
                         </label>
-                        <label className="flex items-center space-x-3 p-3 border rounded-lg cursor-pointer transition-all duration-200 ${getBorderClass()} ${getHoverBgClass()}">
+                        <label className="flex items-center space-x-3 p-3 border rounded-lg cursor-pointer transition-all duration-200">
                           <input
                             type="checkbox"
                             name="caracteristicas.vistaLivre"
@@ -2777,7 +2720,7 @@ const CadastrarImovel = () => {
                             Vista livre
                           </span>
                         </label>
-                        <label className="flex items-center space-x-3 p-3 border rounded-lg cursor-pointer transition-all duration-200 ${getBorderClass()} ${getHoverBgClass()}">
+                        <label className="flex items-center space-x-3 p-3 border rounded-lg cursor-pointer transition-all duration-200">
                           <input
                             type="checkbox"
                             name="caracteristicas.vistaPermanente"
@@ -2791,7 +2734,7 @@ const CadastrarImovel = () => {
                             Vista permanente
                           </span>
                         </label>
-                        <label className="flex items-center space-x-3 p-3 border rounded-lg cursor-pointer transition-all duration-200 ${getBorderClass()} ${getHoverBgClass()}">
+                        <label className="flex items-center space-x-3 p-3 border rounded-lg cursor-pointer transition-all duration-200">
                           <input
                             type="checkbox"
                             name="caracteristicas.ruaSemSaida"
@@ -2805,7 +2748,7 @@ const CadastrarImovel = () => {
                             Rua sem saída
                           </span>
                         </label>
-                        <label className="flex items-center space-x-3 p-3 border rounded-lg cursor-pointer transition-all duration-200 ${getBorderClass()} ${getHoverBgClass()}">
+                        <label className="flex items-center space-x-3 p-3 border rounded-lg cursor-pointer transition-all duration-200">
                           <input
                             type="checkbox"
                             name="caracteristicas.esquinaInfo"
@@ -2826,7 +2769,7 @@ const CadastrarImovel = () => {
               )}
             </div>
 
-            {/* ===== ACCORDION 2: ACABAMENTOS ===== */}
+            {/* ACCORDION 2: ACABAMENTOS */}
             <div
               className={`rounded-xl border overflow-hidden transition-colors duration-200 ${getBgClass()} ${getBorderClass()}`}
             >
@@ -3086,7 +3029,7 @@ const CadastrarImovel = () => {
               )}
             </div>
 
-            {/* ===== ACCORDION 3: ÁREA DE LAZER ===== */}
+            {/* ACCORDION 3: ÁREA DE LAZER */}
             <div
               className={`rounded-xl border overflow-hidden transition-colors duration-200 ${getBgClass()} ${getBorderClass()}`}
             >
@@ -3177,7 +3120,7 @@ const CadastrarImovel = () => {
               )}
             </div>
 
-            {/* ===== ACCORDION 4: LOCALIZAÇÃO E VIZINHANÇA ===== */}
+            {/* ACCORDION 4: LOCALIZAÇÃO E VIZINHANÇA */}
             <div
               className={`rounded-xl border overflow-hidden transition-colors duration-200 ${getBgClass()} ${getBorderClass()}`}
             >
@@ -3268,7 +3211,7 @@ const CadastrarImovel = () => {
               )}
             </div>
 
-            {/* ===== ACCORDION 5: SEGURANÇA ===== */}
+            {/* ACCORDION 5: SEGURANÇA */}
             <div
               className={`rounded-xl border overflow-hidden transition-colors duration-200 ${getBgClass()} ${getBorderClass()}`}
             >
@@ -3353,7 +3296,7 @@ const CadastrarImovel = () => {
               )}
             </div>
 
-            {/* ===== ACCORDION 6: ARMÁRIOS E ARMAZENAMENTO ===== */}
+            {/* ACCORDION 6: ARMÁRIOS E ARMAZENAMENTO */}
             <div
               className={`rounded-xl border overflow-hidden transition-colors duration-200 ${getBgClass()} ${getBorderClass()}`}
             >
@@ -3442,7 +3385,7 @@ const CadastrarImovel = () => {
               )}
             </div>
 
-            {/* ===== ACCORDION 7: SERVIÇOS E UTILIDADES ===== */}
+            {/* ACCORDION 7: SERVIÇOS E UTILIDADES */}
             <div
               className={`rounded-xl border overflow-hidden transition-colors duration-200 ${getBgClass()} ${getBorderClass()}`}
             >
@@ -3539,7 +3482,7 @@ const CadastrarImovel = () => {
               )}
             </div>
 
-            {/* ===== ACCORDION 8: DIFERENCIAIS DO IMÓVEL ===== */}
+            {/* ACCORDION 8: DIFERENCIAIS DO IMÓVEL */}
             <div
               className={`rounded-xl border overflow-hidden transition-colors duration-200 ${getBgClass()} ${getBorderClass()}`}
             >
@@ -3735,7 +3678,7 @@ const CadastrarImovel = () => {
                   ) : (
                     <>
                       <CheckCircleIcon className="w-5 h-5" />
-                      <span>Salvar Imóvel</span>
+                      <span>Atualizar Imóvel</span>
                     </>
                   )}
                 </div>
@@ -3748,4 +3691,4 @@ const CadastrarImovel = () => {
   );
 };
 
-export default CadastrarImovel;
+export default EditarImovel;

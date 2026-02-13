@@ -111,6 +111,23 @@ const Sidebar = ({ onLogout, userName = "Adventus Imobiliária" }) => {
     </svg>
   );
 
+  // 🏢 Ícone para Empreendimentos
+  const BuildingLibraryIcon = ({ className }) => (
+    <svg
+      className={className}
+      fill="none"
+      stroke="currentColor"
+      viewBox="0 0 24 24"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="2"
+        d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15M9 21v-3.375c0-.621.504-1.125 1.125-1.125h3.75c.621 0 1.125.504 1.125 1.125V21"
+      />
+    </svg>
+  );
+
   const UserGroupIcon = ({ className }) => (
     <svg
       className={className}
@@ -315,6 +332,7 @@ const Sidebar = ({ onLogout, userName = "Adventus Imobiliária" }) => {
     </svg>
   );
 
+  // 🔥 MENU ITEMS ATUALIZADO COM EMPREENDIMENTOS
   const menuItems = [
     { icon: HomeIcon, label: "Dashboard", to: "/admin", exact: true },
     {
@@ -322,6 +340,12 @@ const Sidebar = ({ onLogout, userName = "Adventus Imobiliária" }) => {
       label: "Imóveis",
       to: "/admin/imoveis",
       badge: 12,
+    },
+    {
+      icon: BuildingLibraryIcon, // 🏢 Ícone específico para Empreendimentos
+      label: "Empreendimentos",
+      to: "/admin/empreendimentos",
+      // badge: 0, // Opcional: contador de empreendimentos
     },
     {
       icon: UserGroupIcon,
