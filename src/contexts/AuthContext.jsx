@@ -1,4 +1,12 @@
-import React, { createContext, useState, useContext, useEffect } from "react";
+// src/contexts/AuthContext.jsx
+import React, {
+  createContext,
+  useState,
+  useContext,
+  useEffect,
+  useRef,
+} from "react";
+import { supabase } from "../lib/supabase";
 
 // Criar o contexto
 const AuthContext = createContext({});
@@ -13,140 +21,172 @@ export const useAuth = () => {
 };
 
 export const AuthProvider = ({ children }) => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState(null);
+  // Estados separados: sessão (rápida) e perfil (lento)
+  const [sessionUser, setSessionUser] = useState(null);
+  const [profile, setProfile] = useState(null);
+  const [loadingSession, setLoadingSession] = useState(true);
+  const [loadingProfile, setLoadingProfile] = useState(false);
 
-  // Verificar autenticação ao carregar
+  // isAuthenticated baseado SOMENTE na sessão
+  const isAuthenticated = !!sessionUser;
+
+  // ============================================
+  // CONTROLE DE CONCORRÊNCIA PROFISSIONAL (useRef)
+  // ============================================
+  const lastProfileRequest = useRef(0);
+
+  // ============================================
+  // FUNÇÃO PROFISSIONAL - BUSCAR PERFIL EM BACKGROUND
+  // ============================================
+  const fetchProfileInBackground = async (userId) => {
+    if (!userId) return;
+
+    const requestId = ++lastProfileRequest.current; // identifica esta requisição
+    setLoadingProfile(true);
+
+    try {
+      const { data, error } = await supabase
+        .from("perfis")
+        .select("nome, cargo, avatar_url")
+        .eq("id", userId)
+        .maybeSingle();
+
+      // 🚫 Se não for a requisição mais recente → ignora
+      if (requestId !== lastProfileRequest.current) return;
+
+      if (!error && data) {
+        setProfile(data);
+      }
+    } catch (error) {
+      if (requestId === lastProfileRequest.current) {
+        console.warn(
+          "Erro ao buscar perfil (ignorado):",
+          error?.message || error,
+        );
+      }
+    } finally {
+      if (requestId === lastProfileRequest.current) {
+        setLoadingProfile(false);
+      }
+    }
+  };
+
+  // Monta objeto do usuário combinando sessão + perfil (quando disponível)
+  const user = sessionUser
+    ? {
+        id: sessionUser.id,
+        email: sessionUser.email,
+        name: profile?.nome || sessionUser.email?.split("@")[0] || "Usuário",
+        role: profile?.cargo || "corretor",
+        avatar: profile?.avatar_url || null,
+        // Expõe metadados para debug ou uso interno
+        _metadata: {
+          profileLoaded: !!profile,
+          profileLoading: loadingProfile,
+        },
+      }
+    : null;
+
+  // Efeito principal: verificar sessão inicial
   useEffect(() => {
-    const checkAuth = async () => {
-      setLoading(true);
+    let isMounted = true;
 
+    const initializeAuth = async () => {
       try {
-        const token = localStorage.getItem("authToken");
+        // 1. Verificar sessão atual (rápido, síncrono)
+        const {
+          data: { session },
+          error,
+        } = await supabase.auth.getSession();
 
-        if (token) {
-          // Em produção, aqui faríamos uma requisição para validar o token
-          // Por enquanto, mockamos um usuário baseado no token
-          setIsAuthenticated(true);
+        if (error) throw error;
 
-          // Mock user data - em produção viria da API
-          const mockUser = {
-            id: "1",
-            email: localStorage.getItem("userEmail") || "admin@imobi.com",
-            name: "Administrador",
-            role: "admin",
-            avatar: null,
-          };
+        if (isMounted) {
+          // 2. Se tiver sessão, define usuário básico IMEDIATAMENTE
+          if (session?.user) {
+            setSessionUser(session.user);
 
-          setUser(mockUser);
-        } else {
-          setIsAuthenticated(false);
-          setUser(null);
+            // 3. Buscar perfil em background (não bloqueia)
+            fetchProfileInBackground(session.user.id);
+          } else {
+            setSessionUser(null);
+            setProfile(null);
+          }
+
+          // 4. Sempre finaliza loading da sessão
+          setLoadingSession(false);
         }
       } catch (error) {
-        console.error("Erro ao verificar autenticação:", error);
-        setIsAuthenticated(false);
-        setUser(null);
-
-        // Limpar token inválido
-        localStorage.removeItem("authToken");
-        localStorage.removeItem("userEmail");
-      } finally {
-        setLoading(false);
+        console.error("Erro ao inicializar autenticação:", error);
+        if (isMounted) {
+          setSessionUser(null);
+          setProfile(null);
+          setLoadingSession(false);
+        }
       }
     };
 
-    checkAuth();
+    initializeAuth();
+
+    // Listener para mudanças de autenticação
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (!isMounted) return;
+
+      // Atualiza sessão IMEDIATAMENTE
+      if (session?.user) {
+        setSessionUser(session.user);
+        // Busca perfil em background
+        fetchProfileInBackground(session.user.id);
+      } else {
+        setSessionUser(null);
+        setProfile(null);
+      }
+    });
+
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
-  /**
-   * Função de login
-   * @param {string} email
-   * @param {string} password
-   * @returns {Promise<{success: boolean, error?: string}>}
-   */
   const login = async (email, password) => {
     try {
-      setLoading(true);
-
-      // Em produção, substituir por chamada à API
-      // Simulação de validação
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      // Credenciais mockadas - em produção seria validação na API
-      const validCredentials =
-        (email === "admin@imobi.com" && password === "admin123") ||
-        (email === "user@imobi.com" && password === "user123");
-
-      if (!validCredentials) {
-        throw new Error("Credenciais inválidas");
-      }
-
-      // Gerar token mockado
-      const token = `imobi-auth-${Date.now()}-${Math.random().toString(36).substr(2)}`;
-
-      // Persistir dados
-      localStorage.setItem("authToken", token);
-      localStorage.setItem("userEmail", email);
-      localStorage.setItem("lastLogin", new Date().toISOString());
-
-      // Atualizar estado
-      setIsAuthenticated(true);
-      setUser({
-        id: email === "admin@imobi.com" ? "1" : "2",
+      const { error } = await supabase.auth.signInWithPassword({
         email,
-        name: email === "admin@imobi.com" ? "Administrador" : "Usuário",
-        role: email === "admin@imobi.com" ? "admin" : "user",
-        avatar: null,
+        password,
       });
 
+      if (error) throw error;
       return { success: true };
     } catch (error) {
       console.error("Erro no login:", error);
       return {
         success: false,
-        error: error.message || "Erro ao fazer login. Tente novamente.",
+        error: error.message || "Erro ao fazer login",
       };
-    } finally {
-      setLoading(false);
     }
   };
 
-  /**
-   * Função de logout
-   */
-  const logout = () => {
+  const logout = async () => {
     try {
-      // Limpar localStorage
-      localStorage.removeItem("authToken");
-      localStorage.removeItem("userEmail");
-
-      // Atualizar estado
-      setIsAuthenticated(false);
-      setUser(null);
-
-      // Em produção, poderia fazer uma chamada à API para invalidar token
+      await supabase.auth.signOut();
     } catch (error) {
       console.error("Erro ao fazer logout:", error);
     }
   };
 
-  /**
-   * Atualizar dados do usuário
-   */
-  const updateUser = (userData) => {
-    setUser((prev) => ({ ...prev, ...userData }));
-  };
-
   // Valor do contexto
   const contextValue = {
-    isAuthenticated,
-    loading,
-    user,
+    user, // usuário completo (sessão + perfil quando disponível)
+    sessionUser, // apenas dados da sessão (raw)
+    profile, // apenas dados do perfil
+    loading: loadingSession, // loading apenas para a sessão (rápido)
+    loadingProfile, // loading específico do perfil
     login,
     logout,
-    updateUser,
+    isAuthenticated, // baseado APENAS na sessão
   };
 
   return (
@@ -154,5 +194,4 @@ export const AuthProvider = ({ children }) => {
   );
 };
 
-// Exportar o contexto para uso direto (caso necessário)
 export default AuthContext;

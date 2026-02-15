@@ -32,6 +32,14 @@ const AdminVisitas = lazy(() => import("./pages/Admin/visitas"));
 const CadastrarImovel = lazy(() => import("./pages/Admin/CadastrarImovel"));
 const EditarImovel = lazy(() => import("./pages/Admin/EditarImovel"));
 
+// 🔥 NOVA PÁGINA: Visualizar/Editar Imóvel por Código
+const EditarImovelPorCodigo = lazy(
+  () => import("./pages/Admin/EditarImovelPorCodigo"),
+);
+
+// 🔥 NOVA PÁGINA: Cadastrar Lead
+const NovoLead = lazy(() => import("./pages/Admin/NovoLead"));
+
 // 🔥 FIX: Import com caminho ABSOLUTO e extensão .jsx
 const CadastrarEmpreendimento = lazy(
   () => import("/src/pages/Admin/CadastrarEmpreendimento.jsx"),
@@ -117,7 +125,7 @@ function AppRoutes() {
               }
             />
 
-            {/* 🔥🔥🔥 ROTA CORRIGIDA: AGORA USA SLUG! 🔥🔥🔥 */}
+            {/* 🔥🔥🔥 ROTA DO SITE: DETALHE DO IMÓVEL POR SLUG 🔥🔥🔥 */}
             <Route
               path="/imovel/:slug"
               element={
@@ -170,6 +178,12 @@ function AppRoutes() {
               <Route path="imoveis/novo" element={<CadastrarImovel />} />
               <Route path="imoveis/editar/:id" element={<EditarImovel />} />
 
+              {/* 🔥 NOVA ROTA: Editar imóvel por código (CS-0001, APT-0002, etc.) */}
+              <Route
+                path="imoveis/codigo/:codigo"
+                element={<EditarImovelPorCodigo />}
+              />
+
               {/* ========== ROTAS DE EMPREENDIMENTOS ========== */}
               <Route
                 path="empreendimentos"
@@ -180,9 +194,12 @@ function AppRoutes() {
                 element={<CadastrarEmpreendimento />}
               />
 
+              {/* ========== ROTAS DE LEADS ========== */}
+              <Route path="leads" element={<AdminLeads />} />
+              <Route path="leads/novo" element={<NovoLead />} />
+
               {/* ========== OUTRAS ROTAS ADMIN ========== */}
               <Route path="corretores" element={<AdminCorretores />} />
-              <Route path="leads" element={<AdminLeads />} />
               <Route path="candidatos" element={<AdminCandidatos />} />
               <Route path="estados" element={<AdminEstados />} />
               <Route path="cidades" element={<AdminCidades />} />

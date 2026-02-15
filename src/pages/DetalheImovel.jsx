@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "/src/lib/supabase";
+import { visitasService } from "../lib/visitasService"; // 👈 ÚNICA LINHA ADICIONADA
 
 const DetalheImovel = () => {
   const { slug } = useParams();
@@ -43,6 +44,10 @@ const DetalheImovel = () => {
           .select("*")
           .eq("slug", slug)
           .maybeSingle();
+        // 👇 COLOQUE AQUI
+        console.log("Slug recebido:", slug);
+        console.log("Imóvel retornado:", imovelData);
+        console.log("Erro:", imovelError);
 
         if (imovelError) throw imovelError;
         if (!imovelData) throw new Error("Imóvel não encontrado");
@@ -777,18 +782,47 @@ const DetalheImovel = () => {
     setFormData({ ...formData, [name]: value });
   };
 
+  // ===== HANDLE SUBMIT MODIFICADO (APENAS ADICIONADA A CHAMADA AO SERVIÇO) =====
   const handleSubmit = async (e) => {
     e.preventDefault();
     setEnviando(true);
+
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      // Validação dos campos obrigatórios
+      if (
+        !formData.nome ||
+        !formData.telefone ||
+        !formData.email ||
+        !formData.diaSemana ||
+        !formData.horarioPreferencia
+      ) {
+        throw new Error("Por favor, preencha todos os campos obrigatórios");
+      }
+
+      // Data da visita (7 dias após o agendamento)
+      const dataVisita = new Date();
+      dataVisita.setDate(dataVisita.getDate() + 7);
+
+      // 🔥 CHAMADA AO SERVIÇO DE VISITAS (COM PREFERÊNCIAS)
+      const { error } = await visitasService.criarVisita({
+        imovel_id: dados.id,
+        nome_cliente: formData.nome,
+        telefone: formData.telefone,
+        email: formData.email,
+        data_visita: dataVisita.toISOString(),
+        dia_preferencia: formData.diaSemana, // 👈 NOVO
+        horario_preferencia: formData.horarioPreferencia, // 👈 NOVO
+      });
+      if (error) throw error;
+
+      // Sucesso (código original)
       setEnviado(true);
       setEnviando(false);
       setTimeout(fecharModal, 3000);
     } catch (error) {
-      console.error("❌ Erro:", error);
+      console.error("❌ Erro ao agendar visita:", error);
       setEnviando(false);
-      alert("Erro ao enviar. Tente novamente.");
+      alert(error.message || "Erro ao enviar. Tente novamente.");
     }
   };
 
