@@ -700,269 +700,265 @@ const VitrineAdventus = () => {
       </div>
 
       {/* Estilos CSS para efeitos especiais */}
-      <style jsx>{`
-        @keyframes pulseGlow {
-          0%,
-          100% {
-            opacity: 0.3;
-            box-shadow: inset 0 0 50px rgba(251, 191, 36, 0.15);
-          }
-          50% {
-            opacity: 0.5;
-            box-shadow: inset 0 0 70px rgba(251, 191, 36, 0.25);
-          }
-        }
+      <style>{`
+  @keyframes pulseGlow {
+    0%,
+    100% {
+      opacity: 0.3;
+      box-shadow: inset 0 0 50px rgba(251, 191, 36, 0.15);
+    }
+    50% {
+      opacity: 0.5;
+      box-shadow: inset 0 0 70px rgba(251, 191, 36, 0.25);
+    }
+  }
 
-        @keyframes borderPulse {
-          0%,
-          100% {
-            border-color: rgba(251, 191, 36, 0.2);
-            box-shadow:
-              0 0 20px rgba(251, 191, 36, 0.15),
-              inset 0 0 20px rgba(251, 191, 36, 0.08);
-          }
-          50% {
-            border-color: rgba(251, 191, 36, 0.3);
-            box-shadow:
-              0 0 25px rgba(251, 191, 36, 0.2),
-              inset 0 0 25px rgba(251, 191, 36, 0.12);
-          }
-        }
+  @keyframes borderPulse {
+    0%,
+    100% {
+      border-color: rgba(251, 191, 36, 0.2);
+      box-shadow:
+        0 0 20px rgba(251, 191, 36, 0.15),
+        inset 0 0 20px rgba(251, 191, 36, 0.08);
+    }
+    50% {
+      border-color: rgba(251, 191, 36, 0.3);
+      box-shadow:
+        0 0 25px rgba(251, 191, 36, 0.2),
+        inset 0 0 25px rgba(251, 191, 36, 0.12);
+    }
+  }
 
-        /* Estilos dos Badges */
-        .premium-badge {
-          padding: 0.25rem 0.6rem !important;
-          border-radius: 12px !important;
-          font-size: 0.6rem !important;
-          font-weight: 700;
-          text-transform: uppercase;
-          letter-spacing: 0.08em;
-          color: white !important;
-          line-height: 1.1;
-          height: auto;
-          min-height: 20px;
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
-          border: 1px solid rgba(255, 255, 255, 0.4);
-          white-space: nowrap;
-          text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
-          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
+  /* Estilos dos Badges */
+  .premium-badge {
+    padding: 0.25rem 0.6rem !important;
+    border-radius: 12px !important;
+    font-size: 0.6rem !important;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: white !important;
+    line-height: 1.1;
+    height: auto;
+    min-height: 20px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    white-space: nowrap;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
 
-        .premium-badge-week {
-          background: #f59e0b !important;
-          border-color: rgba(255, 255, 255, 0.5) !important;
-        }
+  .premium-badge-week {
+    background: #f59e0b !important;
+    border-color: rgba(255, 255, 255, 0.5) !important;
+  }
 
-        .premium-badge-new {
-          background: #10b981 !important;
-          border-color: rgba(255, 255, 255, 0.5) !important;
-        }
+  .premium-badge-new {
+    background: #10b981 !important;
+    border-color: rgba(255, 255, 255, 0.5) !important;
+  }
 
-        .premium-badge-price-drop {
-          background: #dc2626 !important;
-          border-color: rgba(255, 255, 255, 0.5) !important;
-        }
+  .premium-badge-price-drop {
+    background: #dc2626 !important;
+    border-color: rgba(255, 255, 255, 0.5) !important;
+  }
 
-        /* Efeito hover nos badges */
-        a:hover .premium-badge {
-          transform: translateY(-1px) !important;
-          box-shadow: 0 3px 8px rgba(0, 0, 0, 0.4) !important;
-        }
+  a:hover .premium-badge {
+    transform: translateY(-1px) !important;
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.4) !important;
+  }
 
-        a:hover .premium-badge-week {
-          background: #d97706 !important;
-        }
+  a:hover .premium-badge-week {
+    background: #d97706 !important;
+  }
 
-        a:hover .premium-badge-new {
-          background: #0d966f !important;
-        }
+  a:hover .premium-badge-new {
+    background: #0d966f !important;
+  }
 
-        a:hover .premium-badge-price-drop {
-          background: #b91c1c !important;
-        }
+  a:hover .premium-badge-price-drop {
+    background: #b91c1c !important;
+  }
 
-        /* Estilo do selo financiável */
-        .financiable-badge {
-          padding: 0.25rem 0.6rem;
-          border-radius: 12px;
-          font-size: 0.6rem;
-          font-weight: 500;
-          letter-spacing: 0.02em;
-          color: #1a1a1a !important;
-          background: rgba(255, 255, 255, 0.95);
-          backdrop-filter: blur(8px);
-          border: 1px solid rgba(245, 158, 11, 0.15);
-          box-shadow:
-            0 2px 6px rgba(0, 0, 0, 0.15),
-            0 1px 2px rgba(255, 255, 255, 0.6) inset;
-          display: inline-flex;
-          align-items: center;
-          gap: 0.4rem;
-          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-          white-space: nowrap;
-        }
+  .financiable-badge {
+    padding: 0.25rem 0.6rem;
+    border-radius: 12px;
+    font-size: 0.6rem;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    color: #1a1a1a !important;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(245, 158, 11, 0.15);
+    box-shadow:
+      0 2px 6px rgba(0, 0, 0, 0.15),
+      0 1px 2px rgba(255, 255, 255, 0.6) inset;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    white-space: nowrap;
+  }
 
-        .financiable-badge-v2 {
-          background: rgba(255, 255, 255, 0.95);
-          border: 1px solid rgba(245, 158, 11, 0.3);
-          box-shadow:
-            0 2px 8px rgba(0, 0, 0, 0.18),
-            0 1px 2px rgba(255, 255, 255, 0.6) inset;
-        }
+  .financiable-badge-v2 {
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    box-shadow:
+      0 2px 8px rgba(0, 0, 0, 0.18),
+      0 1px 2px rgba(255, 255, 255, 0.6) inset;
+  }
 
-        .financiable-badge-v3 {
-          background: linear-gradient(
-            135deg,
-            rgba(255, 255, 255, 0.95) 0%,
-            rgba(255, 255, 255, 0.97) 100%
-          );
-          border: 1px solid rgba(245, 158, 11, 0.2);
-          position: relative;
-          overflow: hidden;
-        }
+  .financiable-badge-v3 {
+    background: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.95) 0%,
+      rgba(255, 255, 255, 0.97) 100%
+    );
+    border: 1px solid rgba(245, 158, 11, 0.2);
+    position: relative;
+    overflow: hidden;
+  }
 
-        .financiable-badge-v3::before {
-          content: "";
-          position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background: linear-gradient(
-            135deg,
-            rgba(245, 158, 11, 0.03) 0%,
-            rgba(251, 191, 36, 0.02) 100%
-          );
-          z-index: 0;
-        }
+  .financiable-badge-v3::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(
+      135deg,
+      rgba(245, 158, 11, 0.03) 0%,
+      rgba(251, 191, 36, 0.02) 100%
+    );
+    z-index: 0;
+  }
 
-        .financiable-icon {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          width: 14px;
-          height: 14px;
-          background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%);
-          border-radius: 50%;
-          flex-shrink: 0;
-          position: relative;
-          overflow: hidden;
-          z-index: 1;
-        }
+  .financiable-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 14px;
+    height: 14px;
+    background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%);
+    border-radius: 50%;
+    flex-shrink: 0;
+    position: relative;
+    overflow: hidden;
+    z-index: 1;
+  }
 
-        .financiable-icon::before {
-          content: "";
-          position: absolute;
-          width: 100%;
-          height: 100%;
-          background: radial-gradient(
-            circle at 30% 30%,
-            rgba(255, 255, 255, 0.4) 0%,
-            transparent 70%
-          );
-          pointer-events: none;
-        }
+  .financiable-icon::before {
+    content: "";
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(
+      circle at 30% 30%,
+      rgba(255, 255, 255, 0.4) 0%,
+      transparent 70%
+    );
+    pointer-events: none;
+  }
 
-        .check-icon {
-          color: white;
-          font-size: 0.55rem;
-          font-weight: 900;
-          line-height: 1;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
-        }
+  .check-icon {
+    color: white;
+    font-size: 0.55rem;
+    font-weight: 900;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+  }
 
-        .financiable-text {
-          font-size: 0.6rem;
-          font-weight: 500;
-          color: #1a1a1a;
-          white-space: nowrap;
-          letter-spacing: -0.01em;
-          z-index: 1;
-          position: relative;
-        }
+  .financiable-text {
+    font-size: 0.6rem;
+    font-weight: 500;
+    color: #1a1a1a;
+    white-space: nowrap;
+    letter-spacing: -0.01em;
+    z-index: 1;
+    position: relative;
+  }
 
-        /* Efeito hover no selo financiável */
-        a:hover .financiable-badge {
-          background: rgba(255, 255, 255, 0.98);
-          box-shadow:
-            0 3px 8px rgba(0, 0, 0, 0.2),
-            0 1px 3px rgba(255, 255, 255, 0.7) inset;
-          transform: translateY(-1px);
-          border-color: rgba(245, 158, 11, 0.25);
-        }
+  a:hover .financiable-badge {
+    background: rgba(255, 255, 255, 0.98);
+    box-shadow:
+      0 3px 8px rgba(0, 0, 0, 0.2),
+      0 1px 3px rgba(255, 255, 255, 0.7) inset;
+    transform: translateY(-1px);
+    border-color: rgba(245, 158, 11, 0.25);
+  }
 
-        /* Responsividade */
-        @media (max-width: 1024px) {
-          h2 {
-            font-size: 2.75rem !important;
-          }
-        }
+  @media (max-width: 1024px) {
+    h2 {
+      font-size: 2.75rem !important;
+    }
+  }
 
-        @media (max-width: 768px) {
-          section {
-            padding: 3rem 1rem !important;
-          }
+  @media (max-width: 768px) {
+    section {
+      padding: 3rem 1rem !important;
+    }
 
-          div.text-center {
-            margin-bottom: 2.5rem !important;
-          }
+    div.text-center {
+      margin-bottom: 2.5rem !important;
+    }
 
-          h2 {
-            font-size: 2.25rem !important;
-          }
+    h2 {
+      font-size: 2.25rem !important;
+    }
 
-          p.mobile-text {
-            font-size: 1rem !important;
-            letter-spacing: 0.2em !important;
-          }
+    p.mobile-text {
+      font-size: 1rem !important;
+      letter-spacing: 0.2em !important;
+    }
 
-          .showcase-premium-nav {
-            display: none !important;
-          }
-        }
+    .showcase-premium-nav {
+      display: none !important;
+    }
+  }
 
-        @media (max-width: 480px) {
-          h2 {
-            font-size: 1.875rem !important;
-          }
+  @media (max-width: 480px) {
+    h2 {
+      font-size: 1.875rem !important;
+    }
 
-          h3 {
-            font-size: 1.25rem !important;
-          }
+    h3 {
+      font-size: 1.25rem !important;
+    }
 
-          .showcase-premium-card-location {
-            font-size: 0.9rem !important;
-          }
-        }
+    .showcase-premium-card-location {
+      font-size: 0.9rem !important;
+    }
+  }
 
-        .mobile-heading {
-          font-size: 1.75rem;
-          line-height: 1.3;
-          font-weight: 700;
-        }
+  .mobile-heading {
+    font-size: 1.75rem;
+    line-height: 1.3;
+    font-weight: 700;
+  }
 
-        .mobile-text {
-          font-size: 0.9375rem;
-          line-height: 1.6;
-          letterspacing: 0.01em;
-        }
+  .mobile-text {
+    font-size: 0.9375rem;
+    line-height: 1.6;
+    letter-spacing: 0.01em;
+  }
 
-        @media (min-width: 768px) {
-          .mobile-heading {
-            font-size: 3.5rem;
-          }
+  @media (min-width: 768px) {
+    .mobile-heading {
+      font-size: 3.5rem;
+    }
 
-          .mobile-text {
-            font-size: 1rem;
-          }
-        }
-      `}</style>
+    .mobile-text {
+      font-size: 1rem;
+    }
+  }
+`}</style>
     </section>
   );
 };

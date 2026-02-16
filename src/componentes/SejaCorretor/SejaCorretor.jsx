@@ -1,10 +1,12 @@
 import React, { useRef, useState, useEffect } from "react";
+import { supabase } from "../../lib/supabase";
 
 const SejaCorretor = () => {
   const formRef = useRef(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState({});
   const [touched, setTouched] = useState({});
+  const [submitSuccess, setSubmitSuccess] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     creci: "",
@@ -70,10 +72,8 @@ const SejaCorretor = () => {
       case "creci":
         if (!value.trim()) {
           newErrors.creci = "CRECI é obrigatório";
-        } else if (!/^\d+$/.test(value.replace(/\D/g, ""))) {
-          newErrors.creci = "CRECI deve conter apenas números";
         } else {
-          delete newErrors.creci;
+          delete newErrors.creci; // Aceita qualquer formato
         }
         break;
 
@@ -118,66 +118,70 @@ const SejaCorretor = () => {
     validateField(name, value);
   };
 
-  const handleSubmit = (e) => {
+  const salvarNoSupabase = async (dados) => {
+    try {
+      console.log("📤 Enviando dados:", dados);
+
+      const { data, error } = await supabase.from("corretores").insert([
+        {
+          nome: dados.name,
+          creci: dados.creci,
+          telefone: dados.whatsapp,
+          email: dados.email || null,
+          etapa: "pendentes", // 👈 AGORA EXISTE!
+          checkpoints_treinamento: {
+            modulo1: false,
+            modulo2: false,
+            modulo3: false,
+            modulo4: false,
+            modulo5: false,
+          },
+          atributos_treinamento: {
+            demonstrouInteresse: false,
+            temProposito: false,
+            conheceMercado: false,
+            disponibilidadeHorario: false,
+            veiculoProprio: false,
+            experienciaVendas: false,
+            comunicacao: false,
+            eticaProfissional: false,
+            trabalhoEquipe: false,
+            metasAmbiciosas: false,
+          },
+          progresso_treinamento: 0,
+        },
+      ]);
+
+      if (error) {
+        console.error("❌ Erro:", error);
+        throw error;
+      }
+
+      console.log("✅ Sucesso!", data);
+      return data;
+    } catch (error) {
+      console.error("💥 Erro:", error);
+      throw error;
+    }
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-
-    const allTouched = {
-      name: true,
-      creci: true,
-      whatsapp: true,
-      email: true,
-    };
-    setTouched(allTouched);
-
-    let isValid = true;
-
-    ["name", "creci", "whatsapp"].forEach((field) => {
-      const value = formData[field]?.trim() || "";
-      if (!validateField(field, value)) {
-        isValid = false;
-      }
-    });
-
-    if (formData.email?.trim()) {
-      validateField("email", formData.email.trim());
-    }
-
-    if (!isValid || Object.keys(errors).length > 0) {
-      const firstError = document.querySelector(".border-red-500");
-      if (firstError) {
-        firstError.scrollIntoView({ behavior: "smooth", block: "center" });
-        firstError.focus();
-      }
-      return;
-    }
 
     setIsSubmitting(true);
 
-    const name = formData.name?.trim();
-    const creci = formData.creci?.trim();
-    const whatsapp = formData.whatsapp?.trim();
-    const email = formData.email?.trim();
+    try {
+      // ✅ SOMENTE salvar no Supabase
+      const resultado = await salvarNoSupabase({
+        name: formData.name?.trim() || "",
+        creci: formData.creci?.trim() || "",
+        whatsapp: formData.whatsapp?.trim() || "",
+        email: formData.email?.trim() || "",
+      });
 
-    let message = `*📋 NOVO CADASTRO DE CORRETOR PARCEIRO - ADVENTUS*%0A%0A`;
-    message += `*👤 Nome:* ${name}%0A`;
-    message += `*🆔 CRECI:* ${creci}%0A`;
-    message += `*📱 WhatsApp:* ${whatsapp.replace(/\D/g, "")}%0A`;
+      console.log("✅ Cadastro realizado:", resultado);
 
-    if (email) {
-      message += `*📧 E-mail:* ${email}%0A`;
-    }
-
-    message += `%0A*🏢 Interesse:* Tornar-se corretor parceiro da Adventus Imobiliária`;
-    message += `%0A*⏰ Data/Hora:* ${new Date().toLocaleString("pt-BR")}`;
-
-    setTimeout(() => {
-      window.open(
-        `https://wa.me/5599988087867?text=${encodeURIComponent(message)}`,
-        "_blank",
-      );
-
-      setIsSubmitting(false);
-
+      // ✅ Resetar formulário
       setFormData({
         name: "",
         creci: "",
@@ -186,33 +190,34 @@ const SejaCorretor = () => {
       });
       setErrors({});
       setTouched({});
+      setSubmitSuccess(true);
 
       if (formRef.current) {
         formRef.current.reset();
       }
 
-      try {
-        const audio = new Audio(
-          "https://assets.mixkit.co/sfx/preview/mixkit-correct-answer-tone-2870.mp3",
-        );
-        audio.volume = 0.3;
-        audio.play();
-      } catch (error) {
-        console.log("Áudio não disponível");
-      }
-    }, 2000);
+      // ✅ Mensagem de sucesso (opcional)
+      alert("Cadastro realizado com sucesso!");
+
+      // ✅ Esconder mensagem de sucesso após 5 segundos
+      setTimeout(() => {
+        setSubmitSuccess(false);
+      }, 5000);
+    } catch (error) {
+      alert("Erro ao enviar cadastro. Tente novamente.");
+      console.error(error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const canSubmit = () => {
-    const requiredFields = ["name", "creci", "whatsapp"];
+    // SÓ VERIFICA SE TEM CONTEÚDO NOS CAMPOS OBRIGATÓRIOS
+    if (!formData.name) return false;
+    if (!formData.creci) return false;
+    if (!formData.whatsapp) return false;
 
-    for (const field of requiredFields) {
-      if (!formData[field]?.trim()) {
-        return false;
-      }
-    }
-
-    return Object.keys(errors).length === 0;
+    return true;
   };
 
   return (
@@ -259,6 +264,13 @@ const SejaCorretor = () => {
             <h3 className="text-xl md:text-2xl font-semibold text-white text-center mb-4 md:mb-6">
               Formulário de Cadastro
             </h3>
+
+            {submitSuccess && (
+              <div className="mb-4 p-3 bg-green-500/20 border border-green-500/30 rounded-xl text-green-300 text-center">
+                ✓ Cadastro realizado com sucesso! Entraremos em contato em
+                breve.
+              </div>
+            )}
 
             <form
               ref={formRef}
@@ -337,8 +349,6 @@ const SejaCorretor = () => {
                       style={{ height: "56px" }}
                       placeholder="Número do CRECI *"
                       required
-                      pattern="\d+"
-                      title="Apenas números"
                       onChange={handleChange}
                       onBlur={handleBlur}
                       disabled={isSubmitting}
@@ -384,8 +394,6 @@ const SejaCorretor = () => {
                       style={{ height: "56px" }}
                       placeholder="WhatsApp com DDD *"
                       required
-                      pattern="^\(\d{2}\) \d{4,5}-\d{4}$"
-                      title="Formato: (99) 99999-9999"
                       onChange={(e) => {
                         formatWhatsApp(e);
                         handleChange(e);
@@ -452,37 +460,26 @@ const SejaCorretor = () => {
               <div className="pt-2">
                 <button
                   type="submit"
-                  disabled={isSubmitting || !canSubmit()}
+                  disabled={isSubmitting} // SÓ desabilita enquanto está enviando
                   className="w-full py-4 px-6 rounded-2xl font-bold text-lg transition-all duration-300 relative overflow-hidden bg-gradient-to-r from-[#f59e0b] to-[#fbbf24] text-white shadow-lg shadow-[#f59e0b]/30"
                   style={{
                     height: "56px",
-                    cursor: isSubmitting
-                      ? "wait"
-                      : !canSubmit()
-                        ? "not-allowed"
-                        : "pointer",
+                    opacity: isSubmitting ? 0.6 : 1,
+                    cursor: isSubmitting ? "wait" : "pointer",
                   }}
-                  aria-label={
-                    isSubmitting ? "Enviando formulário" : "Enviar cadastro"
-                  }
-                  aria-busy={isSubmitting}
                 >
-                  {isSubmitting && (
+                  {isSubmitting ? (
                     <div className="absolute inset-0 flex items-center justify-center">
                       <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
                     </div>
-                  )}
-
-                  <span
-                    className={`relative flex items-center justify-center gap-3 ${isSubmitting ? "opacity-0" : "opacity-100"}`}
-                  >
-                    <span className="text-white font-bold">
-                      {isSubmitting ? "ENVIANDO..." : "ENVIAR CADASTRO"}
-                    </span>
-                    {!isSubmitting && (
+                  ) : (
+                    <span className="flex items-center justify-center gap-3">
+                      <span className="text-white font-bold">
+                        ENVIAR CADASTRO
+                      </span>
                       <i className="fas fa-paper-plane text-white"></i>
-                    )}
-                  </span>
+                    </span>
+                  )}
                 </button>
 
                 <p className="text-center text-white/50 text-sm mt-4 flex items-center justify-center gap-2">
@@ -497,113 +494,6 @@ const SejaCorretor = () => {
           </div>
         </div>
       </div>
-
-      <style>{`
-        .partner-broker-section {
-          position: relative;
-          overflow: hidden;
-        }
-
-        .partner-broker-section::before {
-          content: '';
-          position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background: radial-gradient(circle at 20% 30%, rgba(245, 158, 11, 0.1) 0%, transparent 50%),
-                    radial-gradient(circle at 80% 70%, rgba(59, 130, 246, 0.1) 0%, transparent 50%);
-          pointer-events: none;
-        }
-
-        .broker-form-card {
-          background: rgba(255, 255, 255, 0.05);
-          backdrop-filter: blur(20px);
-          border: 1px solid rgba(255, 255, 255, 0.1);
-          box-shadow: 
-            0 20px 40px rgba(0, 0, 0, 0.3),
-            0 0 0 1px rgba(255, 255, 255, 0.05),
-            inset 0 1px 0 rgba(255, 255, 255, 0.1);
-        }
-
-        .broker-form-card::before {
-          content: '';
-          position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
-          height: 1px;
-          background: linear-gradient(90deg, transparent, #fbbf24, #60a5fa, transparent);
-        }
-
-        .broker-form-card::after {
-          content: '';
-          position: absolute;
-          top: -50%;
-          left: -50%;
-          width: 200%;
-          height: 200%;
-          background: radial-gradient(circle, rgba(251, 191, 36, 0.05) 0%, transparent 70%);
-          opacity: 0;
-          transition: opacity 0.6s ease;
-          pointer-events: none;
-        }
-
-        .broker-form-card:hover::after {
-          opacity: 1;
-        }
-
-        .broker-input-container {
-          position: relative;
-          margin-bottom: 0.75rem;
-        }
-
-        .broker-input {
-          background: rgba(255, 255, 255, 0.07) !important;
-          border: 1px solid rgba(255, 255, 255, 0.1);
-          color: white;
-          font-family: 'Montserrat', sans-serif;
-          transition: all 0.3s ease;
-          box-sizing: border-box;
-        }
-
-        .broker-input::placeholder {
-          color: rgba(255, 255, 255, 0.5);
-        }
-
-        .broker-input:focus {
-          outline: none;
-          border-color: #fbbf24;
-          box-shadow: 
-            0 0 0 3px rgba(251, 191, 36, 0.2),
-            inset 0 1px 2px rgba(255, 255, 255, 0.1);
-          background: rgba(255, 255, 255, 0.1) !important;
-        }
-
-        .broker-input-icon {
-          position: absolute;
-          left: 16px;
-          top: 50%;
-          transform: translateY(-50%);
-          color: #fbbf24;
-          font-size: 18px;
-          z-index: 2;
-          pointer-events: none;
-        }
-
-        @keyframes spin {
-          from {
-            transform: rotate(0deg);
-          }
-          to {
-            transform: rotate(360deg);
-          }
-        }
-
-        .animate-spin {
-          animation: spin 1s linear infinite;
-        }
-      `}</style>
     </section>
   );
 };
