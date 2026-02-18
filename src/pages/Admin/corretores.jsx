@@ -27,6 +27,7 @@ import {
   HomeIcon,
   ExclamationCircleIcon,
   ChevronRightIcon,
+  ArchiveBoxIcon,
 } from "@heroicons/react/24/outline";
 import {
   StarIcon as StarIconSolid,
@@ -547,7 +548,7 @@ const ModalProgressoTreinamento = ({
                   className={`text-sm font-semibold flex items-center ${isDark ? "text-gray-200" : "text-gray-800"}`}
                 >
                   <AcademicCapIcon className="w-4 h-4 mr-2" />
-                  Módulos- Treinamento Corretor Adventus
+                  Módulos- Treinamento Corretor Adventus do dia"{" "}
                 </h4>
                 <span
                   className={`text-xs font-bold ${isDark ? "text-blue-400" : "text-blue-600"}`}
@@ -1658,6 +1659,1029 @@ const ModalAtivacao = ({
   );
 };
 
+// -------------------------------------------
+// 🆕 MODAL DE FEEDBACK BÁSICO
+// -------------------------------------------
+const ModalFeedbackBasico = ({
+  isOpen,
+  onClose,
+  candidato,
+  onSalvar,
+  isDark,
+}) => {
+  const [nota, setNota] = useState(3);
+  const [status, setStatus] = useState("aprovado");
+  const [observacoes, setObservacoes] = useState("");
+
+  if (!isOpen || !candidato) return null;
+
+  const handleSalvar = () => {
+    onSalvar(candidato.id, {
+      nota,
+      status,
+      observacoes,
+    });
+  };
+
+  // Estrelas para clicar
+  const renderEstrelas = () => {
+    return (
+      <div className="flex gap-1">
+        {[1, 2, 3, 4, 5].map((n) => (
+          <button
+            key={n}
+            onClick={() => setNota(n)}
+            type="button"
+            className="focus:outline-none"
+          >
+            <StarIconSolid
+              className={`w-8 h-8 ${
+                n <= nota
+                  ? "text-yellow-500"
+                  : isDark
+                    ? "text-gray-600"
+                    : "text-gray-300"
+              } hover:scale-110 transition-transform`}
+            />
+          </button>
+        ))}
+      </div>
+    );
+  };
+
+  return (
+    <div className="fixed inset-0 z-[9999] overflow-y-auto">
+      <div
+        className="fixed inset-0 bg-black bg-opacity-50 transition-opacity"
+        onClick={onClose}
+      />
+      <div className="flex min-h-full items-center justify-center p-4">
+        <div
+          className={`
+            relative w-full max-w-md rounded-xl shadow-2xl transform transition-all z-[10000]
+            ${isDark ? "bg-gray-800 border border-gray-700" : "bg-white border border-gray-200"}
+          `}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Header */}
+          <div
+            className={`px-6 py-4 border-b ${isDark ? "border-gray-700" : "border-gray-200"}`}
+          >
+            <div className="flex items-center justify-between">
+              <h3
+                className={`text-lg font-semibold ${isDark ? "text-gray-200" : "text-gray-900"}`}
+              >
+                ✏️ Feedback da Entrevista
+              </h3>
+              <button
+                onClick={onClose}
+                className={`p-1.5 rounded-lg transition-all duration-200 ${
+                  isDark
+                    ? "text-gray-400 hover:text-gray-300 hover:bg-gray-700"
+                    : "text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+                }`}
+              >
+                <XMarkIcon className="w-5 h-5" />
+              </button>
+            </div>
+            <p
+              className={`text-sm mt-1 ${isDark ? "text-gray-400" : "text-gray-600"}`}
+            >
+              {candidato.nome} • CRECI: {candidato.creci}
+            </p>
+          </div>
+
+          {/* Body */}
+          <div className="px-6 py-4">
+            {/* Nota */}
+            <div className="mb-6">
+              <label
+                className={`block text-sm font-medium mb-2 ${isDark ? "text-gray-300" : "text-gray-700"}`}
+              >
+                Avaliação
+              </label>
+              {renderEstrelas()}
+            </div>
+
+            {/* Status */}
+            <div className="mb-6">
+              <label
+                className={`block text-sm font-medium mb-2 ${isDark ? "text-gray-300" : "text-gray-700"}`}
+              >
+                Decisão
+              </label>
+              <select
+                value={status}
+                onChange={(e) => setStatus(e.target.value)}
+                className={`w-full px-3 py-2.5 rounded-lg border text-sm ${
+                  isDark
+                    ? "bg-gray-700 border-gray-600 text-gray-200"
+                    : "bg-white border-gray-300 text-gray-900"
+                } focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30`}
+              >
+                <option value="aprovado">
+                  ✅ Aprovado - Seguir para treinamento
+                </option>
+                <option value="banco">
+                  📦 Banco de Talentos - Guardar para futuro
+                </option>
+                <option value="reprovado">
+                  ❌ Reprovado - Não seguir no processo
+                </option>
+              </select>
+            </div>
+
+            {/* Observações */}
+            <div className="mb-4">
+              <label
+                className={`block text-sm font-medium mb-2 ${isDark ? "text-gray-300" : "text-gray-700"}`}
+              >
+                Observações
+              </label>
+              <textarea
+                value={observacoes}
+                onChange={(e) => setObservacoes(e.target.value)}
+                rows="4"
+                placeholder="Resumo da entrevista, pontos fortes, pontos de atenção..."
+                className={`w-full px-3 py-2.5 rounded-lg border text-sm resize-none ${
+                  isDark
+                    ? "bg-gray-700 border-gray-600 text-gray-200 placeholder-gray-400"
+                    : "bg-white border-gray-300 text-gray-900 placeholder-gray-500"
+                } focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30`}
+              />
+            </div>
+          </div>
+
+          {/* Footer */}
+          <div
+            className={`px-6 py-4 border-t ${isDark ? "border-gray-700 bg-gray-800/70" : "border-gray-200 bg-gray-50/80"}`}
+          >
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={onClose}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                  isDark
+                    ? "text-gray-300 hover:text-gray-200 hover:bg-gray-700"
+                    : "text-gray-700 hover:text-gray-900 hover:bg-gray-200"
+                }`}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleSalvar}
+                className={`px-6 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                  isDark
+                    ? "bg-[#D4A24D]/20 text-amber-200 hover:bg-[#D4A24D]/30 border border-amber-800/50"
+                    : "bg-[#D4A24D] text-white hover:bg-[#C19137] border border-[#D4A24D]"
+                }`}
+              >
+                Salvar Feedback
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// -------------------------------------------
+// 🆕 MODAL DE PAUSA DO TREINAMENTO
+// -------------------------------------------
+const ModalPausaTreinamento = ({
+  isOpen,
+  onClose,
+  candidato,
+  onConfirmarPausa,
+  isDark,
+}) => {
+  const [motivo, setMotivo] = useState("");
+  const [erro, setErro] = useState("");
+
+  if (!isOpen || !candidato) return null;
+
+  const handleConfirmar = () => {
+    if (!motivo.trim()) {
+      setErro("Motivo da pausa é obrigatório");
+      return;
+    }
+    onConfirmarPausa(candidato.id, motivo);
+  };
+
+  return (
+    <div className="fixed inset-0 z-[9999] overflow-y-auto">
+      <div
+        className="fixed inset-0 bg-black bg-opacity-50 transition-opacity"
+        onClick={onClose}
+      />
+      <div className="flex min-h-full items-center justify-center p-4">
+        <div
+          className={`
+            relative w-full max-w-md rounded-xl shadow-2xl transform transition-all z-[10000]
+            ${isDark ? "bg-gray-800 border border-gray-700" : "bg-white border border-gray-200"}
+          `}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Header */}
+          <div
+            className={`px-6 py-4 border-b ${isDark ? "border-gray-700" : "border-gray-200"}`}
+          >
+            <div className="flex items-center justify-between">
+              <h3
+                className={`text-lg font-semibold ${isDark ? "text-gray-200" : "text-gray-900"}`}
+              >
+                ⏸️ Pausar Treinamento
+              </h3>
+              <button
+                onClick={onClose}
+                className={`p-1.5 rounded-lg transition-all duration-200 ${
+                  isDark
+                    ? "text-gray-400 hover:text-gray-300 hover:bg-gray-700"
+                    : "text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+                }`}
+              >
+                <XMarkIcon className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+
+          {/* Body */}
+          <div className="px-6 py-4">
+            <div className="mb-4">
+              <div
+                className={`p-3 rounded-lg border ${
+                  isDark
+                    ? "bg-gray-700/50 border-gray-600"
+                    : "bg-gray-50 border border-gray-200"
+                }`}
+              >
+                <div className="space-y-1">
+                  <div
+                    className={`text-sm font-medium ${isDark ? "text-gray-300" : "text-gray-700"}`}
+                  >
+                    {candidato.nome}
+                  </div>
+                  <div
+                    className={`text-xs ${isDark ? "text-gray-500" : "text-gray-600"}`}
+                  >
+                    CRECI: {candidato.creci}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <label
+                  className={`block text-sm font-medium mb-1 ${isDark ? "text-gray-300" : "text-gray-700"}`}
+                >
+                  Motivo da Pausa *
+                </label>
+                <textarea
+                  value={motivo}
+                  onChange={(e) => {
+                    setMotivo(e.target.value);
+                    setErro("");
+                  }}
+                  placeholder="Ex: Documentação pendente, problemas pessoais, aguardando material..."
+                  rows="4"
+                  className={`
+                    w-full px-3 py-2.5 rounded-lg border text-sm resize-none
+                    ${
+                      isDark
+                        ? "bg-gray-700 border-gray-600 text-gray-200 placeholder-gray-400 focus:border-[#D4A24D] focus:ring-[#D4A24D]/30"
+                        : "bg-white border-gray-300 text-gray-900 placeholder-gray-500 focus:border-[#D4A24D] focus:ring-[#D4A24D]/30"
+                    }
+                    ${erro ? (isDark ? "border-red-500" : "border-red-400") : ""}
+                    focus:outline-none focus:ring-2 transition-colors duration-200
+                  `}
+                />
+                {erro && (
+                  <p
+                    className={`mt-1 text-xs ${isDark ? "text-red-400" : "text-red-600"}`}
+                  >
+                    {erro}
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Footer */}
+          <div
+            className={`px-6 py-3 border-t ${
+              isDark
+                ? "border-gray-700 bg-gray-800/70"
+                : "border-gray-200 bg-gray-50/80"
+            }`}
+          >
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={onClose}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                  isDark
+                    ? "text-gray-300 hover:text-gray-200 hover:bg-gray-700"
+                    : "text-gray-700 hover:text-gray-900 hover:bg-gray-200"
+                }`}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleConfirmar}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                  isDark
+                    ? "bg-yellow-900/30 text-yellow-300 hover:bg-yellow-800/40 border border-yellow-800"
+                    : "bg-yellow-100 text-yellow-800 hover:bg-yellow-200 border border-yellow-300"
+                }`}
+              >
+                Pausar Treinamento
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// -------------------------------------------
+// 🆕 MODAL DE CANCELAMENTO DO TREINAMENTO
+// -------------------------------------------
+const ModalCancelamentoTreinamento = ({
+  isOpen,
+  onClose,
+  candidato,
+  onConfirmarCancelamento,
+  isDark,
+}) => {
+  const [motivo, setMotivo] = useState("");
+  const [erro, setErro] = useState("");
+
+  if (!isOpen || !candidato) return null;
+
+  const handleConfirmar = () => {
+    if (!motivo.trim()) {
+      setErro("Motivo do cancelamento é obrigatório");
+      return;
+    }
+    onConfirmarCancelamento(candidato.id, motivo);
+  };
+
+  return (
+    <div className="fixed inset-0 z-[9999] overflow-y-auto">
+      <div
+        className="fixed inset-0 bg-black bg-opacity-50 transition-opacity"
+        onClick={onClose}
+      />
+      <div className="flex min-h-full items-center justify-center p-4">
+        <div
+          className={`
+            relative w-full max-w-md rounded-xl shadow-2xl transform transition-all z-[10000]
+            ${isDark ? "bg-gray-800 border border-gray-700" : "bg-white border border-gray-200"}
+          `}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Header */}
+          <div
+            className={`px-6 py-4 border-b ${isDark ? "border-gray-700" : "border-gray-200"}`}
+          >
+            <div className="flex items-center justify-between">
+              <h3
+                className={`text-lg font-semibold ${isDark ? "text-gray-200" : "text-gray-900"}`}
+              >
+                ⏹️ Cancelar Treinamento
+              </h3>
+              <button
+                onClick={onClose}
+                className={`p-1.5 rounded-lg transition-all duration-200 ${
+                  isDark
+                    ? "text-gray-400 hover:text-gray-300 hover:bg-gray-700"
+                    : "text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+                }`}
+              >
+                <XMarkIcon className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+
+          {/* Body */}
+          <div className="px-6 py-4">
+            <div className="mb-4">
+              <div
+                className={`p-3 rounded-lg border ${
+                  isDark
+                    ? "bg-gray-700/50 border-gray-600"
+                    : "bg-gray-50 border border-gray-200"
+                }`}
+              >
+                <div className="space-y-1">
+                  <div
+                    className={`text-sm font-medium ${isDark ? "text-gray-300" : "text-gray-700"}`}
+                  >
+                    {candidato.nome}
+                  </div>
+                  <div
+                    className={`text-xs ${isDark ? "text-gray-500" : "text-gray-600"}`}
+                  >
+                    CRECI: {candidato.creci}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <label
+                  className={`block text-sm font-medium mb-1 ${isDark ? "text-gray-300" : "text-gray-700"}`}
+                >
+                  Motivo do Cancelamento *
+                </label>
+                <textarea
+                  value={motivo}
+                  onChange={(e) => {
+                    setMotivo(e.target.value);
+                    setErro("");
+                  }}
+                  placeholder="Ex: Desistência, não comparecimento, problemas pessoais..."
+                  rows="4"
+                  className={`
+                    w-full px-3 py-2.5 rounded-lg border text-sm resize-none
+                    ${
+                      isDark
+                        ? "bg-gray-700 border-gray-600 text-gray-200 placeholder-gray-400 focus:border-[#D4A24D] focus:ring-[#D4A24D]/30"
+                        : "bg-white border-gray-300 text-gray-900 placeholder-gray-500 focus:border-[#D4A24D] focus:ring-[#D4A24D]/30"
+                    }
+                    ${erro ? (isDark ? "border-red-500" : "border-red-400") : ""}
+                    focus:outline-none focus:ring-2 transition-colors duration-200
+                  `}
+                />
+                {erro && (
+                  <p
+                    className={`mt-1 text-xs ${isDark ? "text-red-400" : "text-red-600"}`}
+                  >
+                    {erro}
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Footer */}
+          <div
+            className={`px-6 py-3 border-t ${
+              isDark
+                ? "border-gray-700 bg-gray-800/70"
+                : "border-gray-200 bg-gray-50/80"
+            }`}
+          >
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={onClose}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                  isDark
+                    ? "text-gray-300 hover:text-gray-200 hover:bg-gray-700"
+                    : "text-gray-700 hover:text-gray-900 hover:bg-gray-200"
+                }`}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleConfirmar}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                  isDark
+                    ? "bg-red-900/30 text-red-300 hover:bg-red-800/40 border border-red-800"
+                    : "bg-red-100 text-red-800 hover:bg-red-200 border border-red-300"
+                }`}
+              >
+                Confirmar Cancelamento
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+// -------------------------------------------
+// MODAL DE DETALHES DO ARQUIVADO
+// -------------------------------------------
+const ModalDetalhesArquivado = ({ isOpen, onClose, candidato, isDark }) => {
+  if (!isOpen || !candidato) return null;
+
+  // Dados do candidato
+  const checkpoints = candidato.checkpoints_treinamento || {
+    modulo1: false,
+    modulo2: false,
+    modulo3: false,
+    modulo4: false,
+    modulo5: false,
+  };
+
+  const atributos = candidato.atributos_treinamento || {
+    demonstrouInteresse: false,
+    temProposito: false,
+    conheceMercado: false,
+    disponibilidadeHorario: false,
+    veiculoProprio: false,
+    experienciaVendas: false,
+    comunicacao: false,
+    eticaProfissional: false,
+    trabalhoEquipe: false,
+    metasAmbiciosas: false,
+  };
+
+  const progresso = candidato.progresso_treinamento || 0;
+
+  // Lista de módulos com nomes
+  const modulosLista = [
+    { id: "modulo1", nome: "Módulo 1: Visão e Propósito" },
+    { id: "modulo2", nome: "Módulo 2: Metas e Metodologia" },
+    { id: "modulo3", nome: "Módulo 3: Práticas de Sucesso" },
+    { id: "modulo4", nome: "Módulo 4: Atendimento ao Cliente" },
+    { id: "modulo5", nome: "Módulo 5: Fechamento de Vendas" },
+  ];
+
+  // Lista de atributos com nomes amigáveis
+  const atributosLista = [
+    { id: "demonstrouInteresse", nome: "Demonstrou Interesse" },
+    { id: "temProposito", nome: "Tem Propósito" },
+    { id: "conheceMercado", nome: "Conhece o Mercado" },
+    { id: "disponibilidadeHorario", nome: "Disponibilidade de Horário" },
+    { id: "veiculoProprio", nome: "Veículo Próprio" },
+    { id: "experienciaVendas", nome: "Experiência em Vendas" },
+    { id: "comunicacao", nome: "Comunicação" },
+    { id: "eticaProfissional", nome: "Ética Profissional" },
+    { id: "trabalhoEquipe", nome: "Trabalho em Equipe" },
+    { id: "metasAmbiciosas", nome: "Metas Ambiciosas" },
+  ];
+
+  // Calcular dias de treinamento
+  const calcularDias = () => {
+    if (candidato.treinamento_inicio && candidato.treinamento_conclusao) {
+      const inicio = new Date(candidato.treinamento_inicio);
+      const fim = new Date(candidato.treinamento_conclusao);
+      const diffTime = Math.abs(fim - inicio);
+      return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    }
+    return null;
+  };
+
+  const diasTreinamento = calcularDias();
+
+  return (
+    <div className="fixed inset-0 z-[9999] overflow-y-auto">
+      <div
+        className="fixed inset-0 bg-black bg-opacity-50 transition-opacity"
+        onClick={onClose}
+      />
+      <div className="flex min-h-full items-center justify-center p-4">
+        <div
+          className={`
+            relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-xl shadow-2xl transform transition-all z-[10000]
+            ${isDark ? "bg-gray-800 border border-gray-700" : "bg-white border border-gray-200"}
+          `}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Header */}
+          <div
+            className={`sticky top-0 px-6 py-4 border-b ${isDark ? "border-gray-700 bg-gray-800" : "border-gray-200 bg-white"}`}
+          >
+            <div className="flex items-center justify-between">
+              <h3
+                className={`text-lg font-semibold ${isDark ? "text-gray-200" : "text-gray-900"}`}
+              >
+                📁 Detalhes do Candidato Arquivado
+              </h3>
+              <button
+                onClick={onClose}
+                className={`p-1.5 rounded-lg transition-all duration-200 ${
+                  isDark
+                    ? "text-gray-400 hover:text-gray-300 hover:bg-gray-700"
+                    : "text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+                }`}
+              >
+                <XMarkIcon className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+
+          {/* Body */}
+          <div className="px-6 py-4 space-y-6">
+            {/* Informações básicas */}
+            <div>
+              <h4
+                className={`text-sm font-medium mb-1 ${isDark ? "text-gray-300" : "text-gray-700"}`}
+              >
+                {candidato.nome}
+              </h4>
+              <p
+                className={`text-xs ${isDark ? "text-gray-400" : "text-gray-500"}`}
+              >
+                CRECI: {candidato.creci} • Arquivado em:{" "}
+                {candidato.treinamento_conclusao
+                  ? new Date(
+                      candidato.treinamento_conclusao,
+                    ).toLocaleDateString("pt-BR")
+                  : new Date().toLocaleDateString("pt-BR")}{" "}
+                {/* ← FALLBACK PARA HOJE */}
+              </p>
+            </div>
+
+            {/* Motivo */}
+            {candidato.treinamento_motivo_pausa && (
+              <div
+                className={`p-3 rounded-lg border ${
+                  isDark
+                    ? "bg-red-900/20 border-red-800"
+                    : "bg-red-50 border-red-200"
+                }`}
+              >
+                <p
+                  className={`text-sm ${isDark ? "text-red-200" : "text-red-700"}`}
+                >
+                  <span className="font-semibold">Motivo do cancelamento:</span>{" "}
+                  {candidato.treinamento_motivo_pausa}
+                </p>
+              </div>
+            )}
+
+            {/* Status do treinamento */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <h4
+                  className={`text-sm font-semibold ${isDark ? "text-gray-200" : "text-gray-800"}`}
+                >
+                  ⏹️ Cancelado após {diasTreinamento} dias
+                </h4>
+              </div>
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <span
+                    className={`text-xs ${isDark ? "text-gray-500" : "text-gray-500"}`}
+                  >
+                    Início
+                  </span>
+                  <p
+                    className={`font-medium ${isDark ? "text-gray-300" : "text-gray-700"}`}
+                  >
+                    {new Date(candidato.treinamento_inicio).toLocaleDateString(
+                      "pt-BR",
+                    )}
+                  </p>
+                </div>
+                <div>
+                  <span
+                    className={`text-xs ${isDark ? "text-gray-500" : "text-gray-500"}`}
+                  >
+                    Previsão
+                  </span>
+                  <p
+                    className={`font-medium ${isDark ? "text-gray-300" : "text-gray-700"}`}
+                  >
+                    {new Date(
+                      candidato.treinamento_previsao,
+                    ).toLocaleDateString("pt-BR")}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Progresso */}
+            <div>
+              <div className="flex justify-between text-sm mb-1">
+                <span className={isDark ? "text-gray-300" : "text-gray-700"}>
+                  Progresso
+                </span>
+                <span className="font-semibold">{progresso}%</span>
+              </div>
+              <div
+                className={`w-full h-2 rounded-full overflow-hidden ${isDark ? "bg-gray-700" : "bg-gray-200"}`}
+              >
+                <div
+                  className={`h-full rounded-full ${
+                    progresso >= 80
+                      ? "bg-green-500"
+                      : progresso >= 50
+                        ? "bg-blue-500"
+                        : "bg-yellow-500"
+                  }`}
+                  style={{ width: `${progresso}%` }}
+                />
+              </div>
+            </div>
+
+            {/* Módulos - COM BOX */}
+            <div
+              className={`p-4 rounded-lg border ${isDark ? "bg-gray-700/30 border-gray-600" : "bg-gray-50 border-gray-200"}`}
+            >
+              <h4
+                className={`text-sm font-semibold mb-3 flex items-center gap-2 ${isDark ? "text-gray-200" : "text-gray-800"}`}
+              >
+                <AcademicCapIcon className="w-4 h-4" />
+                Módulos do Treinamento (
+                {Object.values(checkpoints).filter(Boolean).length}/5)
+              </h4>
+              <div className="space-y-2">
+                {modulosLista.map((modulo) => (
+                  <div
+                    key={modulo.id}
+                    className={`flex items-center p-2 rounded-lg border ${
+                      checkpoints[modulo.id]
+                        ? isDark
+                          ? "bg-green-900/20 border-green-800"
+                          : "bg-green-50 border-green-200"
+                        : "border-transparent"
+                    }`}
+                  >
+                    {checkpoints[modulo.id] ? (
+                      <CheckCircleIcon className="w-4 h-4 mr-2 text-green-500" />
+                    ) : (
+                      <XCircleIcon className="w-4 h-4 mr-2 text-red-500" />
+                    )}
+                    <span
+                      className={`text-sm ${
+                        checkpoints[modulo.id]
+                          ? isDark
+                            ? "text-green-300"
+                            : "text-green-700"
+                          : isDark
+                            ? "text-gray-300"
+                            : "text-gray-700"
+                      }`}
+                    >
+                      {modulo.nome}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Atributos - COM BOX */}
+            <div
+              className={`p-4 rounded-lg border ${isDark ? "bg-gray-700/30 border-gray-600" : "bg-gray-50 border-gray-200"}`}
+            >
+              <h4
+                className={`text-sm font-semibold mb-3 flex items-center gap-2 ${isDark ? "text-gray-200" : "text-gray-800"}`}
+              >
+                <UserIcon className="w-4 h-4" />
+                Atributos Pessoais (
+                {Object.values(atributos).filter(Boolean).length}/10)
+              </h4>
+              <div className="grid grid-cols-2 gap-2">
+                {atributosLista.map((atributo) => (
+                  <div
+                    key={atributo.id}
+                    className={`flex items-center p-2 rounded-lg border ${
+                      atributos[atributo.id]
+                        ? isDark
+                          ? "bg-green-900/20 border-green-800"
+                          : "bg-green-50 border-green-200"
+                        : "border-transparent"
+                    }`}
+                  >
+                    {atributos[atributo.id] ? (
+                      <CheckCircleIcon className="w-3 h-3 mr-1 text-green-500" />
+                    ) : (
+                      <XCircleIcon className="w-3 h-3 mr-1 text-red-500" />
+                    )}
+                    <span
+                      className={`text-xs ${
+                        atributos[atributo.id]
+                          ? isDark
+                            ? "text-green-300"
+                            : "text-green-700"
+                          : isDark
+                            ? "text-gray-300"
+                            : "text-gray-700"
+                      }`}
+                    >
+                      {atributo.nome}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Feedback */}
+            {candidato.feedback_nota && (
+              <div>
+                <h4
+                  className={`text-sm font-semibold mb-3 flex items-center gap-2 ${isDark ? "text-gray-200" : "text-gray-800"}`}
+                >
+                  <ChatBubbleLeftRightIcon className="w-4 h-4" />
+                  Feedback da Entrevista
+                </h4>
+                <div
+                  className={`p-4 rounded-lg border ${
+                    isDark
+                      ? "bg-green-900/20 border-green-800"
+                      : "bg-green-50 border-green-200"
+                  }`}
+                >
+                  <div className="flex items-center gap-2 mb-2">
+                    <span
+                      className={`text-lg font-semibold ${isDark ? "text-gray-200" : "text-gray-700"}`}
+                    >
+                      ⭐ {candidato.feedback_nota}.0
+                    </span>
+                    <span
+                      className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                        isDark
+                          ? "bg-green-900/30 text-green-300"
+                          : "bg-green-100 text-green-800"
+                      }`}
+                    >
+                      ✅ Aprovado
+                    </span>
+                  </div>
+                  {candidato.entrevistador && (
+                    <p
+                      className={`text-xs mb-2 ${isDark ? "text-gray-400" : "text-gray-600"}`}
+                    >
+                      <span className="font-medium">Entrevistado por:</span>{" "}
+                      {candidato.entrevistador}
+                    </p>
+                  )}
+                  {candidato.feedback_observacoes && (
+                    <p
+                      className={`text-sm ${isDark ? "text-gray-300" : "text-gray-700"}`}
+                    >
+                      {candidato.feedback_observacoes}
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Footer */}
+          <div
+            className={`sticky bottom-0 px-6 py-4 border-t ${isDark ? "border-gray-700 bg-gray-800" : "border-gray-200 bg-white"}`}
+          >
+            <div className="flex justify-end">
+              <button
+                onClick={onClose}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                  isDark
+                    ? "bg-[#D4A24D]/20 text-amber-200 hover:bg-[#D4A24D]/30 border border-amber-800/50"
+                    : "bg-[#D4A24D] text-white hover:bg-[#C19137] border border-[#D4A24D]"
+                }`}
+              >
+                Fechar
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+// ===========================================
+// 🆕 COMPONENTES DE EXIBIÇÃO (COLE AQUI!)
+// ===========================================
+
+// Badge de nota (opcional, mas útil)
+const BadgeNota = ({ nota, isDark }) => {
+  if (!nota) return null;
+  return (
+    <span
+      className={`px-2 py-0.5 rounded-full text-xs font-medium flex items-center gap-1 ${
+        isDark
+          ? "bg-purple-900/30 text-purple-300 border border-purple-800"
+          : "bg-purple-100 text-purple-800 border border-purple-300"
+      }`}
+    >
+      <StarIcon className="w-3 h-3" />
+      {nota} ★
+    </span>
+  );
+};
+
+// ===========================================
+// COMPONENTE DE FEEDBACK COMPACTO
+// ===========================================
+const FeedbackCompacto = ({ candidato, isDark }) => {
+  const temFeedback = candidato.feedback_nota ? true : false;
+  if (!temFeedback) return null;
+
+  const nota = candidato.feedback_nota;
+  const status = candidato.feedback_status;
+  const observacoes = candidato.feedback_observacoes || "";
+  const entrevistador = candidato.entrevistador || "";
+  const resumoObs =
+    observacoes.length > 60
+      ? observacoes.substring(0, 60) + "..."
+      : observacoes;
+
+  const statusConfig = {
+    aprovado: {
+      bg: isDark ? "bg-green-900/20" : "bg-green-50",
+      border: isDark ? "border-green-800" : "border-green-200",
+      text: isDark ? "text-green-400" : "text-green-600",
+      badge: isDark
+        ? "bg-green-900/30 text-green-300"
+        : "bg-green-100 text-green-800",
+      icon: "✅",
+    },
+    banco: {
+      bg: isDark ? "bg-blue-900/20" : "bg-blue-50",
+      border: isDark ? "border-blue-800" : "border-blue-200",
+      text: isDark ? "text-blue-400" : "text-blue-600",
+      badge: isDark
+        ? "bg-blue-900/30 text-blue-300"
+        : "bg-blue-100 text-blue-800",
+      icon: "📦",
+    },
+    reprovado: {
+      bg: isDark ? "bg-red-900/20" : "bg-red-50",
+      border: isDark ? "border-red-800" : "border-red-200",
+      text: isDark ? "text-red-400" : "text-red-600",
+      badge: isDark ? "bg-red-900/30 text-red-300" : "bg-red-100 text-red-800",
+      icon: "❌",
+    },
+  };
+
+  const config = statusConfig[status] || statusConfig.aprovado;
+
+  const statusTexto = {
+    aprovado: "Aprovado",
+    banco: "Banco de Talentos",
+    reprovado: "Reprovado",
+  };
+
+  return (
+    <div className={`mt-3 p-3 rounded-lg border ${config.bg} ${config.border}`}>
+      {/* Linha superior: nota + status + data */}
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-2">
+          <span
+            className={`text-sm font-semibold ${isDark ? "text-gray-200" : "text-gray-700"}`}
+          >
+            ⭐ {nota}.0
+          </span>
+          <span
+            className={`px-2 py-0.5 rounded-full text-xs font-medium ${config.badge}`}
+          >
+            {config.icon} {statusTexto[status]}
+          </span>
+        </div>
+        {candidato.feedback_data && (
+          <span
+            className={`text-xs ${isDark ? "text-gray-500" : "text-gray-500"}`}
+          >
+            {new Date(candidato.feedback_data).toLocaleDateString("pt-BR")}
+          </span>
+        )}
+      </div>
+
+      {/* Observações (se houver) */}
+      {resumoObs && (
+        <div className="flex items-start gap-2 mb-2">
+          <ChatBubbleLeftRightIcon
+            className={`w-4 h-4 mt-0.5 flex-shrink-0 ${config.text}`}
+          />
+          <p
+            className={`text-xs ${isDark ? "text-gray-300" : "text-gray-700"} leading-relaxed`}
+          >
+            {resumoObs}
+          </p>
+        </div>
+      )}
+
+      {/* Se não houver observações, mostra mensagem padrão */}
+      {!resumoObs && (
+        <p
+          className={`text-xs ${isDark ? "text-gray-500" : "text-gray-500"} italic mb-2`}
+        >
+          Sem observações adicionais
+        </p>
+      )}
+
+      {/* 👤 ENTREVISTADOR - LINHA PRÓPRIA COM TRACEJADO SUTIL */}
+      {entrevistador && (
+        <>
+          {/* Linha tracejada sutil */}
+          <div
+            className={`w-full border-t border-dashed ${isDark ? "border-gray-700" : "border-gray-300"} my-2`}
+          />
+
+          {/* Nome do entrevistador */}
+          <div className="flex items-center gap-1">
+            <UserIcon
+              className={`w-3 h-3 ${isDark ? "text-gray-500" : "text-gray-500"}`}
+            />
+            <span
+              className={`text-xs ${isDark ? "text-gray-400" : "text-gray-600"}`}
+            >
+              <span className="font-medium">Entrevistado por:</span>{" "}
+              {entrevistador}
+            </span>
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
 // ===========================================
 // COMPONENTES AUXILIARES
 // ===========================================
@@ -1892,7 +2916,467 @@ const EligibilityBadge = ({ type, status, isDark }) => {
     </div>
   );
 };
+// ===========================================
+// 🆕 CRONOGRAMA DO TREINAMENTO - VERSÃO COMPLETA
+// ===========================================
+const CronogramaTreinamento = ({
+  candidato,
+  isDark,
+  onIniciar,
+  onPausar,
+  onRetomar,
+  onCancelar,
+  onConcluir,
+  onAtivar,
+  onArquivar, // ← NOVA PROP ADICIONADA!
+}) => {
+  // LOG PARA DEBUG - ADICIONE AQUI!
+  console.log("📊 CronogramaTreinamento - candidato:", candidato.id);
+  console.log("📅 treinamento_inicio (raw):", candidato.treinamento_inicio);
+  console.log(
+    "📅 treinamento_inicio (tipo):",
+    typeof candidato.treinamento_inicio,
+  );
+  // Se não tiver dados de treinamento, não mostra nada
+  if (
+    !candidato.treinamento_inicio &&
+    candidato.treinamento_status !== "nao_iniciado"
+  ) {
+    return null;
+  }
 
+  const hoje = new Date();
+  const inicio = candidato.treinamento_inicio
+    ? new Date(candidato.treinamento_inicio)
+    : null;
+  const previsao = candidato.treinamento_previsao
+    ? new Date(candidato.treinamento_previsao)
+    : null;
+  const status = candidato.treinamento_status || "nao_iniciado";
+
+  // Dados do progresso real (dos módulos)
+  const progresso = candidato.progresso_treinamento || 0;
+
+  // Dados dos checkpoints e atributos
+  const checkpoints = candidato.checkpoints_treinamento || {
+    modulo1: false,
+    modulo2: false,
+    modulo3: false,
+    modulo4: false,
+    modulo5: false,
+  };
+
+  const atributos = candidato.atributos_treinamento || {
+    demonstrouInteresse: false,
+    temProposito: false,
+    conheceMercado: false,
+    disponibilidadeHorario: false,
+    veiculoProprio: false,
+    experienciaVendas: false,
+    comunicacao: false,
+    eticaProfissional: false,
+    trabalhoEquipe: false,
+    metasAmbiciosas: false,
+  };
+
+  const modulosConcluidos = Object.values(checkpoints).filter(Boolean).length;
+  const atributosConcluidos = Object.values(atributos).filter(Boolean).length;
+
+  // Verificar se todos os módulos foram concluídos (progresso = 100%)
+  const todosModulosConcluidos = modulosConcluidos === 5;
+
+  // Calcular dias restantes
+  let diasRestantes = null;
+  let alertaPrazo = false;
+
+  if (inicio && previsao && status === "em_andamento") {
+    const diffTime = previsao - hoje;
+    diasRestantes = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    alertaPrazo = diasRestantes <= 3 && diasRestantes > 0;
+  }
+
+  // STATUS COM EMOJIS (MAIS SEGURO QUE ÍCONES)
+  const getStatusInfo = () => {
+    if (status === "cancelado")
+      return { texto: "Cancelado", emoji: "⏹️", cor: "text-red-500" };
+    if (status === "pausado")
+      return { texto: "Pausado", emoji: "⏸️", cor: "text-yellow-500" };
+    if (status === "concluido")
+      return { texto: "Concluído", emoji: "✅", cor: "text-green-500" };
+    if (status === "em_andamento") {
+      if (progresso >= 100)
+        return { texto: "Concluído", emoji: "✅", cor: "text-green-500" };
+      if (progresso >= 80)
+        return { texto: "Reta final", emoji: "🏁", cor: "text-red-500" };
+      if (progresso >= 60)
+        return { texto: "Fervendo", emoji: "🔥", cor: "text-orange-500" };
+      if (progresso >= 30)
+        return { texto: "A todo vapor", emoji: "⚡", cor: "text-blue-500" };
+      return { texto: "Embarcando", emoji: "🚀", cor: "text-green-500" };
+    }
+    return { texto: "Não Iniciado", emoji: "○", cor: "text-gray-500" };
+  };
+
+  // Cor da barra baseada no progresso
+  const getBarraCor = () => {
+    if (status === "cancelado") return "bg-red-500";
+    if (status === "pausado") return "bg-yellow-500";
+    if (status === "concluido") return "bg-green-500";
+    if (progresso >= 100) return "bg-purple-500";
+    if (progresso >= 80) return "bg-red-500";
+    if (progresso >= 60) return "bg-orange-500";
+    if (progresso >= 30) return "bg-blue-500";
+    return "bg-green-500";
+  };
+
+  const statusInfo = getStatusInfo();
+
+  // Configuração de cores e ícones (usando SPAN em vez de ícones)
+  const statusConfig = {
+    nao_iniciado: {
+      cor: isDark ? "text-gray-400" : "text-gray-600",
+      bg: isDark ? "bg-gray-800/30" : "bg-gray-50",
+      border: isDark ? "border-gray-700" : "border-gray-200",
+      icone: "○",
+      texto: "Não Iniciado",
+    },
+    em_andamento: {
+      cor: isDark ? "text-purple-400" : "text-purple-600",
+      bg: isDark ? "bg-purple-900/20" : "bg-purple-50",
+      border: isDark ? "border-purple-800" : "border-purple-200",
+      icone: "▶️",
+      texto: "Em Andamento",
+    },
+    pausado: {
+      cor: isDark ? "text-yellow-400" : "text-yellow-600",
+      bg: isDark ? "bg-yellow-900/20" : "bg-yellow-50",
+      border: isDark ? "border-yellow-800" : "border-yellow-200",
+      icone: "⏸️",
+      texto: "Pausado",
+    },
+    cancelado: {
+      cor: isDark ? "text-red-400" : "text-red-600",
+      bg: isDark ? "bg-red-900/20" : "bg-red-50",
+      border: isDark ? "border-red-800" : "border-red-200",
+      icone: "⏹️",
+      texto: "Cancelado",
+    },
+    concluido: {
+      cor: isDark ? "text-green-400" : "text-green-600",
+      bg: isDark ? "bg-green-900/20" : "bg-green-50",
+      border: isDark ? "border-green-800" : "border-green-200",
+      icone: "✅",
+      texto: "Concluído",
+    },
+  };
+
+  const config = statusConfig[status] || statusConfig.nao_iniciado;
+
+  // Renderização condicional baseada no status
+  if (status === "nao_iniciado") {
+    return (
+      <div
+        className={`mt-4 p-3 rounded-lg border flex items-center justify-between ${config.bg} ${config.border}`}
+      >
+        <div className="flex items-center gap-2">
+          <span className="text-lg">{config.icone}</span>
+          <span className={`text-sm font-medium ${config.cor}`}>
+            {config.texto}
+          </span>
+        </div>
+        <button
+          onClick={() => onIniciar?.(candidato.id)}
+          className={`text-xs px-3 py-1.5 rounded-full transition-colors ${
+            isDark
+              ? "bg-blue-900/30 text-blue-300 hover:bg-blue-800/40"
+              : "bg-blue-50 text-blue-600 hover:bg-blue-100"
+          }`}
+        >
+          + Iniciar
+        </button>
+      </div>
+    );
+  }
+
+  if (status === "concluido") {
+    return (
+      <div
+        className={`mt-4 p-3 rounded-lg border ${config.bg} ${config.border}`}
+      >
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2">
+            <span className="text-lg">{config.icone}</span>
+            <span className={`text-sm font-semibold ${config.cor}`}>
+              {config.texto}
+            </span>
+          </div>
+          <button
+            onClick={() => onAtivar?.(candidato.id)}
+            className={`text-xs px-3 py-1.5 rounded-full transition-colors ${
+              isDark
+                ? "bg-green-900/30 text-green-300 hover:bg-green-800/40"
+                : "bg-green-100 text-green-700 hover:bg-green-200"
+            }`}
+          >
+            🏆 Ativar Corretor
+          </button>
+        </div>
+        <div className="flex items-center gap-2 mt-2">
+          <span
+            className={`text-xs ${isDark ? "text-gray-400" : "text-gray-600"}`}
+          >
+            Concluído em:{" "}
+            {new Date(
+              candidato.treinamento_conclusao || Date.now(),
+            ).toLocaleDateString("pt-BR")}
+          </span>
+          <span
+            className={`text-xs font-medium px-2 py-0.5 rounded-full bg-green-100 text-green-700`}
+          >
+            {modulosConcluidos}/5 módulos
+          </span>
+        </div>
+      </div>
+    );
+  }
+
+  // ✅ STATUS CANCELADO COM BOTÃO ARQUIVAR ATUALIZADO
+  if (status === "cancelado") {
+    return (
+      <div
+        className={`mt-4 p-3 rounded-lg border ${config.bg} ${config.border}`}
+      >
+        <div className="flex items-center gap-2 mb-2">
+          <span className="text-lg">{config.icone}</span>
+          <span className={`text-sm font-semibold ${config.cor}`}>
+            {config.texto}
+          </span>
+        </div>
+        {candidato.treinamento_motivo_pausa && (
+          <div
+            className={`text-xs ${isDark ? "text-gray-400" : "text-gray-600"} mb-3`}
+          >
+            Motivo: {candidato.treinamento_motivo_pausa}
+          </div>
+        )}
+        {/* BOTÃO ARQUIVAR ATUALIZADO */}
+        <button
+          onClick={() => onArquivar?.(candidato.id)}
+          className={`w-full py-2 px-3 rounded-lg text-sm font-medium transition-all duration-200 flex items-center justify-center gap-2 ${
+            isDark
+              ? "bg-gray-700 text-gray-300 hover:bg-gray-600"
+              : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+          }`}
+        >
+          <ArchiveBoxIcon className="w-4 h-4" />
+          Arquivar
+        </button>
+      </div>
+    );
+  }
+
+  // Versão COMPLETA para Em Andamento e Pausado
+  return (
+    <div className={`mt-4 p-4 rounded-lg border ${config.bg} ${config.border}`}>
+      {/* Cabeçalho com status */}
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <span className="text-lg">{config.icone}</span>
+          <span className={`text-sm font-semibold ${config.cor}`}>
+            {config.texto}
+          </span>
+        </div>
+        {status === "em_andamento" && diasRestantes !== null && (
+          <span
+            className={`text-xs font-medium px-2 py-1 rounded-full ${
+              alertaPrazo
+                ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
+                : diasRestantes < 0
+                  ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
+                  : isDark
+                    ? "bg-gray-700 text-gray-300"
+                    : "bg-gray-100 text-gray-600"
+            }`}
+          >
+            {diasRestantes > 0
+              ? `${diasRestantes} dias`
+              : diasRestantes === 0
+                ? "Hoje"
+                : `${Math.abs(diasRestantes)} dias atrás`}
+          </span>
+        )}
+      </div>
+
+      {/* Datas */}
+      <div className="grid grid-cols-2 gap-3 mb-3">
+        {candidato.treinamento_inicio && (
+          <div>
+            <div
+              className={`text-xs ${isDark ? "text-gray-500" : "text-gray-500"}`}
+            >
+              Início
+            </div>
+            <div
+              className={`text-sm font-medium ${
+                isDark ? "text-gray-300" : "text-gray-700"
+              }`}
+            >
+              {candidato.treinamento_inicio.split("-").reverse().join("/")}
+            </div>
+          </div>
+        )}
+        {candidato.treinamento_previsao && (
+          <div>
+            <div
+              className={`text-xs ${isDark ? "text-gray-500" : "text-gray-500"}`}
+            >
+              Previsão
+            </div>
+            <div
+              className={`text-sm font-medium ${
+                alertaPrazo || diasRestantes < 0
+                  ? "text-red-500"
+                  : isDark
+                    ? "text-gray-300"
+                    : "text-gray-700"
+              }`}
+            >
+              {candidato.treinamento_previsao.split("-").reverse().join("/")}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* PRIMEIRA LINHA DIVISÓRIA */}
+      <div
+        className={`w-full h-px my-3 ${isDark ? "bg-gray-700" : "bg-gray-200"}`}
+      />
+
+      {/* PROGRESSO DO TREINAMENTO */}
+      <div className="space-y-3">
+        {/* Barra de progresso */}
+        <div>
+          <div className="flex justify-between text-xs mb-1">
+            <span className={isDark ? "text-gray-400" : "text-gray-600"}>
+              Progresso do Treinamento
+            </span>
+            <span className={isDark ? "text-gray-400" : "text-gray-600"}>
+              {progresso}%
+            </span>
+          </div>
+          <div
+            className={`w-full h-2 rounded-full overflow-hidden ${
+              isDark ? "bg-gray-700" : "bg-gray-200"
+            }`}
+          >
+            <div
+              className={`h-full rounded-full transition-all duration-500 ${getBarraCor()}`}
+              style={{ width: `${progresso}%` }}
+            />
+          </div>
+        </div>
+
+        {/* Módulos e Atributos */}
+        <div className="grid grid-cols-2 gap-2 text-xs">
+          <div className="flex items-center gap-1">
+            <AcademicCapIcon
+              className={`w-4 h-4 ${isDark ? "text-blue-400" : "text-blue-600"}`}
+            />
+            <span className={isDark ? "text-gray-300" : "text-gray-700"}>
+              Módulos:{" "}
+              <span className="font-semibold">{modulosConcluidos}/5</span>
+            </span>
+          </div>
+          <div className="flex items-center gap-1">
+            <UserIcon
+              className={`w-4 h-4 ${isDark ? "text-green-400" : "text-green-600"}`}
+            />
+            <span className={isDark ? "text-gray-300" : "text-gray-700"}>
+              Atributos:{" "}
+              <span className="font-semibold">{atributosConcluidos}/10</span>
+            </span>
+          </div>
+        </div>
+
+        {/* STATUS COM EMOJI */}
+        <div className="flex items-center justify-end gap-1 text-xs">
+          <span className={statusInfo.cor}>
+            {statusInfo.emoji} {statusInfo.texto}
+          </span>
+        </div>
+      </div>
+
+      {/* BOTÕES DE AÇÃO BASEADOS NO STATUS */}
+      <div className="grid grid-cols-2 gap-2 mt-4">
+        {status === "em_andamento" && (
+          <>
+            <button
+              onClick={() => onPausar?.(candidato.id)}
+              className={`text-xs py-1.5 px-2 rounded-lg transition-colors ${
+                isDark
+                  ? "bg-yellow-900/30 text-yellow-300 hover:bg-yellow-800/40"
+                  : "bg-yellow-100 text-yellow-700 hover:bg-yellow-200"
+              }`}
+            >
+              ⏸️ Pausar
+            </button>
+            {todosModulosConcluidos && (
+              <button
+                onClick={() => onConcluir?.(candidato.id)}
+                className={`text-xs py-1.5 px-2 rounded-lg transition-colors ${
+                  isDark
+                    ? "bg-green-900/30 text-green-300 hover:bg-green-800/40"
+                    : "bg-green-100 text-green-700 hover:bg-green-200"
+                }`}
+              >
+                ✅ Concluir
+              </button>
+            )}
+          </>
+        )}
+
+        {status === "pausado" && (
+          <>
+            <button
+              onClick={() => onRetomar?.(candidato.id)}
+              className={`text-xs py-1.5 px-2 rounded-lg transition-colors ${
+                isDark
+                  ? "bg-green-900/30 text-green-300 hover:bg-green-800/40"
+                  : "bg-green-100 text-green-700 hover:bg-green-200"
+              }`}
+            >
+              ▶️ Retomar
+            </button>
+            <button
+              onClick={() => onCancelar?.(candidato.id)}
+              className={`text-xs py-1.5 px-2 rounded-lg transition-colors ${
+                isDark
+                  ? "bg-red-900/30 text-red-300 hover:bg-red-800/40"
+                  : "bg-red-100 text-red-700 hover:bg-red-200"
+              }`}
+            >
+              ⏹️ Cancelar
+            </button>
+          </>
+        )}
+      </div>
+
+      {/* Motivo da pausa (se aplicável) */}
+      {status === "pausado" && candidato.treinamento_motivo_pausa && (
+        <div
+          className={`mt-3 p-2 rounded text-xs ${
+            isDark
+              ? "bg-gray-700/50 text-gray-300"
+              : "bg-gray-100 text-gray-700"
+          }`}
+        >
+          <span className="font-medium">Motivo:</span>{" "}
+          {candidato.treinamento_motivo_pausa}
+        </div>
+      )}
+    </div>
+  );
+};
 // ===========================================
 // COMPONENTE PRINCIPAL
 // ===========================================
@@ -1908,10 +3392,25 @@ const Corretores = () => {
   const [modalProgressoAberto, setModalProgressoAberto] = useState(false);
   const [modalReprovacaoAberto, setModalReprovacaoAberto] = useState(false);
   const [modalAtivacaoAberto, setModalAtivacaoAberto] = useState(false);
+  const [modalFeedbackAberto, setModalFeedbackAberto] = useState(false);
+
+  // 🆕 ESTADOS PARA PAUSA
+  const [modalPausaAberto, setModalPausaAberto] = useState(false);
+  const [candidatoParaPausa, setCandidatoParaPausa] = useState(null);
+
+  // 🆕 ESTADOS PARA CANCELAMENTO
+  const [modalCancelamentoAberto, setModalCancelamentoAberto] = useState(false);
+  const [candidatoParaCancelar, setCandidatoParaCancelar] = useState(null);
+
+  // 🆕 ESTADOS PARA DETALHES DO ARQUIVADO
+  const [modalDetalhesAberto, setModalDetalhesAberto] = useState(false);
+  const [candidatoDetalhes, setCandidatoDetalhes] = useState(null);
+
   const [candidatoParaAgendar, setCandidatoParaAgendar] = useState(null);
   const [candidatoParaReprovar, setCandidatoParaReprovar] = useState(null);
   const [candidatoParaAtivar, setCandidatoParaAtivar] = useState(null);
   const [candidatoProgresso, setCandidatoProgresso] = useState(null);
+  const [candidatoParaFeedback, setCandidatoParaFeedback] = useState(null);
   const [corretorSelecionado, setCorretorSelecionado] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -1921,6 +3420,7 @@ const Corretores = () => {
     entrevistador: "",
     observacoes: "",
   });
+
   const [errosForm, setErrosForm] = useState({});
 
   const navigate = useNavigate();
@@ -1933,6 +3433,7 @@ const Corretores = () => {
     reprovados: [],
     ativos: [],
     inativos: [],
+    arquivados: [], // ← NOVO!
   });
 
   // -----------------------------------------
@@ -1968,52 +3469,10 @@ const Corretores = () => {
 
       if (error) throw error;
 
-      // 👉 PROCESSAR DADOS PARA GARANTIR QUE CHECKPOINTS E ATRIBUTOS EXISTAM E ESTEJAM CORRETOS
+      // Processar dados (se necessário)
       const dadosProcessados = data.map((candidato) => {
-        // Garantir que checkpoints_treinamento seja um objeto válido
-        const checkpoints_treinamento = candidato.checkpoints_treinamento || {
-          modulo1: false,
-          modulo2: false,
-          modulo3: false,
-          modulo4: false,
-          modulo5: false,
-        };
-
-        // Garantir que atributos_treinamento seja um objeto válido
-        const atributos_treinamento = candidato.atributos_treinamento || {
-          demonstrouInteresse: false,
-          temProposito: false,
-          conheceMercado: false,
-          disponibilidadeHorario: false,
-          veiculoProprio: false,
-          experienciaVendas: false,
-          comunicacao: false,
-          eticaProfissional: false,
-          trabalhoEquipe: false,
-          metasAmbiciosas: false,
-        };
-
-        // Calcular progresso_treinamento baseado nos checkpoints (se não existir)
-        let progresso_treinamento = candidato.progresso_treinamento;
-
-        // Se não tiver progresso ou for null/undefined, calcular baseado nos checkpoints
-        if (
-          progresso_treinamento === null ||
-          progresso_treinamento === undefined
-        ) {
-          const total = Object.keys(checkpoints_treinamento).length;
-          const concluidos = Object.values(checkpoints_treinamento).filter(
-            Boolean,
-          ).length;
-          progresso_treinamento = Math.round((concluidos / total) * 100);
-        }
-
-        return {
-          ...candidato,
-          checkpoints_treinamento,
-          atributos_treinamento,
-          progresso_treinamento,
-        };
+        // Seu código de processamento existente
+        return candidato;
       });
 
       const pendentes = dadosProcessados.filter((c) => c.etapa === "pendentes");
@@ -2021,13 +3480,17 @@ const Corretores = () => {
         (c) => c.etapa === "entrevista",
       );
       const treinamento = dadosProcessados.filter(
-        (c) => c.etapa === "treinamento",
+        (c) =>
+          c.etapa === "treinamento" && c.treinamento_status !== "arquivado",
       );
       const reprovados = dadosProcessados.filter(
         (c) => c.etapa === "reprovados",
       );
       const ativos = dadosProcessados.filter((c) => c.etapa === "ativos");
       const inativos = dadosProcessados.filter((c) => c.etapa === "inativos");
+      const arquivados = dadosProcessados.filter(
+        (c) => c.treinamento_status === "arquivado",
+      );
 
       setCandidatosPorEtapa({
         pendentes,
@@ -2036,6 +3499,7 @@ const Corretores = () => {
         reprovados,
         ativos,
         inativos,
+        arquivados,
       });
     } catch (err) {
       console.error("Erro ao carregar dados:", err);
@@ -2044,7 +3508,6 @@ const Corretores = () => {
       setLoading(false);
     }
   };
-
   // -----------------------------------------
   // 3. FUNÇÕES AUXILIARES
   // -----------------------------------------
@@ -2070,9 +3533,7 @@ const Corretores = () => {
     const hoje = new Date();
     const amanha = new Date();
     amanha.setDate(hoje.getDate() + 1);
-
     const data = new Date(dataString);
-
     const dia = data.getDate().toString().padStart(2, "0");
     const mes = (data.getMonth() + 1).toString().padStart(2, "0");
 
@@ -2120,7 +3581,6 @@ const Corretores = () => {
     const candidato = candidatosPorEtapa.treinamento.find(
       (c) => c.id === candidatoId,
     );
-
     if (!candidato) return;
 
     const checkpointsAtuais = candidato.checkpoints_treinamento || {
@@ -2141,18 +3601,16 @@ const Corretores = () => {
     const novoProgresso = Math.round((concluidos / total) * 100);
 
     try {
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from("corretores")
         .update({
           checkpoints_treinamento: novosCheckpoints,
           progresso_treinamento: novoProgresso,
         })
-        .eq("id", candidatoId)
-        .select();
+        .eq("id", candidatoId);
 
       if (error) throw error;
 
-      // Atualizar estado global
       setCandidatosPorEtapa((prev) => {
         const novosTreinamentos = prev.treinamento.map((c) =>
           c.id === candidatoId
@@ -2266,9 +3724,7 @@ const Corretores = () => {
           .from("corretores")
           .delete()
           .eq("id", id);
-
         if (error) throw error;
-
         await carregarDados();
       } catch (err) {
         console.error("Erro ao excluir:", err);
@@ -2281,24 +3737,60 @@ const Corretores = () => {
     if (!validarFormulario() || !candidatoParaAgendar) return;
 
     try {
+      const horarioLimpo = formAgendamento.horarioEntrevista
+        .split(":")
+        .slice(0, 2)
+        .join(":");
+      const isReagendamento = candidatoParaAgendar.etapa === "entrevista";
+
+      let dadosAtualizados = {
+        data_entrevista: formAgendamento.dataEntrevista,
+        horario_entrevista: horarioLimpo,
+        entrevistador: formAgendamento.entrevistador,
+        observacoes: formAgendamento.observacoes,
+      };
+
+      if (isReagendamento) {
+        dadosAtualizados = {
+          ...dadosAtualizados,
+          reagendado: true,
+          numero_reagendamentos:
+            (candidatoParaAgendar.numero_reagendamentos || 0) + 1,
+          data_original:
+            candidatoParaAgendar.data_original ||
+            candidatoParaAgendar.data_entrevista,
+          horario_original:
+            candidatoParaAgendar.horario_original ||
+            candidatoParaAgendar.horario_entrevista,
+        };
+      } else {
+        dadosAtualizados = {
+          ...dadosAtualizados,
+          etapa: "entrevista",
+          reagendado: false,
+          numero_reagendamentos: 0,
+          data_original: null,
+          horario_original: null,
+        };
+      }
+
       const { error } = await supabase
         .from("corretores")
-        .update({
-          etapa: "entrevista",
-          data_entrevista: formAgendamento.dataEntrevista,
-          horario_entrevista: formAgendamento.horarioEntrevista,
-          entrevistador: formAgendamento.entrevistador,
-          observacoes: formAgendamento.observacoes,
-        })
+        .update(dadosAtualizados)
         .eq("id", candidatoParaAgendar.id);
 
       if (error) throw error;
 
       await carregarDados();
       handleFecharModal();
-      alert(`Entrevista agendada para ${candidatoParaAgendar.nome}!`);
+
+      if (isReagendamento) {
+        alert(`✅ Entrevista REAGENDADA para ${candidatoParaAgendar.nome}!`);
+      } else {
+        alert(`✅ Entrevista agendada para ${candidatoParaAgendar.nome}!`);
+      }
     } catch (err) {
-      console.error("Erro ao agendar:", err);
+      console.error("❌ Erro ao agendar:", err);
       alert("Erro ao agendar entrevista. Tente novamente.");
     }
   };
@@ -2411,6 +3903,202 @@ const Corretores = () => {
   };
 
   // -----------------------------------------
+  // FUNÇÕES DE GESTÃO DO TREINAMENTO
+  // -----------------------------------------
+  // 🚀 INICIAR TREINAMENTO
+  const handleIniciarTreinamento = async (candidatoId) => {
+    console.log("🔵 FUNÇÃO INICIAR FOI CHAMADA! ID:", candidatoId);
+
+    try {
+      const hoje = new Date().toISOString().split("T")[0];
+      const previsao = new Date();
+      previsao.setDate(previsao.getDate() + 15);
+      const previsaoStr = previsao.toISOString().split("T")[0];
+
+      console.log("📅 Data que seria salva:", hoje);
+      console.log("📅 Previsão:", previsaoStr);
+      console.log("🚀 Enviando para Supabase...");
+
+      const { data, error } = await supabase
+        .from("corretores")
+        .update({
+          treinamento_inicio: hoje,
+          treinamento_previsao: previsaoStr,
+          treinamento_status: "em_andamento",
+        })
+        .eq("id", candidatoId)
+        .select();
+
+      if (error) {
+        console.error("❌ ERRO DO SUPABASE:", error);
+        throw error;
+      }
+
+      console.log("✅ RESPOSTA DO SUPABASE:", data);
+      await carregarDados();
+      alert("✅ Treinamento iniciado com sucesso!");
+    } catch (err) {
+      console.error("❌ Erro ao iniciar treinamento:", err);
+      alert("Erro ao iniciar treinamento. Tente novamente.");
+    }
+  };
+
+  // 🆕 PAUSAR - AGORA USA MODAL
+  const handlePausarTreinamento = (candidatoId) => {
+    const candidato = candidatosPorEtapa.treinamento.find(
+      (c) => c.id === candidatoId,
+    );
+
+    setCandidatoParaPausa(candidato);
+    setModalPausaAberto(true);
+  };
+
+  // ✅ CONFIRMAR PAUSA
+  const handleConfirmarPausa = async (candidatoId, motivo) => {
+    try {
+      const { error } = await supabase
+        .from("corretores")
+        .update({
+          treinamento_status: "pausado",
+          treinamento_motivo_pausa: motivo,
+        })
+        .eq("id", candidatoId);
+
+      if (error) throw error;
+      await carregarDados();
+      setModalPausaAberto(false);
+      setCandidatoParaPausa(null);
+      alert("✅ Treinamento pausado com sucesso!");
+    } catch (err) {
+      console.error("Erro ao pausar:", err);
+      alert("Erro ao pausar treinamento.");
+    }
+  };
+
+  // ▶️ RETOMAR
+  const handleRetomarTreinamento = async (candidatoId) => {
+    try {
+      const { error } = await supabase
+        .from("corretores")
+        .update({ treinamento_status: "em_andamento" })
+        .eq("id", candidatoId);
+
+      if (error) throw error;
+      await carregarDados();
+      alert("✅ Treinamento retomado com sucesso!");
+    } catch (err) {
+      console.error("Erro ao retomar:", err);
+      alert("Erro ao retomar treinamento.");
+    }
+  };
+
+  // ⏹️ CANCELAR - AGORA USA MODAL
+  const handleCancelarTreinamento = (candidatoId) => {
+    console.log("🚀 handleCancelarTreinamento chamado", candidatoId);
+    const candidato = candidatosPorEtapa.treinamento.find(
+      (c) => c.id === candidatoId,
+    );
+    setCandidatoParaCancelar(candidato);
+    setModalCancelamentoAberto(true);
+  };
+
+  // ✅ CONFIRMAR CANCELAMENTO
+  const handleConfirmarCancelamento = async (candidatoId, motivo) => {
+    console.log("1️⃣ handleConfirmarCancelamento chamado", {
+      candidatoId,
+      motivo,
+    });
+
+    try {
+      console.log("2️⃣ Enviando para Supabase...");
+      const { data, error } = await supabase
+        .from("corretores")
+        .update({
+          treinamento_status: "cancelado",
+          treinamento_motivo_pausa: motivo,
+        })
+        .eq("id", candidatoId)
+        .select();
+
+      console.log("3️⃣ Resposta do Supabase:", { data, error });
+
+      if (error) throw error;
+
+      console.log("4️⃣ Dados atualizados, recarregando...");
+      await carregarDados();
+
+      console.log("5️⃣ Fechando modal...");
+      setModalCancelamentoAberto(false);
+      setCandidatoParaCancelar(null);
+
+      alert("❌ Treinamento cancelado.");
+    } catch (err) {
+      console.error("❌ Erro ao cancelar:", err);
+      alert("Erro ao cancelar treinamento.");
+    }
+  };
+
+  // ✅ CONCLUIR
+  const handleConcluirTreinamento = async (candidatoId) => {
+    try {
+      const { error } = await supabase
+        .from("corretores")
+        .update({
+          treinamento_status: "concluido",
+          treinamento_conclusao: new Date().toISOString().split("T")[0],
+        })
+        .eq("id", candidatoId);
+
+      if (error) throw error;
+      await carregarDados();
+      alert("✅ Treinamento concluído com sucesso!");
+    } catch (err) {
+      console.error("Erro ao concluir:", err);
+      alert("Erro ao concluir treinamento.");
+    }
+  };
+
+  // 🏆 ATIVAR
+  const handleAtivarCorretor = async (candidatoId) => {
+    try {
+      const { error } = await supabase
+        .from("corretores")
+        .update({
+          etapa: "ativos",
+          status: "Período de Experiência",
+          data_ativacao: new Date().toISOString().split("T")[0],
+        })
+        .eq("id", candidatoId);
+
+      if (error) throw error;
+      await carregarDados();
+      alert("🎉 Corretor ativado com sucesso!");
+    } catch (err) {
+      console.error("Erro ao ativar:", err);
+      alert("Erro ao ativar corretor.");
+    }
+  };
+
+  // 📁 ARQUIVAR (FUNÇÃO ATUALIZADA)
+  const handleArquivar = async (candidatoId) => {
+    try {
+      const { error } = await supabase
+        .from("corretores")
+        .update({
+          treinamento_status: "arquivado",
+          treinamento_conclusao: new Date().toISOString().split("T")[0], // ← ADICIONADO!
+        })
+        .eq("id", candidatoId);
+
+      if (error) throw error;
+      await carregarDados();
+      alert("📁 Treinamento arquivado com sucesso!");
+    } catch (err) {
+      console.error("Erro ao arquivar:", err);
+      alert("Erro ao arquivar treinamento.");
+    }
+  };
+  // -----------------------------------------
   // 7. FUNÇÕES PARA ABRIR MODAIS
   // -----------------------------------------
   const handleAbrirModalAgendamento = (candidato) => {
@@ -2445,17 +4133,70 @@ const Corretores = () => {
     setModalAtivacaoAberto(true);
   };
 
+  const handleAbrirFeedback = (candidato) => {
+    setCandidatoParaFeedback(candidato);
+    setModalFeedbackAberto(true);
+  };
+
+  const handleSalvarFeedback = async (candidatoId, feedback) => {
+    try {
+      let novaEtapa = "entrevista";
+      if (feedback.status === "aprovado") {
+        novaEtapa = "treinamento";
+      } else if (feedback.status === "reprovado") {
+        novaEtapa = "reprovados";
+      }
+
+      const { error } = await supabase
+        .from("corretores")
+        .update({
+          feedback_nota: feedback.nota,
+          feedback_status: feedback.status,
+          feedback_observacoes: feedback.observacoes,
+          feedback_data: new Date().toISOString(),
+          etapa: novaEtapa,
+        })
+        .eq("id", candidatoId);
+
+      if (error) throw error;
+
+      await carregarDados();
+      setModalFeedbackAberto(false);
+      setCandidatoParaFeedback(null);
+      alert("✅ Feedback salvo com sucesso!");
+    } catch (err) {
+      console.error("Erro ao salvar feedback:", err);
+      alert("Erro ao salvar feedback. Tente novamente.");
+    }
+  };
+
+  // 🆕 ABRIR DETALHES DO ARQUIVADO
+  const handleAbrirDetalhesArquivado = (candidato) => {
+    setCandidatoDetalhes(candidato);
+    setModalDetalhesAberto(true);
+  };
+
   const handleFecharModal = () => {
     setModalAgendamentoAberto(false);
     setModalPerfilAberto(false);
     setModalProgressoAberto(false);
     setModalReprovacaoAberto(false);
     setModalAtivacaoAberto(false);
+    setModalFeedbackAberto(false);
+    setModalPausaAberto(false);
+    setModalCancelamentoAberto(false);
+    setModalDetalhesAberto(false); // ← ADICIONADO!
+
     setCandidatoParaAgendar(null);
     setCandidatoParaReprovar(null);
     setCandidatoParaAtivar(null);
+    setCandidatoParaFeedback(null);
+    setCandidatoParaPausa(null);
+    setCandidatoParaCancelar(null);
+    setCandidatoDetalhes(null); // ← ADICIONADO!
     setCandidatoProgresso(null);
     setCorretorSelecionado(null);
+
     setFormAgendamento({
       dataEntrevista: "",
       horarioEntrevista: "",
@@ -2464,7 +4205,6 @@ const Corretores = () => {
     });
     setErrosForm({});
   };
-
   // -----------------------------------------
   // 8. MEMOIZED DATA
   // -----------------------------------------
@@ -2713,16 +4453,20 @@ const Corretores = () => {
   // -----------------------------------------
   // 11. RENDER CARDS
   // -----------------------------------------
+
+  // ===========================================
+  // RENDER CARD PENDENTE
+  // ===========================================
   const renderCardPendente = (candidato) => (
     <div
       className={`
-        rounded-xl shadow-sm border overflow-hidden transition-all duration-200
-        ${
-          isDark
-            ? "bg-gray-800 border-gray-700 hover:bg-gray-750"
-            : "bg-white border-gray-200 hover:bg-gray-50"
-        }
-      `}
+      rounded-xl shadow-sm border overflow-hidden transition-all duration-200
+      ${
+        isDark
+          ? "bg-gray-800 border-gray-700 hover:bg-gray-750"
+          : "bg-white border-gray-200 hover:bg-gray-50"
+      }
+    `}
     >
       <div className="p-4">
         <div className="flex items-start justify-between">
@@ -2834,9 +4578,54 @@ const Corretores = () => {
     </div>
   );
 
-  const renderCardEntrevista = (candidato) => (
-    <div
-      className={`
+  // ===========================================
+  // RENDER CARD ENTREVISTA
+  // ===========================================
+  const renderCardEntrevista = (candidato) => {
+    // Dados de reagendamento
+    const foiReagendado = candidato.reagendado || false;
+    const numeroReagendamentos = candidato.numero_reagendamentos || 0;
+    const dataOriginal = candidato.data_original;
+    const horarioOriginal = candidato.horario_original;
+
+    // Dados de feedback
+    const temFeedback = candidato.feedback_nota ? true : false;
+    const feedbackNota = candidato.feedback_nota || 0;
+    const feedbackStatus = candidato.feedback_status || "";
+    const feedbackObs = candidato.feedback_observacoes || "";
+    const feedbackData = candidato.feedback_data
+      ? new Date(candidato.feedback_data).toLocaleDateString("pt-BR")
+      : "";
+
+    // Função para formatar horário
+    const formatarHorario = (horario) => {
+      if (!horario) return "";
+      return horario.split(":").slice(0, 2).join(":");
+    };
+
+    // Função para renderizar estrelas no card
+    const renderEstrelasCard = (nota) => {
+      return (
+        <div className="flex items-center gap-0.5">
+          {[1, 2, 3, 4, 5].map((n) => (
+            <StarIconSolid
+              key={n}
+              className={`w-3 h-3 ${
+                n <= nota
+                  ? "text-yellow-500"
+                  : isDark
+                    ? "text-gray-600"
+                    : "text-gray-300"
+              }`}
+            />
+          ))}
+        </div>
+      );
+    };
+
+    return (
+      <div
+        className={`
         rounded-xl shadow-sm border overflow-hidden transition-all duration-200
         ${
           isDark
@@ -2844,209 +4633,59 @@ const Corretores = () => {
             : "bg-white border-gray-200 hover:bg-gray-50"
         }
       `}
-    >
-      <div className="p-4">
-        <div className="flex items-start justify-between">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <h3
-                className={`text-base font-semibold ${isDark ? "text-gray-100" : "text-gray-900"}`}
-              >
-                {candidato.nome}
-              </h3>
-              <span
-                className={`px-2 py-0.5 rounded-full text-xs font-medium ${etapaCandidatosColors.entrevista}`}
-              >
-                Entrevista
-              </span>
-            </div>
-            <div
-              className={`text-xs ${isDark ? "text-gray-400" : "text-gray-500"} mb-3`}
-            >
-              CRECI: {candidato.creci}
-            </div>
-          </div>
-        </div>
-
-        <div
-          className={`h-px w-full ${isDark ? "bg-gray-700" : "bg-gray-200"} my-3`}
-        />
-
-        <div className="mb-2">
-          <a
-            href={criarLinkWhatsApp(candidato.telefone, candidato.nome)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={`flex items-center transition-all duration-200 group ${
-              isDark
-                ? "text-green-400 hover:text-green-300"
-                : "text-green-600 hover:text-green-700"
-            }`}
-          >
-            <svg
-              className="w-4 h-4 mr-2 flex-shrink-0"
-              fill="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.76.982.998-3.675-.236-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.9 6.994c-.004 5.45-4.438 9.88-9.888 9.88m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.333.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.333 11.893-11.893 0-3.18-1.24-6.162-3.495-8.411" />
-            </svg>
-            <span className="text-sm font-medium truncate">
-              {candidato.telefone}
-            </span>
-          </a>
-        </div>
-
-        <div
-          className={`flex items-center ${isDark ? "text-gray-300" : "text-gray-600"} mb-3`}
-        >
-          <EnvelopeIcon className="w-4 h-4 mr-2 flex-shrink-0" />
-          <span className="text-sm truncate">{candidato.email}</span>
-        </div>
-
-        <div
-          className={`h-px w-full ${isDark ? "bg-gray-700" : "bg-gray-200"} my-3`}
-        />
-
-        <div className="space-y-2">
-          <div
-            className={`flex items-center text-sm ${isDark ? "text-gray-400" : "text-gray-600"}`}
-          >
-            <CalendarIcon className="w-4 h-4 mr-2" />
-            <span>
-              Entrevista: {formatarDataParaExibicao(candidato.data_entrevista)},{" "}
-              {candidato.horario_entrevista}
-            </span>
-          </div>
-          {candidato.entrevistador && (
-            <div
-              className={`flex items-center text-sm ${isDark ? "text-gray-400" : "text-gray-600"}`}
-            >
-              <UserIcon className="w-4 h-4 mr-2" />
-              <span>Com: {candidato.entrevistador}</span>
-            </div>
-          )}
-
-          {candidato.observacoes && (
-            <div
-              className={`mt-2 p-3 rounded-lg text-sm ${
-                isDark
-                  ? "bg-yellow-900/30 text-yellow-200 border border-yellow-800/50"
-                  : "bg-yellow-50 text-yellow-800 border border-yellow-200"
-              }`}
-            >
-              <div className="flex items-start gap-2">
-                <ChatBubbleLeftRightIcon
-                  className={`w-4 h-4 mt-0.5 flex-shrink-0 ${
-                    isDark ? "text-yellow-400" : "text-yellow-600"
-                  }`}
-                />
-                <span>
-                  <span className="font-medium">Observações:</span>{" "}
-                  {candidato.observacoes}
-                </span>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      <div
-        className={`px-4 py-3 border-t ${isDark ? "border-gray-700 bg-gray-800/70" : "border-gray-200 bg-gray-50/80"}`}
-      >
-        <div className="flex space-x-2">
-          <button
-            onClick={() => handleAprovarEntrevista(candidato)}
-            className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all duration-200 flex items-center justify-center gap-2 ${
-              isDark
-                ? "bg-green-900/30 text-green-300 hover:bg-green-800/40 border border-green-800"
-                : "bg-green-100 text-green-800 hover:bg-green-200 border border-green-300"
-            }`}
-          >
-            <CheckCircleIcon className="w-4 h-4" />
-            Aprovar
-          </button>
-
-          <button
-            onClick={() => handleReprovarEntrevista(candidato)}
-            className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all duration-200 flex items-center justify-center gap-2 ${
-              isDark
-                ? "bg-red-900/30 text-red-300 hover:bg-red-800/40 border border-red-800"
-                : "bg-red-100 text-red-800 hover:bg-red-200 border border-red-300"
-            }`}
-          >
-            <XCircleIcon className="w-4 h-4" />
-            Reprovar
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-
-  const renderCardTreinamento = (candidato) => {
-    if (!candidato) return null;
-
-    // Garantir que checkpoints e atributos existam
-    const checkpoints = candidato.checkpoints_treinamento || {
-      modulo1: false,
-      modulo2: false,
-      modulo3: false,
-      modulo4: false,
-      modulo5: false,
-    };
-
-    const atributos = candidato.atributos_treinamento || {
-      demonstrouInteresse: false,
-      temProposito: false,
-      conheceMercado: false,
-      disponibilidadeHorario: false,
-      veiculoProprio: false,
-      experienciaVendas: false,
-      comunicacao: false,
-      eticaProfissional: false,
-      trabalhoEquipe: false,
-      metasAmbiciosas: false,
-    };
-
-    // Garantir que progresso seja um número
-    const progresso =
-      candidato.progresso_treinamento !== undefined &&
-      candidato.progresso_treinamento !== null
-        ? candidato.progresso_treinamento
-        : 0;
-
-    // Formatar progresso para exibição (adicionar %)
-    const progressoExibido = `${progresso}%`;
-
-    // Calcular contadores
-    const modulosConcluidos = Object.values(checkpoints).filter(Boolean).length;
-    const atributosConcluidos = Object.values(atributos).filter(Boolean).length;
-
-    return (
-      <div
-        className={`
-          rounded-xl shadow-sm border overflow-hidden transition-all duration-200
-          ${
-            isDark
-              ? "bg-gray-800 border-gray-700 hover:bg-gray-750"
-              : "bg-white border-gray-200 hover:bg-gray-50"
-          }
-        `}
       >
         <div className="p-4">
           <div className="flex items-start justify-between">
             <div>
-              <div className="flex items-center gap-2 mb-1">
+              <div className="flex items-center gap-2 mb-1 flex-wrap">
                 <h3
                   className={`text-base font-semibold ${isDark ? "text-gray-100" : "text-gray-900"}`}
                 >
                   {candidato.nome}
                 </h3>
+
+                {/* Badge de Entrevista */}
                 <span
-                  className={`px-2 py-0.5 rounded-full text-xs font-medium ${etapaCandidatosColors.treinamento}`}
+                  className={`px-2 py-0.5 rounded-full text-xs font-medium ${etapaCandidatosColors.entrevista}`}
                 >
-                  Treinamento
+                  Entrevista
                 </span>
+
+                {/* Badge de nota (se tiver feedback) */}
+                {temFeedback && (
+                  <span
+                    className={`px-2 py-0.5 rounded-full text-xs font-medium flex items-center gap-1 ${
+                      isDark
+                        ? "bg-purple-900/30 text-purple-300 border border-purple-800"
+                        : "bg-purple-100 text-purple-800 border border-purple-300"
+                    }`}
+                  >
+                    <StarIcon className="w-3 h-3" />
+                    {feedbackNota} ★
+                  </span>
+                )}
+
+                {/* Badge de Reagendamento */}
+                {foiReagendado && (
+                  <span
+                    className={`px-2 py-0.5 rounded-full text-xs font-medium flex items-center gap-1 ${
+                      numeroReagendamentos >= 3
+                        ? isDark
+                          ? "bg-amber-900/30 text-amber-300 border border-amber-800"
+                          : "bg-amber-100 text-amber-800 border border-amber-300"
+                        : isDark
+                          ? "bg-blue-900/30 text-blue-300 border border-blue-800"
+                          : "bg-blue-100 text-blue-800 border border-blue-300"
+                    }`}
+                  >
+                    <CalendarIcon className="w-3 h-3" />
+                    {numeroReagendamentos === 1 && "Reagendada 1x"}
+                    {numeroReagendamentos === 2 && "Reagendada 2x"}
+                    {numeroReagendamentos >= 3 && `⚠️ ${numeroReagendamentos}x`}
+                  </span>
+                )}
               </div>
+
               <div
                 className={`text-xs ${isDark ? "text-gray-400" : "text-gray-500"} mb-3`}
               >
@@ -3059,6 +4698,7 @@ const Corretores = () => {
             className={`h-px w-full ${isDark ? "bg-gray-700" : "bg-gray-200"} my-3`}
           />
 
+          {/* Contatos */}
           <div className="mb-2">
             <a
               href={criarLinkWhatsApp(candidato.telefone, candidato.nome)}
@@ -3094,78 +4734,393 @@ const Corretores = () => {
             className={`h-px w-full ${isDark ? "bg-gray-700" : "bg-gray-200"} my-3`}
           />
 
-          {/* BARRA DE PROGRESSO */}
+          {/* SEÇÃO DE DATAS */}
           <div className="space-y-2">
-            <div className="flex justify-between items-center">
-              <span
-                className={`text-xs font-medium ${
-                  isDark ? "text-gray-400" : "text-gray-600"
-                }`}
-              >
-                Progresso
-              </span>
-              <span
-                className={`text-xs font-semibold ${
-                  isDark ? "text-blue-400" : "text-blue-600"
-                }`}
-              >
-                {progressoExibido}
+            {/* Data atual */}
+            <div
+              className={`flex items-center text-sm ${
+                foiReagendado
+                  ? isDark
+                    ? "text-blue-400"
+                    : "text-blue-600 font-medium"
+                  : isDark
+                    ? "text-gray-400"
+                    : "text-gray-600"
+              }`}
+            >
+              {foiReagendado ? (
+                <CalendarIcon className="w-4 h-4 mr-2 text-blue-500" />
+              ) : (
+                <CalendarIcon className="w-4 h-4 mr-2" />
+              )}
+              <span>
+                {foiReagendado ? "Reagendada: " : "Entrevista: "}
+                {formatarDataParaExibicao(candidato.data_entrevista)},{" "}
+                {formatarHorario(candidato.horario_entrevista)}
               </span>
             </div>
-            <div
-              className={`w-full ${
-                isDark ? "bg-gray-700" : "bg-gray-200"
-              } rounded-full h-2.5`}
-            >
+
+            {/* Data original */}
+            {foiReagendado && dataOriginal && (
               <div
-                className={`${
-                  isDark ? "bg-green-500" : "bg-green-600"
-                } h-2.5 rounded-full transition-all duration-300`}
-                style={{ width: progressoExibido }}
-              />
+                className={`flex items-center text-xs ${
+                  isDark ? "text-gray-500" : "text-gray-500"
+                } line-through`}
+              >
+                <CalendarIcon className="w-3 h-3 mr-2 opacity-50" />
+                <span>
+                  Original: {formatarDataParaExibicao(dataOriginal)},{" "}
+                  {formatarHorario(horarioOriginal)}
+                </span>
+              </div>
+            )}
+
+            {/* Seção de Feedback */}
+            {temFeedback && (
+              <div
+                className={`mt-3 p-3 rounded-lg border ${
+                  feedbackStatus === "aprovado"
+                    ? isDark
+                      ? "bg-green-900/20 border-green-800"
+                      : "bg-green-50 border-green-200"
+                    : feedbackStatus === "banco"
+                      ? isDark
+                        ? "bg-blue-900/20 border-blue-800"
+                        : "bg-blue-50 border-blue-200"
+                      : isDark
+                        ? "bg-red-900/20 border-red-800"
+                        : "bg-red-50 border-red-200"
+                }`}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={`text-sm font-semibold ${isDark ? "text-gray-200" : "text-gray-700"}`}
+                    >
+                      ⭐ {feedbackNota}.0
+                    </span>
+                    <span
+                      className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                        feedbackStatus === "aprovado"
+                          ? isDark
+                            ? "bg-green-900/30 text-green-300"
+                            : "bg-green-100 text-green-800"
+                          : feedbackStatus === "banco"
+                            ? isDark
+                              ? "bg-blue-900/30 text-blue-300"
+                              : "bg-blue-100 text-blue-800"
+                            : isDark
+                              ? "bg-red-900/30 text-red-300"
+                              : "bg-red-100 text-red-800"
+                      }`}
+                    >
+                      {feedbackStatus === "aprovado" && "✅ Aprovado"}
+                      {feedbackStatus === "banco" && "📦 Banco"}
+                      {feedbackStatus === "reprovado" && "❌ Reprovado"}
+                    </span>
+                  </div>
+                  <span
+                    className={`text-xs ${isDark ? "text-gray-500" : "text-gray-500"}`}
+                  >
+                    {feedbackData}
+                  </span>
+                </div>
+
+                {feedbackObs ? (
+                  <div className="flex items-start gap-2">
+                    <ChatBubbleLeftRightIcon
+                      className={`w-4 h-4 mt-0.5 flex-shrink-0 ${
+                        feedbackStatus === "aprovado"
+                          ? isDark
+                            ? "text-green-400"
+                            : "text-green-600"
+                          : feedbackStatus === "banco"
+                            ? isDark
+                              ? "text-blue-400"
+                              : "text-blue-600"
+                            : isDark
+                              ? "text-red-400"
+                              : "text-red-600"
+                      }`}
+                    />
+                    <p
+                      className={`text-xs ${
+                        isDark ? "text-gray-300" : "text-gray-700"
+                      } leading-relaxed`}
+                    >
+                      {feedbackObs}
+                    </p>
+                  </div>
+                ) : (
+                  <p
+                    className={`text-xs ${
+                      isDark ? "text-gray-500" : "text-gray-500"
+                    } italic`}
+                  >
+                    Sem observações adicionais
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Alerta para muitos reagendamentos */}
+            {numeroReagendamentos >= 3 && (
+              <div
+                className={`flex items-center text-xs mt-1 ${
+                  isDark ? "text-amber-400" : "text-amber-600"
+                }`}
+              >
+                <ExclamationCircleIcon className="w-3 h-3 mr-1" />
+                <span>
+                  ⚠️ Candidato já remarcou {numeroReagendamentos} vezes
+                </span>
+              </div>
+            )}
+
+            {/* Entrevistador */}
+            {candidato.entrevistador && (
+              <div
+                className={`flex items-center text-sm ${isDark ? "text-gray-400" : "text-gray-600"} mt-2`}
+              >
+                <UserIcon className="w-4 h-4 mr-2" />
+                <span>Com: {candidato.entrevistador}</span>
+              </div>
+            )}
+
+            {/* Observações da entrevista */}
+            {candidato.observacoes && (
+              <div
+                className={`mt-2 p-3 rounded-lg text-sm ${
+                  isDark
+                    ? "bg-yellow-900/30 text-yellow-200 border border-yellow-800/50"
+                    : "bg-yellow-50 text-yellow-800 border border-yellow-200"
+                }`}
+              >
+                <div className="flex items-start gap-2">
+                  <ChatBubbleLeftRightIcon
+                    className={`w-4 h-4 mt-0.5 flex-shrink-0 ${
+                      isDark ? "text-yellow-400" : "text-yellow-600"
+                    }`}
+                  />
+                  <span>
+                    <span className="font-medium">Observações:</span>{" "}
+                    {candidato.observacoes}
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Botão Feedback (largura total) */}
+        <div className="px-4 py-2">
+          <button
+            onClick={() => handleAbrirFeedback(candidato)}
+            className={`w-full py-2 px-3 rounded-lg text-sm font-medium transition-all duration-200 flex items-center justify-center gap-2 ${
+              temFeedback
+                ? isDark
+                  ? "bg-purple-900/30 text-purple-300 hover:bg-purple-800/40 border border-purple-800"
+                  : "bg-purple-100 text-purple-800 hover:bg-purple-200 border border-purple-300"
+                : isDark
+                  ? "bg-blue-900/30 text-blue-300 hover:bg-blue-800/40 border border-blue-800"
+                  : "bg-blue-100 text-blue-800 hover:bg-blue-200 border border-blue-300"
+            }`}
+          >
+            <ChatBubbleLeftRightIcon className="w-4 h-4" />
+            {temFeedback ? "Ver Feedback" : "Registrar Feedback"}
+          </button>
+        </div>
+
+        {/* Botão Reagendar (largura total) - Vermelho */}
+        <div className="px-4 py-2 pb-3">
+          <button
+            onClick={() => handleAbrirModalAgendamento(candidato)}
+            className={`w-full py-2 px-3 rounded-lg text-sm font-medium transition-all duration-200 flex items-center justify-center gap-2 ${
+              isDark
+                ? "bg-red-900/30 text-red-300 hover:bg-red-800/40 border border-red-800"
+                : "bg-red-100 text-red-800 hover:bg-red-200 border border-red-300"
+            }`}
+          >
+            <CalendarIcon className="w-4 h-4" />
+            {foiReagendado ? "Reagendar Novamente" : "Reagendar Entrevista"}
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  // ===========================================
+  // RENDER CARD TREINAMENTO
+  // ===========================================
+  const renderCardTreinamento = (candidato) => {
+    if (!candidato) return null;
+
+    const checkpoints = candidato.checkpoints_treinamento || {
+      modulo1: false,
+      modulo2: false,
+      modulo3: false,
+      modulo4: false,
+      modulo5: false,
+    };
+
+    const atributos = candidato.atributos_treinamento || {
+      demonstrouInteresse: false,
+      temProposito: false,
+      conheceMercado: false,
+      disponibilidadeHorario: false,
+      veiculoProprio: false,
+      experienciaVendas: false,
+      comunicacao: false,
+      eticaProfissional: false,
+      trabalhoEquipe: false,
+      metasAmbiciosas: false,
+    };
+
+    const progresso = candidato.progresso_treinamento ?? 0;
+    const progressoExibido = `${progresso}%`;
+    const modulosConcluidos = Object.values(checkpoints).filter(Boolean).length;
+    const atributosConcluidos = Object.values(atributos).filter(Boolean).length;
+
+    return (
+      <div
+        className={`
+        rounded-xl shadow-sm border overflow-hidden transition-all duration-200
+        ${
+          isDark
+            ? "bg-gray-800 border-gray-700 hover:bg-gray-750"
+            : "bg-white border-gray-200 hover:bg-gray-50"
+        }
+      `}
+      >
+        <div className="p-4">
+          {/* Cabeçalho do card */}
+          <div className="flex items-start justify-between">
+            <div>
+              <div className="flex items-center gap-2 mb-1 flex-wrap">
+                <h3
+                  className={`text-base font-semibold ${isDark ? "text-gray-100" : "text-gray-900"}`}
+                >
+                  {candidato.nome}
+                </h3>
+                <span
+                  className={`px-2 py-0.5 rounded-full text-xs font-medium ${etapaCandidatosColors.treinamento}`}
+                >
+                  Treinamento
+                </span>
+
+                {/* Badge de nota (se tiver feedback) */}
+                {candidato.feedback_nota && (
+                  <span
+                    className={`px-2 py-0.5 rounded-full text-xs font-medium flex items-center gap-1 ${
+                      isDark
+                        ? "bg-purple-900/30 text-purple-300 border border-purple-800"
+                        : "bg-purple-100 text-purple-800 border border-purple-300"
+                    }`}
+                  >
+                    <StarIcon className="w-3 h-3" />
+                    {candidato.feedback_nota} ★
+                  </span>
+                )}
+              </div>
+              <div
+                className={`text-xs ${isDark ? "text-gray-400" : "text-gray-500"} mb-3`}
+              >
+                CRECI: {candidato.creci}
+              </div>
             </div>
           </div>
 
-          {/* RESUMO DOS MÓDULOS E ATRIBUTOS */}
-          <div className="mt-3 space-y-1">
-            <div
-              className={`flex items-center text-xs ${isDark ? "text-gray-300" : "text-gray-700"}`}
+          {/* Linha divisória após cabeçalho */}
+          <div
+            className={`h-px w-full ${isDark ? "bg-gray-700" : "bg-gray-200"} my-3`}
+          />
+
+          {/* Contatos */}
+          <div className="mb-2">
+            <a
+              href={criarLinkWhatsApp(candidato.telefone, candidato.nome)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`flex items-center transition-all duration-200 group ${
+                isDark
+                  ? "text-green-400 hover:text-green-300"
+                  : "text-green-600 hover:text-green-700"
+              }`}
             >
-              <AcademicCapIcon
-                className={`w-3.5 h-3.5 mr-1.5 ${isDark ? "text-blue-400" : "text-blue-600"}`}
-              />
-              <span>
-                <span className="font-medium">Módulos:</span>{" "}
-                <span
-                  className={`font-semibold ${isDark ? "text-blue-400" : "text-blue-600"}`}
-                >
-                  {modulosConcluidos}/5
-                </span>{" "}
-                concluídos
+              <svg
+                className="w-4 h-4 mr-2 flex-shrink-0"
+                fill="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.76.982.998-3.675-.236-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.9 6.994c-.004 5.45-4.438 9.88-9.888 9.88m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.333.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.333 11.893-11.893 0-3.18-1.24-6.162-3.495-8.411" />
+              </svg>
+              <span className="text-sm font-medium truncate">
+                {candidato.telefone}
               </span>
-            </div>
-            <div
-              className={`flex items-center text-xs ${isDark ? "text-gray-300" : "text-gray-700"}`}
+            </a>
+          </div>
+
+          <div
+            className={`flex items-center ${isDark ? "text-gray-300" : "text-gray-600"} mb-3`}
+          >
+            <EnvelopeIcon className="w-4 h-4 mr-2 flex-shrink-0" />
+            <span className="text-sm truncate">{candidato.email}</span>
+          </div>
+
+          {/* Linha divisória após contatos */}
+          <div
+            className={`h-px w-full ${isDark ? "bg-gray-700" : "bg-gray-200"} my-3`}
+          />
+
+          {/* ===== SEÇÃO 1: FEEDBACK DA ENTREVISTA ===== */}
+          <div className="mb-4">
+            <h4
+              className={`text-xs font-semibold uppercase tracking-wider mb-2 ${
+                isDark ? "text-gray-500" : "text-gray-500"
+              }`}
             >
-              <UserIcon
-                className={`w-3.5 h-3.5 mr-1.5 ${isDark ? "text-green-400" : "text-green-600"}`}
-              />
-              <span>
-                <span className="font-medium">Atributos:</span>{" "}
-                <span
-                  className={`font-semibold ${isDark ? "text-green-400" : "text-green-600"}`}
-                >
-                  {atributosConcluidos}/10
-                </span>{" "}
-                positivos
-              </span>
-            </div>
+              📋 Feedback da Entrevista
+            </h4>
+            <FeedbackCompacto candidato={candidato} isDark={isDark} />
+          </div>
+
+          {/* ===== DIVISÓRIA ENTRE AS SEÇÕES ===== */}
+          <div
+            className={`w-full h-px ${
+              isDark ? "bg-gray-700" : "bg-gray-200"
+            } my-4`}
+          />
+
+          {/* ===== SEÇÃO 2: ACOMPANHAMENTO DO TREINAMENTO ===== */}
+          <div>
+            <h4
+              className={`text-xs font-semibold uppercase tracking-wider mb-2 ${
+                isDark ? "text-gray-500" : "text-gray-500"
+              }`}
+            >
+              🎯 Acompanhamento do Treinamento
+            </h4>
+            <CronogramaTreinamento
+              candidato={candidato}
+              isDark={isDark}
+              onIniciar={handleIniciarTreinamento}
+              onPausar={handlePausarTreinamento}
+              onRetomar={handleRetomarTreinamento}
+              onCancelar={handleCancelarTreinamento}
+              onConcluir={handleConcluirTreinamento}
+              onAtivar={handleAtivarCorretor}
+              onArquivar={handleArquivar}
+            />
           </div>
         </div>
 
         {/* BOTÕES DE AÇÃO */}
         <div
-          className={`px-4 py-3 border-t ${isDark ? "border-gray-700 bg-gray-800/70" : "border-gray-200 bg-gray-50/80"}`}
+          className={`px-4 py-3 border-t ${
+            isDark
+              ? "border-gray-700 bg-gray-800/70"
+              : "border-gray-200 bg-gray-50/80"
+          }`}
         >
           <div className="flex space-x-2">
             <button
@@ -3197,9 +5152,42 @@ const Corretores = () => {
     );
   };
 
-  const renderCardReprovado = (candidato) => (
-    <div
-      className={`
+  // ===========================================
+  // RENDER CARD REPROVADO
+  // ===========================================
+  const renderCardReprovado = (candidato) => {
+    // Dados de feedback
+    const temFeedback = candidato.feedback_nota ? true : false;
+    const feedbackNota = candidato.feedback_nota || 0;
+    const feedbackStatus = candidato.feedback_status || "";
+    const feedbackObs = candidato.feedback_observacoes || "";
+    const feedbackData = candidato.feedback_data
+      ? new Date(candidato.feedback_data).toLocaleDateString("pt-BR")
+      : "";
+
+    // Função para renderizar estrelas no card
+    const renderEstrelasCard = (nota) => {
+      return (
+        <div className="flex items-center gap-0.5">
+          {[1, 2, 3, 4, 5].map((n) => (
+            <StarIconSolid
+              key={n}
+              className={`w-3 h-3 ${
+                n <= nota
+                  ? "text-yellow-500"
+                  : isDark
+                    ? "text-gray-600"
+                    : "text-gray-300"
+              }`}
+            />
+          ))}
+        </div>
+      );
+    };
+
+    return (
+      <div
+        className={`
         rounded-xl shadow-sm border overflow-hidden transition-all duration-200
         ${
           isDark
@@ -3207,120 +5195,406 @@ const Corretores = () => {
             : "bg-white border-gray-200 hover:bg-gray-50"
         }
       `}
-    >
-      <div className="p-4">
-        <div className="flex items-start justify-between">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
+      >
+        <div className="p-4">
+          <div className="flex items-start justify-between">
+            <div>
+              <div className="flex items-center gap-2 mb-1 flex-wrap">
+                <h3
+                  className={`text-base font-semibold ${isDark ? "text-gray-100" : "text-gray-900"}`}
+                >
+                  {candidato.nome}
+                </h3>
+                <span
+                  className={`px-2 py-0.5 rounded-full text-xs font-medium ${etapaCandidatosColors.reprovados}`}
+                >
+                  Reprovado
+                </span>
+
+                {/* Badge de nota (se tiver feedback) */}
+                {temFeedback && (
+                  <span
+                    className={`px-2 py-0.5 rounded-full text-xs font-medium flex items-center gap-1 ${
+                      isDark
+                        ? "bg-purple-900/30 text-purple-300 border border-purple-800"
+                        : "bg-purple-100 text-purple-800 border border-purple-300"
+                    }`}
+                  >
+                    <StarIcon className="w-3 h-3" />
+                    {feedbackNota} ★
+                  </span>
+                )}
+              </div>
+              <div
+                className={`text-xs ${isDark ? "text-gray-400" : "text-gray-500"} mb-3`}
+              >
+                CRECI: {candidato.creci}
+              </div>
+            </div>
+          </div>
+
+          <div
+            className={`h-px w-full ${isDark ? "bg-gray-700" : "bg-gray-200"} my-3`}
+          />
+
+          {/* Contatos */}
+          <div className="mb-2">
+            <a
+              href={criarLinkWhatsApp(candidato.telefone, candidato.nome)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`flex items-center transition-all duration-200 group ${
+                isDark
+                  ? "text-green-400 hover:text-green-300"
+                  : "text-green-600 hover:text-green-700"
+              }`}
+            >
+              <svg
+                className="w-4 h-4 mr-2 flex-shrink-0"
+                fill="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.76.982.998-3.675-.236-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.9 6.994c-.004 5.45-4.438 9.88-9.888 9.88m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.333.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.333 11.893-11.893 0-3.18-1.24-6.162-3.495-8.411" />
+              </svg>
+              <span className="text-sm font-medium truncate">
+                {candidato.telefone}
+              </span>
+            </a>
+          </div>
+
+          <div
+            className={`flex items-center ${isDark ? "text-gray-300" : "text-gray-600"} mb-3`}
+          >
+            <EnvelopeIcon className="w-4 h-4 mr-2 flex-shrink-0" />
+            <span className="text-sm truncate">{candidato.email}</span>
+          </div>
+
+          <div
+            className={`h-px w-full ${isDark ? "bg-gray-700" : "bg-gray-200"} my-3`}
+          />
+
+          {/* 🆕 SEÇÃO DE FEEDBACK - MESMO LAYOUT DO APROVADO */}
+          {temFeedback && (
+            <div
+              className={`mt-3 p-3 rounded-lg border ${
+                isDark
+                  ? "bg-red-900/20 border-red-800"
+                  : "bg-red-50 border-red-200"
+              }`}
+            >
+              {/* Linha superior com nota e data - IGUAL AO APROVADO */}
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`text-sm font-semibold ${isDark ? "text-gray-200" : "text-gray-700"}`}
+                  >
+                    ⭐ {feedbackNota}.0
+                  </span>
+                  <span
+                    className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                      isDark
+                        ? "bg-red-900/30 text-red-300"
+                        : "bg-red-100 text-red-800"
+                    }`}
+                  >
+                    ❌ Reprovado
+                  </span>
+                </div>
+                <span
+                  className={`text-xs ${isDark ? "text-gray-500" : "text-gray-500"}`}
+                >
+                  {feedbackData}
+                </span>
+              </div>
+
+              {/* Observações - IGUAL AO APROVADO */}
+              {feedbackObs ? (
+                <div className="flex items-start gap-2">
+                  <ChatBubbleLeftRightIcon
+                    className={`w-4 h-4 mt-0.5 flex-shrink-0 ${
+                      isDark ? "text-red-400" : "text-red-600"
+                    }`}
+                  />
+                  <p
+                    className={`text-xs ${
+                      isDark ? "text-gray-300" : "text-gray-700"
+                    } leading-relaxed`}
+                  >
+                    {feedbackObs}
+                  </p>
+                </div>
+              ) : (
+                <p
+                  className={`text-xs ${
+                    isDark ? "text-gray-500" : "text-gray-500"
+                  } italic`}
+                >
+                  Sem observações adicionais
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* Motivo original da reprovação (opcional, pode remover se quiser) */}
+          {candidato.motivo_reprovacao && (
+            <div className="mt-3 space-y-2">
+              <div
+                className={`text-xs font-medium ${isDark ? "text-gray-400" : "text-gray-600"}`}
+              >
+                Motivo original:
+              </div>
+              <div
+                className={`px-3 py-2 rounded-lg border text-sm ${
+                  isDark
+                    ? "bg-red-900/30 text-red-200 border-red-800/50"
+                    : "bg-red-50 text-red-800 border-red-200"
+                }`}
+              >
+                <div className="flex items-start">
+                  <DocumentTextIcon
+                    className={`w-4 h-4 mr-2 flex-shrink-0 ${isDark ? "text-red-300" : "text-red-600"}`}
+                  />
+                  <span>{candidato.motivo_reprovacao}</span>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div
+          className={`px-4 py-3 border-t ${isDark ? "border-gray-700 bg-gray-800/70" : "border-gray-200 bg-gray-50/80"}`}
+        >
+          <button
+            onClick={() => handleVerDetalhesReprovado(candidato)}
+            className={`w-full py-2 px-3 rounded-lg text-sm font-medium transition-all duration-200 flex items-center justify-center gap-2 ${
+              isDark
+                ? "bg-[#D4A24D]/20 text-amber-200 hover:bg-[#D4A24D]/30 border border-amber-800/50"
+                : "bg-[#D4A24D] text-white hover:bg-[#C19137] border border-[#D4A24D]"
+            }`}
+          >
+            <EyeIcon className="w-4 h-4" />
+            Ver Detalhes
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  // ===========================================
+  // RENDER CARD ARQUIVADO - VERSÃO OTIMIZADA
+  // ===========================================
+  const renderCardArquivado = (candidato) => {
+    // Formatar data de arquivamento
+    const dataArquivamento = candidato.treinamento_conclusao
+      ? new Date(candidato.treinamento_conclusao).toLocaleDateString("pt-BR")
+      : new Date().toLocaleDateString("pt-BR");
+
+    // Dados resumidos do treinamento
+    const progresso = candidato.progresso_treinamento || 0;
+    const modulosConcluidos = Object.values(
+      candidato.checkpoints_treinamento || {},
+    ).filter(Boolean).length;
+    const atributosConcluidos = Object.values(
+      candidato.atributos_treinamento || {},
+    ).filter(Boolean).length;
+
+    // Calcular dias de treinamento até o cancelamento
+    const calcularDiasTreinamento = () => {
+      if (candidato.treinamento_inicio && candidato.treinamento_conclusao) {
+        const inicio = new Date(candidato.treinamento_inicio);
+        const fim = new Date(candidato.treinamento_conclusao);
+        const diffTime = Math.abs(fim - inicio);
+        return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      }
+      return null;
+    };
+
+    const diasTreinamento = calcularDiasTreinamento();
+
+    return (
+      <div
+        className={`
+        rounded-xl shadow-sm border overflow-hidden transition-all duration-200
+        ${
+          isDark
+            ? "bg-gray-800 border-gray-700 hover:bg-gray-750"
+            : "bg-white border-gray-200 hover:bg-gray-50"
+        }
+      `}
+      >
+        <div className="p-4">
+          {/* Cabeçalho */}
+          <div className="flex items-start justify-between mb-2">
+            <div>
               <h3
                 className={`text-base font-semibold ${isDark ? "text-gray-100" : "text-gray-900"}`}
               >
                 {candidato.nome}
               </h3>
-              <span
-                className={`px-2 py-0.5 rounded-full text-xs font-medium ${etapaCandidatosColors.reprovados}`}
+              <p
+                className={`text-xs ${isDark ? "text-gray-400" : "text-gray-500"}`}
               >
-                Reprovado
+                CRECI: {candidato.creci}
+              </p>
+            </div>
+            <span className="px-2 py-1 bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300 rounded-full text-xs font-medium">
+              📁 Arquivado
+            </span>
+          </div>
+
+          {/* Linha divisória após cabeçalho */}
+          <div
+            className={`h-px w-full ${isDark ? "bg-gray-700" : "bg-gray-200"} my-3`}
+          />
+
+          {/* Contatos */}
+          <div className="mb-2">
+            <a
+              href={criarLinkWhatsApp(candidato.telefone, candidato.nome)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`flex items-center transition-all duration-200 group ${
+                isDark
+                  ? "text-green-400 hover:text-green-300"
+                  : "text-green-600 hover:text-green-700"
+              }`}
+            >
+              <svg
+                className="w-4 h-4 mr-2 flex-shrink-0"
+                fill="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.76.982.998-3.675-.236-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.9 6.994c-.004 5.45-4.438 9.88-9.888 9.88m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.333.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.333 11.893-11.893 0-3.18-1.24-6.162-3.495-8.411" />
+              </svg>
+              <span className="text-sm font-medium truncate">
+                {candidato.telefone}
+              </span>
+            </a>
+          </div>
+
+          {/* Email */}
+          <div
+            className={`flex items-center ${isDark ? "text-gray-300" : "text-gray-600"} mb-3`}
+          >
+            <EnvelopeIcon className="w-4 h-4 mr-2 flex-shrink-0" />
+            <span className="text-sm truncate">{candidato.email}</span>
+          </div>
+
+          {/* Linha divisória após contatos */}
+          <div
+            className={`h-px w-full ${isDark ? "bg-gray-700" : "bg-gray-200"} my-3`}
+          />
+
+          {/* 📅 ARQUIVADO EM */}
+          <div className="flex items-center gap-1 mb-3">
+            <span
+              className={`text-sm ${isDark ? "text-gray-400" : "text-gray-600"}`}
+            >
+              📅
+            </span>
+            <span
+              className={`text-xs ${isDark ? "text-gray-500" : "text-gray-500"}`}
+            >
+              Arquivado em:
+            </span>
+            <span
+              className={`text-sm font-semibold ml-1 ${isDark ? "text-gray-300" : "text-gray-700"}`}
+            >
+              {dataArquivamento}
+            </span>
+          </div>
+
+          {/* ⚠️ MOTIVO */}
+          {candidato.treinamento_motivo_pausa && (
+            <div className="flex items-start gap-2 mb-4">
+              <ExclamationCircleIcon
+                className={`w-4 h-4 mt-0.5 flex-shrink-0 ${
+                  isDark ? "text-red-400" : "text-red-600"
+                }`}
+              />
+              <p
+                className={`text-xs ${isDark ? "text-gray-300" : "text-gray-700"}`}
+              >
+                <span className="font-semibold">Motivo:</span>{" "}
+                {candidato.treinamento_motivo_pausa}
+              </p>
+            </div>
+          )}
+
+          {/* BOX RESUMO DO TREINAMENTO */}
+          <div
+            className={`p-3 rounded-lg border mb-3 ${
+              isDark
+                ? "bg-gray-700/50 border-gray-600"
+                : "bg-gray-50 border-gray-200"
+            }`}
+          >
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-1">
+                <span className="text-base">⏹️</span>
+                <span
+                  className={`text-xs font-medium ${isDark ? "text-gray-400" : "text-gray-600"}`}
+                >
+                  Cancelado após
+                </span>
+              </div>
+              <span
+                className={`text-sm font-semibold ${isDark ? "text-gray-300" : "text-gray-700"}`}
+              >
+                {diasTreinamento || 0} dias
               </span>
             </div>
-            <div
-              className={`text-xs ${isDark ? "text-gray-400" : "text-gray-500"} mb-3`}
-            >
-              CRECI: {candidato.creci}
-            </div>
-          </div>
-        </div>
 
-        <div
-          className={`h-px w-full ${isDark ? "bg-gray-700" : "bg-gray-200"} my-3`}
-        />
-
-        <div className="mb-2">
-          <a
-            href={criarLinkWhatsApp(candidato.telefone, candidato.nome)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={`flex items-center transition-all duration-200 group ${
-              isDark
-                ? "text-green-400 hover:text-green-300"
-                : "text-green-600 hover:text-green-700"
-            }`}
-          >
-            <svg
-              className="w-4 h-4 mr-2 flex-shrink-0"
-              fill="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.76.982.998-3.675-.236-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.9 6.994c-.004 5.45-4.438 9.88-9.888 9.88m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.333.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.333 11.893-11.893 0-3.18-1.24-6.162-3.495-8.411" />
-            </svg>
-            <span className="text-sm font-medium truncate">
-              {candidato.telefone}
-            </span>
-          </a>
-        </div>
-
-        <div
-          className={`flex items-center ${isDark ? "text-gray-300" : "text-gray-600"} mb-3`}
-        >
-          <EnvelopeIcon className="w-4 h-4 mr-2 flex-shrink-0" />
-          <span className="text-sm truncate">{candidato.email}</span>
-        </div>
-
-        <div
-          className={`h-px w-full ${isDark ? "bg-gray-700" : "bg-gray-200"} my-3`}
-        />
-
-        <div className="space-y-3">
-          <div
-            className={`text-xs font-medium ${isDark ? "text-gray-400" : "text-gray-600"}`}
-          >
-            Motivo da reprovação:
-          </div>
-
-          <div
-            className={`px-3 py-2 rounded-lg border text-sm ${
-              isDark
-                ? "bg-red-900/30 text-red-200 border-red-800/50"
-                : "bg-red-50 text-red-800 border-red-200"
-            }`}
-          >
-            <div className="flex items-start">
-              <DocumentTextIcon
-                className={`w-4 h-4 mr-2 flex-shrink-0 ${isDark ? "text-red-300" : "text-red-600"}`}
-              />
-              <span>{candidato.motivo_reprovacao}</span>
+            <div className="flex items-center justify-between text-xs">
+              <div className="flex items-center gap-1">
+                <span
+                  className={`${isDark ? "text-gray-400" : "text-gray-600"}`}
+                >
+                  📊
+                </span>
+                <span className={isDark ? "text-gray-300" : "text-gray-700"}>
+                  {progresso}%
+                </span>
+              </div>
+              <div className="flex items-center gap-1">
+                <span
+                  className={`${isDark ? "text-gray-400" : "text-gray-600"}`}
+                >
+                  📚
+                </span>
+                <span className={isDark ? "text-gray-300" : "text-gray-700"}>
+                  {modulosConcluidos}/5
+                </span>
+              </div>
+              <div className="flex items-center gap-1">
+                <span
+                  className={`${isDark ? "text-gray-400" : "text-gray-600"}`}
+                >
+                  ⭐
+                </span>
+                <span className={isDark ? "text-gray-300" : "text-gray-700"}>
+                  {atributosConcluidos}/10
+                </span>
+              </div>
             </div>
           </div>
 
-          <div
-            className={`flex items-center text-xs ${isDark ? "text-gray-400" : "text-gray-600"}`}
+          {/* BOTÃO VER DETALHES */}
+          <button
+            onClick={() => handleAbrirDetalhesArquivado(candidato)}
+            className={`w-full py-2 px-3 rounded-lg text-sm font-medium transition-all duration-200 flex items-center justify-center gap-2 border ${
+              isDark
+                ? "bg-gray-700 text-gray-300 hover:bg-gray-600 border-gray-600"
+                : "bg-gray-100 text-gray-700 hover:bg-gray-200 border-gray-200"
+            }`}
           >
-            <CalendarIcon className="w-3.5 h-3.5 mr-2" />
-            <span>
-              Data:{" "}
-              {new Date(candidato.data_reprovacao).toLocaleDateString("pt-BR")}
-            </span>
-          </div>
+            <EyeIcon className="w-4 h-4" />
+            Ver detalhes completos
+          </button>
         </div>
       </div>
-
-      <div
-        className={`px-4 py-3 border-t ${isDark ? "border-gray-700 bg-gray-800/70" : "border-gray-200 bg-gray-50/80"}`}
-      >
-        <button
-          onClick={() => handleVerDetalhesReprovado(candidato)}
-          className={`w-full py-2 px-3 rounded-lg text-sm font-medium transition-all duration-200 flex items-center justify-center gap-2 ${
-            isDark
-              ? "bg-[#D4A24D]/20 text-amber-200 hover:bg-[#D4A24D]/30 border border-amber-800/50"
-              : "bg-[#D4A24D] text-white hover:bg-[#C19137] border border-[#D4A24D]"
-          }`}
-        >
-          <EyeIcon className="w-4 h-4" />
-          Ver Detalhes
-        </button>
-      </div>
-    </div>
-  );
+    );
+  };
 
   // -----------------------------------------
   // 12. RENDER PRINCIPAL
@@ -3345,9 +5619,10 @@ const Corretores = () => {
         </div>
 
         <div className="flex space-x-3 mt-4 sm:mt-0">
+          {/* Candidatos */}
           <button
             onClick={() => setAbaAtiva("candidatos")}
-            className={`flex items-center px-4 py-2.5 rounded-lg transition-all duration-200 font-medium ${
+            className={`flex items-center px-4 py-2 rounded-lg text-sm transition-all duration-200 font-medium ${
               isDark
                 ? abaAtiva === "candidatos"
                   ? "bg-amber-800/50 text-amber-200 border border-amber-700"
@@ -3361,9 +5636,10 @@ const Corretores = () => {
             Candidatos ({getTotalCandidatos()})
           </button>
 
+          {/* Ativos */}
           <button
             onClick={() => setAbaAtiva("ativos")}
-            className={`flex items-center px-4 py-2.5 rounded-lg transition-all duration-200 font-medium ${
+            className={`flex items-center px-4 py-2 rounded-lg text-sm transition-all duration-200 font-medium ${
               isDark
                 ? abaAtiva === "ativos"
                   ? "bg-green-800/50 text-green-200 border border-green-700"
@@ -3377,9 +5653,10 @@ const Corretores = () => {
             Ativos ({candidatosPorEtapa.ativos.length})
           </button>
 
+          {/* Inativos */}
           <button
             onClick={() => setAbaAtiva("inativos")}
-            className={`flex items-center px-4 py-2.5 rounded-lg transition-all duration-200 font-medium ${
+            className={`flex items-center px-4 py-2 rounded-lg text-sm transition-all duration-200 font-medium ${
               isDark
                 ? abaAtiva === "inativos"
                   ? "bg-red-800/50 text-red-200 border border-red-700"
@@ -3393,13 +5670,35 @@ const Corretores = () => {
             Inativos ({candidatosPorEtapa.inativos.length})
           </button>
 
-          <Button
-            variant="outline"
+          {/* Arquivados */}
+          <button
+            onClick={() => setAbaAtiva("arquivados")}
+            className={`flex items-center px-4 py-2 rounded-lg text-sm transition-all duration-200 font-medium ${
+              isDark
+                ? abaAtiva === "arquivados"
+                  ? "bg-gray-700 text-gray-200 border border-gray-600"
+                  : "bg-gray-800 text-gray-400 border border-gray-700 hover:bg-gray-700"
+                : abaAtiva === "arquivados"
+                  ? "bg-gray-200 text-gray-900 border border-gray-300"
+                  : "bg-gray-100 text-gray-600 border border-gray-200 hover:bg-gray-200"
+            } flex items-center justify-center shadow-sm hover:shadow`}
+          >
+            <ArchiveBoxIcon className="w-5 h-5 mr-2" />
+            Arquivados ({candidatosPorEtapa.arquivados?.length || 0})
+          </button>
+
+          {/* Novo Corretor - COM COR ORIGINAL RESTAURADA E TAMANHO IGUAL */}
+          <button
             onClick={() => navigate("/admin/corretores/novo")}
+            className={`flex items-center px-4 py-2 rounded-lg text-sm transition-all duration-200 font-medium border ${
+              isDark
+                ? "bg-[#D4A24D]/20 text-amber-200 hover:bg-[#D4A24D]/30 border-amber-800/50"
+                : "bg-[#D4A24D] text-white hover:bg-[#C19137] border-[#D4A24D]"
+            } shadow-sm hover:shadow`}
           >
             <PlusIcon className="w-5 h-5 mr-2" />
             Novo Corretor
-          </Button>
+          </button>
         </div>
       </div>
 
@@ -3492,16 +5791,72 @@ const Corretores = () => {
 
       {/* CONTEÚDO DINÂMICO */}
       <div className="px-6">
-        <div className="flex items-center justify-between mb-4">
-          {renderTituloAba()}
-        </div>
+        {/* SÓ MOSTRA O TÍTULO SE NÃO FOR ARQUIVADOS */}
+        {abaAtiva !== "arquivados" && (
+          <div className="flex items-center justify-between mb-4">
+            {renderTituloAba()}
+          </div>
+        )}
 
-        {dadosAtuais.dados.length === 0 ? (
+        {/* TRATAMENTO PARA ARQUIVADOS - ÚNICA SEÇÃO! */}
+        {abaAtiva === "arquivados" ? (
+          <div className="mt-4">
+            <div className="flex items-center justify-between mb-4">
+              <h2
+                className={`text-xl font-semibold ${
+                  isDark ? "text-gray-200" : "text-gray-800"
+                }`}
+              >
+                📁 Candidatos Arquivados
+              </h2>
+              <span
+                className={`text-sm ${
+                  isDark ? "text-gray-400" : "text-gray-600"
+                }`}
+              >
+                Total: {candidatosPorEtapa.arquivados?.length || 0}
+              </span>
+            </div>
+
+            {candidatosPorEtapa.arquivados?.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {candidatosPorEtapa.arquivados.map((candidato) => (
+                  <div key={candidato.id}>{renderCardArquivado(candidato)}</div>
+                ))}
+              </div>
+            ) : (
+              <div
+                className={`text-center py-12 bg-white dark:bg-gray-800 rounded-xl border ${
+                  isDark ? "border-gray-700" : "border-gray-200"
+                }`}
+              >
+                <ArchiveBoxIcon className="w-16 h-16 mx-auto mb-4 text-gray-400" />
+                <h3
+                  className={`text-lg font-medium ${
+                    isDark ? "text-gray-300" : "text-gray-700"
+                  } mb-2`}
+                >
+                  Nenhum candidato arquivado
+                </h3>
+                <p className={`${isDark ? "text-gray-500" : "text-gray-600"}`}>
+                  Candidatos cancelados no treinamento aparecerão aqui após
+                  arquivados.
+                </p>
+              </div>
+            )}
+          </div>
+        ) : dadosAtuais.dados.length === 0 ? (
           <div
-            className={`text-center py-12 ${isDark ? "bg-gray-800" : "bg-white"} rounded-xl border ${isDark ? "border-gray-700" : "border-gray-200"}`}
+            className={`text-center py-12 ${
+              isDark ? "bg-gray-800" : "bg-white"
+            } rounded-xl border ${
+              isDark ? "border-gray-700" : "border-gray-200"
+            }`}
           >
             <div
-              className={`w-16 h-16 mx-auto mb-4 ${isDark ? "text-gray-600" : "text-gray-400"}`}
+              className={`w-16 h-16 mx-auto mb-4 ${
+                isDark ? "text-gray-600" : "text-gray-400"
+              }`}
             >
               {abaAtiva === "candidatos" ? (
                 etapaCandidato === "pendentes" ? (
@@ -3522,7 +5877,9 @@ const Corretores = () => {
               )}
             </div>
             <h3
-              className={`text-lg font-medium ${isDark ? "text-gray-300" : "text-gray-700"} mb-2`}
+              className={`text-lg font-medium ${
+                isDark ? "text-gray-300" : "text-gray-700"
+              } mb-2`}
             >
               {abaAtiva === "candidatos"
                 ? `Nenhum candidato na etapa ${etapaCandidato}`
@@ -3573,15 +5930,23 @@ const Corretores = () => {
               dadosAtuais.dados.map((corretor) => (
                 <div
                   key={corretor.id}
-                  className={`${isDark ? "bg-gray-800 border-gray-700 hover:bg-gray-750" : "bg-white border-gray-200 hover:bg-gray-50"} rounded-xl shadow-sm border overflow-hidden hover:shadow-md transition-all duration-200`}
+                  className={`${
+                    isDark
+                      ? "bg-gray-800 border-gray-700 hover:bg-gray-750"
+                      : "bg-white border-gray-200 hover:bg-gray-50"
+                  } rounded-xl shadow-sm border overflow-hidden hover:shadow-md transition-all duration-200`}
                 >
                   <div
-                    className={`p-6 border-b ${isDark ? "border-gray-700" : "border-gray-200"}`}
+                    className={`p-6 border-b ${
+                      isDark ? "border-gray-700" : "border-gray-200"
+                    }`}
                   >
                     <div className="flex items-start justify-between">
                       <div>
                         <h3
-                          className={`text-lg font-semibold ${isDark ? "text-gray-100" : "text-gray-900"}`}
+                          className={`text-lg font-semibold ${
+                            isDark ? "text-gray-100" : "text-gray-900"
+                          }`}
                         >
                           {corretor.nome}
                         </h3>
@@ -3619,7 +5984,11 @@ const Corretores = () => {
                         </div>
                       </div>
                       <div
-                        className={`flex items-center ${isDark ? "bg-[#D4A24D]/20 text-amber-200" : "bg-[#D4A24D]/10 text-[#D4A24D]"} px-3 py-1 rounded-lg`}
+                        className={`flex items-center ${
+                          isDark
+                            ? "bg-[#D4A24D]/20 text-amber-200"
+                            : "bg-[#D4A24D]/10 text-[#D4A24D]"
+                        } px-3 py-1 rounded-lg`}
                       >
                         <StarIcon className="w-4 h-4 mr-1" />
                         <span className="font-semibold">{corretor.rating}</span>
@@ -3629,13 +5998,17 @@ const Corretores = () => {
                     {abaAtiva === "ativos" && (
                       <div className="mt-3 text-xs">
                         <div
-                          className={`flex items-center ${isDark ? "text-gray-400" : "text-gray-600"}`}
+                          className={`flex items-center ${
+                            isDark ? "text-gray-400" : "text-gray-600"
+                          }`}
                         >
                           <span className="font-medium mr-1">CRECI desde:</span>{" "}
                           {corretor.creciDesde}
                         </div>
                         <div
-                          className={`flex items-center ${isDark ? "text-gray-400" : "text-gray-600"} mt-1`}
+                          className={`flex items-center ${
+                            isDark ? "text-gray-400" : "text-gray-600"
+                          } mt-1`}
                         >
                           <span className="font-medium mr-1">
                             Na imobiliária desde:
@@ -3647,14 +6020,22 @@ const Corretores = () => {
 
                     {abaAtiva === "ativos" && corretor.periodoExperiencia && (
                       <div
-                        className={`mt-3 p-2 rounded-lg ${isDark ? "bg-blue-900/20 border border-blue-800" : "bg-blue-50 border border-blue-200"}`}
+                        className={`mt-3 p-2 rounded-lg ${
+                          isDark
+                            ? "bg-blue-900/20 border border-blue-800"
+                            : "bg-blue-50 border border-blue-200"
+                        }`}
                       >
                         <div className="flex items-center">
                           <ClockIcon
-                            className={`w-4 h-4 mr-2 ${isDark ? "text-blue-400" : "text-blue-600"}`}
+                            className={`w-4 h-4 mr-2 ${
+                              isDark ? "text-blue-400" : "text-blue-600"
+                            }`}
                           />
                           <span
-                            className={`text-xs ${isDark ? "text-blue-300" : "text-blue-800"}`}
+                            className={`text-xs ${
+                              isDark ? "text-blue-300" : "text-blue-800"
+                            }`}
                           >
                             Período de experiência:{" "}
                             {corretor.diasExperiencia || 45} de 90 dias
@@ -3664,7 +6045,9 @@ const Corretores = () => {
                           <div
                             className="h-full bg-blue-500 rounded-full"
                             style={{
-                              width: `${Math.round(((corretor.diasExperiencia || 45) / 90) * 100)}%`,
+                              width: `${Math.round(
+                                ((corretor.diasExperiencia || 45) / 90) * 100,
+                              )}%`,
                             }}
                           />
                         </div>
@@ -3674,19 +6057,25 @@ const Corretores = () => {
                     {abaAtiva === "inativos" && (
                       <div className="mt-3 text-xs">
                         <div
-                          className={`flex items-center ${isDark ? "text-gray-400" : "text-gray-600"}`}
+                          className={`flex items-center ${
+                            isDark ? "text-gray-400" : "text-gray-600"
+                          }`}
                         >
                           <span className="font-medium mr-1">Período:</span>{" "}
                           {corretor.naImobiliariaDesde}
                         </div>
                         <div
-                          className={`flex items-center ${isDark ? "text-gray-400" : "text-gray-600"} mt-1`}
+                          className={`flex items-center ${
+                            isDark ? "text-gray-400" : "text-gray-600"
+                          } mt-1`}
                         >
                           <span className="font-medium mr-1">Motivo:</span>{" "}
                           {corretor.motivoInativacao}
                         </div>
                         <div
-                          className={`flex items-center ${isDark ? "text-gray-400" : "text-gray-600"} mt-1`}
+                          className={`flex items-center ${
+                            isDark ? "text-gray-400" : "text-gray-600"
+                          } mt-1`}
                         >
                           <span className="font-medium mr-1">Inativo há:</span>{" "}
                           {corretor.inativoHa}
@@ -3698,68 +6087,92 @@ const Corretores = () => {
                   <div className="p-6">
                     <div className="space-y-4">
                       <div
-                        className={`flex items-center ${isDark ? "text-gray-300" : "text-gray-600"}`}
+                        className={`flex items-center ${
+                          isDark ? "text-gray-300" : "text-gray-600"
+                        }`}
                       >
                         <EnvelopeIcon className="w-5 h-5 mr-3 flex-shrink-0" />
                         <span className="truncate">{corretor.email}</span>
                       </div>
                       <div
-                        className={`flex items-center ${isDark ? "text-gray-300" : "text-gray-600"}`}
+                        className={`flex items-center ${
+                          isDark ? "text-gray-300" : "text-gray-600"
+                        }`}
                       >
                         <PhoneIcon className="w-5 h-5 mr-3 flex-shrink-0" />
                         <span>{corretor.telefone}</span>
                       </div>
                       <div
-                        className={`text-sm ${isDark ? "text-gray-400" : "text-gray-500"}`}
+                        className={`text-sm ${
+                          isDark ? "text-gray-400" : "text-gray-500"
+                        }`}
                       >
                         CRECI: {corretor.creci}
                       </div>
                     </div>
 
                     <div
-                      className={`mt-6 pt-6 border-t ${isDark ? "border-gray-700" : "border-gray-200"}`}
+                      className={`mt-6 pt-6 border-t ${
+                        isDark ? "border-gray-700" : "border-gray-200"
+                      }`}
                     >
                       <div className="flex items-center justify-between">
                         <div className="text-center">
                           <div
-                            className={`text-lg font-semibold ${isDark ? "text-gray-200" : "text-gray-700"}`}
+                            className={`text-lg font-semibold ${
+                              isDark ? "text-gray-200" : "text-gray-700"
+                            }`}
                           >
                             {corretor.imoveis}
                           </div>
                           <div
-                            className={`text-sm ${isDark ? "text-gray-400" : "text-gray-500"}`}
+                            className={`text-sm ${
+                              isDark ? "text-gray-400" : "text-gray-500"
+                            }`}
                           >
                             Imóveis
                           </div>
                         </div>
                         <div
-                          className={`h-12 w-px ${isDark ? "bg-gray-700" : "bg-gray-200"}`}
+                          className={`h-12 w-px ${
+                            isDark ? "bg-gray-700" : "bg-gray-200"
+                          }`}
                         />
                         <div className="text-center">
                           <div
-                            className={`text-lg font-semibold ${isDark ? "text-gray-200" : "text-gray-700"}`}
+                            className={`text-lg font-semibold ${
+                              isDark ? "text-gray-200" : "text-gray-700"
+                            }`}
                           >
                             {abaAtiva === "inativos"
                               ? corretor.ultimasVendas || "-"
                               : corretor.vendasMes}
                           </div>
                           <div
-                            className={`text-sm ${isDark ? "text-gray-400" : "text-gray-500"}`}
+                            className={`text-sm ${
+                              isDark ? "text-gray-400" : "text-gray-500"
+                            }`}
                           >
                             Vendas (mês)
                           </div>
                         </div>
                         <div
-                          className={`h-12 w-px ${isDark ? "bg-gray-700" : "bg-gray-200"}`}
+                          className={`h-12 w-px ${
+                            isDark ? "bg-gray-700" : "bg-gray-200"
+                          }`}
                         />
                         <div className="text-center">
                           <div
-                            className={`text-lg font-semibold ${isDark ? "text-gray-200" : "text-gray-700"}`}
+                            className={`text-lg font-semibold ${
+                              isDark ? "text-gray-200" : "text-gray-700"
+                            }`}
                           >
                             {abaAtiva === "inativos" ? "-" : corretor.leads}
                           </div>
                           <div
-                            className={`text-sm ${isDark ? "text-gray-400" : "text-gray-500"}`}
+                            className={`text-sm ${
+                              isDark ? "text-gray-400" : "text-gray-500"
+                            }`}
                           >
                             Leads
                           </div>
@@ -3770,27 +6183,37 @@ const Corretores = () => {
                         <div className="mt-4">
                           <div className="flex items-center justify-between mb-1">
                             <span
-                              className={`text-xs ${isDark ? "text-gray-400" : "text-gray-600"}`}
+                              className={`text-xs ${
+                                isDark ? "text-gray-400" : "text-gray-600"
+                              }`}
                             >
                               Pontuação
                             </span>
                             <span
-                              className={`text-xs font-semibold ${isDark ? "text-amber-400" : "text-amber-600"}`}
+                              className={`text-xs font-semibold ${
+                                isDark ? "text-amber-400" : "text-amber-600"
+                              }`}
                             >
                               {corretor.pontuacao} pts
                             </span>
                           </div>
                           <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
                             <div
-                              className={`h-full rounded-full ${isDark ? "bg-[#D4A24D]" : "bg-[#D4A24D]"}`}
+                              className={`h-full rounded-full ${
+                                isDark ? "bg-[#D4A24D]" : "bg-[#D4A24D]"
+                              }`}
                               style={{
-                                width: `${Math.round((corretor.pontuacao / corretor.meta) * 100)}%`,
+                                width: `${Math.round(
+                                  (corretor.pontuacao / corretor.meta) * 100,
+                                )}%`,
                               }}
                             />
                           </div>
                           <div className="flex justify-end mt-1">
                             <span
-                              className={`text-xs ${isDark ? "text-gray-400" : "text-gray-600"}`}
+                              className={`text-xs ${
+                                isDark ? "text-gray-400" : "text-gray-600"
+                              }`}
                             >
                               Meta: {corretor.meta} pts
                             </span>
@@ -3801,7 +6224,11 @@ const Corretores = () => {
                   </div>
 
                   <div
-                    className={`px-6 py-4 ${isDark ? "bg-gray-800/70 border-gray-700" : "bg-gray-50/80 border-gray-200"} border-t flex justify-end space-x-3`}
+                    className={`px-6 py-4 ${
+                      isDark
+                        ? "bg-gray-800/70 border-gray-700"
+                        : "bg-gray-50/80 border-gray-200"
+                    } border-t flex justify-end space-x-3`}
                   >
                     <button
                       onClick={() =>
@@ -3847,29 +6274,41 @@ const Corretores = () => {
       {/* Performance Summary */}
       {abaAtiva === "ativos" && (
         <div
-          className={`mt-8 ${isDark ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"} rounded-xl shadow-sm border p-6 mx-6 mb-6`}
+          className={`mt-8 ${
+            isDark ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"
+          } rounded-xl shadow-sm border p-6 mx-6 mb-6`}
         >
           <h2
-            className={`text-xl font-semibold ${isDark ? "text-gray-100" : "text-gray-900"} mb-4`}
+            className={`text-xl font-semibold ${
+              isDark ? "text-gray-100" : "text-gray-900"
+            } mb-4`}
           >
             Desempenho da Equipe
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             <div
-              className={`text-center p-4 ${isDark ? "bg-blue-900/30 border border-blue-800" : "bg-blue-50"} rounded-lg`}
+              className={`text-center p-4 ${
+                isDark ? "bg-blue-900/30 border border-blue-800" : "bg-blue-50"
+              } rounded-lg`}
             >
               <div
-                className={`text-3xl font-bold ${isDark ? "text-blue-400" : "text-blue-600"}`}
+                className={`text-3xl font-bold ${
+                  isDark ? "text-blue-400" : "text-blue-600"
+                }`}
               >
                 {candidatosPorEtapa.ativos.length}
               </div>
               <div
-                className={`text-sm ${isDark ? "text-blue-300" : "text-blue-800"} mt-1`}
+                className={`text-sm ${
+                  isDark ? "text-blue-300" : "text-blue-800"
+                } mt-1`}
               >
                 Corretores Ativos
               </div>
               <div
-                className={`text-xs mt-1 ${isDark ? "text-blue-400" : "text-blue-600"}`}
+                className={`text-xs mt-1 ${
+                  isDark ? "text-blue-400" : "text-blue-600"
+                }`}
               >
                 {
                   candidatosPorEtapa.ativos.filter((c) => c.periodoExperiencia)
@@ -3879,43 +6318,67 @@ const Corretores = () => {
               </div>
             </div>
             <div
-              className={`text-center p-4 ${isDark ? "bg-green-900/30 border border-green-800" : "bg-green-50"} rounded-lg`}
+              className={`text-center p-4 ${
+                isDark
+                  ? "bg-green-900/30 border border-green-800"
+                  : "bg-green-50"
+              } rounded-lg`}
             >
               <div
-                className={`text-3xl font-bold ${isDark ? "text-green-400" : "text-green-600"}`}
+                className={`text-3xl font-bold ${
+                  isDark ? "text-green-400" : "text-green-600"
+                }`}
               >
                 156
               </div>
               <div
-                className={`text-sm ${isDark ? "text-green-300" : "text-green-800"} mt-1`}
+                className={`text-sm ${
+                  isDark ? "text-green-300" : "text-green-800"
+                } mt-1`}
               >
                 Imóveis Ativos
               </div>
             </div>
             <div
-              className={`text-center p-4 ${isDark ? "bg-purple-900/30 border border-purple-800" : "bg-purple-50"} rounded-lg`}
+              className={`text-center p-4 ${
+                isDark
+                  ? "bg-purple-900/30 border border-purple-800"
+                  : "bg-purple-50"
+              } rounded-lg`}
             >
               <div
-                className={`text-3xl font-bold ${isDark ? "text-purple-400" : "text-purple-600"}`}
+                className={`text-3xl font-bold ${
+                  isDark ? "text-purple-400" : "text-purple-600"
+                }`}
               >
                 89
               </div>
               <div
-                className={`text-sm ${isDark ? "text-purple-300" : "text-purple-800"} mt-1`}
+                className={`text-sm ${
+                  isDark ? "text-purple-300" : "text-purple-800"
+                } mt-1`}
               >
                 Leads/Mês
               </div>
             </div>
             <div
-              className={`text-center p-4 ${isDark ? "bg-[#D4A24D]/20 border border-amber-800" : "bg-[#D4A24D]/10"} rounded-lg`}
+              className={`text-center p-4 ${
+                isDark
+                  ? "bg-[#D4A24D]/20 border border-amber-800"
+                  : "bg-[#D4A24D]/10"
+              } rounded-lg`}
             >
               <div
-                className={`text-3xl font-bold ${isDark ? "text-amber-300" : "text-[#D4A24D]"}`}
+                className={`text-3xl font-bold ${
+                  isDark ? "text-amber-300" : "text-[#D4A24D]"
+                }`}
               >
                 R$ 5.2M
               </div>
               <div
-                className={`text-sm ${isDark ? "text-amber-300" : "text-[#c1923e]"} mt-1`}
+                className={`text-sm ${
+                  isDark ? "text-amber-300" : "text-[#c1923e]"
+                } mt-1`}
               >
                 Vendas (mês)
               </div>
@@ -3986,6 +6449,61 @@ const Corretores = () => {
           }}
           candidato={candidatoParaAtivar}
           onConfirmarAtivacao={handleConfirmarAtivacao}
+          isDark={isDark}
+        />
+      )}
+
+      {/* Modal de Feedback */}
+      {modalFeedbackAberto && (
+        <ModalFeedbackBasico
+          isOpen={modalFeedbackAberto}
+          onClose={() => {
+            setModalFeedbackAberto(false);
+            setCandidatoParaFeedback(null);
+          }}
+          candidato={candidatoParaFeedback}
+          onSalvar={handleSalvarFeedback}
+          isDark={isDark}
+        />
+      )}
+
+      {/* Modal de Pausa do Treinamento */}
+      {modalPausaAberto && (
+        <ModalPausaTreinamento
+          isOpen={modalPausaAberto}
+          onClose={() => {
+            setModalPausaAberto(false);
+            setCandidatoParaPausa(null);
+          }}
+          candidato={candidatoParaPausa}
+          onConfirmarPausa={handleConfirmarPausa}
+          isDark={isDark}
+        />
+      )}
+
+      {/* Modal de Cancelamento do Treinamento */}
+      {modalCancelamentoAberto && (
+        <ModalCancelamentoTreinamento
+          isOpen={modalCancelamentoAberto}
+          onClose={() => {
+            setModalCancelamentoAberto(false);
+            setCandidatoParaCancelar(null);
+          }}
+          candidato={candidatoParaCancelar}
+          onConfirmarCancelamento={handleConfirmarCancelamento}
+          isDark={isDark}
+        />
+      )}
+
+      {/* 🆕 MODAL DE DETALHES DO ARQUIVADO */}
+      {modalDetalhesAberto && (
+        <ModalDetalhesArquivado
+          isOpen={modalDetalhesAberto}
+          onClose={() => {
+            setModalDetalhesAberto(false);
+            setCandidatoDetalhes(null);
+          }}
+          candidato={candidatoDetalhes}
           isDark={isDark}
         />
       )}

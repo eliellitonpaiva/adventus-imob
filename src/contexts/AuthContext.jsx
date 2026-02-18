@@ -171,7 +171,12 @@ export const AuthProvider = ({ children }) => {
 
   const logout = async () => {
     try {
-      await supabase.auth.signOut();
+      const { error } = await supabase.auth.signOut({ scope: "global" });
+
+      const { data } = await supabase.auth.getSession();
+      console.log("Sessão após logout:", data.session);
+
+      window.location.replace("/login");
     } catch (error) {
       console.error("Erro ao fazer logout:", error);
     }

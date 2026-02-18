@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useLocation, NavLink } from "react-router-dom";
 import { useTheme } from "../../contexts/ThemeContext";
+import { useNotifications } from "../../contexts/NotificationContext";
 
 // Componente MenuItem embutido para evitar problemas de importação
 const MenuItem = ({
@@ -43,7 +44,7 @@ const MenuItem = ({
       {!isCollapsed && (
         <>
           <span className="flex-grow">{label}</span>
-          {badge !== undefined && (
+          {badge !== undefined && badge > 0 && (
             <span className="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">
               {badge}
             </span>
@@ -51,7 +52,7 @@ const MenuItem = ({
         </>
       )}
 
-      {isCollapsed && badge !== undefined && (
+      {isCollapsed && badge !== undefined && badge > 0 && (
         <span className="absolute top-1 right-1 bg-red-500 text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center">
           {badge > 9 ? "9+" : badge}
         </span>
@@ -65,6 +66,7 @@ const Sidebar = ({ onLogout, userName = "Adventus Imobiliária" }) => {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
   const { isDark } = useTheme();
+  const { notificacoes, loading } = useNotifications();
 
   useEffect(() => {
     console.log(
@@ -332,33 +334,38 @@ const Sidebar = ({ onLogout, userName = "Adventus Imobiliária" }) => {
     </svg>
   );
 
-  // 🔥 MENU ITEMS ATUALIZADO COM EMPREENDIMENTOS
+  // MENU ITEMS COM NOTIFICAÇÕES REAIS DO BANCO DE DADOS
   const menuItems = [
     { icon: HomeIcon, label: "Dashboard", to: "/admin", exact: true },
     {
       icon: BuildingOfficeIcon,
       label: "Imóveis",
       to: "/admin/imoveis",
-      badge: 12,
+      badge: notificacoes.imoveis,
     },
     {
-      icon: BuildingLibraryIcon, // 🏢 Ícone específico para Empreendimentos
+      icon: BuildingLibraryIcon,
       label: "Empreendimentos",
       to: "/admin/empreendimentos",
-      // badge: 0, // Opcional: contador de empreendimentos
+      badge: notificacoes.empreendimentos,
     },
     {
       icon: UserGroupIcon,
       label: "Corretores",
       to: "/admin/corretores",
-      badge: 8,
+      badge: notificacoes.corretores,
     },
-    { icon: EnvelopeIcon, label: "Leads", to: "/admin/leads", badge: 23 },
+    {
+      icon: EnvelopeIcon,
+      label: "Leads",
+      to: "/admin/leads",
+      badge: notificacoes.leads,
+    },
     {
       icon: CalendarIcon,
       label: "Visitas",
       to: "/admin/visitas",
-      badge: 5,
+      badge: notificacoes.visitas,
     },
     { icon: MapIcon, label: "Estados", to: "/admin/estados" },
     { icon: LocationMarkerIcon, label: "Cidades", to: "/admin/cidades" },
@@ -368,7 +375,7 @@ const Sidebar = ({ onLogout, userName = "Adventus Imobiliária" }) => {
       icon: DocumentTextIcon,
       label: "Contratos",
       to: "/admin/contratos",
-      badge: 5,
+      badge: notificacoes.contratos,
     },
     { icon: Cog6ToothIcon, label: "Configurações", to: "/admin/configuracoes" },
   ];

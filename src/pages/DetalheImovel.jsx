@@ -2,11 +2,13 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "/src/lib/supabase";
-import { visitasService } from "../lib/visitasService"; // 👈 ÚNICA LINHA ADICIONADA
+import { visitasService } from "../lib/visitasService";
+import { useNotifications } from "../contexts/NotificationContext"; // 👈 ADICIONADO
 
 const DetalheImovel = () => {
   const { slug } = useParams();
   const navigate = useNavigate();
+  const { incrementarContador, carregarNotificacoes } = useNotifications(); // 👈 ADICIONADO
 
   // Estados
   const [imovel, setImovel] = useState(null);
@@ -782,7 +784,7 @@ const DetalheImovel = () => {
     setFormData({ ...formData, [name]: value });
   };
 
-  // ===== HANDLE SUBMIT MODIFICADO (APENAS ADICIONADA A CHAMADA AO SERVIÇO) =====
+  // ===== HANDLE SUBMIT MODIFICADO (COM NOTIFICAÇÃO) =====
   const handleSubmit = async (e) => {
     e.preventDefault();
     setEnviando(true);
@@ -803,19 +805,38 @@ const DetalheImovel = () => {
       const dataVisita = new Date();
       dataVisita.setDate(dataVisita.getDate() + 7);
 
-      // 🔥 CHAMADA AO SERVIÇO DE VISITAS (COM PREFERÊNCIAS)
-      const { error } = await visitasService.criarVisita({
+      // 👇 LOG DOS DADOS ENVIADOS
+      console.log("📤 Enviando visita:", {
         imovel_id: dados.id,
         nome_cliente: formData.nome,
         telefone: formData.telefone,
         email: formData.email,
         data_visita: dataVisita.toISOString(),
-        dia_preferencia: formData.diaSemana, // 👈 NOVO
-        horario_preferencia: formData.horarioPreferencia, // 👈 NOVO
+        dia_preferencia: formData.diaSemana,
+        horario_preferencia: formData.horarioPreferencia,
       });
+
+      // 🔥 CHAMADA AO SERVIÇO DE VISITAS
+      const { data, error } = await visitasService.criarVisita({
+        imovel_id: dados.id,
+        nome_cliente: formData.nome,
+        telefone: formData.telefone,
+        email: formData.email,
+        data_visita: dataVisita.toISOString(),
+        dia_preferencia: formData.diaSemana,
+        horario_preferencia: formData.horarioPreferencia,
+      });
+
+      // 👇 LOG DA RESPOSTA
+      console.log("📥 Resposta do serviço:", { data, error });
+
       if (error) throw error;
 
-      // Sucesso (código original)
+      // 🔥 ATUALIZA NOTIFICAÇÕES
+      incrementarContador("visitas");
+      console.log("✅ Visita agendada com sucesso! Notificação atualizada.");
+
+      // Sucesso
       setEnviado(true);
       setEnviando(false);
       setTimeout(fecharModal, 3000);

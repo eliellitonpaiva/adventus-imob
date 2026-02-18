@@ -902,6 +902,7 @@ const CadastrarImovel = () => {
     console.log("🔨 Slug híbrido gerado (interno):", slug);
 
     const dadosParaSupabase = {
+      visualizado: false,
       // Campos básicos
       codigo: formData.codigo,
       titulo: formData.titulo,
@@ -1114,9 +1115,10 @@ const CadastrarImovel = () => {
         text: `Imóvel "${formData.titulo}" cadastrado com sucesso! Código: ${formData.codigo}`,
       });
 
+      // 🔥 REDIRECIONA PARA A ROTA CORRETA DO DASHBOARD
       setTimeout(() => {
-        navigate("/admin/imoveis");
-      }, 3000);
+        navigate("/admin"); // ← USE "/admin" EM VEZ DE "/admin/dashboard"
+      }, 2000);
     } catch (error) {
       console.error("Erro detalhado:", error);
       setSubmitMessage({

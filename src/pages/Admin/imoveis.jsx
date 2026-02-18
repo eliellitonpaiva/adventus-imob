@@ -1,8 +1,7 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import {
   MagnifyingGlassIcon,
   PlusIcon,
-  EyeIcon,
   PencilIcon,
   TrashIcon,
   XMarkIcon,
@@ -25,8 +24,9 @@ import { useTheme } from "../../contexts/ThemeContext";
 import { useNavigate } from "react-router-dom";
 import { TrophyIcon } from "@heroicons/react/24/outline";
 import { supabase } from "../../lib/supabase";
+import { useNotifications } from "../../contexts/NotificationContext";
 
-// ============ COMPONENTE MODAL PERFORMANCE ============
+// ============ COMPONENTE MODAL PERFORMANCE (ESSENCIAL) ============
 const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
   const { isDark } = useTheme();
   const [showTooltipInfo, setShowTooltipInfo] = useState(false);
@@ -69,6 +69,7 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
             engajamentoCalculado: estatisticas.engajamento || 0,
           });
         } else {
+          // Dados simulados apenas para demonstração enquanto não há dados reais
           const getMockData = () => {
             switch (imovel.desempenho) {
               case "Destaque":
@@ -876,7 +877,7 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
   );
 };
 
-// ============ COMPONENTE BOTÃO DESEMPENHO ============
+// ============ COMPONENTE BOTÃO DESEMPENHO (ESSENCIAL) ============
 const BotaoDesempenho = ({ imovel }) => {
   const [modalAberto, setModalAberto] = useState(false);
 
@@ -975,6 +976,8 @@ const KPICard = ({ icon: Icon, title, value, colorScheme }) => {
 const Imoveis = () => {
   const { isDark } = useTheme();
   const navigate = useNavigate();
+  const { carregarNotificacoes } = useNotifications();
+  const marcouVisualizados = useRef(false);
 
   const [imoveisData, setImoveisData] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -1015,13 +1018,11 @@ const Imoveis = () => {
           currency: "BRL",
         }).format(imovel.preco || 0);
 
-        // FORMATAR TIPO - Garantir primeira letra maiúscula
         let tipoFormatado = imovel.tipo || "Apartamento";
         tipoFormatado =
           tipoFormatado.charAt(0).toUpperCase() +
           tipoFormatado.slice(1).toLowerCase();
 
-        // FORMATAR STATUS - Normalizar todas as variações
         let statusFormatado = imovel.status || "Disponível";
         statusFormatado = statusFormatado.toLowerCase();
 
@@ -1059,9 +1060,7 @@ const Imoveis = () => {
           status: statusFormatado,
           preco: imovel.preco || 0,
           preco_formatado:
-            imovel.finalidade_aluguel && !imovel.finalidade_venda
-              ? `${precoFormatado}/mês`
-              : precoFormatado,
+            finalidade === "Aluguel" ? `${precoFormatado}/mês` : precoFormatado,
           desempenho: imovel.desempenho || "Saudável",
           imagem_url: imovel.imagem_url || null,
         };
@@ -1090,27 +1089,53 @@ const Imoveis = () => {
       setError(null);
     } catch (err) {
       console.error("Erro ao carregar imóveis:", err);
-      setError("Não foi possível carregar os imóveis do Supabase.");
+      setError("Não foi possível carregar os imóveis.");
     } finally {
       setLoading(false);
     }
   };
 
+  // ===== MARCAR IMÓVEIS COMO VISUALIZADOS (UMA ÚNICA VEZ) =====
+  useEffect(() => {
+    const marcarImoveisComoVisualizados = async () => {
+      if (marcouVisualizados.current) return;
+
+      try {
+        console.log("👁️ Marcando imóveis como visualizados...");
+
+        const { error } = await supabase
+          .from("imoveis")
+          .update({ visualizado: true })
+          .eq("visualizado", false);
+
+        if (error) {
+          console.error("Erro ao marcar imóveis:", error);
+        } else {
+          console.log("✅ Imóveis marcados como visualizados");
+          await carregarNotificacoes();
+          marcouVisualizados.current = true;
+        }
+      } catch (err) {
+        console.error("Erro:", err);
+      }
+    };
+
+    if (!loading && imoveisData.length > 0) {
+      marcarImoveisComoVisualizados();
+    }
+  }, [loading, imoveisData.length, carregarNotificacoes]);
+
   useEffect(() => {
     fetchImoveis();
   }, []);
 
-  // ============ KPI CORRIGIDOS ============
   const totalImoveis = imoveisData.length;
-
   const disponiveis = imoveisData.filter(
     (i) => i.status === "Disponível",
   ).length;
-
   const emNegociacaoReservados = imoveisData.filter(
     (i) => i.status === "Reservado" || i.status === "Em Negociação",
   ).length;
-
   const vendidos = imoveisData.filter(
     (i) => i.status === "Vendido" || i.status === "Alugado",
   ).length;
@@ -1194,7 +1219,7 @@ const Imoveis = () => {
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#D4A24D] mx-auto"></div>
           <p className={`mt-4 ${isDark ? "text-gray-300" : "text-gray-600"}`}>
-            Carregando imóveis do Supabase...
+            Carregando imóveis...
           </p>
         </div>
       </div>
@@ -1238,17 +1263,10 @@ const Imoveis = () => {
             Imóveis
           </h1>
           <p className={`${isDark ? "text-gray-400" : "text-gray-600"} mt-2`}>
-            Gerencie todos os imóveis cadastrados no Supabase
+            Gerencie todos os imóveis cadastrados
           </p>
         </div>
         <div className="flex items-center gap-3 mt-4 sm:mt-0">
-          <button
-            onClick={() => navigate("/admin/cadastrar-empreendimento")}
-            className="bg-[#15803D] hover:bg-[#166534] text-white font-medium py-2.5 px-4 rounded-lg transition-all duration-200 flex items-center shadow-sm border-none focus:outline-none focus:ring-2 focus:ring-[#15803D] focus:ring-offset-2"
-          >
-            <PlusIcon className="w-5 h-5 mr-2" />
-            Novo Empreendimento
-          </button>
           <Button
             variant="primary"
             onClick={() => navigate("/admin/imoveis/novo")}
@@ -1259,7 +1277,7 @@ const Imoveis = () => {
         </div>
       </div>
 
-      {/* Bloco de KPIs */}
+      {/* KPIs */}
       <div className="mb-6">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <KPICard
@@ -1289,7 +1307,7 @@ const Imoveis = () => {
         </div>
       </div>
 
-      {/* Search - FILTROS INTERATIVOS */}
+      {/* Filtros */}
       <div className="mb-6">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div className="flex-1 max-w-xl">
@@ -1396,7 +1414,7 @@ const Imoveis = () => {
         </div>
       </div>
 
-      {/* Tabela com imóveis filtrados - AGORA COM TODAS AS LINHAS! */}
+      {/* Tabela */}
       <div
         className={`${isDark ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"} rounded-xl shadow-sm border overflow-hidden transition-colors duration-200`}
       >
@@ -1419,7 +1437,7 @@ const Imoveis = () => {
                 selectedFinalidade ||
                 selectedStatus ||
                 selectedCidade
-                  ? "Tente ajustar os filtros ou limpar todos para ver todos os imóveis."
+                  ? "Tente ajustar os filtros ou limpar todos."
                   : "Não há imóveis cadastrados no momento."}
               </p>
               {(searchTerm ||
@@ -1437,7 +1455,6 @@ const Imoveis = () => {
             </div>
           ) : (
             <table className="min-w-full table-fixed border-collapse">
-              {/* HEADER COM BORDAS */}
               <thead className={isDark ? "bg-gray-900" : "bg-gray-50"}>
                 <tr>
                   <th
@@ -1498,7 +1515,6 @@ const Imoveis = () => {
                 </tr>
               </thead>
 
-              {/* BODY COM BORDAS EM TODAS AS CÉLULAS */}
               <tbody
                 className={
                   isDark
@@ -1507,7 +1523,6 @@ const Imoveis = () => {
                 }
               >
                 {imoveisFiltrados.map((imovel) => {
-                  // CORES DIRETAS - TIPO
                   let tipoClasses = "";
                   if (!isDark) {
                     if (imovel.tipo === "Apartamento")
@@ -1540,7 +1555,6 @@ const Imoveis = () => {
                       tipoClasses = "bg-gray-700 text-gray-300 border-gray-600";
                   }
 
-                  // CORES DIRETAS - FINALIDADE
                   let finalidadeClasses = "";
                   if (!isDark) {
                     if (imovel.finalidade === "Venda")
@@ -1570,7 +1584,6 @@ const Imoveis = () => {
                         "bg-purple-900/30 text-purple-300 border-purple-800";
                   }
 
-                  // CORES DIRETAS - STATUS
                   let statusClasses = "";
                   if (!isDark) {
                     if (imovel.status === "Disponível")
@@ -1715,10 +1728,7 @@ const Imoveis = () => {
                         className={`w-[150px] p-3 text-center border ${isDark ? "border-gray-700" : "border-gray-200"}`}
                       >
                         <div className="flex items-center justify-center gap-1.5">
-                          {/* BOTÃO DESEMPENHO */}
                           <BotaoDesempenho imovel={imovel} />
-
-                          {/* BOTÃO EDITAR */}
                           <div className="relative group">
                             <button
                               onClick={() =>
@@ -1734,8 +1744,6 @@ const Imoveis = () => {
                               <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
                             </div>
                           </div>
-
-                          {/* BOTÃO EXCLUIR */}
                           <div className="relative group">
                             <button
                               onClick={() => handleDelete(imovel.id)}

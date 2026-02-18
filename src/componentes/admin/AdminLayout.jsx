@@ -1,33 +1,28 @@
 import React from "react";
-import { Outlet, useNavigate, useLocation } from "react-router-dom";
+import { Outlet, useLocation } from "react-router-dom";
 import Sidebar from "./Sidebar";
 import Header from "./Header";
 import { useTheme } from "../../contexts/ThemeContext";
+import { useAuth } from "../../contexts/AuthContext"; // ✅ IMPORTANTE
 
 const AdminLayout = () => {
-  const navigate = useNavigate();
   const location = useLocation();
   const { toggleTheme, isDark } = useTheme();
+  const { logout } = useAuth(); // ✅ LOGOUT REAL DO SUPABASE
 
   const hasWideContent =
     location.pathname.includes("/admin/leads") ||
     location.pathname.includes("/admin/imoveis");
 
-  const handleLogout = () => {
-    localStorage.removeItem("authToken");
-    navigate("/login");
-  };
-
   return (
     <div
       className={`flex h-screen overflow-hidden 
-                    ${
-                      isDark
-                        ? "bg-gray-900 text-gray-100"
-                        : "bg-gray-50 text-gray-900"
-                    } transition-colors duration-200`}
+        ${
+          isDark ? "bg-gray-900 text-gray-100" : "bg-gray-50 text-gray-900"
+        } transition-colors duration-200`}
     >
-      <Sidebar onLogout={handleLogout} userName="Adventus Imobiliária" />
+      {/* ✅ AGORA USA O LOGOUT REAL */}
+      <Sidebar onLogout={logout} userName="Adventus Imobiliária" />
 
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header
@@ -39,11 +34,17 @@ const AdminLayout = () => {
 
         <main className="flex-1 overflow-hidden">
           <div
-            className={`h-full ${hasWideContent ? "overflow-y-auto overflow-x-auto" : "overflow-y-auto overflow-x-hidden"}`}
+            className={`h-full ${
+              hasWideContent
+                ? "overflow-y-auto overflow-x-auto"
+                : "overflow-y-auto overflow-x-hidden"
+            }`}
           >
             <div className="p-4 md:p-6">
               <div
-                className={`${hasWideContent ? "min-w-[1024px]" : "max-w-7xl mx-auto"}`}
+                className={`${
+                  hasWideContent ? "min-w-[1024px]" : "max-w-7xl mx-auto"
+                }`}
               >
                 <Outlet />
               </div>
