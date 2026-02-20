@@ -1,19 +1,32 @@
-// src/pages/DetalheImovel.jsx
+// ============================================================================
+// DETALHE DO IMÓVEL
+// ============================================================================
+// Arquivo: src/pages/DetalheImovel.jsx
+// Descrição: Página de detalhamento completo do imóvel com sistema de
+//            rastreamento de interações (visualizações, WhatsApp, visitas)
+// ============================================================================
+
 import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "/src/lib/supabase";
 import { visitasService } from "../lib/visitasService";
-import { useNotifications } from "../contexts/NotificationContext"; // 👈 ADICIONADO
+import { useNotifications } from "../contexts/NotificationContext";
 
+// ============================================================================
+// COMPONENTE PRINCIPAL
+// ============================================================================
 const DetalheImovel = () => {
   const { slug } = useParams();
   const navigate = useNavigate();
-  const { incrementarContador, carregarNotificacoes } = useNotifications(); // 👈 ADICIONADO
+  const { incrementarContador, carregarNotificacoes } = useNotifications();
 
-  // Estados
+  // ==========================================================================
+  // ESTADOS DO COMPONENTE
+  // ==========================================================================
   const [imovel, setImovel] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [visualizacoes, setVisualizacoes] = useState(0);
 
   // Estados do carrossel e modal
   const [imagemAtual, setImagemAtual] = useState(0);
@@ -28,33 +41,234 @@ const DetalheImovel = () => {
   });
   const [enviando, setEnviando] = useState(false);
   const [enviado, setEnviado] = useState(false);
-  const modalRef = useRef(null);
 
+  // Estado para controle dos acordeões
+  const [acordeoesAbertos, setAcordeoesAbertos] = useState({});
+
+  // Refs
+  const modalRef = useRef(null);
   const overlayRef = useRef(null);
+
+  // Constantes
   const whatsappNumber = "5599988087867";
 
-  // ===== BUSCAR IMÓVEL POR SLUG =====
+  // ==========================================================================
+  // FUNÇÕES DE RASTREAMENTO - SISTEMA DE PERFORMANCE
+  // ==========================================================================
+
+  /**
+   * Registra uma visualização da página do imóvel
+   */
+  const registrarVisualizacao = async (imovelId) => {
+    try {
+      console.log(
+        "👁️ [RASTREAMENTO] Registrando visualização para imóvel:",
+        imovelId,
+      );
+
+      const { data: existingStats, error: selectError } = await supabase
+        .from("imovel_estatisticas")
+        .select("visualizacoes")
+        .eq("imovel_id", imovelId)
+        .maybeSingle();
+
+      if (selectError) throw selectError;
+
+      if (existingStats) {
+        const { error: updateError } = await supabase
+          .from("imovel_estatisticas")
+          .update({
+            visualizacoes: (existingStats.visualizacoes || 0) + 1,
+            updated_at: new Date(),
+          })
+          .eq("imovel_id", imovelId);
+
+        if (updateError) throw updateError;
+        setVisualizacoes((existingStats.visualizacoes || 0) + 1);
+      } else {
+        const { error: insertError } = await supabase
+          .from("imovel_estatisticas")
+          .insert({
+            imovel_id: imovelId,
+            visualizacoes: 1,
+            cliques_whatsapp: 0,
+            solicitacoes_visita: 0,
+            interessados_ativos: 0,
+            engajamento: 0,
+            created_at: new Date(),
+            updated_at: new Date(),
+          });
+
+        if (insertError) throw insertError;
+        setVisualizacoes(1);
+      }
+
+      console.log("✅ [RASTREAMENTO] Visualização registrada!");
+    } catch (error) {
+      console.error("❌ Erro ao registrar visualização:", error);
+    }
+  };
+
+  /**
+   * Busca o total de visualizações do banco
+   */
+  const buscarVisualizacoes = async (imovelId) => {
+    try {
+      const { data, error } = await supabase
+        .from("imovel_estatisticas")
+        .select("visualizacoes")
+        .eq("imovel_id", imovelId)
+        .maybeSingle();
+
+      if (error) throw error;
+      setVisualizacoes(data?.visualizacoes || 0);
+    } catch (error) {
+      console.error("❌ Erro ao buscar visualizações:", error);
+      setVisualizacoes(0);
+    }
+  };
+
+  /**
+   * Registra um clique no botão do WhatsApp
+   */
+  const registrarCliqueWhatsApp = async (imovelId) => {
+    try {
+      console.log(
+        "📱 [RASTREAMENTO] Registrando clique WhatsApp para imóvel:",
+        imovelId,
+      );
+
+      const { data: existingStats, error: selectError } = await supabase
+        .from("imovel_estatisticas")
+        .select("cliques_whatsapp")
+        .eq("imovel_id", imovelId)
+        .maybeSingle();
+
+      if (selectError) throw selectError;
+
+      if (existingStats) {
+        const { error: updateError } = await supabase
+          .from("imovel_estatisticas")
+          .update({
+            cliques_whatsapp: (existingStats.cliques_whatsapp || 0) + 1,
+            updated_at: new Date(),
+          })
+          .eq("imovel_id", imovelId);
+
+        if (updateError) throw updateError;
+      } else {
+        const { error: insertError } = await supabase
+          .from("imovel_estatisticas")
+          .insert({
+            imovel_id: imovelId,
+            visualizacoes: 0,
+            cliques_whatsapp: 1,
+            solicitacoes_visita: 0,
+            interessados_ativos: 0,
+            engajamento: 0,
+            created_at: new Date(),
+            updated_at: new Date(),
+          });
+
+        if (insertError) throw insertError;
+      }
+
+      console.log("✅ [RASTREAMENTO] Clique WhatsApp registrado!");
+    } catch (error) {
+      console.error("❌ Erro ao registrar clique WhatsApp:", error);
+    }
+  };
+
+  /**
+   * Registra uma solicitação de visita e cria um interessado ativo
+   */
+  const registrarSolicitacaoVisita = async (
+    imovelId,
+    dadosVisita,
+    visitaId,
+  ) => {
+    try {
+      console.log(
+        "🏠 [RASTREAMENTO] Registrando solicitação de visita para imóvel:",
+        imovelId,
+      );
+
+      const { data: existingStats, error: selectError } = await supabase
+        .from("imovel_estatisticas")
+        .select("solicitacoes_visita, interessados_ativos")
+        .eq("imovel_id", imovelId)
+        .maybeSingle();
+
+      if (selectError) throw selectError;
+
+      if (existingStats) {
+        const { error: updateError } = await supabase
+          .from("imovel_estatisticas")
+          .update({
+            solicitacoes_visita: (existingStats.solicitacoes_visita || 0) + 1,
+            interessados_ativos: (existingStats.interessados_ativos || 0) + 1,
+            updated_at: new Date(),
+          })
+          .eq("imovel_id", imovelId);
+
+        if (updateError) throw updateError;
+      } else {
+        const { error: insertError } = await supabase
+          .from("imovel_estatisticas")
+          .insert({
+            imovel_id: imovelId,
+            visualizacoes: 0,
+            cliques_whatsapp: 0,
+            solicitacoes_visita: 1,
+            interessados_ativos: 1,
+            engajamento: 0,
+            created_at: new Date(),
+            updated_at: new Date(),
+          });
+
+        if (insertError) throw insertError;
+      }
+
+      const { error: interessadoError } = await supabase
+        .from("interessados_ativos")
+        .insert({
+          imovel_id: imovelId,
+          nome: dadosVisita.nome,
+          email: dadosVisita.email,
+          telefone: dadosVisita.telefone,
+          solicitacao_visita_id: visitaId,
+          tipo_interesse: "visita_agendada",
+          status: "aguardando_contato",
+          data_interesse: new Date(),
+        });
+
+      if (interessadoError) throw interessadoError;
+
+      console.log("✅ [RASTREAMENTO] Solicitação de visita registrada!");
+    } catch (error) {
+      console.error("❌ Erro ao registrar solicitação de visita:", error);
+    }
+  };
+
+  // ==========================================================================
+  // FUNÇÕES DE BUSCA DE DADOS
+  // ==========================================================================
+
   useEffect(() => {
     const fetchImovel = async () => {
       try {
         setLoading(true);
         console.log("🟡 Buscando imóvel com slug:", slug);
 
-        // 1º - Busca o imóvel
         const { data: imovelData, error: imovelError } = await supabase
           .from("imoveis")
           .select("*")
           .eq("slug", slug)
           .maybeSingle();
-        // 👇 COLOQUE AQUI
-        console.log("Slug recebido:", slug);
-        console.log("Imóvel retornado:", imovelData);
-        console.log("Erro:", imovelError);
 
         if (imovelError) throw imovelError;
         if (!imovelData) throw new Error("Imóvel não encontrado");
 
-        // 2º - Se tiver empreendimento, busca separadamente
         if (imovelData.id_edificios) {
           const { data: edificioData } = await supabase
             .from("edificios")
@@ -68,6 +282,11 @@ const DetalheImovel = () => {
         }
 
         setImovel(imovelData);
+
+        // Rastreamento de visualização
+        await registrarVisualizacao(imovelData.id);
+        await buscarVisualizacoes(imovelData.id);
+
         setFormData((prev) => ({
           ...prev,
           mensagem: `Tenho interesse no imóvel ${imovelData.codigo || ""} - ${imovelData.titulo || ""}. Aguardo informações.`,
@@ -83,7 +302,10 @@ const DetalheImovel = () => {
     if (slug) fetchImovel();
   }, [slug]);
 
-  // ===== FORMATAR PREÇO =====
+  // ==========================================================================
+  // FUNÇÕES DE FORMATAÇÃO
+  // ==========================================================================
+
   const formatPrice = (price) => {
     if (!price || price === "0" || price === "0.00")
       return "Preço sob consulta";
@@ -107,17 +329,18 @@ const DetalheImovel = () => {
     }).format(valorNumerico);
   };
 
-  // ===== FORMATAR FINALIDADE =====
   const formatarFinalidade = (imovel) => {
-    if (imovel.finalidade_venda && imovel.finalidade_aluguel) {
+    if (imovel.finalidade_venda && imovel.finalidade_aluguel)
       return "Venda e Aluguel";
-    }
     if (imovel.finalidade_venda) return "Venda";
     if (imovel.finalidade_aluguel) return "Aluguel";
     return "Venda";
   };
 
-  // ===== EXTRAIR DADOS DO IMÓVEL =====
+  // ==========================================================================
+  // FUNÇÕES DE EXTRAÇÃO DE DADOS
+  // ==========================================================================
+
   const getImovelData = () => {
     if (!imovel) return null;
 
@@ -132,23 +355,11 @@ const DetalheImovel = () => {
     const diferenciais = imovel.diferenciais || {};
     const etiquetas = imovel.etiquetas || {};
 
-    // 🔥 TÍTULO COMPLETO PARA SEO E CONVERSÃO
-    const tituloDetalhe = gerarTituloDetalhe(
-      imovel,
-      dependencias,
-      caracteristicas,
-    );
-
-    // 🔥 META TITLE (para SEO)
-    const metaTitle = gerarMetaTitle(imovel, dependencias);
-
     return {
       id: imovel.id,
       slug: imovel.slug,
       codigo: imovel.codigo || "Sem código",
       titulo: imovel.titulo || "Imóvel sem título",
-      tituloDetalhe, // 🔥 Título completo para exibição
-      metaTitle, // 🔥 Meta title para SEO
       preco: imovel.preco,
       precoFormatado: formatPrice(imovel.preco),
       precoAluguel: imovel.preco_aluguel,
@@ -156,12 +367,9 @@ const DetalheImovel = () => {
       finalidade: formatarFinalidade(imovel),
       status: imovel.status,
       tipo: imovel.tipo,
-      tipoLabel:
-        imovel.tipo?.charAt(0).toUpperCase() + imovel.tipo?.slice(1) || "Casa",
       finalidade_venda: imovel.finalidade_venda,
       finalidade_aluguel: imovel.finalidade_aluguel,
       empreendimento: imovel.edificios || null,
-      empreendimento_id: imovel.id_edificios || null,
       endereco: imovel.endereco || "",
       numero: imovel.numero || "",
       complemento: imovel.complemento || "",
@@ -177,45 +385,11 @@ const DetalheImovel = () => {
       areaTotal: dependencias.area_total || caracteristicas.areaTotal || 0,
       areaConstruida:
         dependencias.area_construida || caracteristicas.areaConstruida || 0,
-      areaUtil: caracteristicas.areaUtil || 0,
-      areaPrivativa: caracteristicas.areaPrivativa || 0,
-      frenteTerreno: caracteristicas.frenteTerreno || "",
-      fundo: caracteristicas.fundo || "",
-      lateralEsquerda: caracteristicas.lateralEsquerda || "",
-      lateralDireita: caracteristicas.lateralDireita || "",
-      peDireito: caracteristicas.peDireito || "",
-      topografia: caracteristicas.topografia || "",
-      tipoConstrucao: caracteristicas.tipoConstrucao || "",
-      anoConstrucao: caracteristicas.anoConstrucao || "",
-      numeroPavimentos: caracteristicas.numeroPavimentos || "",
-      reformadoRecentemente: caracteristicas.reformadoRecentemente || false,
-      imovelAverbado: caracteristicas.imovelAverbado || false,
-      financiavel: caracteristicas.financiavel || false,
-      aceitaPermuta: caracteristicas.aceitaPermuta || false,
-      tipoIluminacao: caracteristicas.tipoIluminacao || "",
-      tipoTelhado: caracteristicas.tipoTelhado || "",
-      forroLaje: caracteristicas.forroLaje || false,
-      sistemaEletricoNovo: caracteristicas.sistemaEletricoNovo || false,
-      caixaDAgua: caracteristicas.caixaDAgua || "",
-      sistemaEsgoto: caracteristicas.sistemaEsgoto || "",
-      aquecimentoAgua: caracteristicas.aquecimentoAgua || "",
-      posicaoSolar: caracteristicas.posicaoSolar || "",
-      ventilacaoCruzada: caracteristicas.ventilacaoCruzada || false,
-      vistaLivre: caracteristicas.vistaLivre || false,
-      vistaPermanente: caracteristicas.vistaPermanente || false,
-      ruaSemSaida: caracteristicas.ruaSemSaida || false,
-      esquinaInfo:
-        caracteristicas.esquinaInfo || caracteristicas.esquina || false,
-      condominioTaxaMensal: caracteristicas.condominioTaxaMensal || "",
-      emCondominio: imovel.em_condominio || false,
-      financiado: imovel.financiado || false,
-      ocultarPreco: imovel.ocultar_preco || false,
       destaqueSemana: etiquetas.destaqueSemana || false,
-      novoSite: etiquetas.novoSite || false,
-      baixouPreco: etiquetas.baixouPreco || false,
-      financiavelEtiqueta: etiquetas.financiável || false,
-      descricao: imovel.descricao || "",
-      iptu_anual: imovel.iptu_anual || "",
+      emCondominio: imovel.em_condominio || false,
+      ocultarPreco: imovel.ocultar_preco || false,
+
+      // Objetos completos para os acordeões
       caracteristicas,
       acabamentos,
       areaLazer,
@@ -224,158 +398,35 @@ const DetalheImovel = () => {
       armariosArmazenamento,
       servicosUtilidades,
       diferenciais,
+
       imagens: [
         imovel.imagem_url ||
           "https://images.unsplash.com/photo-1568605114967-8130f3a36994?auto=format&fit=crop&w=1200&h=800&q=80",
-        "https://images.unsplash.com/photo-1570129477492-45c003edd2be?auto=format&fit=crop&w=1200&h=800&q=80",
-        "https://images.unsplash.com/photo-1560184897-502a475f7a0d?auto=format&fit=crop&w=1200&h=800&q=80",
-        "https://images.unsplash.com/photo-1560448204-603b3fc33ddc?auto=format&fit=crop&w=1200&h=800&q=80",
       ],
     };
   };
 
-  // =============== 🎯 GERAR TÍTULO COMPLETO DO DETALHE ===============
-  const gerarTituloDetalhe = (imovel, dependencias, caracteristicas) => {
-    if (!imovel) return "Imóvel para compra ou aluguel";
+  // ==========================================================================
+  // FUNÇÕES PARA OS ACORDEÕES (RESTAURADAS)
+  // ==========================================================================
 
-    const tipo = imovel.tipo
-      ? imovel.tipo.charAt(0).toUpperCase() + imovel.tipo.slice(1)
-      : "Imóvel";
-
-    const quartos = parseInt(
-      dependencias.dormitorios || caracteristicas.quartos || 0,
-    );
-    const areaTotal = parseFloat(
-      dependencias.area_total || caracteristicas.areaTotal || 0,
-    );
-    const bairro = imovel.bairro || "";
-    const cidade = imovel.cidade || "";
-    const estado = imovel.estado || "";
-
-    // Formata a finalidade
-    let finalidadeTexto = "";
-    if (imovel.finalidade_venda && imovel.finalidade_aluguel) {
-      finalidadeTexto = `venda por ${formatPrice(imovel.preco)} ou aluguel por ${formatPrice(imovel.preco_aluguel)}/mês`;
-    } else if (imovel.finalidade_venda) {
-      finalidadeTexto = `venda por ${formatPrice(imovel.preco)}`;
-    } else if (imovel.finalidade_aluguel) {
-      finalidadeTexto = `aluguel por ${formatPrice(imovel.preco)}/mês`;
-    } else {
-      finalidadeTexto = `venda por ${formatPrice(imovel.preco)}`;
-    }
-
-    // 🔥 TÍTULO COMPLETO E RICO EM PALAVRAS-CHAVE
-    let titulo = `${tipo}`;
-
-    if (quartos > 0) {
-      titulo += ` com ${quartos} ${quartos === 1 ? "dormitório" : "dormitórios"}`;
-    }
-
-    if (areaTotal > 0) {
-      titulo += `, ${areaTotal} m²`;
-    }
-
-    titulo += ` - ${finalidadeTexto}`;
-
-    if (bairro && cidade) {
-      titulo += ` - ${bairro} - ${cidade}/${estado}`;
-    } else if (cidade) {
-      titulo += ` - ${cidade}/${estado}`;
-    }
-
-    return titulo;
+  const toggleAcordeao = (index) => {
+    setAcordeoesAbertos((prev) => ({
+      ...prev,
+      [index]: !prev[index],
+    }));
   };
 
-  // =============== 🎯 GERAR META TITLE PARA SEO ===============
-  const gerarMetaTitle = (imovel, dependencias) => {
-    if (!imovel) return "Imóvel à venda - Adventus Imóveis";
-
-    const tipo = imovel.tipo || "imóvel";
-    const bairro = imovel.bairro || "";
-    const cidade = imovel.cidade || "";
-    const estado = imovel.estado || "";
-    const quartos = parseInt(dependencias.dormitorios || 0);
-
-    let titulo = "";
-
-    // Formato: "Casa à venda em Jardim de Alah, Açailândia - 3 quartos | Adventus"
-    if (imovel.finalidade_venda && imovel.finalidade_aluguel) {
-      titulo = `${tipo.charAt(0).toUpperCase() + tipo.slice(1)} à venda e aluguel em`;
-    } else if (imovel.finalidade_venda) {
-      titulo = `${tipo.charAt(0).toUpperCase() + tipo.slice(1)} à venda em`;
-    } else if (imovel.finalidade_aluguel) {
-      titulo = `${tipo.charAt(0).toUpperCase() + tipo.slice(1)} para aluguel em`;
-    } else {
-      titulo = `${tipo.charAt(0).toUpperCase() + tipo.slice(1)} à venda em`;
-    }
-
-    if (bairro) {
-      titulo += ` ${bairro},`;
-    }
-
-    titulo += ` ${cidade}/${estado}`;
-
-    if (quartos > 0) {
-      titulo += ` - ${quartos} ${quartos === 1 ? "quarto" : "quartos"}`;
-    }
-
-    titulo += ` | Adventus Imóveis`;
-
-    return titulo;
-  };
-
-  // =============== 🎯 GERAR BREADCRUMB ===============
-  const gerarBreadcrumb = (dados) => {
-    if (!dados) return [];
-
-    const items = [
-      { label: "Home", url: "/" },
-      {
-        label: dados.finalidade_venda ? "Comprar" : "Alugar",
-        url: dados.finalidade_venda ? "/comprar" : "/alugar",
-      },
-    ];
-
-    if (dados.cidade) {
-      items.push({
-        label: dados.cidade,
-        url: dados.finalidade_venda
-          ? `/comprar?cidade=${dados.cidade}`
-          : `/alugar?cidade=${dados.cidade}`,
-      });
-    }
-
-    if (dados.bairro) {
-      items.push({
-        label: dados.bairro,
-        url: dados.finalidade_venda
-          ? `/comprar?cidade=${dados.cidade}&bairro=${dados.bairro}`
-          : `/alugar?cidade=${dados.cidade}&bairro=${dados.bairro}`,
-      });
-    }
-
-    items.push({ label: dados.codigo, url: "#", active: true });
-
-    return items;
-  };
-
-  // ===== GERAR ITENS DOS ACORDEÕES =====
   const gerarDadosAcordeao = (dados) => {
     if (!dados || !imovel) return [];
-
-    const caracteristicas = dados.caracteristicas || {};
-    const acabamentos = dados.acabamentos || {};
-    const areaLazer = dados.areaLazer || {};
-    const localizacaoVizinhanca = dados.localizacaoVizinhanca || {};
-    const seguranca = dados.seguranca || {};
-    const armariosArmazenamento = dados.armariosArmazenamento || {};
-    const servicosUtilidades = dados.servicosUtilidades || {};
-    const diferenciais = dados.diferenciais || {};
 
     const acordeoes = [];
 
     // CARACTERÍSTICAS DO IMÓVEL
     const itensCaracteristicas = [];
+    const caracteristicas = dados.caracteristicas || {};
+    const dependencias = imovel.dependencias || {};
+
     if (dados.areaUtil > 0)
       itensCaracteristicas.push(`Área útil: ${dados.areaUtil} m²`);
     if (dados.areaPrivativa > 0)
@@ -400,10 +451,6 @@ const DetalheImovel = () => {
       itensCaracteristicas.push(`Tipo de construção: ${dados.tipoConstrucao}`);
     if (dados.anoConstrucao)
       itensCaracteristicas.push(`Ano de construção: ${dados.anoConstrucao}`);
-    if (dados.numeroPavimentos > 0)
-      itensCaracteristicas.push(
-        `${dados.numeroPavimentos} pavimento${dados.numeroPavimentos !== 1 ? "s" : ""}`,
-      );
     if (dados.reformadoRecentemente)
       itensCaracteristicas.push(`Reformado recentemente`);
     if (dados.imovelAverbado) itensCaracteristicas.push(`Imóvel averbado`);
@@ -413,52 +460,8 @@ const DetalheImovel = () => {
       itensCaracteristicas.push(`Iluminação: ${dados.tipoIluminacao}`);
     if (dados.tipoTelhado)
       itensCaracteristicas.push(`Telhado: ${dados.tipoTelhado}`);
-    if (dados.forroLaje) itensCaracteristicas.push(`Forro em laje`);
-    if (dados.sistemaEletricoNovo)
-      itensCaracteristicas.push(`Sistema elétrico novo`);
     if (dados.caixaDAgua)
       itensCaracteristicas.push(`Caixa d'água: ${dados.caixaDAgua} litros`);
-    if (dados.sistemaEsgoto) {
-      const labels = {
-        rede_publica: "Rede pública",
-        fossa_septica: "Fossa séptica",
-        fossa_filtro: "Fossa e filtro",
-      };
-      itensCaracteristicas.push(
-        `Esgoto: ${labels[dados.sistemaEsgoto] || dados.sistemaEsgoto}`,
-      );
-    }
-    if (dados.aquecimentoAgua) {
-      const labels = {
-        gas: "Gás",
-        solar: "Solar",
-        eletrico: "Elétrico",
-        central: "Central",
-      };
-      itensCaracteristicas.push(
-        `Aquecimento: ${labels[dados.aquecimentoAgua] || dados.aquecimentoAgua}`,
-      );
-    }
-    if (dados.posicaoSolar) {
-      const labels = {
-        nascente: "Nascente",
-        poente: "Poente",
-        norte: "Norte",
-        sul: "Sul",
-      };
-      itensCaracteristicas.push(
-        `Posição solar: ${labels[dados.posicaoSolar] || dados.posicaoSolar}`,
-      );
-    }
-    if (dados.ventilacaoCruzada)
-      itensCaracteristicas.push(`Ventilação cruzada`);
-    if (dados.vistaLivre) itensCaracteristicas.push(`Vista livre`);
-    if (dados.vistaPermanente) itensCaracteristicas.push(`Vista permanente`);
-    if (dados.ruaSemSaida) itensCaracteristicas.push(`Rua sem saída`);
-    if (dados.condominioTaxaMensal)
-      itensCaracteristicas.push(
-        `Taxa de condomínio: R$ ${dados.condominioTaxaMensal}`,
-      );
 
     if (itensCaracteristicas.length > 0) {
       acordeoes.push({
@@ -470,76 +473,24 @@ const DetalheImovel = () => {
 
     // ACABAMENTOS
     const itensAcabamentos = [];
+    const acabamentos = dados.acabamentos || {};
+
     Object.entries(acabamentos)
-      .filter(([key, value]) => value === true && key.startsWith("piso"))
+      .filter(([_, value]) => value === true)
       .forEach(([key]) => {
         const labels = {
-          pisoPorcelanato: "Porcelanato",
-          pisoCeramica: "Cerâmica",
+          pisoPorcelanato: "Piso porcelanato",
+          pisoCeramica: "Piso cerâmica",
           pisoLaminado: "Piso laminado",
-          pisoVinilico: "Piso vinílico",
-          pisoMadeiraMaciça: "Madeira maciça",
-          pisoTaco: "Taco",
-          pisoCimentoQueimado: "Cimento queimado",
-          pisoMarmore: "Mármore",
-          pisoGranito: "Granito",
-          pisoFrio: "Piso frio",
-        };
-        itensAcabamentos.push(`Piso: ${labels[key] || key}`);
-      });
-    Object.entries(acabamentos)
-      .filter(
-        ([key, value]) => value === true && key.startsWith("revestimento"),
-      )
-      .forEach(([key]) => {
-        const labels = {
           revestimentoAzulejo: "Azulejo",
           revestimentoPastilha: "Pastilha",
-          revestimentoPorcelanato: "Porcelanato em parede",
-          revestimentoPedraNatural: "Pedra natural",
-          revestimentoPapelParede: "Papel de parede",
-          revestimento3D: "Revestimento 3D",
-        };
-        itensAcabamentos.push(`Revestimento: ${labels[key] || key}`);
-      });
-    Object.entries(acabamentos)
-      .filter(([key, value]) => value === true && key.startsWith("teto"))
-      .forEach(([key]) => {
-        const labels = {
-          tetoGessoRebaixado: "Gesso rebaixado",
-          tetoSancaGesso: "Sanca de gesso",
-          tetoForroPVC: "Forro de PVC",
-          tetoLaje: "Laje",
-        };
-        itensAcabamentos.push(`Teto/forro: ${labels[key] || key}`);
-      });
-    Object.entries(acabamentos)
-      .filter(
-        ([key, value]) =>
-          value === true &&
-          (key.startsWith("porta") || key.startsWith("esquadria")),
-      )
-      .forEach(([key]) => {
-        const labels = {
-          portaMadeiraMaciça: "Porta de madeira maciça",
-          portaLaqueada: "Porta laqueada",
-          esquadriaAluminio: "Esquadrias de alumínio",
-          esquadriaPVC: "Esquadrias de PVC",
-          portaPivotante: "Porta pivotante",
-        };
-        itensAcabamentos.push(labels[key] || key);
-      });
-    Object.entries(acabamentos)
-      .filter(([key, value]) => value === true && key.startsWith("bancada"))
-      .forEach(([key]) => {
-        const labels = {
+          tetoGessoRebaixado: "Teto em gesso",
           bancadaGranito: "Bancada de granito",
           bancadaMarmore: "Bancada de mármore",
-          bancadaQuartzo: "Bancada de quartzo",
-          bancadaNanoglass: "Bancada de nanoglass",
         };
         itensAcabamentos.push(labels[key] || key);
       });
+
     if (itensAcabamentos.length > 0) {
       acordeoes.push({
         titulo: "Acabamentos",
@@ -549,29 +500,25 @@ const DetalheImovel = () => {
     }
 
     // ÁREA DE LAZER
-    const itensAreaLazer = Object.entries(areaLazer)
+    const itensAreaLazer = [];
+    const areaLazer = dados.areaLazer || {};
+
+    Object.entries(areaLazer)
       .filter(([_, value]) => value === true)
-      .map(([key]) => {
+      .forEach(([key]) => {
         const labels = {
           piscina: "Piscina",
           churrasqueira: "Churrasqueira",
           espacoGourmet: "Espaço gourmet",
           salaoFestas: "Salão de festas",
-          salaoJogos: "Salão de jogos",
           academia: "Academia",
           playground: "Playground",
           quadraPoliesportiva: "Quadra poliesportiva",
-          campoSociety: "Campo society",
-          areaVerde: "Área verde",
           jardim: "Jardim",
-          deck: "Deck",
-          rooftop: "Rooftop",
-          sauna: "Sauna",
-          espacoPet: "Espaço pet",
-          brinquedoteca: "Brinquedoteca",
         };
-        return labels[key] || key;
+        itensAreaLazer.push(labels[key] || key);
       });
+
     if (itensAreaLazer.length > 0) {
       acordeoes.push({
         titulo: "Área de Lazer",
@@ -581,26 +528,23 @@ const DetalheImovel = () => {
     }
 
     // LOCALIZAÇÃO E VIZINHANÇA
-    const itensLocalizacao = Object.entries(localizacaoVizinhanca)
+    const itensLocalizacao = [];
+    const localizacao = dados.localizacaoVizinhanca || {};
+
+    Object.entries(localizacao)
       .filter(([_, value]) => value === true)
-      .map(([key]) => {
+      .forEach(([key]) => {
         const labels = {
           proximoCentro: "Próximo ao centro",
           proximoSupermercado: "Próximo a supermercado",
           proximoEscola: "Próximo a escola",
           proximoHospital: "Próximo a hospital",
-          proximoFarmacia: "Próximo a farmácia",
-          proximoOnibus: "Próximo a ponto de ônibus",
-          proximoShopping: "Próximo a shopping",
-          proximoFaculdade: "Próximo a faculdade",
           bairroResidencial: "Bairro residencial",
-          bairroComercial: "Bairro comercial",
           ruaAsfaltada: "Rua asfaltada",
-          ruaTranquila: "Rua tranquila",
-          regiaoValorizada: "Região valorizada",
         };
-        return labels[key] || key;
+        itensLocalizacao.push(labels[key] || key);
       });
+
     if (itensLocalizacao.length > 0) {
       acordeoes.push({
         titulo: "Localização & Vizinhança",
@@ -610,9 +554,12 @@ const DetalheImovel = () => {
     }
 
     // SEGURANÇA
-    const itensSeguranca = Object.entries(seguranca)
+    const itensSeguranca = [];
+    const seguranca = dados.seguranca || {};
+
+    Object.entries(seguranca)
       .filter(([_, value]) => value === true)
-      .map(([key]) => {
+      .forEach(([key]) => {
         const labels = {
           portaoEletronico: "Portão eletrônico",
           interfone: "Interfone",
@@ -620,14 +567,10 @@ const DetalheImovel = () => {
           sistemaCameras: "Sistema de câmeras",
           alarme: "Alarme",
           portaria24h: "Portaria 24h",
-          vigilancia24h: "Vigilância 24h",
-          controleAcesso: "Controle de acesso",
-          fechaduraDigital: "Fechadura digital",
-          condominioFechado: "Condomínio fechado",
-          murosAltos: "Muros altos",
         };
-        return labels[key] || key;
+        itensSeguranca.push(labels[key] || key);
       });
+
     if (itensSeguranca.length > 0) {
       acordeoes.push({
         titulo: "Segurança",
@@ -637,22 +580,21 @@ const DetalheImovel = () => {
     }
 
     // ARMÁRIOS E ARMAZENAMENTO
-    const itensArmarios = Object.entries(armariosArmazenamento)
+    const itensArmarios = [];
+    const armarios = dados.armariosArmazenamento || {};
+
+    Object.entries(armarios)
       .filter(([_, value]) => value === true)
-      .map(([key]) => {
+      .forEach(([key]) => {
         const labels = {
-          armarioCozinhaPlanejado: "Armário de cozinha planejado",
+          armarioCozinhaPlanejado: "Cozinha planejada",
           armariosEmbutidos: "Armários embutidos",
-          armariosQuarto: "Armários no quarto",
-          armariosBanheiro: "Armários no banheiro",
           closet: "Closet",
           despensa: "Despensa",
-          deposito: "Depósito",
-          roupeiro: "Roupeiro",
-          maleiro: "Maleiro",
         };
-        return labels[key] || key;
+        itensArmarios.push(labels[key] || key);
       });
+
     if (itensArmarios.length > 0) {
       acordeoes.push({
         titulo: "Armários e Armazenamento",
@@ -661,53 +603,24 @@ const DetalheImovel = () => {
       });
     }
 
-    // SERVIÇOS E UTILIDADES
-    const itensServicos = Object.entries(servicosUtilidades)
-      .filter(([_, value]) => value === true)
-      .map(([key]) => {
-        const labels = {
-          aguaEncanada: "Água encanada",
-          energiaEletrica: "Energia elétrica",
-          pocoArtesiano: "Poço artesiano",
-          aquecimentoGas: "Aquecimento a gás",
-          aquecimentoSolar: "Aquecimento solar",
-          gasEncanado: "Gás encanado",
-          arCondicionadoInstalado: "Ar-condicionado instalado",
-          infraArCondicionado: "Infra para ar-condicionado",
-          internetFibra: "Internet fibra disponível",
-          iluminacaoLED: "Iluminação em LED",
-          energiaSolar: "Sistema de energia solar",
-          elevador: "Elevador",
-          coletaLixo: "Coleta de lixo regular",
-        };
-        return labels[key] || key;
-      });
-    if (itensServicos.length > 0) {
-      acordeoes.push({
-        titulo: "Serviços e Utilidades",
-        icone: "fas fa-bolt",
-        itens: itensServicos,
-      });
-    }
+    // DIFERENCIAIS
+    const itensDiferenciais = [];
+    const diferenciais = dados.diferenciais || {};
 
-    // DIFERENCIAIS DO IMÓVEL
-    const itensDiferenciais = Object.entries(diferenciais)
+    Object.entries(diferenciais)
       .filter(([_, value]) => value === true)
-      .map(([key]) => {
+      .forEach(([key]) => {
         const labels = {
           varanda: "Varanda",
           sacada: "Sacada",
           lavabo: "Lavabo",
           banheira: "Banheira",
-          boxVidro: "Box de vidro",
-          dependenciaEmpregada: "Dependência de empregada",
           escritorio: "Escritório",
-          peDireitoDuplo: "Pé direito duplo",
-          mezanino: "Mezanino",
           vistaPanoramica: "Vista panorâmica",
         };
-        return labels[key] || key;
+        itensDiferenciais.push(labels[key] || key);
       });
+
     if (itensDiferenciais.length > 0) {
       acordeoes.push({
         titulo: "Diferenciais do Imóvel",
@@ -721,9 +634,11 @@ const DetalheImovel = () => {
 
   const dados = getImovelData();
   const dadosAcordeao = dados ? gerarDadosAcordeao(dados) : [];
-  const breadcrumbItems = dados ? gerarBreadcrumb(dados) : [];
 
-  // ===== CONTROLES DO MODAL =====
+  // ==========================================================================
+  // CONTROLES DO MODAL
+  // ==========================================================================
+
   useEffect(() => {
     if (modalAberto) {
       document.body.style.overflow = "hidden";
@@ -746,7 +661,9 @@ const DetalheImovel = () => {
     };
   }, [modalAberto]);
 
-  // ===== AUTO-PLAY CARROSSEL =====
+  // ==========================================================================
+  // AUTO-PLAY DO CARROSSEL
+  // ==========================================================================
   useEffect(() => {
     if (!dados?.imagens?.length) return;
     const intervalo = setInterval(() => {
@@ -784,13 +701,14 @@ const DetalheImovel = () => {
     setFormData({ ...formData, [name]: value });
   };
 
-  // ===== HANDLE SUBMIT MODIFICADO (COM NOTIFICAÇÃO) =====
+  // ==========================================================================
+  // HANDLE SUBMIT DO MODAL - COM RASTREAMENTO
+  // ==========================================================================
   const handleSubmit = async (e) => {
     e.preventDefault();
     setEnviando(true);
 
     try {
-      // Validação dos campos obrigatórios
       if (
         !formData.nome ||
         !formData.telefone ||
@@ -801,12 +719,10 @@ const DetalheImovel = () => {
         throw new Error("Por favor, preencha todos os campos obrigatórios");
       }
 
-      // Data da visita (7 dias após o agendamento)
       const dataVisita = new Date();
       dataVisita.setDate(dataVisita.getDate() + 7);
 
-      // 👇 LOG DOS DADOS ENVIADOS
-      console.log("📤 Enviando visita:", {
+      console.log("📤 [VISITA] Enviando solicitação:", {
         imovel_id: dados.id,
         nome_cliente: formData.nome,
         telefone: formData.telefone,
@@ -816,7 +732,6 @@ const DetalheImovel = () => {
         horario_preferencia: formData.horarioPreferencia,
       });
 
-      // 🔥 CHAMADA AO SERVIÇO DE VISITAS
       const { data, error } = await visitasService.criarVisita({
         imovel_id: dados.id,
         nome_cliente: formData.nome,
@@ -827,35 +742,51 @@ const DetalheImovel = () => {
         horario_preferencia: formData.horarioPreferencia,
       });
 
-      // 👇 LOG DA RESPOSTA
-      console.log("📥 Resposta do serviço:", { data, error });
+      console.log("🔍 DATA RECEBIDA:", data);
+      console.log("📥 [VISITA] Resposta do serviço:", { data, error });
 
       if (error) throw error;
 
-      // 🔥 ATUALIZA NOTIFICAÇÕES
-      incrementarContador("visitas");
-      console.log("✅ Visita agendada com sucesso! Notificação atualizada.");
+      if (data && data.id) {
+        console.log("✅ ID da visita encontrado:", data.id);
+        await registrarSolicitacaoVisita(
+          dados.id,
+          {
+            nome: formData.nome,
+            email: formData.email,
+            telefone: formData.telefone,
+          },
+          data.id,
+        );
+      } else {
+        console.warn("⚠️ Não foi possível obter o ID da visita", data);
+      }
 
-      // Sucesso
+      incrementarContador("visitas");
+      console.log("✅ [VISITA] Agendamento realizado com sucesso!");
+
       setEnviado(true);
       setEnviando(false);
       setTimeout(fecharModal, 3000);
     } catch (error) {
-      console.error("❌ Erro ao agendar visita:", error);
+      console.error("❌ [VISITA] Erro ao agendar visita:", error);
       setEnviando(false);
       alert(error.message || "Erro ao enviar. Tente novamente.");
     }
   };
 
-  // ===== ATUALIZAR TÍTULO DA PÁGINA =====
+  // ==========================================================================
+  // ATUALIZAR TÍTULO DA PÁGINA
+  // ==========================================================================
   useEffect(() => {
     if (dados) {
-      document.title =
-        dados.metaTitle || "Detalhes do Imóvel | Adventus Imóveis";
+      document.title = dados.titulo || "Detalhes do Imóvel | Adventus Imóveis";
     }
   }, [dados]);
 
-  // ===== LOADING =====
+  // ==========================================================================
+  // LOADING STATE
+  // ==========================================================================
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -867,7 +798,9 @@ const DetalheImovel = () => {
     );
   }
 
-  // ===== ERROR =====
+  // ==========================================================================
+  // ERROR STATE
+  // ==========================================================================
   if (error || !dados) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -892,29 +825,27 @@ const DetalheImovel = () => {
 
   const imagens = dados.imagens || [];
 
+  // ==========================================================================
+  // RENDERIZAÇÃO DO COMPONENTE
+  // ==========================================================================
   return (
     <>
       {/* ===== BREADCRUMB ===== */}
       <div className="bg-gray-100 border-b border-gray-200 py-3">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex items-center text-xs md:text-sm text-gray-600">
-            {breadcrumbItems.map((item, index) => (
-              <React.Fragment key={index}>
-                {index > 0 && <span className="mx-2 text-gray-400">/</span>}
-                {item.active ? (
-                  <span className="font-semibold text-[#D4A24D]">
-                    {item.label}
-                  </span>
-                ) : (
-                  <a
-                    href={item.url}
-                    className="hover:text-[#D4A24D] transition-colors"
-                  >
-                    {item.label}
-                  </a>
-                )}
-              </React.Fragment>
-            ))}
+            <a href="/" className="hover:text-[#D4A24D]">
+              Home
+            </a>
+            <span className="mx-2">/</span>
+            <a
+              href={dados.finalidade_venda ? "/comprar" : "/alugar"}
+              className="hover:text-[#D4A24D]"
+            >
+              {dados.finalidade_venda ? "Comprar" : "Alugar"}
+            </a>
+            <span className="mx-2">/</span>
+            <span className="font-semibold text-[#D4A24D]">{dados.codigo}</span>
           </div>
         </div>
       </div>
@@ -935,13 +866,11 @@ const DetalheImovel = () => {
                   key={index}
                   onClick={() => setImagemAtual(index)}
                   className={`
-                    w-3 h-3 md:w-3.5 md:h-3.5 
-                    rounded-full transition-all duration-300 
-                    border-2 border-white/30
+                    w-3 h-3 md:w-3.5 md:h-3.5 rounded-full transition-all duration-300 border-2 border-white/30
                     focus:outline-none focus:ring-0
                     ${
                       imagemAtual === index
-                        ? `bg-[#D4A24D] scale-110 shadow-[0_0_10px_rgba(212,162,77,0.8)] border-white`
+                        ? "bg-[#D4A24D] scale-110 shadow-[0_0_10px_rgba(212,162,77,0.8)] border-white"
                         : "bg-white/90 hover:bg-white hover:scale-105"
                     }
                   `}
@@ -990,34 +919,11 @@ const DetalheImovel = () => {
                 </div>
               )}
 
-              {dados.emCondominio && !dados.empreendimento?.nome && (
-                <div className="self-start mb-4">
-                  <div className="inline-flex items-center bg-[#D4A24D]/20 text-[#D4A24D] border border-[#D4A24D]/30 px-3 py-1 rounded-full text-xs font-semibold">
-                    <i className="fas fa-building mr-1.5 text-[10px]"></i>
-                    <span>Em condomínio</span>
-                  </div>
-                </div>
-              )}
-
-              {/* 🔥🔥🔥 TÍTULO COMPLETO OTIMIZADO! */}
               <h1 className="text-2xl md:text-3xl font-bold mb-3 text-white">
-                {dados.tituloDetalhe}
+                {dados.titulo}
               </h1>
-
-              <div className="text-sm text-gray-300 mb-2 flex flex-wrap items-center gap-2">
-                <span>Código: {dados.codigo}</span>
-                {dados.financiavel && (
-                  <span className="bg-blue-600/30 text-blue-300 px-2 py-0.5 rounded-full text-xs border border-blue-500/50">
-                    <i className="fas fa-check-circle mr-1 text-[10px]"></i>
-                    Financiável
-                  </span>
-                )}
-                {dados.aceitaPermuta && (
-                  <span className="bg-purple-600/30 text-purple-300 px-2 py-0.5 rounded-full text-xs border border-purple-500/50">
-                    <i className="fas fa-exchange-alt mr-1 text-[10px]"></i>
-                    Aceita permuta
-                  </span>
-                )}
+              <div className="text-sm text-gray-300 mb-2">
+                Código: {dados.codigo}
               </div>
 
               <div className="flex items-center space-x-2 text-white mb-5">
@@ -1035,7 +941,6 @@ const DetalheImovel = () => {
                     : dados.precoFormatado}
                 </div>
 
-                {/* 🔥 Se tiver aluguel, mostra também */}
                 {dados.finalidade_aluguel &&
                   dados.precoAluguel &&
                   !dados.ocultarPreco && (
@@ -1053,97 +958,63 @@ const DetalheImovel = () => {
                 </div>
               </div>
 
-              {/* ÍCONES DE CARACTERÍSTICAS - ORIGINAL */}
               <div className="grid grid-cols-3 md:flex md:flex-wrap justify-center md:justify-start gap-3 md:gap-4 text-white">
                 {dados.quartos > 0 && (
                   <div className="flex flex-col items-center">
                     <div className="w-12 h-12 rounded-full bg-[#D4A24D]/20 flex items-center justify-center mb-2">
                       <i className="fas fa-bed text-[#D4A24D] text-lg"></i>
                     </div>
-                    <div className="h-[44px] flex flex-col items-center justify-center">
-                      <div className="text-base font-light leading-tight">
-                        {dados.quartos}{" "}
-                        {dados.quartos === 1 ? "Quarto" : "Quartos"}
-                      </div>
+                    <div className="text-base font-light">
+                      {dados.quartos}{" "}
+                      {dados.quartos === 1 ? "Quarto" : "Quartos"}
                     </div>
                   </div>
                 )}
-
-                {dados.banheiros > 0 && (
-                  <div className="flex flex-col items-center">
-                    <div className="w-12 h-12 rounded-full bg-[#D4A24D]/20 flex items-center justify-center mb-2">
-                      <i className="fas fa-bath text-[#D4A24D] text-lg"></i>
-                    </div>
-                    <div className="h-[44px] flex flex-col items-center justify-center">
-                      <div className="text-base font-light leading-tight">
-                        {dados.banheiros}{" "}
-                        {dados.banheiros === 1 ? "Banheiro" : "Banheiros"}
-                      </div>
-                    </div>
-                  </div>
-                )}
-
                 {dados.suites > 0 && (
                   <div className="flex flex-col items-center">
                     <div className="w-12 h-12 rounded-full bg-[#D4A24D]/20 flex items-center justify-center mb-2">
                       <i className="fas fa-crown text-[#D4A24D] text-lg"></i>
                     </div>
-                    <div className="h-[44px] flex flex-col items-center justify-center">
-                      <div className="text-base font-light leading-tight">
-                        {dados.suites} {dados.suites === 1 ? "Suíte" : "Suítes"}
-                      </div>
+                    <div className="text-base font-light">
+                      {dados.suites} {dados.suites === 1 ? "Suíte" : "Suítes"}
                     </div>
                   </div>
                 )}
-
+                {dados.banheiros > 0 && (
+                  <div className="flex flex-col items-center">
+                    <div className="w-12 h-12 rounded-full bg-[#D4A24D]/20 flex items-center justify-center mb-2">
+                      <i className="fas fa-bath text-[#D4A24D] text-lg"></i>
+                    </div>
+                    <div className="text-base font-light">
+                      {dados.banheiros}{" "}
+                      {dados.banheiros === 1 ? "Banheiro" : "Banheiros"}
+                    </div>
+                  </div>
+                )}
                 {dados.vagas > 0 && (
                   <div className="flex flex-col items-center">
                     <div className="w-12 h-12 rounded-full bg-[#D4A24D]/20 flex items-center justify-center mb-2">
                       <i className="fas fa-car text-[#D4A24D] text-lg"></i>
                     </div>
-                    <div className="h-[44px] flex flex-col items-center justify-center">
-                      <div className="text-base font-light leading-tight">
-                        {dados.vagas} {dados.vagas === 1 ? "Vaga" : "Vagas"}
-                      </div>
+                    <div className="text-base font-light">
+                      {dados.vagas} {dados.vagas === 1 ? "Vaga" : "Vagas"}
                     </div>
                   </div>
                 )}
-
                 {dados.areaTotal > 0 && (
                   <div className="flex flex-col items-center">
                     <div className="w-12 h-12 rounded-full bg-[#D4A24D]/20 flex items-center justify-center mb-2">
                       <i className="fas fa-arrows-alt text-[#D4A24D] text-lg"></i>
                     </div>
-                    <div className="h-[44px] flex flex-col items-center justify-center">
-                      <div className="text-base font-light leading-tight">
-                        {dados.areaTotal} m²
-                      </div>
-                      <div className="text-[10px] md:text-xs text-gray-300 font-light leading-tight mt-0.5">
-                        Total
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {dados.areaConstruida > 0 && (
-                  <div className="flex flex-col items-center">
-                    <div className="w-12 h-12 rounded-full bg-[#D4A24D]/20 flex items-center justify-center mb-2">
-                      <i className="fas fa-building text-[#D4A24D] text-lg"></i>
-                    </div>
-                    <div className="h-[44px] flex flex-col items-center justify-center">
-                      <div className="text-base font-light leading-tight">
-                        {dados.areaConstruida} m²
-                      </div>
-                      <div className="text-[10px] md:text-xs text-gray-300 font-light leading-tight mt-0.5">
-                        Construída
-                      </div>
+                    <div className="text-base font-light">
+                      {dados.areaTotal} m²
                     </div>
                   </div>
                 )}
               </div>
             </div>
 
-            {/* COLUNA DA DIREITA - PERFORMANCE */}
+            {/* COLUNA DA DIREITA - VISUALIZAÇÕES REAIS */}
             <div className="relative flex items-center justify-center">
               <div className="hidden lg:block absolute -left-6 top-0 bottom-0 w-px">
                 <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/10 to-transparent"></div>
@@ -1155,20 +1026,21 @@ const DetalheImovel = () => {
                   <div className="text-center relative z-10">
                     <div className="flex justify-center mb-4">
                       <div className="w-14 h-14 rounded-full bg-gradient-to-r from-[#D4A24D]/15 to-[#E6B85C]/10 flex items-center justify-center border border-[#D4A24D]/15 shadow-inner shadow-[#D4A24D]/10 pulse-wave">
-                        <i className="fas fa-exclamation-circle text-[#D4A24D]/90 text-2xl"></i>
+                        <i className="fas fa-eye text-[#D4A24D]/90 text-2xl"></i>
                       </div>
                     </div>
                     <div className="mb-3">
                       <div className="text-5xl md:text-6xl font-black text-white leading-tight">
-                        1.247
+                        {visualizacoes.toLocaleString()}
                       </div>
                       <div className="text-xs font-semibold text-[#E6B85C] mt-2 tracking-wider">
                         VISUALIZAÇÕES TOTAIS
                       </div>
                     </div>
                     <p className="text-xs text-white/70 mt-4 max-w-xs mx-auto font-light">
-                      Este imóvel tem atraído muita atenção desde sua
-                      publicação.
+                      Este imóvel foi visualizado{" "}
+                      {visualizacoes === 1 ? "1 vez" : `${visualizacoes} vezes`}{" "}
+                      desde sua publicação.
                     </p>
                   </div>
                 </div>
@@ -1180,7 +1052,7 @@ const DetalheImovel = () => {
 
       <div className="py-6 md:py-8"></div>
 
-      {/* ===== ACORDEÕES ===== */}
+      {/* ===== ACORDEÕES RESTAURADOS ===== */}
       <section className="max-w-7xl mx-auto px-4">
         <div className="w-full bg-white shadow-lg rounded-xl overflow-hidden border border-gray-200">
           {dadosAcordeao.length > 0 ? (
@@ -1190,36 +1062,8 @@ const DetalheImovel = () => {
                 className="border-b border-gray-300 last:border-b-0"
               >
                 <button
-                  onClick={(e) => {
-                    const button = e.currentTarget;
-                    const content = button.nextElementSibling;
-                    const arrow = button.querySelector(".fa-chevron-down");
-
-                    document
-                      .querySelectorAll(".accordion-content-tailwind")
-                      .forEach(function (el) {
-                        if (el !== content) {
-                          el.classList.remove("!max-h-[500px]", "!p-6");
-                          el.classList.add("!max-h-0", "!p-0");
-                          const btn = el.previousElementSibling;
-                          if (btn) {
-                            const arr = btn.querySelector(".fa-chevron-down");
-                            if (arr) arr.style.transform = "rotate(0deg)";
-                          }
-                        }
-                      });
-
-                    if (content.classList.contains("!max-h-[500px]")) {
-                      content.classList.remove("!max-h-[500px]", "!p-6");
-                      content.classList.add("!max-h-0", "!p-0");
-                      arrow.style.transform = "rotate(0deg)";
-                    } else {
-                      content.classList.remove("!max-h-0", "!p-0");
-                      content.classList.add("!max-h-[500px]", "!p-6");
-                      arrow.style.transform = "rotate(180deg)";
-                    }
-                  }}
-                  className="w-full px-6 py-5 text-left flex justify-between items-center bg-white hover:bg-gray-50 transition-all duration-300 focus:outline-none focus:ring-0 focus:border-transparent focus:shadow-none outline-none ring-0 border-0"
+                  onClick={() => toggleAcordeao(index)}
+                  className="w-full px-6 py-5 text-left flex justify-between items-center bg-white hover:bg-gray-50 transition-all duration-300 focus:outline-none focus:ring-0"
                 >
                   <span className="flex items-center space-x-3">
                     <i
@@ -1229,10 +1073,20 @@ const DetalheImovel = () => {
                       {acordeao.titulo}
                     </span>
                   </span>
-                  <i className="fas fa-chevron-down text-[#D4A24D] transition-transform duration-300"></i>
+                  <i
+                    className={`fas fa-chevron-down text-[#D4A24D] transition-transform duration-300 ${
+                      acordeoesAbertos[index] ? "rotate-180" : ""
+                    }`}
+                  ></i>
                 </button>
 
-                <div className="accordion-content-tailwind overflow-hidden transition-all duration-400 !max-h-0 !p-0 bg-gray-50">
+                <div
+                  className={`overflow-hidden transition-all duration-400 ${
+                    acordeoesAbertos[index]
+                      ? "max-h-[500px] p-6"
+                      : "max-h-0 p-0"
+                  } bg-gray-50`}
+                >
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                     {acordeao.itens.map((item, itemIndex) => (
                       <div
@@ -1257,13 +1111,14 @@ const DetalheImovel = () => {
 
       <div className="py-6 md:py-8"></div>
 
-      {/* ===== CTA SECTION ===== */}
+      {/* ===== SEÇÃO DE CALL-TO-ACTION ===== */}
       <section className="max-w-7xl mx-auto px-4">
         <div className="bg-[#31353E] text-white rounded-xl shadow-xl relative overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-br from-transparent via-[#D4A24D]/5 to-transparent"></div>
           <div className="relative z-10">
             <div className="p-10 md:p-14">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 lg:gap-8">
+                {/* COLUNA 1 - WHATSAPP */}
                 <div className="pb-10 lg:pb-0 lg:pr-8 flex flex-col justify-center border-b lg:border-b-0 lg:border-r border-gray-600">
                   <div className="flex flex-col items-center text-center">
                     <h2 className="text-2xl md:text-3xl font-bold mb-4 text-[#D4A24D]">
@@ -1274,9 +1129,12 @@ const DetalheImovel = () => {
                     </p>
                     <div className="relative mb-8">
                       <a
-                        href={`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(`Olá! Tenho interesse no imóvel ${dados.codigo} - ${dados.titulo} e gostaria de mais informações.`)}`}
+                        href={`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(
+                          `Olá! Tenho interesse no imóvel ${dados.codigo} - ${dados.titulo} e gostaria de mais informações.`,
+                        )}`}
                         target="_blank"
                         rel="noopener noreferrer"
+                        onClick={() => registrarCliqueWhatsApp(dados.id)}
                         className="btn-whatsapp-premium inline-flex items-center justify-center px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white text-sm md:text-base font-semibold rounded-lg hover:from-green-600 hover:to-green-700 hover:shadow-lg transition-all duration-300 space-x-2 shadow-md relative overflow-hidden group whitespace-nowrap focus:outline-none focus:ring-0"
                       >
                         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
@@ -1286,9 +1144,8 @@ const DetalheImovel = () => {
                     </div>
                   </div>
                 </div>
-                <div className="hidden lg:block absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 h-2/3">
-                  <div className="h-full w-[0.5px] bg-gradient-to-b from-transparent via-white/50 to-transparent"></div>
-                </div>
+
+                {/* COLUNA 2 - SOLICITAR VISITA */}
                 <div className="pt-10 lg:pt-0 lg:pl-8 flex flex-col justify-center">
                   <div className="flex flex-col items-center text-center">
                     <h2 className="text-2xl md:text-3xl font-bold mb-4 text-white">
@@ -1315,13 +1172,8 @@ const DetalheImovel = () => {
             <div className="bg-white p-4 md:p-5 rounded-b-xl">
               <div className="text-center">
                 <p className="text-[#31353E] text-sm font-light flex items-center justify-center">
-                  <i
-                    className="far fa-clock text-[#D4A24D] mr-2 text-sm relative"
-                    style={{ top: "-1px" }}
-                  ></i>
-                  <span className="relative" style={{ top: "0px" }}>
-                    Atendimento de segunda a sexta, das 8h às 18h
-                  </span>
+                  <i className="far fa-clock text-[#D4A24D] mr-2 text-sm"></i>
+                  <span>Atendimento de segunda a sexta, das 8h às 18h</span>
                 </p>
               </div>
             </div>
@@ -1331,14 +1183,13 @@ const DetalheImovel = () => {
 
       <div className="py-6 md:py-8"></div>
 
-      {/* ===== MODAL ===== */}
+      {/* ===== MODAL DE SOLICITAÇÃO DE VISITA ===== */}
       {modalAberto && (
         <>
           <div
             ref={overlayRef}
             className="fixed inset-0 bg-black/50 z-[9998] transition-opacity duration-300"
             onClick={fecharModal}
-            style={{ cursor: "pointer" }}
           ></div>
           <div
             ref={modalRef}
@@ -1349,7 +1200,7 @@ const DetalheImovel = () => {
                 <div className="bg-[#D4A24D] text-white p-5">
                   <div className="flex justify-between items-center">
                     <div className="flex-1 pr-3 min-w-0">
-                      <h3 className="text-base md:text-lg font-semibold whitespace-nowrap overflow-hidden text-ellipsis">
+                      <h3 className="text-base md:text-lg font-semibold">
                         Agendar visita - {dados.codigo}
                       </h3>
                     </div>
@@ -1376,155 +1227,76 @@ const DetalheImovel = () => {
                         Em breve nosso corretor entrará em contato para combinar
                         o melhor horário.
                       </p>
-                      <p className="text-xs md:text-sm text-gray-500 mt-4">
-                        Esta janela será fechada automaticamente...
-                      </p>
                     </div>
                   ) : (
                     <form onSubmit={handleSubmit} className="space-y-4">
-                      <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                          <i className="fas fa-user text-gray-400"></i>
-                        </div>
-                        <input
-                          type="text"
-                          name="nome"
-                          value={formData.nome}
-                          onChange={handleInputChange}
-                          required
-                          className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D4A24D] focus:border-[#D4A24D] outline-none transition text-sm md:text-base bg-white text-gray-900 placeholder-gray-500"
-                          placeholder="Digite seu nome completo *"
-                        />
-                      </div>
-
-                      <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                          <i className="fas fa-phone text-gray-400"></i>
-                        </div>
-                        <input
-                          type="tel"
-                          name="telefone"
-                          value={formData.telefone}
-                          onChange={handleInputChange}
-                          required
-                          className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D4A24D] focus:border-[#D4A24D] outline-none transition text-sm md:text-base bg-white text-gray-900 placeholder-gray-500"
-                          placeholder="WhatsApp com DDD *"
-                        />
-                      </div>
-
-                      <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                          <i className="fas fa-envelope text-gray-400"></i>
-                        </div>
-                        <input
-                          type="email"
-                          name="email"
-                          value={formData.email}
-                          onChange={handleInputChange}
-                          required
-                          className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D4A24D] focus:border-[#D4A24D] outline-none transition text-sm md:text-base bg-white text-gray-900 placeholder-gray-500"
-                          placeholder="Seu melhor Email *"
-                        />
-                      </div>
-
-                      <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                          <i className="fas fa-calendar-day text-gray-400"></i>
-                        </div>
-                        <select
-                          name="diaSemana"
-                          value={formData.diaSemana}
-                          onChange={handleInputChange}
-                          required
-                          className="w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D4A24D] focus:border-[#D4A24D] outline-none transition text-sm md:text-base appearance-none bg-white text-gray-900"
-                        >
-                          <option value="" className="text-gray-500">
-                            Selecione o melhor dia para visita *
-                          </option>
-                          <option value="segunda" className="text-gray-900">
-                            Segunda-feira
-                          </option>
-                          <option value="terca" className="text-gray-900">
-                            Terça-feira
-                          </option>
-                          <option value="quarta" className="text-gray-900">
-                            Quarta-feira
-                          </option>
-                          <option value="quinta" className="text-gray-900">
-                            Quinta-feira
-                          </option>
-                          <option value="sexta" className="text-gray-900">
-                            Sexta-feira
-                          </option>
-                        </select>
-                        <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                          <i className="fas fa-chevron-down text-gray-400"></i>
-                        </div>
-                      </div>
-
-                      <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                          <i className="fas fa-clock text-gray-400"></i>
-                        </div>
-                        <select
-                          name="horarioPreferencia"
-                          value={formData.horarioPreferencia}
-                          onChange={handleInputChange}
-                          required
-                          className="w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D4A24D] focus:border-[#D4A24D] outline-none transition text-sm md:text-base appearance-none bg-white text-gray-900"
-                        >
-                          <option value="" className="text-gray-500">
-                            Selecione o melhor horário *
-                          </option>
-                          <option value="manha" className="text-gray-900">
-                            Manhã (8h às 12h)
-                          </option>
-                          <option value="tarde" className="text-gray-900">
-                            Tarde (14h às 18h)
-                          </option>
-                        </select>
-                        <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                          <i className="fas fa-chevron-down text-gray-400"></i>
-                        </div>
-                      </div>
-
-                      <div className="relative">
-                        <div className="absolute top-3 left-3">
-                          <i className="fas fa-comment text-gray-400"></i>
-                        </div>
-                        <textarea
-                          name="mensagem"
-                          value={formData.mensagem}
-                          onChange={handleInputChange}
-                          rows="3"
-                          className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D4A24D] focus:border-[#D4A24D] outline-none transition text-sm md:text-base bg-white text-gray-900 placeholder-gray-500"
-                          placeholder="Mensagem adicional (opcional)"
-                        />
-                      </div>
-
-                      <div className="pt-2">
-                        <button
-                          type="submit"
-                          disabled={enviando}
-                          className={`w-full py-3 rounded-lg font-medium text-base transition-all duration-300 flex items-center justify-center space-x-2 ${
-                            enviando
-                              ? "bg-gray-400 cursor-not-allowed text-white"
-                              : "bg-[#D4A24D] hover:bg-[#C4933E] text-white hover:shadow-md shadow-sm focus:outline-none focus:ring-0"
-                          }`}
-                        >
-                          {enviando ? (
-                            <>
-                              <i className="fas fa-spinner fa-spin text-sm"></i>
-                              <span>Enviando...</span>
-                            </>
-                          ) : (
-                            <>
-                              <i className="fas fa-calendar-check text-sm"></i>
-                              <span>Solicitar Visita Agendada</span>
-                            </>
-                          )}
-                        </button>
-                      </div>
+                      <input
+                        type="text"
+                        name="nome"
+                        value={formData.nome}
+                        onChange={handleInputChange}
+                        required
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D4A24D] focus:border-[#D4A24D] outline-none"
+                        placeholder="Nome completo *"
+                      />
+                      <input
+                        type="tel"
+                        name="telefone"
+                        value={formData.telefone}
+                        onChange={handleInputChange}
+                        required
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D4A24D] focus:border-[#D4A24D] outline-none"
+                        placeholder="WhatsApp com DDD *"
+                      />
+                      <input
+                        type="email"
+                        name="email"
+                        value={formData.email}
+                        onChange={handleInputChange}
+                        required
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D4A24D] focus:border-[#D4A24D] outline-none"
+                        placeholder="Email *"
+                      />
+                      <select
+                        name="diaSemana"
+                        value={formData.diaSemana}
+                        onChange={handleInputChange}
+                        required
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D4A24D] focus:border-[#D4A24D] outline-none"
+                      >
+                        <option value="">Melhor dia *</option>
+                        <option value="segunda">Segunda</option>
+                        <option value="terca">Terça</option>
+                        <option value="quarta">Quarta</option>
+                        <option value="quinta">Quinta</option>
+                        <option value="sexta">Sexta</option>
+                      </select>
+                      <select
+                        name="horarioPreferencia"
+                        value={formData.horarioPreferencia}
+                        onChange={handleInputChange}
+                        required
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D4A24D] focus:border-[#D4A24D] outline-none"
+                      >
+                        <option value="">Melhor horário *</option>
+                        <option value="manha">Manhã (8h-12h)</option>
+                        <option value="tarde">Tarde (14h-18h)</option>
+                      </select>
+                      <textarea
+                        name="mensagem"
+                        value={formData.mensagem}
+                        onChange={handleInputChange}
+                        rows="3"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D4A24D] focus:border-[#D4A24D] outline-none"
+                        placeholder="Mensagem (opcional)"
+                      />
+                      <button
+                        type="submit"
+                        disabled={enviando}
+                        className="w-full py-3 bg-[#D4A24D] hover:bg-[#C4933E] text-white rounded-lg font-medium transition-colors disabled:bg-gray-400"
+                      >
+                        {enviando ? "Enviando..." : "Solicitar Visita"}
+                      </button>
                     </form>
                   )}
                 </div>
@@ -1633,12 +1405,6 @@ const DetalheImovel = () => {
             transform: scale(1.5);
             opacity: 0;
           }
-        }
-
-        .btn-whatsapp-premium:hover,
-        .btn-visita-premium:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2) !important;
         }
       `}</style>
     </>

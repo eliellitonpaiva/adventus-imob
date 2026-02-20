@@ -1,4 +1,20 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
+// Ícones outline (vazados) do Heroicons
+// Ícones do react-icons/io5
+import {
+  IoHeartOutline,
+  IoNuclearOutline,
+  IoBarChartOutline,
+  IoTimeOutline,
+  IoCarOutline,
+  IoBriefcaseOutline,
+  IoChatbubbleOutline,
+  IoScaleOutline,
+  IoPeopleOutline,
+  IoRocketOutline,
+} from "react-icons/io5";
+
+// Ícones outline (vazados) do Heroicons
 import {
   PlusIcon,
   EnvelopeIcon,
@@ -28,28 +44,20 @@ import {
   ExclamationCircleIcon,
   ChevronRightIcon,
   ArchiveBoxIcon,
+  BriefcaseIcon,
+  RocketLaunchIcon,
 } from "@heroicons/react/24/outline";
+
+// Ícones solid (preenchidos) do Heroicons
 import {
   StarIcon as StarIconSolid,
   CheckCircleIcon as CheckCircleIconSolid,
 } from "@heroicons/react/24/solid";
-import {
-  IoHeartOutline,
-  IoNuclearOutline,
-  IoBarChartOutline,
-  IoTimeOutline,
-  IoCarOutline,
-  IoBriefcaseOutline,
-  IoChatbubbleOutline,
-  IoScaleOutline,
-  IoPeopleOutline,
-  IoRocketOutline,
-} from "react-icons/io5";
 import Button from "../../componentes/ui/Button";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "../../contexts/ThemeContext";
 import { supabase } from "../../lib/supabase";
-
+import { configuracoesService } from "../../lib/configuracoesService"; // ← NOVO IMPORT
 // ===========================================
 // COMPONENTES MODAIS
 // ===========================================
@@ -659,28 +667,103 @@ const ModalProgressoTreinamento = ({
 };
 
 // -------------------------------------------
-// MODAL DE PERFIL
+// MODAL DE PERFIL ÚNICO - COM OU SEM EXPERIÊNCIA
 // -------------------------------------------
-const ModalPerfilCorretor = ({ isOpen, onClose, corretor, isDark }) => {
+const ModalPerfilCorretor = ({
+  isOpen,
+  onClose,
+  corretor,
+  isDark,
+  onAtivar,
+}) => {
   if (!isOpen || !corretor) return null;
+
+  // ===========================================
+  // 1. FUNÇÕES AUXILIARES
+  // ===========================================
+
+  const calcularTempoConosco = (dataContratacao) => {
+    if (!dataContratacao) return "2 meses e 5 dias";
+    return "2 meses e 5 dias";
+  };
+
+  const formatarDataBR = (data) => {
+    if (!data) return "Não informada";
+    return data.toLocaleDateString("pt-BR");
+  };
+
+  // ===========================================
+  // 2. CONSTANTES DE CÁLCULO
+  // ===========================================
+
+  const emExperiencia = corretor.periodoExperiencia || false;
+  const estaAtivo = !emExperiencia;
+
+  const dataInicio = corretor.treinamento_conclusao
+    ? new Date(corretor.treinamento_conclusao)
+    : null;
+  const dataFim = corretor.data_experiencia_fim
+    ? new Date(corretor.data_experiencia_fim)
+    : null;
+  const dataAtivacao = corretor.data_ativacao
+    ? new Date(corretor.data_ativacao)
+    : null;
+
+  const hoje = new Date();
+
+  const diasPassados = dataInicio
+    ? Math.ceil((hoje - dataInicio) / (1000 * 60 * 60 * 24))
+    : 0;
+
+  const diasTotais = 90;
+
+  const diasRestantes = Math.max(0, diasTotais - diasPassados);
+
+  const progresso =
+    diasTotais > 0
+      ? Math.min(100, Math.round((diasPassados / diasTotais) * 100))
+      : 0;
+
+  const experienciaConcluida = diasPassados >= diasTotais;
+  const ativacaoAntecipada = dataAtivacao && diasPassados < diasTotais;
+
+  const imoveis = corretor.imoveis || 0;
+  const vendas = corretor.vendas_mes || 0;
+  const leads = corretor.leads || 0;
+
+  const mediaImoveis =
+    diasPassados > 0 ? (imoveis / diasPassados).toFixed(2) : 0;
+  const mediaVendas = diasPassados > 0 ? (vendas / diasPassados).toFixed(2) : 0;
+  const mediaLeads = diasPassados > 0 ? (leads / diasPassados).toFixed(2) : 0;
+
+  const projecaoImoveis = Math.round(mediaImoveis * diasTotais);
+  const projecaoVendas = Math.round(mediaVendas * diasTotais);
+  const projecaoLeads = Math.round(mediaLeads * diasTotais);
+
+  // ===========================================
+  // 3. OBJETO DE DADOS
+  // ===========================================
 
   const corretorData = {
     ...corretor,
-    creciDesde: corretor.creciDesde || "15/06/2018",
-    naImobiliariaDesde: corretor.naImobiliariaDesde || "10/03/2024",
-    ultimaAtualizacaoCreci: corretor.ultimaAtualizacaoCreci || "10/01/2024",
-    tempoConosco: corretor.tempoConosco || "2 meses e 5 dias",
+    creciDesde: corretor.creci_desde
+      ? formatarData(corretor.creci_desde)
+      : "15/06/2018",
+    naImobiliariaDesde: corretor.treinamento_conclusao
+      ? formatarData(corretor.treinamento_conclusao)
+      : "10/03/2024",
+    tempoConosco: calcularTempoConosco(corretor.treinamento_conclusao),
     kpis: {
       imoveisResponsabilidade: corretor.imoveis || 12,
-      imoveisVendidosMes: corretor.vendasMes || 3,
+      imoveisVendidosMes: corretor.vendas_mes || 3,
       leadsRecebidos: corretor.leads || 24,
-      taxaConversao: corretor.taxaConversao || "8.3%",
-      valorTotalVendas: corretor.valorVendas || "R$ 2.5M",
-      mediaMensal: corretor.mediaMensal || "R$ 850K",
+      taxaConversao: corretor.taxa_conversao || "8.3%",
+      valorTotalVendas: corretor.valor_vendas || "R$ 2.5M",
+      mediaMensal: corretor.media_mensal || "R$ 850K",
     },
     ranking: {
-      posicao: corretor.rankingPosicao || 1,
-      total: corretor.rankingTotal || 12,
+      posicao: corretor.ranking_posicao || 1,
+      total: corretor.ranking_total || 12,
       pontuacao: corretor.pontuacao || 980,
       meta: corretor.meta || 1000,
       percentual: Math.round(
@@ -699,7 +782,7 @@ const ModalPerfilCorretor = ({ isOpen, onClose, corretor, isDark }) => {
       ultimoTreinamento: "15/02/2026",
       nivel: "Avançado",
     },
-    vendasRecentes: [
+    vendasRecentes: corretor.vendas_recentes || [
       {
         property: "Apartamento Higienópolis",
         value: 1850000,
@@ -712,39 +795,67 @@ const ModalPerfilCorretor = ({ isOpen, onClose, corretor, isDark }) => {
         date: "05/02/2026",
         client: "João Santos",
       },
-      {
-        property: "Sala Comercial Paulista",
-        value: 850000,
-        date: "28/01/2026",
-        client: "Empresa XYZ",
-      },
     ],
-    feedbacks: [
+    feedbacks: corretor.feedbacks || [
       {
         texto: "Excelente atendimento ao cliente Silva",
         autor: "Gerente",
         data: "12/02/2026",
       },
-      {
-        texto: "Proativo na captação de leads",
-        autor: "Líder de Equipe",
-        data: "05/02/2026",
-      },
-    ],
-    incentivos: [
-      { type: "Premiação", status: "eligible" },
-      { type: "Comissão", status: "eligible" },
-      { type: "PL", status: "attention" },
     ],
   };
 
-  const [observacoes, setObservacoes] = useState(
-    "Corretor dedicado com alto potencial para grandes negócios. Precisa desenvolver habilidades com clientes corporativos.",
-  );
+  // ===========================================
+  // 4. STATES E HANDLERS
+  // ===========================================
 
-  const handleSalvarObservacoes = () => {
-    console.log("Observações salvas:", observacoes);
+  const [observacoes, setObservacoes] = useState(corretor.observacoes || "");
+  const [ativando, setAtivando] = useState(false);
+
+  // 🔥 useEffect para monitorar mudanças no corretor
+  useEffect(() => {
+    console.log("🔄 Modal recebeu novo corretor:", corretor);
+    console.log("   • periodoExperiencia:", corretor.periodoExperiencia);
+    console.log("   • data_ativacao:", corretor.data_ativacao);
+    console.log("   • estaAtivo:", !corretor.periodoExperiencia);
+  }, [corretor]);
+
+  const handleSalvarObservacoes = async () => {
+    try {
+      await supabase
+        .from("corretores")
+        .update({ observacoes })
+        .eq("id", corretor.id);
+      alert("Observações salvas com sucesso!");
+    } catch (err) {
+      console.error("Erro ao salvar observações:", err);
+    }
   };
+
+  // ===========================================
+  // 5. HANDLER DE ATIVAÇÃO
+  // ===========================================
+  const handleAtivarCorretor = async () => {
+    if (ativando) return;
+
+    setAtivando(true);
+    console.log("🚀 handleAtivarCorretor chamado no MODAL");
+    console.log("📦 Corretor atual:", corretor);
+    console.log("🆔 ID do corretor:", corretor.id);
+
+    try {
+      await onAtivar(corretor.id);
+      console.log("✅ onAtivar executado com sucesso");
+    } catch (error) {
+      console.error("❌ Erro no onAtivar:", error);
+    } finally {
+      setAtivando(false);
+    }
+  };
+
+  // ===========================================
+  // 6. RENDERIZAÇÃO
+  // ===========================================
 
   return (
     <div className="fixed inset-0 z-[9999] overflow-y-auto">
@@ -755,73 +866,105 @@ const ModalPerfilCorretor = ({ isOpen, onClose, corretor, isDark }) => {
       <div className="flex min-h-full items-center justify-center p-4">
         <div
           className={`
-            relative w-full max-w-6xl rounded-2xl shadow-2xl transform transition-all z-[10000]
+            relative w-full max-w-6xl max-h-[90vh] overflow-y-auto rounded-2xl shadow-2xl transform transition-all z-[10000]
             ${isDark ? "bg-gray-800 border border-gray-700" : "bg-white border border-gray-200"}
           `}
           onClick={(e) => e.stopPropagation()}
         >
+          {/* HEADER - Título dinâmico */}
           <div
-            className={`px-8 py-6 border-b flex items-center justify-between ${isDark ? "border-gray-700" : "border-gray-200"}`}
+            className={`sticky top-0 px-8 py-6 border-b flex items-center justify-between ${
+              isDark
+                ? "border-gray-700 bg-gray-800"
+                : "border-gray-200 bg-white"
+            }`}
           >
             <div className="flex items-center space-x-4">
               <div>
                 <h2
-                  className={`text-2xl font-bold ${isDark ? "text-gray-100" : "text-gray-900"}`}
+                  className={`text-2xl font-bold flex items-center gap-2 ${
+                    isDark ? "text-gray-100" : "text-gray-900"
+                  }`}
                 >
-                  {corretorData.nome}
+                  <UserIcon className="w-6 h-6" />
+                  {corretor.nome}
+                  {emExperiencia && !experienciaConcluida && !estaAtivo && (
+                    <span
+                      className={`ml-2 text-xs font-medium px-2 py-1 rounded-full ${
+                        isDark
+                          ? "bg-amber-900/30 text-amber-300 border border-amber-800"
+                          : "bg-amber-100 text-amber-800 border border-amber-300"
+                      }`}
+                    >
+                      em experiência
+                    </span>
+                  )}
+                  {experienciaConcluida && !estaAtivo && (
+                    <span
+                      className={`ml-2 text-xs font-medium px-2 py-1 rounded-full ${
+                        isDark
+                          ? "bg-green-900/30 text-green-300 border border-green-800"
+                          : "bg-green-100 text-green-800 border border-green-300"
+                      }`}
+                    >
+                      experiência concluída
+                    </span>
+                  )}
+                  {estaAtivo && (
+                    <span
+                      className={`ml-2 text-xs font-medium px-2 py-1 rounded-full ${
+                        isDark
+                          ? "bg-green-900/30 text-green-300 border border-green-800"
+                          : "bg-green-100 text-green-800 border border-green-300"
+                      }`}
+                    >
+                      ativo
+                    </span>
+                  )}
                 </h2>
                 <div className="flex items-center mt-2 space-x-3 flex-wrap gap-y-2">
-                  <StatusBadge status={corretorData.status} isDark={isDark} />
                   <div
-                    className={`flex items-center ${isDark ? "text-amber-300" : "text-amber-600"}`}
+                    className={`flex items-center text-sm ${
+                      isDark ? "text-amber-400" : "text-amber-600"
+                    }`}
                   >
-                    <StarIconSolid className="w-5 h-5 mr-1" />
-                    <span className="font-bold text-lg">
-                      {corretorData.rating}
-                    </span>
+                    <StarIconSolid className="w-4 h-4 mr-1" />
+                    <span>{corretor.rating || 4.8}</span>
                   </div>
                   <div
-                    className={`text-sm ${isDark ? "text-gray-400" : "text-gray-600"}`}
+                    className={`text-sm ${
+                      isDark ? "text-gray-400" : "text-gray-500"
+                    }`}
                   >
-                    CRECI: {corretorData.creci}
-                  </div>
-                </div>
-                <div className="flex items-center mt-2 space-x-4 text-xs">
-                  <div className={isDark ? "text-gray-400" : "text-gray-600"}>
-                    <span className="font-medium">CRECI desde:</span>{" "}
-                    {corretorData.creciDesde}
-                  </div>
-                  <div className={isDark ? "text-gray-400" : "text-gray-600"}>
-                    <span className="font-medium">Na imobiliária desde:</span>{" "}
-                    {corretorData.naImobiliariaDesde}
-                  </div>
-                  <div className={isDark ? "text-gray-400" : "text-gray-600"}>
-                    <span className="font-medium">⏰</span>{" "}
-                    {corretorData.tempoConosco}
+                    CRECI: {corretor.creci}
                   </div>
                 </div>
               </div>
             </div>
 
-            <div className="flex items-center space-x-3">
-              <button
+            <div className="flex items-center space-x-2">
+              <a
+                href={`https://wa.me/55${corretor.telefone?.replace(/\D/g, "")}`}
+                target="_blank"
+                rel="noopener noreferrer"
                 className={`p-2 rounded-lg transition-all duration-200 ${
                   isDark
-                    ? "bg-green-900/30 text-green-300 hover:bg-green-800/50 border border-green-800/50"
-                    : "bg-green-100 text-green-600 hover:bg-green-200 border border-green-200"
+                    ? "text-green-400 hover:text-green-300 hover:bg-gray-700"
+                    : "text-green-600 hover:text-green-700 hover:bg-gray-100"
                 }`}
               >
                 <PhoneIcon className="w-5 h-5" />
-              </button>
-              <button
+              </a>
+              <a
+                href={`mailto:${corretor.email}`}
                 className={`p-2 rounded-lg transition-all duration-200 ${
                   isDark
-                    ? "bg-blue-900/30 text-blue-300 hover:bg-blue-800/50 border border-blue-800/50"
-                    : "bg-blue-100 text-blue-600 hover:bg-blue-200 border border-blue-200"
+                    ? "text-blue-400 hover:text-blue-300 hover:bg-gray-700"
+                    : "text-blue-600 hover:text-blue-700 hover:bg-gray-100"
                 }`}
               >
                 <EnvelopeIcon className="w-5 h-5" />
-              </button>
+              </a>
               <button
                 onClick={onClose}
                 className={`p-2 rounded-lg transition-all duration-200 ${
@@ -835,317 +978,397 @@ const ModalPerfilCorretor = ({ isOpen, onClose, corretor, isDark }) => {
             </div>
           </div>
 
-          {corretorData.periodoExperiencia && (
+          {/* BADGE DE EXPERIÊNCIA (só aparece se ainda estiver em experiência) */}
+          {emExperiencia && !estaAtivo && (
             <div
-              className={`px-8 py-3 ${isDark ? "bg-blue-900/20 border-b border-blue-800" : "bg-blue-50 border-b border-blue-200"}`}
+              className={`px-8 py-4 ${
+                isDark
+                  ? experienciaConcluida
+                    ? "bg-green-900/10 border-b border-green-800"
+                    : "bg-amber-900/10 border-b border-amber-800"
+                  : experienciaConcluida
+                    ? "bg-green-50 border-b border-green-200"
+                    : "bg-amber-50 border-b border-amber-200"
+              }`}
             >
-              <div className="flex items-center">
-                <ClockIcon
-                  className={`w-5 h-5 mr-2 ${isDark ? "text-blue-400" : "text-blue-600"}`}
-                />
-                <span
-                  className={`text-sm font-medium ${isDark ? "text-blue-300" : "text-blue-800"}`}
-                >
-                  Período de experiência: {corretorData.diasExperiencia || 45}{" "}
-                  de 90 dias
-                </span>
-                <div className="ml-4 w-24">
-                  <div
-                    className={`h-1.5 rounded-full ${isDark ? "bg-gray-700" : "bg-gray-200"}`}
-                  >
-                    <div
-                      className="h-1.5 rounded-full bg-blue-500"
-                      style={{
-                        width: `${Math.round(((corretorData.diasExperiencia || 45) / 90) * 100)}%`,
-                      }}
+              <div className="flex items-center justify-between text-sm">
+                <div className="flex items-center gap-2">
+                  {experienciaConcluida ? (
+                    <CheckCircleIcon
+                      className={`w-4 h-4 ${
+                        isDark ? "text-green-400" : "text-green-600"
+                      }`}
                     />
-                  </div>
+                  ) : (
+                    <ClockIcon
+                      className={`w-4 h-4 ${
+                        isDark ? "text-amber-400" : "text-amber-600"
+                      }`}
+                    />
+                  )}
+                  <span
+                    className={`${
+                      isDark
+                        ? experienciaConcluida
+                          ? "text-green-300"
+                          : "text-amber-300"
+                        : experienciaConcluida
+                          ? "text-green-700"
+                          : "text-amber-700"
+                    }`}
+                  >
+                    {diasPassados} de {diasTotais} dias • {progresso}%
+                  </span>
                 </div>
+                <span
+                  className={`${
+                    isDark
+                      ? experienciaConcluida
+                        ? "text-green-400"
+                        : "text-amber-400"
+                      : experienciaConcluida
+                        ? "text-green-600"
+                        : "text-amber-600"
+                  }`}
+                >
+                  {diasRestantes} dias restantes
+                </span>
+              </div>
+              <div className="mt-2 w-full h-1 bg-gray-200 rounded-full overflow-hidden">
+                <div
+                  className={`h-full rounded-full ${
+                    experienciaConcluida ? "bg-green-500" : "bg-amber-500"
+                  }`}
+                  style={{ width: `${progresso}%` }}
+                />
               </div>
             </div>
           )}
 
+          {/* CORPO DO MODAL - 2 COLUNAS */}
           <div className="px-8 py-6">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* COLUNA ESQUERDA - 2/3 */}
               <div className="lg:col-span-2 space-y-6">
-                <div>
-                  <h3
-                    className={`text-lg font-semibold mb-4 flex items-center ${isDark ? "text-gray-200" : "text-gray-900"}`}
-                  >
-                    <ChartBarIcon className="w-5 h-5 mr-2" />
-                    Resumo de Performance
-                  </h3>
-
+                {/* SEÇÃO DE EXPERIÊNCIA - SEMPRE VISÍVEL (HISTÓRICO) */}
+                {dataInicio && (
                   <div
-                    className={`mb-4 p-4 rounded-xl border ${isDark ? "bg-gray-700/50 border-gray-600" : "bg-amber-50 border-amber-200"}`}
+                    className={`p-6 rounded-xl border-2 ${
+                      isDark
+                        ? estaAtivo
+                          ? "bg-green-900/10 border-green-700"
+                          : experienciaConcluida
+                            ? "bg-green-900/20 border-green-700"
+                            : "bg-amber-900/20 border-amber-600"
+                        : estaAtivo
+                          ? "bg-green-50 border-green-300"
+                          : experienciaConcluida
+                            ? "bg-green-50 border-green-300"
+                            : "bg-amber-50 border-amber-300"
+                    }`}
                   >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center">
-                        <TrophyIcon
-                          className={`w-8 h-8 mr-3 ${isDark ? "text-amber-400" : "text-amber-600"}`}
-                        />
-                        <div>
-                          <div
-                            className={`text-sm ${isDark ? "text-gray-400" : "text-gray-600"}`}
-                          >
-                            Ranking do Mês
-                          </div>
-                          <div className="flex items-baseline">
-                            <span
-                              className={`text-2xl font-bold ${isDark ? "text-white" : "text-gray-900"}`}
-                            >
-                              #{corretorData.ranking.posicao}
+                    <h3
+                      className={`text-sm font-medium uppercase tracking-wider mb-4 flex items-center gap-2 ${
+                        isDark ? "text-gray-300" : "text-gray-700"
+                      }`}
+                    >
+                      <RocketLaunchIcon className="w-4 h-4" />
+                      {estaAtivo
+                        ? "histórico da experiência"
+                        : experienciaConcluida
+                          ? "experiência concluída"
+                          : "acompanhamento da experiência"}
+                    </h3>
+
+                    {/* DATAS */}
+                    <div className="grid grid-cols-2 gap-4 mb-4">
+                      <div>
+                        <span className="text-xs text-gray-500">início</span>
+                        <p className="text-sm font-medium">
+                          {formatarDataBR(dataInicio)}
+                        </p>
+                      </div>
+                      <div>
+                        <span className="text-xs text-gray-500">
+                          término previsto
+                        </span>
+                        <p className="text-sm font-medium">
+                          {formatarDataBR(dataFim)}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* DATA DE ATIVAÇÃO (se já estiver ativo) */}
+                    {estaAtivo && dataAtivacao && (
+                      <div className="mb-4 p-2 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
+                        <div className="flex items-center gap-2">
+                          <CheckCircleIcon className="w-4 h-4 text-green-600 dark:text-green-400" />
+                          <span className="text-xs text-green-700 dark:text-green-300">
+                            {ativacaoAntecipada
+                              ? `✅ Ativado antecipadamente em ${formatarDataBR(dataAtivacao)} (${diasPassados}/${diasTotais} dias)`
+                              : `✅ Ativado em ${formatarDataBR(dataAtivacao)}`}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* DIVISÓRIA APÓS DATAS */}
+                    <div
+                      className={`h-px w-full my-4 ${
+                        isDark ? "bg-gray-700" : "bg-gray-300"
+                      }`}
+                    />
+
+                    {/* INDICADORES */}
+                    <div className="grid grid-cols-3 gap-4 mb-4">
+                      <div className="text-center">
+                        <div className="text-xl font-semibold">{imoveis}</div>
+                        <div className="text-xs text-gray-500 mt-1">
+                          IMÓVEIS
+                        </div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-xl font-semibold">{vendas}</div>
+                        <div className="text-xs text-gray-500 mt-1 whitespace-nowrap">
+                          VENDAS (MÊS)
+                        </div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-xl font-semibold">{leads}</div>
+                        <div className="text-xs text-gray-500 mt-1">LEADS</div>
+                      </div>
+                    </div>
+
+                    {/* DIVISÓRIA APÓS INDICADORES */}
+                    <div
+                      className={`h-px w-full my-4 ${
+                        isDark ? "bg-gray-700" : "bg-gray-300"
+                      }`}
+                    />
+
+                    {/* MÉDIA DIÁRIA E PROJEÇÃO */}
+                    <div className="grid grid-cols-2 gap-6 pt-2">
+                      <div>
+                        <h4 className="text-xs font-medium text-gray-500 mb-3 flex items-center gap-1">
+                          <ChartBarIcon className="w-3 h-3" />
+                          MÉDIA DIÁRIA
+                        </h4>
+                        <div className="space-y-2">
+                          <div className="flex justify-between text-sm">
+                            <span className="text-gray-500">Imóveis</span>
+                            <span className="font-medium">
+                              {mediaImoveis}/dia
                             </span>
-                            <span
-                              className={`ml-1 text-sm ${isDark ? "text-gray-400" : "text-gray-600"}`}
-                            >
-                              de {corretorData.ranking.total}
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span className="text-gray-500">Vendas</span>
+                            <span className="font-medium">
+                              {mediaVendas}/dia
+                            </span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span className="text-gray-500">Leads</span>
+                            <span className="font-medium">
+                              {mediaLeads}/dia
                             </span>
                           </div>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <div
-                          className={`text-sm ${isDark ? "text-gray-400" : "text-gray-600"}`}
-                        >
-                          Pontuação
-                        </div>
-                        <div
-                          className={`text-xl font-bold ${isDark ? "text-green-400" : "text-green-600"}`}
-                        >
-                          {corretorData.ranking.pontuacao} pts
+                      <div>
+                        <h4 className="text-xs font-medium text-gray-500 mb-3 flex items-center gap-1">
+                          <ArrowTrendingUpIcon className="w-3 h-3" />
+                          PROJEÇÃO 90 DIAS
+                        </h4>
+                        <div className="space-y-2">
+                          <div className="flex justify-between text-sm">
+                            <span className="text-gray-500">Imóveis</span>
+                            <span className="font-medium text-blue-500">
+                              {projecaoImoveis}
+                            </span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span className="text-gray-500">Vendas</span>
+                            <span className="font-medium text-green-500">
+                              {projecaoVendas}
+                            </span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span className="text-gray-500">Leads</span>
+                            <span className="font-medium text-purple-500">
+                              {projecaoLeads}
+                            </span>
+                          </div>
                         </div>
                       </div>
                     </div>
-                    <div className="mt-3">
-                      <ProgressBar
-                        percentage={corretorData.ranking.percentual}
-                        label="Meta mensal"
-                        color="amber"
-                        isDark={isDark}
+
+                    {/* BOTÃO DE ATIVAÇÃO - SÓ APARECE SE AINDA ESTIVER EM EXPERIÊNCIA */}
+                    {emExperiencia && !estaAtivo && (
+                      <div className="mt-6 pt-4 border-t border-gray-300 dark:border-gray-700">
+                        <button
+                          onClick={handleAtivarCorretor}
+                          disabled={ativando}
+                          className={`w-full py-2 px-4 rounded-lg text-sm font-bold uppercase transition-all duration-200 ${
+                            ativando
+                              ? "opacity-50 cursor-not-allowed"
+                              : isDark
+                                ? "bg-amber-900/30 text-amber-300 hover:bg-amber-800/40"
+                                : "bg-amber-100 text-amber-700 hover:bg-amber-200"
+                          }`}
+                        >
+                          {ativando ? "ATIVANDO..." : "ATIVAR CORRETOR AGORA"}
+                        </button>
+                        <p className="text-xs text-center text-gray-500 mt-2">
+                          Isso vai efetivá-lo com {diasPassados}/{diasTotais}{" "}
+                          dias
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* RESUMO DE PERFORMANCE */}
+                <div>
+                  <h3
+                    className={`text-sm font-medium uppercase tracking-wider mb-4 flex items-center gap-2 ${
+                      isDark ? "text-gray-400" : "text-gray-500"
+                    }`}
+                  >
+                    <ChartBarIcon className="w-4 h-4" />
+                    RESUMO DE PERFORMANCE
+                  </h3>
+
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    <div className="p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                      <div className="text-2xl font-semibold text-blue-500">
+                        {corretorData.kpis.imoveisResponsabilidade}
+                      </div>
+                      <div className="text-xs text-gray-500 mt-1">IMÓVEIS</div>
+                    </div>
+                    <div className="p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                      <div className="text-2xl font-semibold text-green-500">
+                        {corretorData.kpis.imoveisVendidosMes}
+                      </div>
+                      <div className="text-xs text-gray-500 mt-1 whitespace-nowrap">
+                        VENDAS (MÊS)
+                      </div>
+                    </div>
+                    <div className="p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                      <div className="text-2xl font-semibold text-purple-500">
+                        {corretorData.kpis.leadsRecebidos}
+                      </div>
+                      <div className="text-xs text-gray-500 mt-1">LEADS</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* METAS E PROGRESSO */}
+                <div>
+                  <h3
+                    className={`text-sm font-medium uppercase tracking-wider mb-4 flex items-center gap-2 ${
+                      isDark ? "text-gray-400" : "text-gray-500"
+                    }`}
+                  >
+                    <TrophyIcon className="w-4 h-4" />
+                    METAS E PROGRESSO
+                  </h3>
+                  <div className="p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-sm text-gray-500">Meta mensal</span>
+                      <span className="text-sm font-medium">
+                        {corretorData.ranking.pontuacao}/{corretorData.meta} pts
+                      </span>
+                    </div>
+                    <div className="w-full h-1 bg-gray-200 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-amber-500 rounded-full"
+                        style={{ width: `${corretorData.ranking.percentual}%` }}
                       />
                     </div>
                   </div>
-
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    <KPICard
-                      title="Imóveis sob responsabilidade"
-                      value={corretorData.kpis.imoveisResponsabilidade}
-                      icon={HomeIcon}
-                      trend={5}
-                      isDark={isDark}
-                      color="blue"
-                    />
-                    <KPICard
-                      title="Vendas este mês"
-                      value={corretorData.kpis.imoveisVendidosMes}
-                      icon={TrophyIcon}
-                      trend={12}
-                      subtitle={`R$ ${corretorData.kpis.valorTotalVendas}`}
-                      isDark={isDark}
-                      color="green"
-                    />
-                    <KPICard
-                      title="Leads recebidos"
-                      value={corretorData.kpis.leadsRecebidos}
-                      icon={UserGroupIcon}
-                      trend={8}
-                      isDark={isDark}
-                      color="purple"
-                    />
-                    <KPICard
-                      title="Taxa de conversão"
-                      value={corretorData.kpis.taxaConversao}
-                      icon={ArrowTrendingUpIcon}
-                      trend={3}
-                      subtitle="leads → vendas"
-                      isDark={isDark}
-                      color="amber"
-                    />
-                    <KPICard
-                      title="Média mensal"
-                      value={corretorData.kpis.mediaMensal}
-                      icon={CurrencyDollarIcon}
-                      trend={15}
-                      subtitle="últimos 6 meses"
-                      isDark={isDark}
-                      color="green"
-                    />
-                  </div>
                 </div>
 
+                {/* HISTÓRICO DE VENDAS */}
                 <div>
                   <h3
-                    className={`text-lg font-semibold mb-4 flex items-center ${isDark ? "text-gray-200" : "text-gray-900"}`}
+                    className={`text-sm font-medium uppercase tracking-wider mb-4 flex items-center gap-2 ${
+                      isDark ? "text-gray-400" : "text-gray-500"
+                    }`}
                   >
-                    <TrophyIcon className="w-5 h-5 mr-2" />
-                    Metas e Progresso
+                    <CurrencyDollarIcon className="w-4 h-4" />
+                    ÚLTIMAS VENDAS
                   </h3>
-                  <div
-                    className={`rounded-xl border p-6 ${isDark ? "bg-gray-800/50 border-gray-700" : "bg-gray-50 border-gray-200"}`}
-                  >
-                    <div className="flex justify-between items-center mb-4">
-                      <div>
+                  <div className="space-y-3">
+                    {corretorData.vendasRecentes
+                      .slice(0, 2)
+                      .map((venda, index) => (
                         <div
-                          className={`text-sm ${isDark ? "text-gray-400" : "text-gray-600"}`}
+                          key={index}
+                          className="flex justify-between items-center p-3 rounded-lg border border-gray-200 dark:border-gray-700"
                         >
-                          Meta atual
+                          <div>
+                            <div className="text-sm font-medium">
+                              {venda.property}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              {venda.date}
+                            </div>
+                          </div>
+                          <div className="text-sm font-medium text-green-600">
+                            R$ {venda.value.toLocaleString()}
+                          </div>
                         </div>
-                        <div
-                          className={`text-xl font-bold ${isDark ? "text-white" : "text-gray-900"}`}
-                        >
-                          {corretorData.metas.atual}
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <div
-                          className={`text-sm ${isDark ? "text-gray-400" : "text-gray-600"}`}
-                        >
-                          Atingido
-                        </div>
-                        <div
-                          className={`text-xl font-bold ${isDark ? "text-green-400" : "text-green-600"}`}
-                        >
-                          {corretorData.metas.atingido}
-                        </div>
-                      </div>
-                    </div>
-                    <ProgressBar
-                      percentage={corretorData.metas.percentual}
-                      label="Progresso da meta"
-                      color="green"
-                      isDark={isDark}
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <h3
-                    className={`text-lg font-semibold mb-4 flex items-center ${isDark ? "text-gray-200" : "text-gray-900"}`}
-                  >
-                    <CurrencyDollarIcon className="w-5 h-5 mr-2" />
-                    Histórico Recente de Vendas
-                  </h3>
-                  <div
-                    className={`rounded-xl border p-6 ${isDark ? "bg-gray-800/50 border-gray-700" : "bg-gray-50 border-gray-200"}`}
-                  >
-                    <SalesTimeline
-                      sales={corretorData.vendasRecentes}
-                      isDark={isDark}
-                    />
+                      ))}
                   </div>
                 </div>
               </div>
 
+              {/* COLUNA DIREITA - 1/3 */}
               <div className="space-y-6">
+                {/* TREINAMENTOS */}
                 <div>
                   <h3
-                    className={`text-lg font-semibold mb-4 flex items-center ${isDark ? "text-gray-200" : "text-gray-900"}`}
+                    className={`text-sm font-medium uppercase tracking-wider mb-4 flex items-center gap-2 ${
+                      isDark ? "text-gray-400" : "text-gray-500"
+                    }`}
                   >
-                    <AcademicCapIcon className="w-5 h-5 mr-2" />
-                    Engajamento e Treinamentos
+                    <AcademicCapIcon className="w-4 h-4" />
+                    TREINAMENTOS
                   </h3>
-                  <div
-                    className={`rounded-xl border p-6 space-y-4 ${isDark ? "bg-gray-800/50 border-gray-700" : "bg-gray-50 border-gray-200"}`}
-                  >
+                  <div className="p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                    <div className="flex justify-between items-center mb-3">
+                      <span className="text-sm text-gray-500">Concluídos</span>
+                      <span className="text-lg font-semibold">
+                        {corretorData.treinamentos.concluidos}/5
+                      </span>
+                    </div>
                     <div className="flex justify-between items-center">
-                      <div>
-                        <div
-                          className={`text-sm ${isDark ? "text-gray-400" : "text-gray-600"}`}
-                        >
-                          Treinamentos concluídos
-                        </div>
-                        <div
-                          className={`text-2xl font-bold ${isDark ? "text-white" : "text-gray-900"}`}
-                        >
-                          {corretorData.treinamentos.concluidos}
-                        </div>
-                      </div>
-                      <div
-                        className={`px-3 py-1 rounded-full text-sm font-medium ${
-                          isDark
-                            ? "bg-red-900/30 text-red-300"
-                            : "bg-red-100 text-red-800"
-                        }`}
-                      >
-                        {corretorData.treinamentos.pendentes} pendentes
-                      </div>
-                    </div>
-
-                    <div>
-                      <div
-                        className={`text-sm ${isDark ? "text-gray-400" : "text-gray-600"}`}
-                      >
-                        Nível de engajamento
-                      </div>
-                      <div className="flex items-center mt-1">
-                        <div
-                          className={`px-3 py-1 rounded-full text-sm font-medium ${
-                            isDark
-                              ? "bg-green-900/30 text-green-300"
-                              : "bg-green-100 text-green-800"
-                          }`}
-                        >
-                          {corretorData.treinamentos.engajamento}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div
-                      className={`text-sm ${isDark ? "text-gray-400" : "text-gray-600"}`}
-                    >
-                      Último treinamento:{" "}
-                      {corretorData.treinamentos.ultimoTreinamento}
+                      <span className="text-sm text-gray-500">Pendentes</span>
+                      <span className="text-sm font-medium text-red-500">
+                        {corretorData.treinamentos.pendentes}
+                      </span>
                     </div>
                   </div>
                 </div>
 
+                {/* FEEDBACKS */}
                 <div>
                   <h3
-                    className={`text-lg font-semibold mb-4 flex items-center ${isDark ? "text-gray-200" : "text-gray-900"}`}
+                    className={`text-sm font-medium uppercase tracking-wider mb-4 flex items-center gap-2 ${
+                      isDark ? "text-gray-400" : "text-gray-500"
+                    }`}
                   >
-                    <TrophyIcon className="w-5 h-5 mr-2" />
-                    Incentivos e Benefícios
-                  </h3>
-                  <div className="space-y-3">
-                    {corretorData.incentivos.map((incentivo, index) => (
-                      <EligibilityBadge
-                        key={index}
-                        type={incentivo.type}
-                        status={incentivo.status}
-                        isDark={isDark}
-                      />
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <h3
-                    className={`text-lg font-semibold mb-4 flex items-center ${isDark ? "text-gray-200" : "text-gray-900"}`}
-                  >
-                    <ChatBubbleLeftRightIcon className="w-5 h-5 mr-2" />
-                    Feedbacks Recentes
+                    <ChatBubbleLeftRightIcon className="w-4 h-4" />
+                    FEEDBACKS
                   </h3>
                   <div className="space-y-3">
                     {corretorData.feedbacks.map((feedback, index) => (
                       <div
                         key={index}
-                        className={`p-4 rounded-lg border ${
-                          isDark
-                            ? "bg-gray-800/30 border-gray-700"
-                            : "bg-gray-50 border-gray-200"
-                        }`}
+                        className="p-3 rounded-lg border border-gray-200 dark:border-gray-700"
                       >
-                        <div
-                          className={`text-sm ${isDark ? "text-gray-300" : "text-gray-700"}`}
-                        >
-                          {feedback.texto}
-                        </div>
-                        <div
-                          className={`flex justify-between mt-2 text-xs ${
-                            isDark ? "text-gray-500" : "text-gray-600"
-                          }`}
-                        >
+                        <p className="text-sm mb-2">{feedback.texto}</p>
+                        <div className="flex justify-between text-xs text-gray-500">
                           <span>{feedback.autor}</span>
                           <span>{feedback.data}</span>
                         </div>
@@ -1154,94 +1377,75 @@ const ModalPerfilCorretor = ({ isOpen, onClose, corretor, isDark }) => {
                   </div>
                 </div>
 
+                {/* ALERTAS */}
                 <div>
                   <h3
-                    className={`text-lg font-semibold mb-4 flex items-center ${isDark ? "text-gray-200" : "text-gray-900"}`}
+                    className={`text-sm font-medium uppercase tracking-wider mb-4 flex items-center gap-2 ${
+                      isDark ? "text-gray-400" : "text-gray-500"
+                    }`}
                   >
-                    <ExclamationCircleIcon className="w-5 h-5 mr-2" />
-                    Alertas
+                    <ExclamationCircleIcon className="w-4 h-4" />
+                    ALERTAS
                   </h3>
-                  <div
-                    className={`p-4 rounded-lg border ${isDark ? "bg-red-900/20 border-red-800" : "bg-red-50 border-red-200"}`}
-                  >
-                    <div className="flex items-start">
-                      <ExclamationCircleIcon
-                        className={`w-5 h-5 mr-2 flex-shrink-0 ${isDark ? "text-red-400" : "text-red-600"}`}
-                      />
+                  <div className="p-4 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/10">
+                    <div className="flex items-start gap-3">
+                      <ExclamationCircleIcon className="w-5 h-5 text-red-500 flex-shrink-0" />
                       <div>
-                        <div
-                          className={`text-sm font-medium ${isDark ? "text-red-300" : "text-red-800"}`}
-                        >
+                        <p className="text-sm font-medium text-red-700 dark:text-red-400">
                           CRECI próximo do vencimento
-                        </div>
-                        <div
-                          className={`text-xs mt-1 ${isDark ? "text-red-400" : "text-red-600"}`}
-                        >
-                          Vence em 30 dias (31/12/2024)
-                        </div>
+                        </p>
+                        <p className="text-xs text-red-600 dark:text-red-500 mt-1">
+                          Vence em 30 dias
+                        </p>
                       </div>
                     </div>
                   </div>
                 </div>
 
+                {/* OBSERVAÇÕES */}
                 <div>
                   <div className="flex items-center justify-between mb-4">
                     <h3
-                      className={`text-lg font-semibold flex items-center ${isDark ? "text-gray-200" : "text-gray-900"}`}
+                      className={`text-sm font-medium uppercase tracking-wider flex items-center gap-2 ${
+                        isDark ? "text-gray-400" : "text-gray-500"
+                      }`}
                     >
-                      <PencilIcon className="w-5 h-5 mr-2" />
-                      Observações Internas
+                      <PencilIcon className="w-4 h-4" />
+                      OBSERVAÇÕES
                     </h3>
                     <button
                       onClick={handleSalvarObservacoes}
-                      className={`text-sm px-3 py-1 rounded-lg transition-all duration-200 ${
-                        isDark
-                          ? "bg-[#D4A24D]/20 text-amber-200 hover:bg-[#D4A24D]/30"
-                          : "bg-[#D4A24D] text-white hover:bg-[#C19137]"
-                      }`}
+                      className="text-xs px-2 py-1 rounded bg-amber-100 text-amber-700 hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-400"
                     >
-                      Salvar
+                      SALVAR
                     </button>
                   </div>
                   <textarea
                     value={observacoes}
                     onChange={(e) => setObservacoes(e.target.value)}
-                    rows="4"
-                    className={`w-full px-4 py-3 rounded-lg border text-sm resize-none ${
-                      isDark
-                        ? "bg-gray-700 border-gray-600 text-gray-200 placeholder-gray-400 focus:border-[#D4A24D] focus:ring-[#D4A24D]/30"
-                        : "bg-white border-gray-300 text-gray-900 placeholder-gray-500 focus:border-[#D4A24D] focus:ring-[#D4A24D]/30"
-                    } focus:outline-none focus:ring-2 transition-colors duration-200`}
-                    placeholder="Adicione observações sobre o corretor..."
+                    rows="3"
+                    className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-transparent resize-none focus:outline-none focus:ring-1 focus:ring-amber-500"
+                    placeholder="Adicione observações..."
                   />
                 </div>
               </div>
             </div>
           </div>
 
+          {/* FOOTER */}
           <div
-            className={`px-8 py-4 border-t ${isDark ? "border-gray-700 bg-gray-800/70" : "border-gray-200 bg-gray-50/80"}`}
+            className={`sticky bottom-0 px-8 py-4 border-t ${
+              isDark
+                ? "border-gray-700 bg-gray-800"
+                : "border-gray-200 bg-white"
+            }`}
           >
-            <div className="flex justify-end space-x-3">
+            <div className="flex justify-end">
               <button
                 onClick={onClose}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                  isDark
-                    ? "text-gray-300 hover:text-gray-200 hover:bg-gray-700"
-                    : "text-gray-700 hover:text-gray-900 hover:bg-gray-200"
-                }`}
+                className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200"
               >
-                Fechar
-              </button>
-              <button
-                onClick={() => console.log("Abrir perfil completo")}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                  isDark
-                    ? "bg-blue-900/30 text-blue-300 hover:bg-blue-800/50 border border-blue-800/50"
-                    : "bg-blue-100 text-blue-600 hover:bg-blue-200 border border-blue-300"
-                }`}
-              >
-                Ver Relatório Completo
+                FECHAR
               </button>
             </div>
           </div>
@@ -1662,6 +1866,9 @@ const ModalAtivacao = ({
 // -------------------------------------------
 // 🆕 MODAL DE FEEDBACK BÁSICO
 // -------------------------------------------
+// -------------------------------------------
+// MODAL DE FEEDBACK COM SCROLL
+// -------------------------------------------
 const ModalFeedbackBasico = ({
   isOpen,
   onClose,
@@ -1673,6 +1880,11 @@ const ModalFeedbackBasico = ({
   const [status, setStatus] = useState("aprovado");
   const [observacoes, setObservacoes] = useState("");
 
+  // 🆕 NOVOS CAMPOS
+  const [creciDesde, setCreciDesde] = useState("");
+  const [experienciaAnos, setExperienciaAnos] = useState("");
+  const [formacao, setFormacao] = useState("");
+
   if (!isOpen || !candidato) return null;
 
   const handleSalvar = () => {
@@ -1680,10 +1892,13 @@ const ModalFeedbackBasico = ({
       nota,
       status,
       observacoes,
+      creci_desde: creciDesde,
+      experiencia_anos: experienciaAnos,
+      formacao: formacao,
     });
   };
 
-  // Estrelas para clicar
+  // ⭐ Estrelas MENORES (mantendo 5)
   const renderEstrelas = () => {
     return (
       <div className="flex gap-1">
@@ -1695,7 +1910,8 @@ const ModalFeedbackBasico = ({
             className="focus:outline-none"
           >
             <StarIconSolid
-              className={`w-8 h-8 ${
+              className={`w-5 h-5 ${
+                // ← Reduzido de w-8 h-8 para w-5 h-5
                 n <= nota
                   ? "text-yellow-500"
                   : isDark
@@ -1723,7 +1939,7 @@ const ModalFeedbackBasico = ({
           `}
           onClick={(e) => e.stopPropagation()}
         >
-          {/* Header */}
+          {/* Header (FIXO) */}
           <div
             className={`px-6 py-4 border-b ${isDark ? "border-gray-700" : "border-gray-200"}`}
           >
@@ -1731,7 +1947,7 @@ const ModalFeedbackBasico = ({
               <h3
                 className={`text-lg font-semibold ${isDark ? "text-gray-200" : "text-gray-900"}`}
               >
-                ✏️ Feedback da Entrevista
+                📋 Feedback da Entrevista
               </h3>
               <button
                 onClick={onClose}
@@ -1751,70 +1967,172 @@ const ModalFeedbackBasico = ({
             </p>
           </div>
 
-          {/* Body */}
-          <div className="px-6 py-4">
-            {/* Nota */}
-            <div className="mb-6">
-              <label
-                className={`block text-sm font-medium mb-2 ${isDark ? "text-gray-300" : "text-gray-700"}`}
-              >
-                Avaliação
-              </label>
-              {renderEstrelas()}
-            </div>
+          {/* Body com SCROLL */}
+          <div className="px-6 py-4 max-h-[60vh] overflow-y-auto">
+            {" "}
+            {/* ← SCROLL AQUI! */}
+            <div className="space-y-4">
+              {/* Avaliação (compacta) */}
+              <div>
+                <label
+                  className={`block text-sm font-medium mb-2 ${isDark ? "text-gray-300" : "text-gray-700"}`}
+                >
+                  Avaliação
+                </label>
+                {renderEstrelas()}
+              </div>
 
-            {/* Status */}
-            <div className="mb-6">
-              <label
-                className={`block text-sm font-medium mb-2 ${isDark ? "text-gray-300" : "text-gray-700"}`}
-              >
-                Decisão
-              </label>
-              <select
-                value={status}
-                onChange={(e) => setStatus(e.target.value)}
-                className={`w-full px-3 py-2.5 rounded-lg border text-sm ${
-                  isDark
-                    ? "bg-gray-700 border-gray-600 text-gray-200"
-                    : "bg-white border-gray-300 text-gray-900"
-                } focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30`}
-              >
-                <option value="aprovado">
-                  ✅ Aprovado - Seguir para treinamento
-                </option>
-                <option value="banco">
-                  📦 Banco de Talentos - Guardar para futuro
-                </option>
-                <option value="reprovado">
-                  ❌ Reprovado - Não seguir no processo
-                </option>
-              </select>
-            </div>
+              {/* Decisão */}
+              <div>
+                <label
+                  className={`block text-sm font-medium mb-2 ${isDark ? "text-gray-300" : "text-gray-700"}`}
+                >
+                  Decisão
+                </label>
+                <select
+                  value={status}
+                  onChange={(e) => setStatus(e.target.value)}
+                  className={`w-full px-3 py-2.5 rounded-lg border text-sm ${
+                    isDark
+                      ? "bg-gray-700 border-gray-600 text-gray-200"
+                      : "bg-white border-gray-300 text-gray-900"
+                  } focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30`}
+                >
+                  <option value="aprovado">
+                    ✅ Aprovado - Seguir para treinamento
+                  </option>
+                  <option value="banco">📦 Banco de Talentos</option>
+                  <option value="reprovado">❌ Reprovado</option>
+                </select>
+              </div>
 
-            {/* Observações */}
-            <div className="mb-4">
-              <label
-                className={`block text-sm font-medium mb-2 ${isDark ? "text-gray-300" : "text-gray-700"}`}
-              >
-                Observações
-              </label>
-              <textarea
-                value={observacoes}
-                onChange={(e) => setObservacoes(e.target.value)}
-                rows="4"
-                placeholder="Resumo da entrevista, pontos fortes, pontos de atenção..."
-                className={`w-full px-3 py-2.5 rounded-lg border text-sm resize-none ${
+              {/* INFORMAÇÕES COMPLEMENTARES */}
+              <div
+                className={`p-4 rounded-lg border ${
                   isDark
-                    ? "bg-gray-700 border-gray-600 text-gray-200 placeholder-gray-400"
-                    : "bg-white border-gray-300 text-gray-900 placeholder-gray-500"
-                } focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30`}
-              />
+                    ? "bg-gray-700/30 border-gray-600"
+                    : "bg-gray-50 border-gray-200"
+                }`}
+              >
+                <h4
+                  className={`text-sm font-semibold mb-3 flex items-center ${
+                    isDark ? "text-gray-300" : "text-gray-700"
+                  }`}
+                >
+                  <DocumentTextIcon className="w-4 h-4 mr-2" />
+                  Informações Complementares
+                </h4>
+
+                <div className="space-y-3">
+                  {/* Data do CRECI */}
+                  <div>
+                    <label
+                      className={`block text-xs font-medium mb-1 ${
+                        isDark ? "text-gray-400" : "text-gray-600"
+                      }`}
+                    >
+                      Data de obtenção do CRECI
+                    </label>
+                    <input
+                      type="date"
+                      value={creciDesde}
+                      onChange={(e) => setCreciDesde(e.target.value)}
+                      className={`w-full px-3 py-2 rounded-lg border text-sm ${
+                        isDark
+                          ? "bg-gray-700 border-gray-600 text-gray-200"
+                          : "bg-white border-gray-300 text-gray-900"
+                      }`}
+                    />
+                  </div>
+
+                  {/* Anos de experiência */}
+                  <div>
+                    <label
+                      className={`block text-xs font-medium mb-1 ${
+                        isDark ? "text-gray-400" : "text-gray-600"
+                      }`}
+                    >
+                      Anos de experiência no mercado
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="50"
+                      value={experienciaAnos}
+                      onChange={(e) => setExperienciaAnos(e.target.value)}
+                      placeholder="Ex: 5"
+                      className={`w-full px-3 py-2 rounded-lg border text-sm ${
+                        isDark
+                          ? "bg-gray-700 border-gray-600 text-gray-200"
+                          : "bg-white border-gray-300 text-gray-900"
+                      }`}
+                    />
+                  </div>
+
+                  {/* Formação */}
+                  <div>
+                    <label
+                      className={`block text-xs font-medium mb-1 ${
+                        isDark ? "text-gray-400" : "text-gray-600"
+                      }`}
+                    >
+                      Formação acadêmica
+                    </label>
+                    <select
+                      value={formacao}
+                      onChange={(e) => setFormacao(e.target.value)}
+                      className={`w-full px-3 py-2 rounded-lg border text-sm ${
+                        isDark
+                          ? "bg-gray-700 border-gray-600 text-gray-200"
+                          : "bg-white border-gray-300 text-gray-900"
+                      }`}
+                    >
+                      <option value="">Selecione</option>
+                      <option value="ensino_medio">Ensino Médio</option>
+                      <option value="superior_incompleto">
+                        Superior Incompleto
+                      </option>
+                      <option value="superior_completo">
+                        Superior Completo
+                      </option>
+                      <option value="pos_graduacao">Pós-graduação</option>
+                      <option value="mestrado">Mestrado</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Observações (reduzido) */}
+              <div>
+                <label
+                  className={`block text-sm font-medium mb-2 ${
+                    isDark ? "text-gray-300" : "text-gray-700"
+                  }`}
+                >
+                  Observações (opcional)
+                </label>
+                <textarea
+                  value={observacoes}
+                  onChange={(e) => setObservacoes(e.target.value)}
+                  rows="2"
+                  placeholder="Observações sobre a entrevista..."
+                  className={`w-full px-3 py-2.5 rounded-lg border text-sm resize-none ${
+                    isDark
+                      ? "bg-gray-700 border-gray-600 text-gray-200 placeholder-gray-400"
+                      : "bg-white border-gray-300 text-gray-900 placeholder-gray-500"
+                  } focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30`}
+                />
+              </div>
             </div>
           </div>
 
-          {/* Footer */}
+          {/* Footer (FIXO) */}
           <div
-            className={`px-6 py-4 border-t ${isDark ? "border-gray-700 bg-gray-800/70" : "border-gray-200 bg-gray-50/80"}`}
+            className={`px-6 py-4 border-t ${
+              isDark
+                ? "border-gray-700 bg-gray-800/70"
+                : "border-gray-200 bg-gray-50/80"
+            }`}
           >
             <div className="flex justify-end space-x-3">
               <button
@@ -1844,7 +2162,6 @@ const ModalFeedbackBasico = ({
     </div>
   );
 };
-
 // -------------------------------------------
 // 🆕 MODAL DE PAUSA DO TREINAMENTO
 // -------------------------------------------
@@ -2558,7 +2875,7 @@ const BadgeNota = ({ nota, isDark }) => {
 };
 
 // ===========================================
-// COMPONENTE DE FEEDBACK COMPACTO
+// COMPONENTE DE FEEDBACK COMPACTO (APENAS FEEDBACK)
 // ===========================================
 const FeedbackCompacto = ({ candidato, isDark }) => {
   const temFeedback = candidato.feedback_nota ? true : false;
@@ -2577,7 +2894,6 @@ const FeedbackCompacto = ({ candidato, isDark }) => {
     aprovado: {
       bg: isDark ? "bg-green-900/20" : "bg-green-50",
       border: isDark ? "border-green-800" : "border-green-200",
-      text: isDark ? "text-green-400" : "text-green-600",
       badge: isDark
         ? "bg-green-900/30 text-green-300"
         : "bg-green-100 text-green-800",
@@ -2586,7 +2902,6 @@ const FeedbackCompacto = ({ candidato, isDark }) => {
     banco: {
       bg: isDark ? "bg-blue-900/20" : "bg-blue-50",
       border: isDark ? "border-blue-800" : "border-blue-200",
-      text: isDark ? "text-blue-400" : "text-blue-600",
       badge: isDark
         ? "bg-blue-900/30 text-blue-300"
         : "bg-blue-100 text-blue-800",
@@ -2595,7 +2910,6 @@ const FeedbackCompacto = ({ candidato, isDark }) => {
     reprovado: {
       bg: isDark ? "bg-red-900/20" : "bg-red-50",
       border: isDark ? "border-red-800" : "border-red-200",
-      text: isDark ? "text-red-400" : "text-red-600",
       badge: isDark ? "bg-red-900/30 text-red-300" : "bg-red-100 text-red-800",
       icon: "❌",
     },
@@ -2638,7 +2952,7 @@ const FeedbackCompacto = ({ candidato, isDark }) => {
       {resumoObs && (
         <div className="flex items-start gap-2 mb-2">
           <ChatBubbleLeftRightIcon
-            className={`w-4 h-4 mt-0.5 flex-shrink-0 ${config.text}`}
+            className={`w-4 h-4 mt-0.5 flex-shrink-0 ${isDark ? "text-gray-400" : "text-gray-500"}`}
           />
           <p
             className={`text-xs ${isDark ? "text-gray-300" : "text-gray-700"} leading-relaxed`}
@@ -2657,15 +2971,12 @@ const FeedbackCompacto = ({ candidato, isDark }) => {
         </p>
       )}
 
-      {/* 👤 ENTREVISTADOR - LINHA PRÓPRIA COM TRACEJADO SUTIL */}
+      {/* Entrevistador */}
       {entrevistador && (
         <>
-          {/* Linha tracejada sutil */}
           <div
             className={`w-full border-t border-dashed ${isDark ? "border-gray-700" : "border-gray-300"} my-2`}
           />
-
-          {/* Nome do entrevistador */}
           <div className="flex items-center gap-1">
             <UserIcon
               className={`w-3 h-3 ${isDark ? "text-gray-500" : "text-gray-500"}`}
@@ -2685,6 +2996,43 @@ const FeedbackCompacto = ({ candidato, isDark }) => {
 // ===========================================
 // COMPONENTES AUXILIARES
 // ===========================================
+
+const calcularDiasRestantes = (dataFim) => {
+  if (!dataFim) return 0;
+  const fim = new Date(dataFim);
+  const hoje = new Date();
+  const diff = Math.ceil((fim - hoje) / (1000 * 60 * 60 * 24));
+  return diff > 0 ? diff : 0;
+};
+
+const calcularDiasPassados = (dataInicio) => {
+  if (!dataInicio) return 0;
+  const inicio = new Date(dataInicio);
+  const hoje = new Date();
+  const diff = Math.ceil((hoje - inicio) / (1000 * 60 * 60 * 24));
+  return diff > 0 ? diff : 0;
+};
+
+const calcularProgressoExperiencia = (corretor) => {
+  if (!corretor.treinamento_conclusao || !corretor.data_experiencia_fim)
+    return 0;
+  const inicio = new Date(corretor.treinamento_conclusao);
+  const fim = new Date(corretor.data_experiencia_fim);
+  const hoje = new Date();
+  const total = Math.ceil((fim - inicio) / (1000 * 60 * 60 * 24));
+  const passado = Math.ceil((hoje - inicio) / (1000 * 60 * 60 * 24));
+  const progresso = Math.min(100, Math.max(0, (passado / total) * 100));
+  return Math.round(progresso);
+};
+
+const formatarData = (dataString) => {
+  if (!dataString) return "";
+  if (typeof dataString === "string" && dataString.includes("-")) {
+    const [ano, mes, dia] = dataString.split("-");
+    return `${dia}/${mes}/${ano}`;
+  }
+  return new Date(dataString).toLocaleDateString("pt-BR");
+};
 
 const StatusBadge = ({ status, isDark }) => {
   const config = {
@@ -2917,7 +3265,7 @@ const EligibilityBadge = ({ type, status, isDark }) => {
   );
 };
 // ===========================================
-// 🆕 CRONOGRAMA DO TREINAMENTO - VERSÃO COMPLETA
+// CRONOGRAMA DO TREINAMENTO - VERSÃO COMPLETA
 // ===========================================
 const CronogramaTreinamento = ({
   candidato,
@@ -2928,16 +3276,15 @@ const CronogramaTreinamento = ({
   onCancelar,
   onConcluir,
   onAtivar,
-  onArquivar, // ← NOVA PROP ADICIONADA!
+  onArquivar,
 }) => {
-  // LOG PARA DEBUG - ADICIONE AQUI!
   console.log("📊 CronogramaTreinamento - candidato:", candidato.id);
   console.log("📅 treinamento_inicio (raw):", candidato.treinamento_inicio);
   console.log(
     "📅 treinamento_inicio (tipo):",
     typeof candidato.treinamento_inicio,
   );
-  // Se não tiver dados de treinamento, não mostra nada
+
   if (
     !candidato.treinamento_inicio &&
     candidato.treinamento_status !== "nao_iniciado"
@@ -2954,10 +3301,8 @@ const CronogramaTreinamento = ({
     : null;
   const status = candidato.treinamento_status || "nao_iniciado";
 
-  // Dados do progresso real (dos módulos)
   const progresso = candidato.progresso_treinamento || 0;
 
-  // Dados dos checkpoints e atributos
   const checkpoints = candidato.checkpoints_treinamento || {
     modulo1: false,
     modulo2: false,
@@ -2981,11 +3326,8 @@ const CronogramaTreinamento = ({
 
   const modulosConcluidos = Object.values(checkpoints).filter(Boolean).length;
   const atributosConcluidos = Object.values(atributos).filter(Boolean).length;
-
-  // Verificar se todos os módulos foram concluídos (progresso = 100%)
   const todosModulosConcluidos = modulosConcluidos === 5;
 
-  // Calcular dias restantes
   let diasRestantes = null;
   let alertaPrazo = false;
 
@@ -2995,29 +3337,6 @@ const CronogramaTreinamento = ({
     alertaPrazo = diasRestantes <= 3 && diasRestantes > 0;
   }
 
-  // STATUS COM EMOJIS (MAIS SEGURO QUE ÍCONES)
-  const getStatusInfo = () => {
-    if (status === "cancelado")
-      return { texto: "Cancelado", emoji: "⏹️", cor: "text-red-500" };
-    if (status === "pausado")
-      return { texto: "Pausado", emoji: "⏸️", cor: "text-yellow-500" };
-    if (status === "concluido")
-      return { texto: "Concluído", emoji: "✅", cor: "text-green-500" };
-    if (status === "em_andamento") {
-      if (progresso >= 100)
-        return { texto: "Concluído", emoji: "✅", cor: "text-green-500" };
-      if (progresso >= 80)
-        return { texto: "Reta final", emoji: "🏁", cor: "text-red-500" };
-      if (progresso >= 60)
-        return { texto: "Fervendo", emoji: "🔥", cor: "text-orange-500" };
-      if (progresso >= 30)
-        return { texto: "A todo vapor", emoji: "⚡", cor: "text-blue-500" };
-      return { texto: "Embarcando", emoji: "🚀", cor: "text-green-500" };
-    }
-    return { texto: "Não Iniciado", emoji: "○", cor: "text-gray-500" };
-  };
-
-  // Cor da barra baseada no progresso
   const getBarraCor = () => {
     if (status === "cancelado") return "bg-red-500";
     if (status === "pausado") return "bg-yellow-500";
@@ -3029,9 +3348,6 @@ const CronogramaTreinamento = ({
     return "bg-green-500";
   };
 
-  const statusInfo = getStatusInfo();
-
-  // Configuração de cores e ícones (usando SPAN em vez de ícones)
   const statusConfig = {
     nao_iniciado: {
       cor: isDark ? "text-gray-400" : "text-gray-600",
@@ -3098,6 +3414,7 @@ const CronogramaTreinamento = ({
     );
   }
 
+  // ✅ STATUS CONCLUÍDO - CORRIGIDO!
   if (status === "concluido") {
     return (
       <div
@@ -3121,17 +3438,37 @@ const CronogramaTreinamento = ({
             🏆 Ativar Corretor
           </button>
         </div>
+
+        {/* DATA DE CONCLUSÃO CORRIGIDA */}
         <div className="flex items-center gap-2 mt-2">
           <span
             className={`text-xs ${isDark ? "text-gray-400" : "text-gray-600"}`}
           >
             Concluído em:{" "}
-            {new Date(
-              candidato.treinamento_conclusao || Date.now(),
-            ).toLocaleDateString("pt-BR")}
+            {candidato.treinamento_conclusao
+              ? (() => {
+                  // Formatar YYYY-MM-DD para DD/MM/YYYY
+                  if (
+                    typeof candidato.treinamento_conclusao === "string" &&
+                    candidato.treinamento_conclusao.includes("-")
+                  ) {
+                    const [ano, mes, dia] =
+                      candidato.treinamento_conclusao.split("-");
+                    return `${dia}/${mes}/${ano}`;
+                  }
+                  // Fallback
+                  return new Date(
+                    candidato.treinamento_conclusao,
+                  ).toLocaleDateString("pt-BR");
+                })()
+              : "Data não disponível"}
           </span>
           <span
-            className={`text-xs font-medium px-2 py-0.5 rounded-full bg-green-100 text-green-700`}
+            className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+              isDark
+                ? "bg-green-900/30 text-green-300"
+                : "bg-green-100 text-green-700"
+            }`}
           >
             {modulosConcluidos}/5 módulos
           </span>
@@ -3140,7 +3477,7 @@ const CronogramaTreinamento = ({
     );
   }
 
-  // ✅ STATUS CANCELADO COM BOTÃO ARQUIVAR ATUALIZADO
+  // ✅ STATUS CANCELADO
   if (status === "cancelado") {
     return (
       <div
@@ -3159,7 +3496,6 @@ const CronogramaTreinamento = ({
             Motivo: {candidato.treinamento_motivo_pausa}
           </div>
         )}
-        {/* BOTÃO ARQUIVAR ATUALIZADO */}
         <button
           onClick={() => onArquivar?.(candidato.id)}
           className={`w-full py-2 px-3 rounded-lg text-sm font-medium transition-all duration-200 flex items-center justify-center gap-2 ${
@@ -3297,13 +3633,6 @@ const CronogramaTreinamento = ({
             </span>
           </div>
         </div>
-
-        {/* STATUS COM EMOJI */}
-        <div className="flex items-center justify-end gap-1 text-xs">
-          <span className={statusInfo.cor}>
-            {statusInfo.emoji} {statusInfo.texto}
-          </span>
-        </div>
       </div>
 
       {/* BOTÕES DE AÇÃO BASEADOS NO STATUS */}
@@ -3378,7 +3707,7 @@ const CronogramaTreinamento = ({
   );
 };
 // ===========================================
-// COMPONENTE PRINCIPAL
+// COMPONENTE PRINCIPAL - CORRETORES
 // ===========================================
 const Corretores = () => {
   // -----------------------------------------
@@ -3393,16 +3722,10 @@ const Corretores = () => {
   const [modalReprovacaoAberto, setModalReprovacaoAberto] = useState(false);
   const [modalAtivacaoAberto, setModalAtivacaoAberto] = useState(false);
   const [modalFeedbackAberto, setModalFeedbackAberto] = useState(false);
-
-  // 🆕 ESTADOS PARA PAUSA
   const [modalPausaAberto, setModalPausaAberto] = useState(false);
   const [candidatoParaPausa, setCandidatoParaPausa] = useState(null);
-
-  // 🆕 ESTADOS PARA CANCELAMENTO
   const [modalCancelamentoAberto, setModalCancelamentoAberto] = useState(false);
   const [candidatoParaCancelar, setCandidatoParaCancelar] = useState(null);
-
-  // 🆕 ESTADOS PARA DETALHES DO ARQUIVADO
   const [modalDetalhesAberto, setModalDetalhesAberto] = useState(false);
   const [candidatoDetalhes, setCandidatoDetalhes] = useState(null);
 
@@ -3433,8 +3756,80 @@ const Corretores = () => {
     reprovados: [],
     ativos: [],
     inativos: [],
-    arquivados: [], // ← NOVO!
+    arquivados: [],
   });
+
+  // -----------------------------------------
+  // 2. FUNÇÃO DE ATIVAÇÃO DIRETA COM DEBUG
+  // -----------------------------------------
+  const handleAtivacaoDireta = async (corretorId) => {
+    console.log("🔍 FUNÇÃO DE ATIVAÇÃO DIRETA CHAMADA! ID:", corretorId);
+    console.log("📊 Corretor selecionado antes:", corretorSelecionado);
+
+    try {
+      // Verifica se o ID é válido
+      if (!corretorId) {
+        console.error("❌ ID do corretor inválido!");
+        alert("ID do corretor inválido!");
+        return;
+      }
+
+      // Log do que será enviado
+      const dataAtualizacao = {
+        periodoExperiencia: false,
+        data_ativacao: new Date().toISOString().split("T")[0],
+      };
+      console.log("📤 Dados a serem enviados:", dataAtualizacao);
+
+      // 1️⃣ ATUALIZAR NO BANCO
+      const { data, error } = await supabase
+        .from("corretores")
+        .update(dataAtualizacao)
+        .eq("id", corretorId)
+        .select();
+
+      if (error) {
+        console.error("❌ Erro do Supabase:", error);
+        throw error;
+      }
+
+      console.log("✅ Resposta do Supabase:", data);
+
+      // 2️⃣ ATUALIZAR O ESTADO LOCAL (lista de ativos)
+      setCandidatosPorEtapa((prev) => {
+        const novosAtivos = prev.ativos.map((c) =>
+          c.id === corretorId
+            ? {
+                ...c,
+                periodoExperiencia: false,
+                data_ativacao: dataAtualizacao.data_ativacao,
+              }
+            : c,
+        );
+
+        console.log("🔄 Novos ativos:", novosAtivos);
+        return { ...prev, ativos: novosAtivos };
+      });
+
+      // 3️⃣ ATUALIZAR O CORRETOR SELECIONADO NO MODAL
+      setCorretorSelecionado((prev) => {
+        const novo = {
+          ...prev,
+          periodoExperiencia: false,
+          data_ativacao: dataAtualizacao.data_ativacao,
+        };
+        console.log("🔄 Novo corretor selecionado:", novo);
+        return novo;
+      });
+
+      alert("✅ Corretor ativado com sucesso!");
+    } catch (error) {
+      console.error("❌ Erro completo:", error);
+      console.error("❌ Mensagem:", error.message);
+      console.error("❌ Stack:", error.stack);
+      alert(`Erro ao ativar corretor: ${error.message || "Tente novamente."}`);
+    }
+  };
 
   // -----------------------------------------
   // 2. CARREGAR DADOS DO SUPABASE
@@ -3464,16 +3859,22 @@ const Corretores = () => {
 
       const { data, error } = await supabase
         .from("corretores")
-        .select("*")
+        .select(
+          `
+        *,
+        creci_desde,
+        experiencia_anos,
+        formacao
+      `,
+        )
         .order("created_at", { ascending: false });
 
       if (error) throw error;
 
-      // Processar dados (se necessário)
-      const dadosProcessados = data.map((candidato) => {
-        // Seu código de processamento existente
-        return candidato;
-      });
+      console.log("🔥 DADOS CARREGADOS:", data);
+
+      // ✅ DEFINIR dadosProcessados AQUI!
+      const dadosProcessados = data || [];
 
       const pendentes = dadosProcessados.filter((c) => c.etapa === "pendentes");
       const entrevista = dadosProcessados.filter(
@@ -3501,6 +3902,13 @@ const Corretores = () => {
         inativos,
         arquivados,
       });
+      // 🚨 LOG DO PRIMEIRO CANDIDATO EM TREINAMENTO
+      console.log("🔍 PRIMEIRO CANDIDATO EM TREINAMENTO:", treinamento[0]);
+      console.log("🔍 campos novos:", {
+        creci_desde: treinamento[0]?.creci_desde,
+        experiencia_anos: treinamento[0]?.experiencia_anos,
+        formacao: treinamento[0]?.formacao,
+      });
     } catch (err) {
       console.error("Erro ao carregar dados:", err);
       setError(err.message);
@@ -3518,6 +3926,36 @@ const Corretores = () => {
     return Math.round((concluidos / totalModulos) * 100);
   };
 
+  // 🔥 NOVAS FUNÇÕES (COLOQUE AQUI!)
+  const calcularDiasRestantes = (dataFim) => {
+    if (!dataFim) return 0;
+    const fim = new Date(dataFim);
+    const hoje = new Date();
+    const diff = Math.ceil((fim - hoje) / (1000 * 60 * 60 * 24));
+    return diff > 0 ? diff : 0;
+  };
+
+  const calcularProgressoExperiencia = (corretor) => {
+    if (!corretor.treinamento_conclusao || !corretor.data_experiencia_fim)
+      return 0;
+
+    const inicio = new Date(corretor.treinamento_conclusao);
+    const fim = new Date(corretor.data_experiencia_fim);
+    const hoje = new Date();
+
+    const total = Math.ceil((fim - inicio) / (1000 * 60 * 60 * 24));
+    const passado = Math.ceil((hoje - inicio) / (1000 * 60 * 60 * 24));
+
+    const progresso = Math.min(100, Math.max(0, (passado / total) * 100));
+    return Math.round(progresso);
+  };
+
+  const formatarData = (dataString) => {
+    if (!dataString) return "";
+    const data = new Date(dataString);
+    return data.toLocaleDateString("pt-BR");
+  };
+
   const formatarNumeroWhatsApp = (telefone) => {
     const numeroLimpo = telefone.replace(/\D/g, "");
     return numeroLimpo.startsWith("55") ? numeroLimpo : `55${numeroLimpo}`;
@@ -3530,20 +3968,50 @@ const Corretores = () => {
   };
 
   const formatarDataParaExibicao = (dataString) => {
+    // Criar datas sem considerar horário (zerar horas)
     const hoje = new Date();
-    const amanha = new Date();
-    amanha.setDate(hoje.getDate() + 1);
-    const data = new Date(dataString);
-    const dia = data.getDate().toString().padStart(2, "0");
-    const mes = (data.getMonth() + 1).toString().padStart(2, "0");
+    hoje.setHours(0, 0, 0, 0);
 
-    if (data.toDateString() === hoje.toDateString()) {
-      return "Hoje";
-    } else if (data.toDateString() === amanha.toDateString()) {
-      return "Amanhã";
+    const amanha = new Date(hoje);
+    amanha.setDate(amanha.getDate() + 1);
+
+    // IMPORTANTE: Converter a data string para Date sem timezone
+    let dataEntrevista;
+    let horaOriginal = "";
+
+    if (typeof dataString === "string" && dataString.includes("-")) {
+      // Formato YYYY-MM-DD
+      const [ano, mes, dia] = dataString.split("-").map(Number);
+      dataEntrevista = new Date(ano, mes - 1, dia);
     } else {
-      return `${dia}/${mes}`;
+      // Tentar extrair hora se vier junto
+      const partes = dataString.split(" ");
+      if (partes.length > 1) {
+        const [ano, mes, dia] = partes[0].split("-").map(Number);
+        dataEntrevista = new Date(ano, mes - 1, dia);
+        horaOriginal = partes[1]; // Preserva a hora original
+      } else {
+        dataEntrevista = new Date(dataString);
+      }
     }
+    dataEntrevista.setHours(0, 0, 0, 0);
+
+    const dia = dataEntrevista.getDate().toString().padStart(2, "0");
+    const mes = (dataEntrevista.getMonth() + 1).toString().padStart(2, "0");
+    const ano = dataEntrevista.getFullYear();
+
+    // Determinar o texto da data
+    let textoData;
+    if (dataEntrevista.getTime() === hoje.getTime()) {
+      textoData = "Hoje";
+    } else if (dataEntrevista.getTime() === amanha.getTime()) {
+      textoData = "Amanhã";
+    } else {
+      textoData = `${dia}/${mes}/${ano}`;
+    }
+
+    // Retornar com a hora (se tiver)
+    return horaOriginal ? `${textoData}, ${horaOriginal}` : textoData;
   };
 
   const validarFormulario = () => {
@@ -3866,36 +4334,58 @@ const Corretores = () => {
   };
 
   const handleConfirmarAtivacao = async (candidatoId, dataInicio) => {
-    try {
-      const dataFimExperiencia = new Date(dataInicio);
-      dataFimExperiencia.setDate(dataFimExperiencia.getDate() + 90);
+    console.log("🔥 ATIVANDO CORRETOR - ID:", candidatoId, "Data:", dataInicio);
 
+    try {
+      // 1️⃣ Buscar dias de experiência do banco de configurações
+      const diasExperiencia = await configuracoesService.getDiasExperiencia();
+      console.log(
+        `📅 Período de experiência configurado: ${diasExperiencia} dias`,
+      );
+
+      // 2️⃣ Calcular data fim da experiência (USA O VALOR DO BANCO!)
+      const dataFimExperiencia = new Date(dataInicio);
+      dataFimExperiencia.setDate(
+        dataFimExperiencia.getDate() + diasExperiencia,
+      );
+      const dataFimStr = dataFimExperiencia.toISOString().split("T")[0];
+
+      console.log("📅 Data início:", dataInicio);
+      console.log("📅 Data fim:", dataFimStr);
+
+      // 3️⃣ ATUALIZAR com APENAS os campos que EXISTEM
       const { error } = await supabase
         .from("corretores")
         .update({
           etapa: "ativos",
-          status: "Período de Experiência",
-          data_ativacao: dataInicio,
-          data_fim_experiencia: dataFimExperiencia.toISOString().split("T")[0],
-          periodo_experiencia: true,
-          dias_experiencia: 0,
+          periodoExperiencia: true,
+          treinamento_conclusao: dataInicio,
+          data_experiencia_fim: dataFimStr,
+          // 👇 NÃO USAR NENHUM DESSES:
+          // status ❌
+          // updated_at ❌
+          // data_ativacao ❌
+          // periodo_experiencia ❌
+          // dias_experiencia ❌
         })
         .eq("id", candidatoId);
 
-      if (error) throw error;
+      if (error) {
+        console.error("❌ Erro no update:", error);
+        throw error;
+      }
+
+      console.log("✅ Corretor ativado com sucesso!");
 
       await carregarDados();
       setModalAtivacaoAberto(false);
       setCandidatoParaAtivar(null);
-      alert("Corretor ativado com período de experiência de 90 dias!");
-    } catch (err) {
-      console.error("Erro ao ativar corretor:", err);
-      alert("Erro ao ativar corretor. Tente novamente.");
-    }
-  };
 
-  const handleAtivarComoCorretor = async (candidato) => {
-    console.log("Função antiga - use handleAbrirModalAtivacao");
+      alert(`✅ Período de experiência iniciado! (${diasExperiencia} dias)`);
+    } catch (err) {
+      console.error("❌ Erro ao ativar:", err);
+      alert("Erro ao ativar corretor: " + err.message);
+    }
   };
 
   const handleVerDetalhesReprovado = (candidato) => {
@@ -4041,15 +4531,25 @@ const Corretores = () => {
   // ✅ CONCLUIR
   const handleConcluirTreinamento = async (candidatoId) => {
     try {
+      // Criar data no formato YYYY-MM-DD (sem timezone)
+      const hoje = new Date();
+      const ano = hoje.getFullYear();
+      const mes = String(hoje.getMonth() + 1).padStart(2, "0");
+      const dia = String(hoje.getDate()).padStart(2, "0");
+      const dataFormatada = `${ano}-${mes}-${dia}`;
+
+      console.log("📅 Concluindo treinamento em:", dataFormatada);
+
       const { error } = await supabase
         .from("corretores")
         .update({
           treinamento_status: "concluido",
-          treinamento_conclusao: new Date().toISOString().split("T")[0],
+          treinamento_conclusao: dataFormatada, // ← SÓ A DATA!
         })
         .eq("id", candidatoId);
 
       if (error) throw error;
+
       await carregarDados();
       alert("✅ Treinamento concluído com sucesso!");
     } catch (err) {
@@ -4058,24 +4558,28 @@ const Corretores = () => {
     }
   };
 
-  // 🏆 ATIVAR
-  const handleAtivarCorretor = async (candidatoId) => {
+  const handleAtivarCorretor = async (candidatoId, dataInicio) => {
     try {
+      const diasExperiencia = await configuracoesService.getDiasExperiencia();
+      const dataFim = new Date(dataInicio);
+      dataFim.setDate(dataFim.getDate() + diasExperiencia);
+      const dataFimStr = dataFim.toISOString().split("T")[0];
+
       const { error } = await supabase
         .from("corretores")
         .update({
           etapa: "ativos",
-          status: "Período de Experiência",
-          data_ativacao: new Date().toISOString().split("T")[0],
+          periodoExperiencia: true, // ← ISSO É CRÍTICO!
+          treinamento_conclusao: dataInicio,
+          data_experiencia_fim: dataFimStr,
         })
         .eq("id", candidatoId);
 
       if (error) throw error;
       await carregarDados();
-      alert("🎉 Corretor ativado com sucesso!");
+      alert(`✅ Período de experiência iniciado!`);
     } catch (err) {
       console.error("Erro ao ativar:", err);
-      alert("Erro ao ativar corretor.");
     }
   };
 
@@ -4139,7 +4643,35 @@ const Corretores = () => {
   };
 
   const handleSalvarFeedback = async (candidatoId, feedback) => {
+    // 1️⃣ Verificar se candidatoId existe
+    if (!candidatoId) {
+      console.error("❌ ERRO: candidatoId não fornecido");
+      alert("Erro: ID do candidato não encontrado");
+      return;
+    }
+
+    // 2️⃣ Verificar se feedback existe
+    if (!feedback) {
+      console.error("❌ ERRO: feedback não fornecido");
+      alert("Erro: Dados do feedback não encontrados");
+      return;
+    }
+
+    // 3️⃣ Verificar se feedback tem as propriedades necessárias
+    if (feedback.nota === undefined || feedback.nota === null) {
+      console.error("❌ ERRO: nota não fornecida");
+      alert("Erro: Nota não fornecida");
+      return;
+    }
+
+    if (!feedback.status) {
+      console.error("❌ ERRO: status não fornecido");
+      alert("Erro: Status não fornecido");
+      return;
+    }
+
     try {
+      // 4️⃣ Calcular nova etapa baseada no status
       let novaEtapa = "entrevista";
       if (feedback.status === "aprovado") {
         novaEtapa = "treinamento";
@@ -4147,25 +4679,38 @@ const Corretores = () => {
         novaEtapa = "reprovados";
       }
 
+      // 5️⃣ Formatar data corretamente
+      const agora = new Date();
+      const dataFormatada =
+        agora.toISOString().split("T")[0] +
+        " " +
+        agora.toTimeString().split(" ")[0];
+
+      // 6️⃣ Fazer o update no Supabase
       const { error } = await supabase
         .from("corretores")
         .update({
           feedback_nota: feedback.nota,
           feedback_status: feedback.status,
-          feedback_observacoes: feedback.observacoes,
-          feedback_data: new Date().toISOString(),
+          feedback_observacoes: feedback.observacoes || "",
+          feedback_data: dataFormatada,
           etapa: novaEtapa,
+          // ✅ ADICIONAR OS CAMPOS NOVOS AQUI!
+          creci_desde: feedback.creci_desde,
+          experiencia_anos: feedback.experiencia_anos,
+          formacao: feedback.formacao,
         })
         .eq("id", candidatoId);
 
       if (error) throw error;
 
+      // 7️⃣ Recarregar dados e fechar modal
       await carregarDados();
       setModalFeedbackAberto(false);
       setCandidatoParaFeedback(null);
       alert("✅ Feedback salvo com sucesso!");
     } catch (err) {
-      console.error("Erro ao salvar feedback:", err);
+      console.error("❌ Erro ao salvar feedback:", err);
       alert("Erro ao salvar feedback. Tente novamente.");
     }
   };
@@ -5083,6 +5628,88 @@ const Corretores = () => {
             </h4>
             <FeedbackCompacto candidato={candidato} isDark={isDark} />
           </div>
+          {/* ===== 🆕 NOVA SEÇÃO: INFORMAÇÕES COMPLEMENTARES ===== */}
+          {(candidato.creci_desde ||
+            candidato.experiencia_anos ||
+            candidato.formacao) && (
+            <div className="mb-4">
+              <h4
+                className={`text-xs font-semibold uppercase tracking-wider mb-2 ${
+                  isDark ? "text-gray-500" : "text-gray-500"
+                }`}
+              >
+                📊 Perfil do Candidato
+              </h4>
+              <div
+                className={`p-3 rounded-lg border ${
+                  isDark
+                    ? "bg-gray-700/30 border-gray-600"
+                    : "bg-gray-50 border-gray-200"
+                }`}
+              >
+                <div className="space-y-2">
+                  {candidato.creci_desde && (
+                    <div className="flex items-start gap-2">
+                      <DocumentTextIcon
+                        className={`w-4 h-4 mt-0.5 ${
+                          isDark ? "text-blue-400" : "text-blue-600"
+                        }`}
+                      />
+                      <p
+                        className={`text-xs ${isDark ? "text-gray-300" : "text-gray-700"}`}
+                      >
+                        <span className="font-medium">CRECI desde:</span>{" "}
+                        {new Date(candidato.creci_desde).toLocaleDateString(
+                          "pt-BR",
+                        )}
+                      </p>
+                    </div>
+                  )}
+
+                  {candidato.experiencia_anos && (
+                    <div className="flex items-start gap-2">
+                      <BriefcaseIcon
+                        className={`w-4 h-4 mt-0.5 ${
+                          isDark ? "text-green-400" : "text-green-600"
+                        }`}
+                      />
+                      <p
+                        className={`text-xs ${isDark ? "text-gray-300" : "text-gray-700"}`}
+                      >
+                        <span className="font-medium">Experiência:</span>{" "}
+                        {candidato.experiencia_anos}{" "}
+                        {candidato.experiencia_anos === 1 ? "ano" : "anos"}
+                      </p>
+                    </div>
+                  )}
+
+                  {candidato.formacao && (
+                    <div className="flex items-start gap-2">
+                      <AcademicCapIcon
+                        className={`w-4 h-4 mt-0.5 ${
+                          isDark ? "text-purple-400" : "text-purple-600"
+                        }`}
+                      />
+                      <p
+                        className={`text-xs ${isDark ? "text-gray-300" : "text-gray-700"}`}
+                      >
+                        <span className="font-medium">Formação:</span>{" "}
+                        {candidato.formacao === "ensino_medio" &&
+                          "Ensino Médio"}
+                        {candidato.formacao === "superior_incompleto" &&
+                          "Superior Incompleto"}
+                        {candidato.formacao === "superior_completo" &&
+                          "Superior Completo"}
+                        {candidato.formacao === "pos_graduacao" &&
+                          "Pós-graduação"}
+                        {candidato.formacao === "mestrado" && "Mestrado"}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* ===== DIVISÓRIA ENTRE AS SEÇÕES ===== */}
           <div
@@ -5596,6 +6223,20 @@ const Corretores = () => {
     );
   };
 
+  // ===========================================
+  // DEBUG - REMOVER DEPOIS
+  // ===========================================
+  if (typeof window !== "undefined") {
+    window.debugCorretores = () => ({
+      candidatosPorEtapa: candidatosPorEtapa,
+      dadosAtuais: dadosAtuais,
+      ativos: candidatosPorEtapa.ativos,
+      treinamento: candidatosPorEtapa.treinamento,
+      primeiroAtivo: candidatosPorEtapa.ativos[0],
+      primeiroTreinamento: candidatosPorEtapa.treinamento[0],
+    });
+  }
+
   // -----------------------------------------
   // 12. RENDER PRINCIPAL
   // -----------------------------------------
@@ -5687,7 +6328,7 @@ const Corretores = () => {
             Arquivados ({candidatosPorEtapa.arquivados?.length || 0})
           </button>
 
-          {/* Novo Corretor - COM COR ORIGINAL RESTAURADA E TAMANHO IGUAL */}
+          {/* Novo Corretor */}
           <button
             onClick={() => navigate("/admin/corretores/novo")}
             className={`flex items-center px-4 py-2 rounded-lg text-sm transition-all duration-200 font-medium border ${
@@ -5705,24 +6346,32 @@ const Corretores = () => {
       {/* Seção Processo Seletivo */}
       {abaAtiva === "candidatos" && (
         <div
-          className={`${isDark ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"} rounded-xl shadow-sm border p-6 mb-6 mx-6`}
+          className={`${
+            isDark ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"
+          } rounded-xl shadow-sm border p-6 mb-6 mx-6`}
         >
           <div className="flex flex-col md:flex-row md:items-center justify-between space-y-4 md:space-y-0 mb-6">
             <div className="flex-1">
               <h2
-                className={`text-xl font-semibold ${isDark ? "text-gray-200" : "text-gray-800"} mb-2`}
+                className={`text-xl font-semibold ${
+                  isDark ? "text-gray-200" : "text-gray-800"
+                } mb-2`}
               >
                 Processo Seletivo
               </h2>
               <p
-                className={`text-sm ${isDark ? "text-gray-400" : "text-gray-600"}`}
+                className={`text-sm ${
+                  isDark ? "text-gray-400" : "text-gray-600"
+                }`}
               >
                 Gerenciar candidatos do cadastro à contratação
               </p>
             </div>
             <div className="flex items-center space-x-3">
               <div
-                className={`text-base font-semibold ${isDark ? "text-gray-300" : "text-gray-800"}`}
+                className={`text-base font-semibold ${
+                  isDark ? "text-gray-300" : "text-gray-800"
+                }`}
               >
                 <span className="font-bold">Total: </span>
                 <span className="font-normal">
@@ -5740,7 +6389,9 @@ const Corretores = () => {
       {/* Search and Filters */}
       {abaAtiva !== "candidatos" && (
         <div
-          className={`${isDark ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"} rounded-xl shadow-sm border p-6 mb-6 mx-6`}
+          className={`${
+            isDark ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"
+          } rounded-xl shadow-sm border p-6 mb-6 mx-6`}
         >
           <div className="flex flex-col md:flex-row md:items-center justify-between space-y-4 md:space-y-0">
             <div className="flex-1 max-w-md">
@@ -5775,7 +6426,11 @@ const Corretores = () => {
             </div>
             <div className="flex items-center space-x-3">
               <select
-                className={`px-4 py-2.5 ${isDark ? "bg-gray-700 border-gray-600 text-gray-200" : "bg-white border-gray-300 text-gray-900"} border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors duration-200`}
+                className={`px-4 py-2.5 ${
+                  isDark
+                    ? "bg-gray-700 border-gray-600 text-gray-200"
+                    : "bg-white border-gray-300 text-gray-900"
+                } border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors duration-200`}
               >
                 <option value="">Todos os Status</option>
                 <option value="ativo">Ativo</option>
@@ -5798,7 +6453,7 @@ const Corretores = () => {
           </div>
         )}
 
-        {/* TRATAMENTO PARA ARQUIVADOS - ÚNICA SEÇÃO! */}
+        {/* TRATAMENTO PARA ARQUIVADOS */}
         {abaAtiva === "arquivados" ? (
           <div className="mt-4">
             <div className="flex items-center justify-between mb-4">
@@ -5927,134 +6582,388 @@ const Corretores = () => {
 
             {/* CARDS CORRETORES (ATIVOS/INATIVOS) */}
             {abaAtiva !== "candidatos" &&
-              dadosAtuais.dados.map((corretor) => (
-                <div
-                  key={corretor.id}
-                  className={`${
-                    isDark
-                      ? "bg-gray-800 border-gray-700 hover:bg-gray-750"
-                      : "bg-white border-gray-200 hover:bg-gray-50"
-                  } rounded-xl shadow-sm border overflow-hidden hover:shadow-md transition-all duration-200`}
-                >
-                  <div
-                    className={`p-6 border-b ${
-                      isDark ? "border-gray-700" : "border-gray-200"
-                    }`}
-                  >
-                    <div className="flex items-start justify-between">
-                      <div>
+              dadosAtuais.dados.map((corretor) => {
+                // CARD PARA ATIVOS - COM CÁLCULO CORRIGIDO
+                if (abaAtiva === "ativos") {
+                  console.log(
+                    "🔍 RENDERIZANDO CARD - periodoExperiencia:",
+                    corretor.periodoExperiencia,
+                  );
+                  console.log("🔍 Nome:", corretor.nome);
+                  console.log(
+                    "🔍 Deveria mostrar:",
+                    corretor.periodoExperiencia
+                      ? "período de experiência"
+                      : "ativo",
+                  );
+                  // 🔥 CORREÇÃO: Cálculo correto dos dias
+                  const diasPassados =
+                    corretor.periodoExperiencia &&
+                    corretor.treinamento_conclusao
+                      ? calcularDiasPassados(corretor.treinamento_conclusao)
+                      : 0;
+
+                  const diasTotais = 90; // Fixo em 90 dias
+
+                  const diasRestantes = Math.max(0, diasTotais - diasPassados);
+
+                  const progresso =
+                    corretor.periodoExperiencia &&
+                    corretor.treinamento_conclusao &&
+                    corretor.data_experiencia_fim
+                      ? calcularProgressoExperiencia(corretor)
+                      : 0;
+
+                  return (
+                    <div
+                      key={corretor.id}
+                      className={`${
+                        isDark
+                          ? "bg-gray-800 border-gray-700 hover:bg-gray-750"
+                          : "bg-white border-gray-200 hover:bg-gray-50"
+                      } rounded-xl shadow-sm border overflow-hidden hover:shadow-md transition-all duration-200`}
+                    >
+                      {/* CABEÇALHO */}
+                      <div className="p-6 pb-4">
                         <h3
-                          className={`text-lg font-semibold ${
+                          className={`text-xl font-bold uppercase ${
                             isDark ? "text-gray-100" : "text-gray-900"
                           }`}
                         >
                           {corretor.nome}
                         </h3>
-                        <div className="flex items-center mt-2 space-x-2 flex-wrap gap-y-2">
-                          <span
-                            className={`px-3 py-1 rounded-full text-xs font-medium inline-block ${
-                              corretor.periodoExperiencia
-                                ? statusCorretoresColors[
-                                    "Período de Experiência"
-                                  ]
-                                : statusCorretoresColors[corretor.status]
-                            }`}
-                          >
-                            {corretor.periodoExperiencia
-                              ? "Período de Experiência"
-                              : corretor.status}
-                          </span>
-                          {abaAtiva === "ativos" && (
-                            <div
-                              className={`flex items-center ${
-                                corretor.rankingPosicao === 1
-                                  ? isDark
-                                    ? "bg-amber-900/30 text-amber-300"
-                                    : "bg-amber-100 text-amber-800"
-                                  : isDark
-                                    ? "bg-gray-700 text-gray-300"
-                                    : "bg-gray-100 text-gray-700"
-                              } px-2 py-1 rounded-lg text-xs`}
-                            >
-                              <TrophyIcon className="w-3 h-3 mr-1" />#
-                              {corretor.rankingPosicao} de{" "}
-                              {corretor.rankingTotal}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                      <div
-                        className={`flex items-center ${
-                          isDark
-                            ? "bg-[#D4A24D]/20 text-amber-200"
-                            : "bg-[#D4A24D]/10 text-[#D4A24D]"
-                        } px-3 py-1 rounded-lg`}
-                      >
-                        <StarIcon className="w-4 h-4 mr-1" />
-                        <span className="font-semibold">{corretor.rating}</span>
-                      </div>
-                    </div>
-
-                    {abaAtiva === "ativos" && (
-                      <div className="mt-3 text-xs">
-                        <div
-                          className={`flex items-center ${
+                        <p
+                          className={`text-sm ${
                             isDark ? "text-gray-400" : "text-gray-600"
                           }`}
                         >
-                          <span className="font-medium mr-1">CRECI desde:</span>{" "}
-                          {corretor.creciDesde}
+                          CRECI: {corretor.creci}
+                        </p>
+                      </div>
+
+                      {/* DIVISÓRIA SUTIL APÓS CABEÇALHO */}
+                      <div
+                        className={`h-px mx-6 ${
+                          isDark ? "bg-gray-700" : "bg-gray-200"
+                        }`}
+                      />
+
+                      {/* BADGE DE EXPERIÊNCIA - ÂMBAR, SEMIBOLD E REDUZIDA */}
+                      {corretor.periodoExperiencia && (
+                        <div className="px-6 pt-3">
+                          <div className="inline-flex items-center gap-1.5 bg-amber-50 dark:bg-amber-900/20 px-2 py-1 rounded-full border border-amber-200 dark:border-amber-800">
+                            {/* Pontinho âmbar pulsante */}
+                            <div className="relative">
+                              <div className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse"></div>
+                              <div className="absolute inset-0 w-1.5 h-1.5 bg-amber-400 rounded-full animate-ping opacity-75"></div>
+                            </div>
+                            <span
+                              className={`text-[9px] font-semibold uppercase tracking-wider ${
+                                isDark ? "text-amber-400" : "text-amber-700"
+                              }`}
+                            >
+                              período de experiência
+                            </span>
+                          </div>
                         </div>
+                      )}
+
+                      {/* PROGRESSO DA EXPERIÊNCIA */}
+                      {corretor.periodoExperiencia &&
+                        corretor.data_experiencia_fim &&
+                        corretor.treinamento_conclusao && (
+                          <div className="px-6 py-2">
+                            <div className="flex items-center justify-between mb-1">
+                              <span
+                                className={`text-xs ${isDark ? "text-gray-400" : "text-gray-600"}`}
+                              >
+                                ⏱️ {diasPassados} de 90 dias ({diasRestantes}{" "}
+                                restantes)
+                              </span>
+                              <span
+                                className={`text-xs font-medium ${isDark ? "text-amber-400" : "text-amber-600"}`}
+                              >
+                                {progresso}%
+                              </span>
+                            </div>
+                            <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                              <div
+                                className="h-full bg-amber-500 rounded-full"
+                                style={{ width: `${progresso}%` }}
+                              />
+                            </div>
+                            <div className="text-right mt-1">
+                              <span
+                                className={`text-xs ${isDark ? "text-gray-500" : "text-gray-500"}`}
+                              >
+                                ▸ {progresso}% concluído
+                              </span>
+                            </div>
+                          </div>
+                        )}
+
+                      {/* DATAS DE REGISTRO */}
+                      <div className="px-6 py-2">
                         <div
-                          className={`flex items-center ${
+                          className={`text-xs space-y-0.5 ${
                             isDark ? "text-gray-400" : "text-gray-600"
-                          } mt-1`}
+                          }`}
                         >
-                          <span className="font-medium mr-1">
-                            Na imobiliária desde:
-                          </span>{" "}
-                          {corretor.naImobiliariaDesde}
+                          <div>
+                            CRECI desde:{" "}
+                            {formatarData(corretor.creci_desde) || "20/05/2020"}
+                          </div>
+                          <div>
+                            Na imobiliária desde:{" "}
+                            {formatarData(corretor.treinamento_conclusao) ||
+                              "19/02/2026"}
+                          </div>
                         </div>
                       </div>
-                    )}
 
-                    {abaAtiva === "ativos" && corretor.periodoExperiencia && (
+                      {/* DIVISÓRIA SUTIL */}
                       <div
-                        className={`mt-3 p-2 rounded-lg ${
-                          isDark
-                            ? "bg-blue-900/20 border border-blue-800"
-                            : "bg-blue-50 border border-blue-200"
+                        className={`h-px mx-6 ${
+                          isDark ? "bg-gray-700" : "bg-gray-200"
                         }`}
-                      >
-                        <div className="flex items-center">
-                          <ClockIcon
-                            className={`w-4 h-4 mr-2 ${
-                              isDark ? "text-blue-400" : "text-blue-600"
-                            }`}
-                          />
-                          <span
-                            className={`text-xs ${
-                              isDark ? "text-blue-300" : "text-blue-800"
-                            }`}
-                          >
-                            Período de experiência:{" "}
-                            {corretor.diasExperiencia || 45} de 90 dias
+                      />
+
+                      {/* CONTATOS */}
+                      <div className="px-6 py-3 space-y-2">
+                        <div
+                          className={`flex items-center ${
+                            isDark ? "text-gray-300" : "text-gray-600"
+                          }`}
+                        >
+                          <EnvelopeIcon className="w-5 h-5 mr-3 flex-shrink-0" />
+                          <span className="text-sm truncate">
+                            {corretor.email}
                           </span>
                         </div>
-                        <div className="mt-2 w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                        <a
+                          href={`https://wa.me/55${corretor.telefone?.replace(/\D/g, "")}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={`flex items-center ${
+                            isDark
+                              ? "text-green-400 hover:text-green-300"
+                              : "text-green-600 hover:text-green-700"
+                          } transition-colors`}
+                        >
+                          <PhoneIcon className="w-5 h-5 mr-3 flex-shrink-0" />
+                          <span className="text-sm">{corretor.telefone}</span>
+                        </a>
+                      </div>
+
+                      {/* DIVISÓRIA SUTIL */}
+                      <div
+                        className={`h-px mx-6 ${
+                          isDark ? "bg-gray-700" : "bg-gray-200"
+                        }`}
+                      />
+
+                      {/* MÉTRICAS */}
+                      <div className="px-6 py-3">
+                        <div className="flex items-center justify-between gap-4">
+                          <div className="flex-1 text-center">
+                            <div
+                              className={`text-2xl font-bold ${
+                                isDark ? "text-gray-200" : "text-gray-700"
+                              }`}
+                            >
+                              {corretor.imoveis || 0}
+                            </div>
+                            <div
+                              className={`text-sm font-medium mt-1 ${
+                                isDark ? "text-gray-400" : "text-gray-500"
+                              }`}
+                            >
+                              IMÓVEIS
+                            </div>
+                          </div>
+
                           <div
-                            className="h-full bg-blue-500 rounded-full"
+                            className={`w-px h-12 ${
+                              isDark ? "bg-gray-700" : "bg-gray-300"
+                            }`}
+                          />
+
+                          <div className="flex-1 text-center">
+                            <div
+                              className={`text-2xl font-bold ${
+                                isDark ? "text-gray-200" : "text-gray-700"
+                              }`}
+                            >
+                              {corretor.vendas_mes || 0}
+                            </div>
+                            <div
+                              className={`text-sm font-medium mt-1 ${
+                                isDark ? "text-gray-400" : "text-gray-500"
+                              }`}
+                            >
+                              VENDAS (MÊS)
+                            </div>
+                          </div>
+
+                          <div
+                            className={`w-px h-12 ${
+                              isDark ? "bg-gray-700" : "bg-gray-300"
+                            }`}
+                          />
+
+                          <div className="flex-1 text-center">
+                            <div
+                              className={`text-2xl font-bold ${
+                                isDark ? "text-gray-200" : "text-gray-700"
+                              }`}
+                            >
+                              {corretor.leads || 0}
+                            </div>
+                            <div
+                              className={`text-sm font-medium mt-1 ${
+                                isDark ? "text-gray-400" : "text-gray-500"
+                              }`}
+                            >
+                              LEADS
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* PONTUAÇÃO */}
+                      <div className="px-6 py-2">
+                        <div className="flex items-center justify-between mb-1">
+                          <span
+                            className={`text-xs ${
+                              isDark ? "text-gray-400" : "text-gray-600"
+                            }`}
+                          >
+                            Pontuação
+                          </span>
+                          <span
+                            className={`text-xs font-medium ${
+                              isDark ? "text-amber-400" : "text-amber-600"
+                            }`}
+                          >
+                            {corretor.pontuacao || 0} pts
+                          </span>
+                        </div>
+                        <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                          <div
+                            className={`h-full rounded-full ${
+                              isDark ? "bg-[#D4A24D]" : "bg-[#D4A24D]"
+                            }`}
                             style={{
                               width: `${Math.round(
-                                ((corretor.diasExperiencia || 45) / 90) * 100,
+                                ((corretor.pontuacao || 0) /
+                                  (corretor.meta || 1000)) *
+                                  100,
                               )}%`,
                             }}
                           />
                         </div>
+                        <div className="flex justify-end mt-1">
+                          <span
+                            className={`text-xs ${
+                              isDark ? "text-gray-500" : "text-gray-500"
+                            }`}
+                          >
+                            Meta: {corretor.meta || 1000} pts
+                          </span>
+                        </div>
                       </div>
-                    )}
 
-                    {abaAtiva === "inativos" && (
+                      {/* DIVISÓRIA SUTIL ANTES DOS BOTÕES */}
+                      <div
+                        className={`h-px mx-6 ${
+                          isDark ? "bg-gray-700" : "bg-gray-200"
+                        }`}
+                      />
+
+                      {/* BOTÕES DE AÇÃO */}
+                      <div
+                        className={`px-6 py-3 ${
+                          isDark ? "bg-gray-800/70" : "bg-gray-50/80"
+                        } flex justify-end space-x-3`}
+                      >
+                        <button
+                          onClick={() =>
+                            navigate(`/admin/corretores/editar/${corretor.id}`)
+                          }
+                          className={`p-3 rounded-lg ${
+                            isDark
+                              ? "bg-blue-900/30 text-blue-300 hover:bg-blue-800/50"
+                              : "bg-blue-100 text-blue-600 hover:bg-blue-200"
+                          }`}
+                          title="Editar"
+                        >
+                          <PencilIcon className="w-5 h-5" />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(corretor.id, "corretor")}
+                          className={`p-3 rounded-lg ${
+                            isDark
+                              ? "bg-red-900/40 text-white hover:bg-red-800/60"
+                              : "bg-red-600 text-white hover:bg-red-700"
+                          }`}
+                          title="Excluir"
+                        >
+                          <TrashIcon className="w-5 h-5" />
+                        </button>
+                        <button
+                          onClick={() => handleAbrirPerfil(corretor)}
+                          className={`px-4 py-2 rounded-lg text-sm font-medium ${
+                            isDark
+                              ? "bg-[#D4A24D]/20 text-amber-200 hover:bg-[#D4A24D]/30"
+                              : "bg-[#D4A24D] text-white hover:bg-[#C19137]"
+                          }`}
+                        >
+                          Ver Perfil
+                        </button>
+                      </div>
+                    </div>
+                  );
+                }
+
+                // CARD PARA INATIVOS (MANTÉM O ORIGINAL)
+                return (
+                  <div
+                    key={corretor.id}
+                    className={`${
+                      isDark
+                        ? "bg-gray-800 border-gray-700 hover:bg-gray-750"
+                        : "bg-white border-gray-200 hover:bg-gray-50"
+                    } rounded-xl shadow-sm border overflow-hidden hover:shadow-md transition-all duration-200`}
+                  >
+                    {/* CARD INATIVO ORIGINAL */}
+                    <div
+                      className={`p-6 border-b ${
+                        isDark ? "border-gray-700" : "border-gray-200"
+                      }`}
+                    >
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <h3
+                            className={`text-lg font-semibold ${
+                              isDark ? "text-gray-100" : "text-gray-900"
+                            }`}
+                          >
+                            {corretor.nome}
+                          </h3>
+                          <div className="flex items-center mt-2 space-x-2 flex-wrap gap-y-2">
+                            <span
+                              className={`px-3 py-1 rounded-full text-xs font-medium inline-block ${
+                                isDark
+                                  ? "bg-red-900/30 text-red-300 border border-red-800"
+                                  : "bg-red-100 text-red-800 border border-red-300"
+                              }`}
+                            >
+                              Inativo
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
                       <div className="mt-3 text-xs">
                         <div
                           className={`flex items-center ${
@@ -6081,192 +6990,132 @@ const Corretores = () => {
                           {corretor.inativoHa}
                         </div>
                       </div>
-                    )}
-                  </div>
+                    </div>
 
-                  <div className="p-6">
-                    <div className="space-y-4">
-                      <div
-                        className={`flex items-center ${
-                          isDark ? "text-gray-300" : "text-gray-600"
-                        }`}
-                      >
-                        <EnvelopeIcon className="w-5 h-5 mr-3 flex-shrink-0" />
-                        <span className="truncate">{corretor.email}</span>
+                    <div className="p-6">
+                      <div className="space-y-4">
+                        <div
+                          className={`flex items-center ${
+                            isDark ? "text-gray-300" : "text-gray-600"
+                          }`}
+                        >
+                          <EnvelopeIcon className="w-5 h-5 mr-3 flex-shrink-0" />
+                          <span className="truncate">{corretor.email}</span>
+                        </div>
+                        <a
+                          href={`https://wa.me/55${corretor.telefone?.replace(/\D/g, "")}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={`flex items-center ${
+                            isDark
+                              ? "text-green-400 hover:text-green-300"
+                              : "text-green-600 hover:text-green-700"
+                          } transition-colors`}
+                        >
+                          <PhoneIcon className="w-5 h-5 mr-3 flex-shrink-0" />
+                          <span className="text-sm">{corretor.telefone}</span>
+                        </a>
+                        <div
+                          className={`text-sm ${
+                            isDark ? "text-gray-400" : "text-gray-500"
+                          }`}
+                        >
+                          CRECI: {corretor.creci}
+                        </div>
                       </div>
+
                       <div
-                        className={`flex items-center ${
-                          isDark ? "text-gray-300" : "text-gray-600"
+                        className={`mt-6 pt-6 border-t ${
+                          isDark ? "border-gray-700" : "border-gray-200"
                         }`}
                       >
-                        <PhoneIcon className="w-5 h-5 mr-3 flex-shrink-0" />
-                        <span>{corretor.telefone}</span>
-                      </div>
-                      <div
-                        className={`text-sm ${
-                          isDark ? "text-gray-400" : "text-gray-500"
-                        }`}
-                      >
-                        CRECI: {corretor.creci}
+                        <div className="flex items-center justify-between">
+                          <div className="text-center">
+                            <div
+                              className={`text-lg font-semibold ${
+                                isDark ? "text-gray-200" : "text-gray-700"
+                              }`}
+                            >
+                              {corretor.imoveis}
+                            </div>
+                            <div
+                              className={`text-sm ${
+                                isDark ? "text-gray-400" : "text-gray-500"
+                              }`}
+                            >
+                              Imóveis
+                            </div>
+                          </div>
+                          <div
+                            className={`h-12 w-px ${
+                              isDark ? "bg-gray-700" : "bg-gray-200"
+                            }`}
+                          />
+                          <div className="text-center">
+                            <div
+                              className={`text-lg font-semibold ${
+                                isDark ? "text-gray-200" : "text-gray-700"
+                              }`}
+                            >
+                              {corretor.ultimasVendas || "-"}
+                            </div>
+                            <div
+                              className={`text-sm ${
+                                isDark ? "text-gray-400" : "text-gray-500"
+                              }`}
+                            >
+                              Últimas Vendas
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     </div>
 
                     <div
-                      className={`mt-6 pt-6 border-t ${
-                        isDark ? "border-gray-700" : "border-gray-200"
-                      }`}
+                      className={`px-6 py-4 ${
+                        isDark
+                          ? "bg-gray-800/70 border-gray-700"
+                          : "bg-gray-50/80 border-gray-200"
+                      } border-t flex justify-end space-x-3`}
                     >
-                      <div className="flex items-center justify-between">
-                        <div className="text-center">
-                          <div
-                            className={`text-lg font-semibold ${
-                              isDark ? "text-gray-200" : "text-gray-700"
-                            }`}
-                          >
-                            {corretor.imoveis}
-                          </div>
-                          <div
-                            className={`text-sm ${
-                              isDark ? "text-gray-400" : "text-gray-500"
-                            }`}
-                          >
-                            Imóveis
-                          </div>
-                        </div>
-                        <div
-                          className={`h-12 w-px ${
-                            isDark ? "bg-gray-700" : "bg-gray-200"
-                          }`}
-                        />
-                        <div className="text-center">
-                          <div
-                            className={`text-lg font-semibold ${
-                              isDark ? "text-gray-200" : "text-gray-700"
-                            }`}
-                          >
-                            {abaAtiva === "inativos"
-                              ? corretor.ultimasVendas || "-"
-                              : corretor.vendasMes}
-                          </div>
-                          <div
-                            className={`text-sm ${
-                              isDark ? "text-gray-400" : "text-gray-500"
-                            }`}
-                          >
-                            Vendas (mês)
-                          </div>
-                        </div>
-                        <div
-                          className={`h-12 w-px ${
-                            isDark ? "bg-gray-700" : "bg-gray-200"
-                          }`}
-                        />
-                        <div className="text-center">
-                          <div
-                            className={`text-lg font-semibold ${
-                              isDark ? "text-gray-200" : "text-gray-700"
-                            }`}
-                          >
-                            {abaAtiva === "inativos" ? "-" : corretor.leads}
-                          </div>
-                          <div
-                            className={`text-sm ${
-                              isDark ? "text-gray-400" : "text-gray-500"
-                            }`}
-                          >
-                            Leads
-                          </div>
-                        </div>
-                      </div>
-
-                      {abaAtiva === "ativos" && (
-                        <div className="mt-4">
-                          <div className="flex items-center justify-between mb-1">
-                            <span
-                              className={`text-xs ${
-                                isDark ? "text-gray-400" : "text-gray-600"
-                              }`}
-                            >
-                              Pontuação
-                            </span>
-                            <span
-                              className={`text-xs font-semibold ${
-                                isDark ? "text-amber-400" : "text-amber-600"
-                              }`}
-                            >
-                              {corretor.pontuacao} pts
-                            </span>
-                          </div>
-                          <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
-                            <div
-                              className={`h-full rounded-full ${
-                                isDark ? "bg-[#D4A24D]" : "bg-[#D4A24D]"
-                              }`}
-                              style={{
-                                width: `${Math.round(
-                                  (corretor.pontuacao / corretor.meta) * 100,
-                                )}%`,
-                              }}
-                            />
-                          </div>
-                          <div className="flex justify-end mt-1">
-                            <span
-                              className={`text-xs ${
-                                isDark ? "text-gray-400" : "text-gray-600"
-                              }`}
-                            >
-                              Meta: {corretor.meta} pts
-                            </span>
-                          </div>
-                        </div>
-                      )}
+                      <button
+                        onClick={() =>
+                          navigate(`/admin/corretores/editar/${corretor.id}`)
+                        }
+                        className={`p-3 rounded-lg transition-all duration-200 ${
+                          isDark
+                            ? "bg-blue-900/30 text-blue-300 hover:bg-blue-800/50 hover:text-blue-200 border border-blue-800/50"
+                            : "bg-blue-100 text-blue-600 hover:bg-blue-200 hover:text-blue-700 border border-blue-200"
+                        } flex items-center justify-center shadow-sm hover:shadow`}
+                        title="Editar"
+                      >
+                        <PencilIcon className="w-5 h-5" />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(corretor.id, "corretor")}
+                        className={`p-3 rounded-lg transition-all duration-200 ${
+                          isDark
+                            ? "bg-red-900/40 text-white hover:bg-red-800/60 hover:text-red-100 border border-red-800/50"
+                            : "bg-red-600 text-white hover:bg-red-700 hover:text-white border border-red-600"
+                        } flex items-center justify-center shadow-sm hover:shadow`}
+                        title="Excluir"
+                      >
+                        <TrashIcon className="w-5 h-5" />
+                      </button>
+                      <button
+                        onClick={() => handleAbrirPerfil(corretor)}
+                        className={`px-4 py-2 rounded-lg transition-all duration-200 text-sm font-medium ${
+                          isDark
+                            ? "bg-[#D4A24D]/20 text-amber-200 hover:bg-[#D4A24D]/30 hover:text-amber-100 border border-amber-800/50"
+                            : "bg-[#D4A24D] text-white hover:bg-[#C19137] hover:text-white border border-[#D4A24D]"
+                        } flex items-center justify-center shadow-sm hover:shadow whitespace-nowrap`}
+                      >
+                        Ver Perfil
+                      </button>
                     </div>
                   </div>
-
-                  <div
-                    className={`px-6 py-4 ${
-                      isDark
-                        ? "bg-gray-800/70 border-gray-700"
-                        : "bg-gray-50/80 border-gray-200"
-                    } border-t flex justify-end space-x-3`}
-                  >
-                    <button
-                      onClick={() =>
-                        navigate(`/admin/corretores/editar/${corretor.id}`)
-                      }
-                      className={`p-2 rounded-lg transition-all duration-200 ${
-                        isDark
-                          ? "bg-blue-900/30 text-blue-300 hover:bg-blue-800/50 hover:text-blue-200 border border-blue-800/50"
-                          : "bg-blue-100 text-blue-600 hover:bg-blue-200 hover:text-blue-700 border border-blue-200"
-                      } flex items-center justify-center shadow-sm hover:shadow`}
-                      title="Editar"
-                    >
-                      <PencilIcon className="w-5 h-5" />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(corretor.id, "corretor")}
-                      className={`p-2 rounded-lg transition-all duration-200 ${
-                        isDark
-                          ? "bg-red-900/40 text-white hover:bg-red-800/60 hover:text-red-100 border border-red-800/50"
-                          : "bg-red-600 text-white hover:bg-red-700 hover:text-white border border-red-600"
-                      } flex items-center justify-center shadow-sm hover:shadow`}
-                      title="Excluir"
-                    >
-                      <TrashIcon className="w-5 h-5" />
-                    </button>
-                    <button
-                      onClick={() => handleAbrirPerfil(corretor)}
-                      className={`px-3 py-2 rounded-lg transition-all duration-200 text-sm font-medium ${
-                        isDark
-                          ? "bg-[#D4A24D]/20 text-amber-200 hover:bg-[#D4A24D]/30 hover:text-amber-100 border border-amber-800/50"
-                          : "bg-[#D4A24D] text-white hover:bg-[#C19137] hover:text-white border border-[#D4A24D]"
-                      } flex items-center justify-center shadow-sm hover:shadow whitespace-nowrap`}
-                    >
-                      Ver Perfil
-                    </button>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
           </div>
         )}
       </div>
@@ -6388,8 +7237,6 @@ const Corretores = () => {
       )}
 
       {/* MODAIS */}
-
-      {/* Modal de Agendamento */}
       {modalAgendamentoAberto && (
         <ModalAgendamentoEntrevista
           isOpen={modalAgendamentoAberto}
@@ -6403,7 +7250,6 @@ const Corretores = () => {
         />
       )}
 
-      {/* Modal de Progresso do Treinamento */}
       {modalProgressoAberto && (
         <ModalProgressoTreinamento
           isOpen={modalProgressoAberto}
@@ -6415,17 +7261,17 @@ const Corretores = () => {
         />
       )}
 
-      {/* Modal de Perfil do Corretor */}
+      {/* MODAL DE PERFIL ÚNICO */}
       {modalPerfilAberto && (
         <ModalPerfilCorretor
           isOpen={modalPerfilAberto}
           onClose={handleFecharModal}
           corretor={corretorSelecionado}
           isDark={isDark}
+          onAtivar={handleAtivacaoDireta} // ← FUNÇÃO CORRETA!
         />
       )}
 
-      {/* Modal de Reprovação */}
       {modalReprovacaoAberto && (
         <ModalReprovacao
           isOpen={modalReprovacaoAberto}
@@ -6439,7 +7285,6 @@ const Corretores = () => {
         />
       )}
 
-      {/* Modal de Ativação */}
       {modalAtivacaoAberto && (
         <ModalAtivacao
           isOpen={modalAtivacaoAberto}
@@ -6453,7 +7298,6 @@ const Corretores = () => {
         />
       )}
 
-      {/* Modal de Feedback */}
       {modalFeedbackAberto && (
         <ModalFeedbackBasico
           isOpen={modalFeedbackAberto}
@@ -6467,7 +7311,6 @@ const Corretores = () => {
         />
       )}
 
-      {/* Modal de Pausa do Treinamento */}
       {modalPausaAberto && (
         <ModalPausaTreinamento
           isOpen={modalPausaAberto}
@@ -6481,7 +7324,6 @@ const Corretores = () => {
         />
       )}
 
-      {/* Modal de Cancelamento do Treinamento */}
       {modalCancelamentoAberto && (
         <ModalCancelamentoTreinamento
           isOpen={modalCancelamentoAberto}
@@ -6495,7 +7337,6 @@ const Corretores = () => {
         />
       )}
 
-      {/* 🆕 MODAL DE DETALHES DO ARQUIVADO */}
       {modalDetalhesAberto && (
         <ModalDetalhesArquivado
           isOpen={modalDetalhesAberto}

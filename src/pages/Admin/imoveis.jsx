@@ -18,6 +18,7 @@ import {
   ArrowTrendingDownIcon,
   ChartBarIcon,
   InformationCircleIcon,
+  EyeIcon,
 } from "@heroicons/react/24/outline";
 import Button from "../../componentes/ui/Button";
 import { useTheme } from "../../contexts/ThemeContext";
@@ -26,7 +27,7 @@ import { TrophyIcon } from "@heroicons/react/24/outline";
 import { supabase } from "../../lib/supabase";
 import { useNotifications } from "../../contexts/NotificationContext";
 
-// ============ COMPONENTE MODAL PERFORMANCE (ESSENCIAL) ============
+// ============ COMPONENTE MODAL PERFORMANCE (CORRIGIDO E FUNCIONAL) ============
 const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
   const { isDark } = useTheme();
   const [showTooltipInfo, setShowTooltipInfo] = useState(false);
@@ -69,78 +70,17 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
             engajamentoCalculado: estatisticas.engajamento || 0,
           });
         } else {
-          // Dados simulados apenas para demonstração enquanto não há dados reais
-          const getMockData = () => {
-            switch (imovel.desempenho) {
-              case "Destaque":
-                return {
-                  visualizacoes: 320,
-                  cliquesWhatsApp: 78,
-                  solicitacoesVisita: 25,
-                  interessadosAtivos: 5,
-                  status: imovel.status,
-                  tempoNegociacao: "3 dias",
-                  ultimaAtualizacao: "1 hora atrás",
-                  engajamentoCalculado: 158,
-                };
-              case "Excelente":
-                return {
-                  visualizacoes: 247,
-                  cliquesWhatsApp: 48,
-                  solicitacoesVisita: 12,
-                  interessadosAtivos: 3,
-                  status: imovel.status,
-                  tempoNegociacao: "10 dias",
-                  ultimaAtualizacao: "2 horas atrás",
-                  engajamentoCalculado: 125,
-                };
-              case "Saudável":
-                return {
-                  visualizacoes: 180,
-                  cliquesWhatsApp: 18,
-                  solicitacoesVisita: 4,
-                  interessadosAtivos: 2,
-                  status: imovel.status,
-                  tempoNegociacao: "5 dias",
-                  ultimaAtualizacao: "1 hora atrás",
-                  engajamentoCalculado: 107,
-                };
-              case "Atenção":
-                return {
-                  visualizacoes: 150,
-                  cliquesWhatsApp: 10,
-                  solicitacoesVisita: 2,
-                  interessadosAtivos: 1,
-                  status: imovel.status,
-                  tempoNegociacao: "15 dias",
-                  ultimaAtualizacao: "3 horas atrás",
-                  engajamentoCalculado: 85,
-                };
-              case "Crítico":
-                return {
-                  visualizacoes: 200,
-                  cliquesWhatsApp: 6,
-                  solicitacoesVisita: 1,
-                  interessadosAtivos: 0,
-                  status: imovel.status,
-                  tempoNegociacao: "30 dias",
-                  ultimaAtualizacao: "5 horas atrás",
-                  engajamentoCalculado: 35,
-                };
-              default:
-                return {
-                  visualizacoes: 247,
-                  cliquesWhatsApp: 48,
-                  solicitacoesVisita: 12,
-                  interessadosAtivos: 3,
-                  status: imovel.status,
-                  tempoNegociacao: "10 dias",
-                  ultimaAtualizacao: "2 horas atrás",
-                  engajamentoCalculado: 125,
-                };
-            }
-          };
-          setMetricsData(getMockData());
+          // 🟢 SEM MOCKS - TUDO ZERADO
+          setMetricsData({
+            visualizacoes: 0,
+            cliquesWhatsApp: 0,
+            solicitacoesVisita: 0,
+            interessadosAtivos: 0,
+            status: imovel.status,
+            tempoNegociacao: "0 dias",
+            ultimaAtualizacao: "Ainda sem interações",
+            engajamentoCalculado: 0,
+          });
         }
       } catch (error) {
         console.error("Erro ao carregar performance:", error);
@@ -150,6 +90,7 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
     fetchPerformanceData();
   }, [imovel.id, imovel.desempenho, imovel.status]);
 
+  // Efeito para atualizar os dados quando marcado como vendido localmente
   useEffect(() => {
     if (localMarcadoComoVendido) {
       setMetricsData((prev) => ({
@@ -158,7 +99,7 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
         cliquesWhatsApp: prev.cliquesWhatsApp + 5,
         solicitacoesVisita: prev.solicitacoesVisita + 2,
         interessadosAtivos: 0,
-        status: "VENDIDO",
+        status: "Vendido", // 👈 MUDAR AQUI - usar "Vendido" em vez de "VENDIDO"
         tempoNegociacao: "Concluído",
         ultimaAtualizacao: "Agora mesmo",
         engajamentoCalculado: 150,
@@ -166,75 +107,120 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
     }
   }, [localMarcadoComoVendido]);
 
-  const engajamento = metricsData.engajamentoCalculado;
+  // ==========================================================================
+  // CALCULAR ENGAJAMENTO COM NOVOS PESOS (CLIQUE=1, VISITA=20)
+  // ==========================================================================
+  const calcularEngajamentoReal = () => {
+    if (metricsData.visualizacoes === 0) return 0;
+
+    // Peso 1 para WhatsApp, Peso 20 para Visitas
+    const pontos =
+      metricsData.cliquesWhatsApp * 1 + metricsData.solicitacoesVisita * 20;
+    const engajamento = (pontos / metricsData.visualizacoes) * 100;
+
+    return Math.min(Math.round(engajamento), 500);
+  };
+
+  const engajamento = calcularEngajamentoReal();
 
   const getClassificacaoDesempenho = () => {
-    if (localMarcadoComoVendido) {
+    // Caso especial: imóvel vendido
+    if (
+      localMarcadoComoVendido ||
+      imovel.status === "Vendido" ||
+      imovel.status === "Alugado"
+    ) {
       return {
         label: "Destaque",
         texto: "Imóvel vendido com sucesso!",
-        cor: "text-green-700",
+        cor: "text-[#D4A24D]",
         corIcone: "text-yellow-500",
-        bgIcone: "bg-yellow-50",
+        bgIcone: "bg-transparent", // 👈 SEM BACKGROUND
         Icone: TrophyIcon,
-        iconSize: "w-5 h-5",
+        iconSize: "w-6 h-6", // 👈 UM POUCO MAIOR FORA DA BOX
         marginBottom: "mb-2",
       };
     }
 
+    // Sem visualizações ainda
+    if (metricsData.visualizacoes === 0) {
+      return {
+        label: "Sem dados",
+        texto: "Aguardando interações",
+        cor: "text-gray-500",
+        corIcone: "text-gray-400",
+        bgIcone: "bg-transparent",
+        Icone: InformationCircleIcon,
+        iconSize: "w-6 h-6",
+        marginBottom: "mb-2",
+      };
+    }
+
+    // Classificação baseada no engajamento real
     if (engajamento >= 150) {
       return {
         label: "Destaque",
-        texto: "Resultado excepcional fora da curva",
-        cor: "text-green-700",
+        texto: "Resultado fora da curva",
+        cor: "text-[#D4A24D]",
         corIcone: "text-yellow-600",
-        bgIcone: "bg-yellow-50",
+        bgIcone: "bg-transparent",
         Icone: TrophyIcon,
-        iconSize: "w-5 h-5",
+        iconSize: "w-6 h-6",
         marginBottom: "mb-2",
       };
     } else if (engajamento >= 120) {
       return {
         label: "Excelente",
-        texto: "Resultado acima do esperado",
+        texto: "Acima do esperado",
         cor: "text-green-700",
         corIcone: "text-yellow-500",
-        bgIcone: "bg-yellow-50",
+        bgIcone: "bg-transparent",
         Icone: StarIcon,
-        iconSize: "w-5 h-5",
+        iconSize: "w-6 h-6",
         marginBottom: "mb-2",
       };
     } else if (engajamento >= 100) {
       return {
         label: "Saudável",
-        texto: "Dentro da meta esperada",
+        texto: "Dentro da meta",
         cor: "text-blue-700",
         corIcone: "text-green-500",
-        bgIcone: "bg-green-50",
+        bgIcone: "bg-transparent",
         Icone: CheckCircleIcon,
-        iconSize: "w-5 h-5",
+        iconSize: "w-6 h-6",
         marginBottom: "mb-2",
       };
     } else if (engajamento >= 80) {
       return {
         label: "Atenção",
-        texto: "Abaixo do potencial esperado",
+        texto: "Abaixo do potencial",
         cor: "text-amber-700",
         corIcone: "text-black",
-        bgIcone: "bg-amber-100",
+        bgIcone: "bg-transparent",
         Icone: ExclamationTriangleIcon,
-        iconSize: "w-5 h-5",
+        iconSize: "w-6 h-6",
         marginBottom: "mb-1",
+      };
+    } else if (engajamento > 0) {
+      return {
+        label: "Crítico",
+        texto: "Baixa conversão",
+        cor: "text-red-700",
+        corIcone: "text-red-500",
+        bgIcone: "bg-transparent",
+        Icone: ExclamationCircleIcon,
+        iconSize: "w-6 h-6",
+        marginBottom: "mb-2",
       };
     } else {
       return {
-        label: "Crítico",
-        texto: "Alto tráfego com baixa conversão",
-        cor: "text-red-700",
-        corIcone: "text-red-500",
-        bgIcone: "bg-red-50",
-        Icone: ExclamationCircleIcon,
-        iconSize: "w-5 h-5",
+        label: "Inativo",
+        texto: "Sem interações",
+        cor: "text-gray-500",
+        corIcone: "text-gray-400",
+        bgIcone: "bg-transparent",
+        Icone: InformationCircleIcon,
+        iconSize: "w-6 h-6",
         marginBottom: "mb-2",
       };
     }
@@ -244,7 +230,12 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
   const ClassificacaoIcon = classificacao.Icone;
 
   const getEngajamentoInfo = () => {
-    if (localMarcadoComoVendido || engajamento >= 150) {
+    if (
+      localMarcadoComoVendido ||
+      imovel.status === "Vendido" ||
+      imovel.status === "Alugado" ||
+      engajamento >= 150
+    ) {
       return {
         color: "text-green-600",
         bgColor: "bg-green-100",
@@ -285,7 +276,11 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
   const gerarInsights = () => {
     const insights = [];
 
-    if (localMarcadoComoVendido) {
+    if (
+      localMarcadoComoVendido ||
+      imovel.status === "Vendido" ||
+      imovel.status === "Alugado"
+    ) {
       insights.push("✅ Imóvel vendido com sucesso!");
       insights.push("🎉 Parabéns pela venda concluída!");
       insights.push("📊 Este imóvel teve excelente performance comercial.");
@@ -314,13 +309,25 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
       );
     }
 
-    const taxaConversao = (
-      ((metricsData.cliquesWhatsApp + metricsData.solicitacoesVisita) /
-        metricsData.visualizacoes) *
-      100
-    ).toFixed(1);
+    const totalInteracoes =
+      metricsData.cliquesWhatsApp + metricsData.solicitacoesVisita;
+    const taxaConversao =
+      metricsData.visualizacoes > 0
+        ? ((totalInteracoes / metricsData.visualizacoes) * 100).toFixed(1)
+        : 0;
+
     if (taxaConversao > 10) {
-      insights.push("Taxa de conversão excepcional (acima de 10%).");
+      insights.push(
+        `Taxa de conversão excepcional (${taxaConversao}% acima de 10%).`,
+      );
+    } else if (taxaConversao > 5) {
+      insights.push(`Taxa de conversão boa (${taxaConversao}%).`);
+    } else if (taxaConversao > 2) {
+      insights.push(`Taxa de conversão média (${taxaConversao}%).`);
+    } else {
+      insights.push(
+        `Taxa de conversão baixa (${taxaConversao}%). Necessário otimizar anúncio.`,
+      );
     }
 
     return insights;
@@ -328,7 +335,6 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
 
   const insights = gerarInsights();
   const engajamentoInfo = getEngajamentoInfo();
-  const EngajamentoIcon = engajamentoInfo.icon;
 
   const imovelCompleto = {
     ...imovel,
@@ -390,7 +396,15 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
 
       if (error) throw error;
 
+      // 👇 ATUALIZA O STATUS DIRETAMENTE NO metricsData
+      setMetricsData((prev) => ({
+        ...prev,
+        status: "Vendido",
+        tempoNegociacao: "Concluído",
+      }));
+
       setLocalMarcadoComoVendido(true);
+
       if (onAction) {
         onAction("marcarVendido", imovel.id);
       }
@@ -399,113 +413,102 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
       alert("Erro ao marcar imóvel como vendido. Tente novamente.");
     }
   };
+  // Verificar se o imóvel já está vendido ou alugado
+  const isVendidoOuAlugado =
+    imovel.status === "Vendido" ||
+    imovel.status === "Alugado" ||
+    localMarcadoComoVendido;
 
   return (
     <div
-      className={`fixed inset-0 ${isDark ? "bg-black/80" : "bg-black/60"} flex items-center justify-center z-50 p-4 backdrop-blur-sm`}
+      className={`fixed inset-0 ${isDark ? "bg-black/80" : "bg-black/60"} flex items-start justify-center z-50 p-4 overflow-y-auto backdrop-blur-sm`}
+      onClick={onClose}
     >
       <div
-        className={`${isDark ? "bg-gray-900 border-gray-700" : "bg-white border-gray-300"} rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden border`}
+        className={`${isDark ? "bg-gray-900 border-gray-700" : "bg-white border-gray-300"} rounded-xl shadow-2xl w-full max-w-4xl my-8 overflow-hidden border relative`}
+        onClick={(e) => e.stopPropagation()}
       >
+        {/* HEADER COM IMAGEM */}
         <div className="relative">
+          {/* Imagem de fundo */}
           <div className="h-56 bg-gradient-to-r from-gray-800 to-gray-900 overflow-hidden">
             <img
               src={imovelCompleto.imagemUrl}
               alt={imovelCompleto.codigo}
               className="w-full h-full object-cover opacity-90"
             />
-            <div
-              className={`absolute inset-0 bg-gradient-to-t ${palette.azulNoturno.gradient} to-transparent`}
-            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/30 to-transparent" />
           </div>
 
-          <div className="absolute inset-0 p-6 flex flex-col justify-end">
-            <div className="text-white">
-              <h2 className="text-2xl font-bold mb-1 drop-shadow-lg">
-                {imovelCompleto.codigo}
-              </h2>
-              <p className="text-gray-200 font-light">
-                {imovelCompleto.tipo} para{" "}
-                {imovelCompleto.finalidade?.toLowerCase() || "venda"}
-                {localMarcadoComoVendido && " - VENDIDO"}
-              </p>
+          {/* Conteúdo sobreposto */}
+          <div className="absolute inset-0 p-5 flex flex-col justify-between">
+            {/* Linha superior */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-white font-mono text-sm bg-black/30 backdrop-blur-sm px-3 py-1 rounded-full border border-white/20">
+                  {imovelCompleto.codigo}
+                </span>
+                <span className="text-gray-200 text-sm font-light bg-black/20 backdrop-blur-sm px-3 py-1 rounded-full border border-white/10">
+                  {imovelCompleto.tipo} para{" "}
+                  {imovelCompleto.finalidade?.toLowerCase() || "venda"}
+                  {isVendidoOuAlugado &&
+                    ` • ${imovelCompleto.status?.toUpperCase()}`}
+                </span>
+              </div>
+
+              <button
+                onClick={onClose}
+                className="p-2 bg-black/30 backdrop-blur-sm text-white rounded-lg hover:bg-black/50 transition-all border border-white/20"
+              >
+                <XMarkIcon className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Linha inferior corrigida */}
+            <div>
+              <div className="flex flex-wrap items-center gap-2 text-sm text-gray-200">
+                <span>{imovelCompleto.endereco}</span>
+
+                <span className="text-white/40">•</span>
+                <span>{imovelCompleto.bairro}</span>
+
+                <span className="text-white/40">|</span>
+                <span>{imovelCompleto.cidade}</span>
+
+                {imovelCompleto.estado && (
+                  <span> - {imovelCompleto.estado}</span>
+                )}
+
+                {/* Divisória */}
+                <span className="text-white/40">—</span>
+
+                {/* Preço alinhado */}
+                <span className="text-lg font-semibold text-white drop-shadow-lg">
+                  {typeof imovelCompleto.preco === "number"
+                    ? new Intl.NumberFormat("pt-BR", {
+                        style: "currency",
+                        currency: "BRL",
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      }).format(imovelCompleto.preco)
+                    : imovelCompleto.preco_formatado || imovelCompleto.preco}
+                </span>
+              </div>
             </div>
           </div>
-
-          <button
-            onClick={onClose}
-            className="absolute top-4 right-4 p-2 bg-[#D4A24D] text-white rounded-lg hover:bg-[#C19137] transition-all duration-200 shadow-md border border-amber-600"
-            title="Fechar"
-          >
-            <XMarkIcon className="w-5 h-5" />
-          </button>
         </div>
 
+        {/* CONTEÚDO DO MODAL */}
         <div className="flex-1 overflow-y-auto p-6">
           <div className="mb-6">
-            <div className="relative mb-3">
-              <div className="absolute inset-0 flex items-center">
-                <div
-                  className={`w-full border-t ${isDark ? "border-gray-700" : "border-gray-300"}`}
-                ></div>
-              </div>
-              <div className="relative flex justify-between items-center">
-                <div className={`${isDark ? "bg-gray-900" : "bg-white"} pr-4`}>
-                  <div
-                    className={`text-3xl font-bold ${isDark ? "text-gray-100" : "text-gray-900"}`}
-                  >
-                    {typeof imovelCompleto.preco === "number"
-                      ? new Intl.NumberFormat("pt-BR", {
-                          style: "currency",
-                          currency: "BRL",
-                        }).format(imovelCompleto.preco)
-                      : imovelCompleto.preco_formatado || imovelCompleto.preco}
-                    {localMarcadoComoVendido && (
-                      <span className="text-green-600 text-sm ml-2">
-                        ✓ VENDIDO
-                      </span>
-                    )}
-                  </div>
-                </div>
-                <div className={`${isDark ? "bg-gray-900" : "bg-white"} pl-4`}>
-                  <div
-                    className={`text-sm ${isDark ? "text-gray-400 bg-gray-800" : "text-gray-600 bg-gray-50"} px-3 py-1 rounded-lg`}
-                  >
-                    Valor do imóvel
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-1.5 text-sm">
-              <div
-                className={`font-medium ${isDark ? "text-gray-200" : "text-gray-900"}`}
-              >
-                {imovelCompleto.endereco}
-              </div>
-              <span className={isDark ? "text-gray-600" : "text-gray-400"}>
-                •
-              </span>
-              <div className={isDark ? "text-gray-400" : "text-gray-600"}>
-                {imovelCompleto.bairro}
-              </div>
-              <span className={isDark ? "text-gray-600" : "text-gray-400"}>
-                |
-              </span>
-              <div
-                className={`font-medium ${isDark ? "text-gray-200" : "text-gray-900"}`}
-              >
-                {imovelCompleto.cidade} - {imovelCompleto.estado}
-              </div>
-            </div>
-          </div>
-
-          <div className="mb-6">
             <h3
-              className={`text-sm font-semibold ${isDark ? "text-gray-300" : "text-gray-700"} uppercase tracking-wider mb-4`}
+              className={`text-sm font-semibold ${
+                isDark ? "text-gray-300" : "text-gray-700"
+              } uppercase tracking-wider mb-4`}
             >
               Performance Comercial
             </h3>
+
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <MetricCard
                 icon={EyeIcon}
@@ -520,6 +523,7 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
                   iconText: "text-blue-600",
                 }}
               />
+
               <MetricCard
                 icon={ChatBubbleLeftRightIcon}
                 value={metricsData.cliquesWhatsApp}
@@ -533,6 +537,7 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
                   iconText: "text-green-600",
                 }}
               />
+
               <MetricCard
                 icon={CalendarDaysIcon}
                 value={metricsData.solicitacoesVisita}
@@ -546,6 +551,7 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
                   iconText: "text-purple-600",
                 }}
               />
+
               <MetricCard
                 icon={UserGroupIcon}
                 value={metricsData.interessadosAtivos}
@@ -560,54 +566,115 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
                 }}
               />
             </div>
+
             <div
-              className={`text-xs ${isDark ? "text-gray-500" : "text-gray-500"} mt-3 text-center`}
-            >
-              Última atualização: {metricsData.ultimaAtualizacao}
-            </div>
+              className={`text-xs ${
+                isDark ? "text-gray-500" : "text-gray-500"
+              } mt-3 text-center`}
+            ></div>
           </div>
 
+          {/* Card de Status e Classificação */}
           <div className="mb-6">
             <div
               className={`rounded-xl p-5 ${palette.amareloDourado.bgLight} border ${palette.amareloDourado.border} ${isDark ? "dark:bg-amber-900/20 dark:border-amber-800" : ""}`}
             >
-              <div className="flex items-center justify-between">
-                <div className="flex-1 pr-6 border-r border-amber-300">
-                  <div className="flex flex-col items-center justify-center text-center h-full">
-                    <div className="mb-4">
-                      <div
-                        className={`text-sm font-medium ${isDark ? "text-gray-300" : "text-gray-700"} mb-1`}
-                      >
-                        Status
+              <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+                {/* Status */}
+                <div className="flex-1 text-center md:text-left md:pr-6 md:border-r border-amber-300">
+                  {/* Container com altura fixa para manter consistência */}
+                  <div className="flex flex-col items-center md:items-start h-[110px] relative">
+                    {/* Conteúdo principal centralizado verticalmente */}
+                    <div className="flex flex-col items-center md:items-start justify-center h-full w-full">
+                      {/* Status */}
+                      <div className="mb-1">
+                        <div
+                          className={`px-3 py-1 ${isVendidoOuAlugado ? "bg-green-600 text-white" : "bg-[#1E293B] text-white"} text-sm font-medium rounded-full uppercase inline-block`}
+                        >
+                          {isVendidoOuAlugado
+                            ? imovel.status?.toUpperCase() || "VENDIDO"
+                            : metricsData.status}
+                        </div>
                       </div>
-                      <div
-                        className={`px-3 py-1 ${localMarcadoComoVendido ? "bg-green-600 text-white" : palette.azulNoturno.bgLight + " text-white"} text-sm font-medium rounded-full uppercase`}
-                      >
-                        {localMarcadoComoVendido
-                          ? "VENDIDO"
-                          : metricsData.status}
-                      </div>
+
+                      {/* SÓ MOSTRA O TEMPO SE FOR "Em Negociação" OU "Vendido/Alugado" */}
+                      {metricsData.status === "Em Negociação" && (
+                        <div className="flex items-center gap-2">
+                          <ClockIcon
+                            className={`w-4 h-4 ${isDark ? "text-gray-400" : "text-gray-500"}`}
+                          />
+                          <span
+                            className={`text-sm ${isDark ? "text-gray-300" : "text-gray-700"}`}
+                          >
+                            <span className="font-medium">
+                              {metricsData.tempoNegociacao}
+                            </span>{" "}
+                            em negociação
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Quando vendido ou alugado, mostra "Concluído" */}
+                      {isVendidoOuAlugado && (
+                        <div className="flex items-center gap-2">
+                          <ClockIcon
+                            className={`w-4 h-4 ${isDark ? "text-gray-400" : "text-gray-500"}`}
+                          />
+                          <span
+                            className={`text-sm ${isDark ? "text-gray-300" : "text-gray-700"}`}
+                          >
+                            <span className="font-medium">Concluído</span>{" "}
+                            negociação
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Quando Disponível, NÃO MOSTRA NADA sobre tempo */}
                     </div>
 
-                    <div
-                      className={`flex items-center justify-center gap-2 text-sm ${isDark ? "text-gray-300" : "text-gray-700"}`}
-                    >
-                      <ClockIcon className="w-4 h-4" />
-                      <span>
-                        <span className="font-medium">
-                          {localMarcadoComoVendido
-                            ? "Concluído"
-                            : metricsData.tempoNegociacao}
-                        </span>{" "}
-                        {localMarcadoComoVendido
-                          ? "negociação"
-                          : "em negociação"}
-                      </span>
-                    </div>
+                    {/* Alerta - aparece por cima, deslocando o conteúdo principal para cima */}
+                    {!isVendidoOuAlugado &&
+                      metricsData.status === "Em Negociação" && (
+                        <>
+                          {(() => {
+                            const dias =
+                              parseInt(metricsData.tempoNegociacao) || 0;
+                            if (dias >= 15) {
+                              return (
+                                <div className="absolute bottom-0 left-0 right-0 flex items-center gap-1.5 mt-1">
+                                  <ExclamationCircleIcon
+                                    className={`w-3.5 h-3.5 ${isDark ? "text-amber-400" : "text-amber-600"}`}
+                                  />
+                                  <span
+                                    className={`text-[10px] font-medium ${isDark ? "text-amber-400" : "text-amber-600"}`}
+                                  >
+                                    acima do prazo recomendado
+                                  </span>
+                                </div>
+                              );
+                            } else if (dias >= 10) {
+                              return (
+                                <div className="absolute bottom-0 left-0 right-0 flex items-center gap-1.5 mt-1">
+                                  <ExclamationTriangleIcon
+                                    className={`w-3.5 h-3.5 ${isDark ? "text-amber-400" : "text-amber-600"}`}
+                                  />
+                                  <span
+                                    className={`text-[10px] font-medium ${isDark ? "text-amber-400" : "text-amber-600"}`}
+                                  >
+                                    acompanhar de perto
+                                  </span>
+                                </div>
+                              );
+                            }
+                            return null;
+                          })()}
+                        </>
+                      )}
                   </div>
                 </div>
 
-                <div className="flex-1 px-6 border-r border-amber-300">
+                {/* Índice de Interesse */}
+                <div className="flex-1 text-center md:px-6 md:border-r border-amber-300">
                   <div className="mb-2">
                     <div
                       className={`text-sm font-medium ${isDark ? "text-gray-300" : "text-gray-700"} mb-1`}
@@ -624,34 +691,37 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
                     className={`w-full h-2 ${isDark ? "bg-gray-700" : "bg-gray-300"} rounded-full overflow-hidden mb-1`}
                   >
                     <div
-                      className={`h-full ${localMarcadoComoVendido || engajamento >= 100 ? "bg-green-500" : engajamento >= 80 ? "bg-blue-500" : engajamento >= 50 ? "bg-amber-500" : "bg-red-500"}`}
-                      style={{ width: `${Math.min(engajamento / 5, 100)}%` }}
+                      className={`h-full ${isVendidoOuAlugado || engajamento >= 100 ? "bg-green-500" : engajamento >= 80 ? "bg-blue-500" : engajamento >= 50 ? "bg-amber-500" : "bg-red-500"}`}
+                      style={{ width: `${Math.min(engajamento, 100)}%` }}
                     ></div>
                   </div>
                   <div
                     className={`text-xs ${isDark ? "text-gray-400" : "text-gray-600"}`}
                   >
-                    Meta: <span className="font-medium">5%</span> de conversão
+                    Meta: <span className="font-medium">100%</span> de
+                    engajamento
                   </div>
                 </div>
 
-                <div className="flex-1 pl-6">
-                  <div className="flex flex-col items-center justify-center text-center h-full">
-                    <div className={`${classificacao.marginBottom || "mb-2"}`}>
-                      <div
-                        className={`p-1.5 rounded-lg ${classificacao.bgIcone} ${classificacao.corIcone} flex items-center justify-center mx-auto`}
-                      >
-                        <ClassificacaoIcon className="w-5 h-5" />
-                      </div>
+                {/* Classificação */}
+                <div className="flex-1 text-center md:pl-6">
+                  <div className="flex flex-col items-center">
+                    {/* ÍCONE - sem box, ajustado 1px para baixo */}
+                    <div className="relative top-[1px] mb-1">
+                      <ClassificacaoIcon
+                        className={`w-6 h-6 ${classificacao.corIcone}`}
+                      />
                     </div>
 
-                    <div className="mb-2">
+                    {/* DESTAQUE - sem margem inferior */}
+                    <div className="mb-0">
                       <div className={`text-lg font-bold ${classificacao.cor}`}>
                         {classificacao.label}
                       </div>
                     </div>
 
-                    <div className="mb-3">
+                    {/* RESULTADO - subiu 1px para aproximar */}
+                    <div className="relative -top-[1px]">
                       <div
                         className={`text-sm ${isDark ? "text-gray-300" : "text-gray-700"}`}
                       >
@@ -664,6 +734,7 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
             </div>
           </div>
 
+          {/* Insights Rápidos */}
           <div className="mb-6">
             <h4
               className={`text-sm font-semibold ${isDark ? "text-gray-300" : "text-gray-700"} mb-3`}
@@ -681,7 +752,7 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
                   : "border-blue-200";
                 let textColor = isDark ? "text-gray-300" : "text-gray-700";
 
-                if (localMarcadoComoVendido) {
+                if (isVendidoOuAlugado) {
                   Icon = CheckBadgeIcon;
                   bgColor = isDark
                     ? "from-green-900/30 to-green-900/20"
@@ -704,7 +775,8 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
                   textColor = isDark ? "text-green-300" : "text-green-700";
                 } else if (
                   insight.includes("abaixo") ||
-                  insight.includes("baixa conversão")
+                  insight.includes("baixa conversão") ||
+                  insight.includes("baixa")
                 ) {
                   Icon = ExclamationTriangleIcon;
                   bgColor = isDark
@@ -758,12 +830,14 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
           </div>
         </div>
 
+        {/* Footer com ações */}
         <div
           className={`border-t ${isDark ? "border-gray-700 bg-gray-800" : "border-gray-300 bg-gradient-to-r from-gray-50 to-gray-100/50"} p-4 relative`}
         >
+          {/* Tooltip informativo */}
           {showTooltipInfo && (
             <div
-              className={`absolute bottom-full left-4 mb-2 w-80 ${isDark ? "bg-gray-800 border-gray-700" : "bg-white border-gray-300"} rounded-lg shadow-xl z-50 p-4`}
+              className={`absolute bottom-full left-4 mb-2 w-80 ${isDark ? "bg-gray-800 border-gray-700" : "bg-white border-gray-300"} rounded-lg shadow-xl z-50 p-4 border`}
             >
               <div className="absolute top-full left-6 transform -translate-x-1/2 border-8 border-transparent border-t-gray-800"></div>
 
@@ -818,6 +892,7 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
           )}
 
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            {/* Botão de informação */}
             <div
               className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border ${isDark ? "border-amber-800 bg-amber-900/30 hover:bg-amber-900/50" : "border-amber-300 bg-amber-50 hover:bg-amber-100 hover:border-amber-400"} transition-all duration-200 cursor-help`}
               onMouseEnter={() => setShowTooltipInfo(true)}
@@ -837,38 +912,49 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
               </span>
             </div>
 
+            {/* Botões de ação */}
             <div className="flex items-center gap-3">
+              {/* BOTÃO FECHAR - vermelho suave */}
               <button
                 onClick={onClose}
-                className={`px-4 py-2.5 text-white ${palette.azulNoturno.bg} border ${palette.azulNoturno.border} rounded-lg hover:opacity-90 transition-all duration-200 font-medium shadow-sm hover:shadow flex items-center gap-2 mr-2`}
+                className={`px-4 py-2.5 rounded-lg transition-all duration-200 font-medium shadow-sm hover:shadow flex items-center gap-2 ${
+                  isDark
+                    ? "bg-rose-900/30 text-rose-300 border border-rose-800/50 hover:bg-rose-900/50"
+                    : "bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100"
+                }`}
               >
                 <XMarkIcon className="w-4 h-4" />
                 Fechar
               </button>
 
-              <button
-                onClick={handleMarcarComoVendido}
-                disabled={
-                  localMarcadoComoVendido ||
-                  imovel.status === "Vendido" ||
-                  imovel.status === "Alugado"
-                }
-                className={`px-4 py-2.5 ${localMarcadoComoVendido || imovel.status === "Vendido" || imovel.status === "Alugado" ? "bg-green-600 text-white hover:bg-green-700 cursor-default" : isDark ? "bg-gray-700 text-gray-300 border-gray-600 hover:bg-gray-600" : "bg-white text-gray-800 border border-gray-400 hover:bg-gray-50"} rounded-lg transition-all duration-200 font-medium shadow-sm hover:shadow flex items-center gap-2 ${localMarcadoComoVendido || imovel.status === "Vendido" || imovel.status === "Alugado" ? "opacity-90" : ""}`}
-              >
-                {localMarcadoComoVendido ||
-                imovel.status === "Vendido" ||
-                imovel.status === "Alugado" ? (
-                  <>
-                    <CheckBadgeIcon className="w-4 h-4" />
-                    {imovel.status === "Alugado" ? "ALUGADO" : "VENDIDO"}
-                  </>
-                ) : (
-                  <>
-                    <CheckBadgeIcon className="w-4 h-4 text-green-600" />
-                    Marcar como vendido
-                  </>
-                )}
-              </button>
+              {/* BOTÃO MARCAR COMO VENDIDO - azul escuro normal */}
+              {!isVendidoOuAlugado && (
+                <button
+                  onClick={handleMarcarComoVendido}
+                  className={`px-4 py-2.5 rounded-lg transition-all duration-200 font-medium shadow-sm hover:shadow flex items-center gap-2 ${
+                    isDark
+                      ? "bg-[#1E293B] text-white border border-gray-600 hover:bg-[#2d3748]"
+                      : "bg-[#0F172A] text-white border border-gray-300 hover:bg-[#1e293b]"
+                  }`}
+                >
+                  <CheckBadgeIcon className="w-4 h-4" />
+                  Marcar como vendido
+                </button>
+              )}
+
+              {/* BOTÃO VENDIDO/ALUGADO - verde quando já vendido */}
+              {isVendidoOuAlugado && (
+                <div
+                  className={`px-4 py-2.5 rounded-lg font-medium shadow-sm flex items-center gap-2 ${
+                    isDark
+                      ? "bg-green-600 text-white"
+                      : "bg-green-600 text-white"
+                  }`}
+                >
+                  <CheckBadgeIcon className="w-4 h-4" />
+                  {imovel.status === "Alugado" ? "ALUGADO" : "VENDIDO"}
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -877,12 +963,13 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
   );
 };
 
-// ============ COMPONENTE BOTÃO DESEMPENHO (ESSENCIAL) ============
+// ============ COMPONENTE BOTÃO DESEMPENHO (CORRIGIDO E FUNCIONAL) ============
 const BotaoDesempenho = ({ imovel }) => {
   const [modalAberto, setModalAberto] = useState(false);
 
   const handleAcaoModal = (acao, imovelId) => {
     console.log(`Ação: ${acao} no imóvel ID: ${imovelId}`);
+    // Aqui você pode adicionar lógica adicional se necessário
   };
 
   return (
@@ -1728,7 +1815,9 @@ const Imoveis = () => {
                         className={`w-[150px] p-3 text-center border ${isDark ? "border-gray-700" : "border-gray-200"}`}
                       >
                         <div className="flex items-center justify-center gap-1.5">
+                          {/* Botão Desempenho - AGORA FUNCIONAL */}
                           <BotaoDesempenho imovel={imovel} />
+
                           <div className="relative group">
                             <button
                               onClick={() =>
@@ -1744,6 +1833,7 @@ const Imoveis = () => {
                               <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
                             </div>
                           </div>
+
                           <div className="relative group">
                             <button
                               onClick={() => handleDelete(imovel.id)}

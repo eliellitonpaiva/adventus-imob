@@ -1812,7 +1812,17 @@ const Visitas = () => {
         valor.replace(/[^\d,.-]/g, "").replace(",", "."),
       );
 
-      const { error } = await supabase.from("propostas").insert([
+      // Primeiro, pegar o imovel_id da visita
+      const { data: visita, error: erroVisita } = await supabase
+        .from("visitas")
+        .select("imovel_id")
+        .eq("id", visitaId)
+        .single();
+
+      if (erroVisita) throw erroVisita;
+
+      // 1. Criar a proposta
+      const { error: erroProposta } = await supabase.from("propostas").insert([
         {
           visita_id: visitaId,
           valor: valorNumerico,
@@ -1820,12 +1830,46 @@ const Visitas = () => {
         },
       ]);
 
-      if (error) throw error;
+      if (erroProposta) throw erroProposta;
 
-      alert("Proposta criada com sucesso!");
+      // 2. Atualizar status do imóvel para "Em Negociação"
+      const { error: erroImovel } = await supabase
+        .from("imoveis")
+        .update({
+          status: "Em Negociação",
+          updated_at: new Date(),
+        })
+        .eq("id", visita.imovel_id);
+
+      if (erroImovel) throw erroImovel;
+
+      // 3. Registrar data/hora do início da negociação nas estatísticas
+      const { error: erroStats } = await supabase
+        .from("imovel_estatisticas")
+        .upsert(
+          {
+            imovel_id: visita.imovel_id,
+            data_inicio_negociacao: new Date(),
+            tempo_negociacao: "0 dias",
+            updated_at: new Date(),
+          },
+          {
+            onConflict: "imovel_id",
+          },
+        );
+
+      if (erroStats) throw erroStats;
+
+      console.log("✅ Proposta criada e negociação iniciada!");
+      alert(
+        "Proposta criada com sucesso! Imóvel atualizado para 'Em Negociação'.",
+      );
+
+      // Recarregar os dados para atualizar a interface
+      await carregarDados();
     } catch (error) {
       console.error("❌ Erro ao criar proposta:", error);
-      alert("Erro ao criar proposta");
+      alert("Erro ao criar proposta. Tente novamente.");
     }
   };
   if (loading) {
