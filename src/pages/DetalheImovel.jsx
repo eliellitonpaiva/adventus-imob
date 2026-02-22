@@ -1,12 +1,16 @@
 // ============================================================================
-// DETALHE DO IMÓVEL
+// DETALHE DO IMÓVEL - VERSÃO FINAL
 // ============================================================================
 // Arquivo: src/pages/DetalheImovel.jsx
-// Descrição: Página de detalhamento completo do imóvel com sistema de
-//            rastreamento de interações (visualizações, WhatsApp, visitas)
 // ============================================================================
 
-import React, { useState, useEffect, useRef } from "react";
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useCallback,
+  useMemo,
+} from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "/src/lib/supabase";
 import { visitasService } from "../lib/visitasService";
@@ -18,7 +22,7 @@ import { useNotifications } from "../contexts/NotificationContext";
 const DetalheImovel = () => {
   const { slug } = useParams();
   const navigate = useNavigate();
-  const { incrementarContador, carregarNotificacoes } = useNotifications();
+  const { incrementarContador } = useNotifications();
 
   // ==========================================================================
   // ESTADOS DO COMPONENTE
@@ -27,6 +31,7 @@ const DetalheImovel = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [visualizacoes, setVisualizacoes] = useState(0);
+  const [seoAplicado, setSeoAplicado] = useState(false);
 
   // Estados do carrossel e modal
   const [imagemAtual, setImagemAtual] = useState(0);
@@ -48,24 +53,17 @@ const DetalheImovel = () => {
   // Refs
   const modalRef = useRef(null);
   const overlayRef = useRef(null);
+  const seoAplicadoRef = useRef(false);
 
   // Constantes
   const whatsappNumber = "5599988087867";
 
   // ==========================================================================
-  // FUNÇÕES DE RASTREAMENTO - SISTEMA DE PERFORMANCE
+  // FUNÇÕES DE RASTREAMENTO
   // ==========================================================================
 
-  /**
-   * Registra uma visualização da página do imóvel
-   */
-  const registrarVisualizacao = async (imovelId) => {
+  const registrarVisualizacao = useCallback(async (imovelId) => {
     try {
-      console.log(
-        "👁️ [RASTREAMENTO] Registrando visualização para imóvel:",
-        imovelId,
-      );
-
       const { data: existingStats, error: selectError } = await supabase
         .from("imovel_estatisticas")
         .select("visualizacoes")
@@ -102,17 +100,12 @@ const DetalheImovel = () => {
         if (insertError) throw insertError;
         setVisualizacoes(1);
       }
-
-      console.log("✅ [RASTREAMENTO] Visualização registrada!");
     } catch (error) {
       console.error("❌ Erro ao registrar visualização:", error);
     }
-  };
+  }, []);
 
-  /**
-   * Busca o total de visualizações do banco
-   */
-  const buscarVisualizacoes = async (imovelId) => {
+  const buscarVisualizacoes = useCallback(async (imovelId) => {
     try {
       const { data, error } = await supabase
         .from("imovel_estatisticas")
@@ -126,18 +119,10 @@ const DetalheImovel = () => {
       console.error("❌ Erro ao buscar visualizações:", error);
       setVisualizacoes(0);
     }
-  };
+  }, []);
 
-  /**
-   * Registra um clique no botão do WhatsApp
-   */
-  const registrarCliqueWhatsApp = async (imovelId) => {
+  const registrarCliqueWhatsApp = useCallback(async (imovelId) => {
     try {
-      console.log(
-        "📱 [RASTREAMENTO] Registrando clique WhatsApp para imóvel:",
-        imovelId,
-      );
-
       const { data: existingStats, error: selectError } = await supabase
         .from("imovel_estatisticas")
         .select("cliques_whatsapp")
@@ -172,143 +157,79 @@ const DetalheImovel = () => {
 
         if (insertError) throw insertError;
       }
-
-      console.log("✅ [RASTREAMENTO] Clique WhatsApp registrado!");
     } catch (error) {
       console.error("❌ Erro ao registrar clique WhatsApp:", error);
     }
-  };
+  }, []);
 
-  /**
-   * Registra uma solicitação de visita e cria um interessado ativo
-   */
-  const registrarSolicitacaoVisita = async (
-    imovelId,
-    dadosVisita,
-    visitaId,
-  ) => {
-    try {
-      console.log(
-        "🏠 [RASTREAMENTO] Registrando solicitação de visita para imóvel:",
-        imovelId,
-      );
-
-      const { data: existingStats, error: selectError } = await supabase
-        .from("imovel_estatisticas")
-        .select("solicitacoes_visita, interessados_ativos")
-        .eq("imovel_id", imovelId)
-        .maybeSingle();
-
-      if (selectError) throw selectError;
-
-      if (existingStats) {
-        const { error: updateError } = await supabase
-          .from("imovel_estatisticas")
-          .update({
-            solicitacoes_visita: (existingStats.solicitacoes_visita || 0) + 1,
-            interessados_ativos: (existingStats.interessados_ativos || 0) + 1,
-            updated_at: new Date(),
-          })
-          .eq("imovel_id", imovelId);
-
-        if (updateError) throw updateError;
-      } else {
-        const { error: insertError } = await supabase
-          .from("imovel_estatisticas")
-          .insert({
-            imovel_id: imovelId,
-            visualizacoes: 0,
-            cliques_whatsapp: 0,
-            solicitacoes_visita: 1,
-            interessados_ativos: 1,
-            engajamento: 0,
-            created_at: new Date(),
-            updated_at: new Date(),
-          });
-
-        if (insertError) throw insertError;
-      }
-
-      const { error: interessadoError } = await supabase
-        .from("interessados_ativos")
-        .insert({
-          imovel_id: imovelId,
-          nome: dadosVisita.nome,
-          email: dadosVisita.email,
-          telefone: dadosVisita.telefone,
-          solicitacao_visita_id: visitaId,
-          tipo_interesse: "visita_agendada",
-          status: "aguardando_contato",
-          data_interesse: new Date(),
-        });
-
-      if (interessadoError) throw interessadoError;
-
-      console.log("✅ [RASTREAMENTO] Solicitação de visita registrada!");
-    } catch (error) {
-      console.error("❌ Erro ao registrar solicitação de visita:", error);
-    }
-  };
-
-  // ==========================================================================
-  // FUNÇÕES DE BUSCA DE DADOS
-  // ==========================================================================
-
-  useEffect(() => {
-    const fetchImovel = async () => {
+  const registrarSolicitacaoVisita = useCallback(
+    async (imovelId, dadosVisita, visitaId) => {
       try {
-        setLoading(true);
-        console.log("🟡 Buscando imóvel com slug:", slug);
-
-        const { data: imovelData, error: imovelError } = await supabase
-          .from("imoveis")
-          .select("*")
-          .eq("slug", slug)
+        const { data: existingStats, error: selectError } = await supabase
+          .from("imovel_estatisticas")
+          .select("solicitacoes_visita, interessados_ativos")
+          .eq("imovel_id", imovelId)
           .maybeSingle();
 
-        if (imovelError) throw imovelError;
-        if (!imovelData) throw new Error("Imóvel não encontrado");
+        if (selectError) throw selectError;
 
-        if (imovelData.id_edificios) {
-          const { data: edificioData } = await supabase
-            .from("edificios")
-            .select("id, nome, tipo")
-            .eq("id", imovelData.id_edificios)
-            .maybeSingle();
+        if (existingStats) {
+          const { error: updateError } = await supabase
+            .from("imovel_estatisticas")
+            .update({
+              solicitacoes_visita: (existingStats.solicitacoes_visita || 0) + 1,
+              interessados_ativos: (existingStats.interessados_ativos || 0) + 1,
+              updated_at: new Date(),
+            })
+            .eq("imovel_id", imovelId);
 
-          if (edificioData) {
-            imovelData.edificios = edificioData;
-          }
+          if (updateError) throw updateError;
+        } else {
+          const { error: insertError } = await supabase
+            .from("imovel_estatisticas")
+            .insert({
+              imovel_id: imovelId,
+              visualizacoes: 0,
+              cliques_whatsapp: 0,
+              solicitacoes_visita: 1,
+              interessados_ativos: 1,
+              engajamento: 0,
+              created_at: new Date(),
+              updated_at: new Date(),
+            });
+
+          if (insertError) throw insertError;
         }
 
-        setImovel(imovelData);
+        const { error: interessadoError } = await supabase
+          .from("interessados_ativos")
+          .insert({
+            imovel_id: imovelId,
+            nome: dadosVisita.nome,
+            email: dadosVisita.email,
+            telefone: dadosVisita.telefone,
+            solicitacao_visita_id: visitaId,
+            tipo_interesse: "visita_agendada",
+            status: "aguardando_contato",
+            data_interesse: new Date(),
+          });
 
-        // Rastreamento de visualização
-        await registrarVisualizacao(imovelData.id);
-        await buscarVisualizacoes(imovelData.id);
-
-        setFormData((prev) => ({
-          ...prev,
-          mensagem: `Tenho interesse no imóvel ${imovelData.codigo || ""} - ${imovelData.titulo || ""}. Aguardo informações.`,
-        }));
-      } catch (err) {
-        console.error("❌ Erro:", err);
-        setError(err.message);
-      } finally {
-        setLoading(false);
+        if (interessadoError) throw interessadoError;
+      } catch (error) {
+        console.error("❌ Erro ao registrar solicitação de visita:", error);
       }
-    };
-
-    if (slug) fetchImovel();
-  }, [slug]);
+    },
+    [],
+  );
 
   // ==========================================================================
   // FUNÇÕES DE FORMATAÇÃO
   // ==========================================================================
 
-  const formatPrice = (price) => {
+  const formatPrice = useCallback((price) => {
     if (!price || price === "0" || price === "0.00")
       return "Preço sob consulta";
+
     let valorNumerico;
     if (typeof price === "string") {
       const stringLimpa = price
@@ -319,29 +240,266 @@ const DetalheImovel = () => {
     } else {
       valorNumerico = Number(price);
     }
+
     if (isNaN(valorNumerico) || !isFinite(valorNumerico))
       return "Preço sob consulta";
+
     return new Intl.NumberFormat("pt-BR", {
       style: "currency",
       currency: "BRL",
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     }).format(valorNumerico);
-  };
+  }, []);
 
-  const formatarFinalidade = (imovel) => {
+  const formatarFinalidade = useCallback((imovel) => {
     if (imovel.finalidade_venda && imovel.finalidade_aluguel)
       return "Venda e Aluguel";
     if (imovel.finalidade_venda) return "Venda";
     if (imovel.finalidade_aluguel) return "Aluguel";
     return "Venda";
-  };
+  }, []);
+
+  // FUNÇÃO VENENOSA DE SEO - GERA TÍTULO MATADOR
+  const gerarTituloSEO = useCallback((dados) => {
+    if (!dados) return "Imóvel em Açailândia – Adventus Imóveis";
+
+    const partes = [];
+
+    let tipoParte = dados.tipo || "Imóvel";
+    if (dados.quartos > 0) {
+      tipoParte += ` com ${dados.quartos} ${dados.quartos === 1 ? "dormitório" : "dormitórios"}`;
+    }
+    partes.push(tipoParte);
+
+    const caracteristicas = [];
+
+    if (dados.suites > 0) {
+      caracteristicas.push(
+        `${dados.suites} ${dados.suites === 1 ? "suíte" : "suítes"}`,
+      );
+    }
+
+    if (dados.vagas > 0) {
+      caracteristicas.push(
+        `${dados.vagas} ${dados.vagas === 1 ? "vaga" : "vagas"}`,
+      );
+    }
+
+    if (dados.areaConstruida > 0) {
+      caracteristicas.push(`${dados.areaConstruida}m²`);
+    } else if (dados.areaTotal > 0) {
+      caracteristicas.push(`${dados.areaTotal}m²`);
+    }
+
+    if (caracteristicas.length > 0) {
+      partes.push(`, ${caracteristicas.join(", ")}`);
+    } else {
+      partes.push(`,`);
+    }
+
+    const localizacao = [];
+    if (dados.bairro) localizacao.push(dados.bairro);
+    if (dados.cidade) {
+      const cidadeUF = dados.estado
+        ? `${dados.cidade}/${dados.estado}`
+        : dados.cidade;
+      localizacao.push(cidadeUF);
+    }
+
+    if (localizacao.length > 0) {
+      partes.push(` – ${localizacao.join(" – ")}`);
+    }
+
+    return partes.join(" ");
+  }, []);
+
+  const gerarSlugSEO = useCallback((dados) => {
+    if (!dados) return "imovel";
+
+    const partes = [];
+
+    if (dados.tipo) partes.push(dados.tipo.toLowerCase());
+    if (dados.quartos > 0) partes.push(`${dados.quartos}-dormitorios`);
+    if (dados.finalidade_venda) {
+      partes.push("venda");
+    } else if (dados.finalidade_aluguel) {
+      partes.push("aluguel");
+    }
+    if (dados.bairro)
+      partes.push(dados.bairro.toLowerCase().replace(/\s+/g, "-"));
+    if (dados.cidade)
+      partes.push(dados.cidade.toLowerCase().replace(/\s+/g, "-"));
+    if (dados.estado) partes.push(dados.estado.toLowerCase());
+
+    return partes.join("-");
+  }, []);
+
+  const gerarMetaDescription = useCallback((dados) => {
+    if (!dados)
+      return "Imóveis em Açailândia e região. Compre ou alugue com a Adventus Imóveis.";
+
+    const descricao = [];
+    descricao.push(
+      `${dados.tipo || "Imóvel"} com ${dados.quartos || 0} ${dados.quartos === 1 ? "quarto" : "quartos"}`,
+    );
+
+    if (dados.suites > 0) {
+      descricao.push(
+        `${dados.suites} ${dados.suites === 1 ? "suíte" : "suítes"}`,
+      );
+    }
+
+    if (dados.areaConstruida > 0) {
+      descricao.push(`${dados.areaConstruida}m²`);
+    }
+
+    const localParts = [];
+    if (dados.bairro) localParts.push(dados.bairro);
+    if (dados.cidade) localParts.push(dados.cidade);
+    if (dados.estado) localParts.push(dados.estado);
+
+    descricao.push(`no ${localParts.join(" - ")}`);
+
+    if (dados.finalidade_venda) {
+      descricao.push(
+        `à venda por ${dados.precoFormatado || "valor sob consulta"}`,
+      );
+    } else if (dados.finalidade_aluguel) {
+      descricao.push(
+        `para alugar por ${dados.precoAluguelFormatado || "valor sob consulta"}/mês`,
+      );
+    }
+
+    const baseDesc = descricao.join(" ");
+    return `${baseDesc}. Agende sua visita com a Adventus Imóveis!`.slice(
+      0,
+      155,
+    );
+  }, []);
+
+  const gerarAltImagem = useCallback((dados, index = 0) => {
+    if (!dados) return "Imóvel em Açailândia - Adventus Imóveis";
+
+    const tipos = [
+      "Fachada",
+      "Sala",
+      "Cozinha",
+      "Quarto",
+      "Banheiro",
+      "Área externa",
+      "Vista",
+    ];
+    const tipo = index < tipos.length ? tipos[index] : "Detalhe";
+
+    return `${tipo} do ${dados.tipo || "imóvel"} com ${dados.quartos || 0} quartos no ${dados.bairro || ""} em ${dados.cidade || "Açailândia"} - Adventus Imóveis`;
+  }, []);
 
   // ==========================================================================
-  // FUNÇÕES DE EXTRAÇÃO DE DADOS
+  // FUNÇÃO DE SEO - MANIPULAÇÃO DIRETA DO DOM
   // ==========================================================================
+  const atualizarTagsSEO = useCallback((dados) => {
+    if (!dados || seoAplicadoRef.current) return;
 
-  const getImovelData = () => {
+    document.title = `${dados.tituloSEO} | Adventus Imóveis`;
+
+    let metaDesc = document.querySelector('meta[name="description"]');
+    if (!metaDesc) {
+      metaDesc = document.createElement("meta");
+      metaDesc.name = "description";
+      document.head.appendChild(metaDesc);
+    }
+    metaDesc.setAttribute("content", dados.metaDescription);
+
+    let canonical = document.querySelector('link[rel="canonical"]');
+    if (!canonical) {
+      canonical = document.createElement("link");
+      canonical.rel = "canonical";
+      document.head.appendChild(canonical);
+    }
+    canonical.setAttribute(
+      "href",
+      `https://adventusimobiliaria.com.br/imovel/${dados.slugSEO}`,
+    );
+
+    const ogTags = {
+      "og:title": dados.tituloSEO,
+      "og:description": dados.metaDescription,
+      "og:image": dados.imagens[0],
+      "og:url": `https://adventusimobiliaria.com.br/imovel/${dados.slugSEO}`,
+      "og:type": "product",
+      "og:site_name": "Adventus Imóveis",
+    };
+
+    Object.entries(ogTags).forEach(([property, content]) => {
+      let tag = document.querySelector(`meta[property="${property}"]`);
+      if (!tag) {
+        tag = document.createElement("meta");
+        tag.setAttribute("property", property);
+        document.head.appendChild(tag);
+      }
+      tag.setAttribute("content", content);
+    });
+
+    const twitterTags = {
+      "twitter:card": "summary_large_image",
+      "twitter:title": dados.tituloSEO,
+      "twitter:description": dados.metaDescription,
+      "twitter:image": dados.imagens[0],
+    };
+
+    Object.entries(twitterTags).forEach(([name, content]) => {
+      let tag = document.querySelector(`meta[name="${name}"]`);
+      if (!tag) {
+        tag = document.createElement("meta");
+        tag.setAttribute("name", name);
+        document.head.appendChild(tag);
+      }
+      tag.setAttribute("content", content);
+    });
+
+    const schema = {
+      "@context": "https://schema.org",
+      "@type": "Product",
+      name: dados.tituloSEO,
+      description: dados.metaDescription,
+      image: dados.imagens[0],
+      offers: {
+        "@type": "Offer",
+        price: dados.preco || dados.precoAluguel,
+        priceCurrency: "BRL",
+        availability:
+          dados.status === "Disponível"
+            ? "https://schema.org/InStock"
+            : "https://schema.org/SoldOut",
+        url: `https://adventusimobiliaria.com.br/imovel/${dados.slugSEO}`,
+      },
+      address: {
+        "@type": "PostalAddress",
+        addressLocality: dados.cidade,
+        addressRegion: dados.estado,
+        addressCountry: "BR",
+      },
+    };
+
+    let schemaTag = document.querySelector(
+      'script[type="application/ld+json"]',
+    );
+    if (!schemaTag) {
+      schemaTag = document.createElement("script");
+      schemaTag.type = "application/ld+json";
+      document.head.appendChild(schemaTag);
+    }
+    schemaTag.textContent = JSON.stringify(schema);
+
+    seoAplicadoRef.current = true;
+    setSeoAplicado(true);
+  }, []);
+
+  // ==========================================================================
+  // FUNÇÃO DE EXTRAÇÃO DE DADOS
+  // ==========================================================================
+  const getImovelData = useCallback(() => {
     if (!imovel) return null;
 
     const caracteristicas = imovel.caracteristicas || {};
@@ -355,11 +513,50 @@ const DetalheImovel = () => {
     const diferenciais = imovel.diferenciais || {};
     const etiquetas = imovel.etiquetas || {};
 
-    return {
+    let financiavel = false;
+
+    // Prioridade 1: Verificar imovel.financiado (está como true no log!)
+    if (imovel.financiado !== undefined && imovel.financiado !== null) {
+      if (typeof imovel.financiado === "boolean") {
+        financiavel = imovel.financiado;
+        console.log("✅ Usando imovel.financiado:", financiavel);
+      } else if (typeof imovel.financiado === "string") {
+        financiavel = ["true", "sim", "1", "on"].includes(
+          imovel.financiado.toLowerCase(),
+        );
+      } else if (typeof imovel.financiado === "number") {
+        financiavel = imovel.financiado === 1;
+      }
+    }
+
+    // Prioridade 2: Verificar em etiquetas.financiavel (segunda opção)
+    if (!financiavel && imovel.etiquetas?.financiavel !== undefined) {
+      if (typeof imovel.etiquetas.financiavel === "boolean") {
+        financiavel = imovel.etiquetas.financiavel;
+        console.log("✅ Usando etiquetas.financiavel:", financiavel);
+      }
+    }
+
+    // Prioridade 3: Verificar em caracteristicas.financiavel (última opção)
+    if (!financiavel && caracteristicas.financiavel !== undefined) {
+      if (typeof caracteristicas.financiavel === "boolean") {
+        financiavel = caracteristicas.financiavel;
+        console.log("✅ Usando caracteristicas.financiavel:", financiavel);
+      }
+    }
+
+    console.log("🏁 RESULTADO FINAL - Financiável:", financiavel);
+    console.log(`Imóvel ${imovel.codigo}:`, {
+      caracteristicas_financiavel: caracteristicas.financiavel,
+      imovel_financiavel: imovel.financiavel,
+      financiavel_final: financiavel,
+    });
+
+    const dados = {
       id: imovel.id,
       slug: imovel.slug,
       codigo: imovel.codigo || "Sem código",
-      titulo: imovel.titulo || "Imóvel sem título",
+      titulo: imovel.titulo || "Imóvel em Açailândia",
       preco: imovel.preco,
       precoFormatado: formatPrice(imovel.preco),
       precoAluguel: imovel.preco_aluguel,
@@ -374,9 +571,11 @@ const DetalheImovel = () => {
       numero: imovel.numero || "",
       complemento: imovel.complemento || "",
       bairro: imovel.bairro || "",
-      cidade: imovel.cidade || "",
-      estado: imovel.estado || "",
-      localizacaoCompleta: `${imovel.bairro || ""}, ${imovel.cidade || ""}${imovel.estado ? ` - ${imovel.estado}` : ""}`,
+      cidade: imovel.cidade || "Açailândia",
+      estado: imovel.estado || "MA",
+      // 👇 ADICIONE ESTA LINHA AQUI
+      exibir_endereco_site: imovel.exibir_endereco_site || false,
+      localizacaoCompleta: `${imovel.bairro || ""}, ${imovel.cidade || "Açailândia"}${imovel.estado ? ` - ${imovel.estado}` : ""}`,
       enderecoCompleto: `${imovel.endereco || ""}${imovel.numero ? `, ${imovel.numero}` : ""}${imovel.complemento ? ` - ${imovel.complemento}` : ""}`,
       quartos: dependencias.dormitorios || caracteristicas.quartos || 0,
       suites: dependencias.suites || caracteristicas.suites || 0,
@@ -386,11 +585,13 @@ const DetalheImovel = () => {
       areaConstruida:
         dependencias.area_construida || caracteristicas.areaConstruida || 0,
       destaqueSemana: etiquetas.destaqueSemana || false,
+      financiavel: financiavel,
       emCondominio: imovel.em_condominio || false,
       ocultarPreco: imovel.ocultar_preco || false,
 
       // Objetos completos para os acordeões
       caracteristicas,
+      dependencias,
       acabamentos,
       areaLazer,
       localizacaoVizinhanca,
@@ -404,257 +605,523 @@ const DetalheImovel = () => {
           "https://images.unsplash.com/photo-1568605114967-8130f3a36994?auto=format&fit=crop&w=1200&h=800&q=80",
       ],
     };
-  };
+
+    dados.tituloSEO = gerarTituloSEO(dados);
+    dados.slugSEO = gerarSlugSEO(dados);
+    dados.metaDescription = gerarMetaDescription(dados);
+
+    return dados;
+  }, [
+    imovel,
+    formatPrice,
+    formatarFinalidade,
+    gerarTituloSEO,
+    gerarSlugSEO,
+    gerarMetaDescription,
+  ]);
 
   // ==========================================================================
-  // FUNÇÕES PARA OS ACORDEÕES (RESTAURADAS)
+  // FUNÇÃO PARA GERAR OS ACORDEÕES
   // ==========================================================================
+  const gerarDadosAcordeao = useCallback(
+    (dados) => {
+      if (!dados || !imovel) return [];
 
-  const toggleAcordeao = (index) => {
-    setAcordeoesAbertos((prev) => ({
-      ...prev,
-      [index]: !prev[index],
-    }));
-  };
+      const acordeoes = [];
 
-  const gerarDadosAcordeao = (dados) => {
-    if (!dados || !imovel) return [];
+      /// ===== 1. CARACTERÍSTICAS DO IMÓVEL =====
+      const itensCaracteristicas = [];
+      const caracteristicas = dados.caracteristicas || {};
+      const dependencias = dados.dependencias || {};
 
-    const acordeoes = [];
+      // Dimensões do terreno
+      if (caracteristicas.frenteTerreno) {
+        itensCaracteristicas.push(
+          `Frente do terreno: ${caracteristicas.frenteTerreno}`,
+        );
+      }
+      if (caracteristicas.fundo) {
+        itensCaracteristicas.push(`Fundo: ${caracteristicas.fundo}`);
+      }
+      if (caracteristicas.lateralEsquerda) {
+        itensCaracteristicas.push(
+          `Lateral esquerda: ${caracteristicas.lateralEsquerda}`,
+        );
+      }
+      if (caracteristicas.lateralDireita) {
+        itensCaracteristicas.push(
+          `Lateral direita: ${caracteristicas.lateralDireita}`,
+        );
+      }
 
-    // CARACTERÍSTICAS DO IMÓVEL
-    const itensCaracteristicas = [];
-    const caracteristicas = dados.caracteristicas || {};
-    const dependencias = imovel.dependencias || {};
+      // Características construtivas
+      if (caracteristicas.peDireito) {
+        itensCaracteristicas.push(`Pé direito: ${caracteristicas.peDireito}`);
+      }
+      if (caracteristicas.topografia) {
+        itensCaracteristicas.push(`Topografia: ${caracteristicas.topografia}`);
+      }
+      if (caracteristicas.esquinaInfo) {
+        itensCaracteristicas.push(`Esquina: Sim`);
+      }
+      if (caracteristicas.tipoConstrucao) {
+        itensCaracteristicas.push(
+          `Tipo de construção: ${caracteristicas.tipoConstrucao}`,
+        );
+      }
+      if (caracteristicas.anoConstrucao) {
+        itensCaracteristicas.push(
+          `Ano de construção: ${caracteristicas.anoConstrucao}`,
+        );
+      }
 
-    if (dados.areaUtil > 0)
-      itensCaracteristicas.push(`Área útil: ${dados.areaUtil} m²`);
-    if (dados.areaPrivativa > 0)
-      itensCaracteristicas.push(`Área privativa: ${dados.areaPrivativa} m²`);
-    if (dados.areaTotal > 0)
-      itensCaracteristicas.push(`Área total: ${dados.areaTotal} m²`);
-    if (dados.areaConstruida > 0)
-      itensCaracteristicas.push(`Área construída: ${dados.areaConstruida} m²`);
-    if (dados.frenteTerreno)
-      itensCaracteristicas.push(`Frente do terreno: ${dados.frenteTerreno}`);
-    if (dados.fundo) itensCaracteristicas.push(`Fundo: ${dados.fundo}`);
-    if (dados.lateralEsquerda)
-      itensCaracteristicas.push(`Lateral esquerda: ${dados.lateralEsquerda}`);
-    if (dados.lateralDireita)
-      itensCaracteristicas.push(`Lateral direita: ${dados.lateralDireita}`);
-    if (dados.peDireito)
-      itensCaracteristicas.push(`Pé direito: ${dados.peDireito}`);
-    if (dados.topografia)
-      itensCaracteristicas.push(`Topografia: ${dados.topografia}`);
-    if (dados.esquinaInfo) itensCaracteristicas.push(`Esquina: Sim`);
-    if (dados.tipoConstrucao)
-      itensCaracteristicas.push(`Tipo de construção: ${dados.tipoConstrucao}`);
-    if (dados.anoConstrucao)
-      itensCaracteristicas.push(`Ano de construção: ${dados.anoConstrucao}`);
-    if (dados.reformadoRecentemente)
-      itensCaracteristicas.push(`Reformado recentemente`);
-    if (dados.imovelAverbado) itensCaracteristicas.push(`Imóvel averbado`);
-    if (dados.financiavel) itensCaracteristicas.push(`Financiável`);
-    if (dados.aceitaPermuta) itensCaracteristicas.push(`Aceita permuta`);
-    if (dados.tipoIluminacao)
-      itensCaracteristicas.push(`Iluminação: ${dados.tipoIluminacao}`);
-    if (dados.tipoTelhado)
-      itensCaracteristicas.push(`Telhado: ${dados.tipoTelhado}`);
-    if (dados.caixaDAgua)
-      itensCaracteristicas.push(`Caixa d'água: ${dados.caixaDAgua} litros`);
+      // Flags importantes
+      if (caracteristicas.reformadoRecentemente) {
+        itensCaracteristicas.push(`Reformado recentemente`);
+      }
+      if (caracteristicas.imovelAverbado) {
+        itensCaracteristicas.push(`Imóvel averbado`);
+      }
+      if (caracteristicas.aceitaPermuta) {
+        itensCaracteristicas.push(`Aceita permuta`);
+      }
 
-    if (itensCaracteristicas.length > 0) {
-      acordeoes.push({
-        titulo: "Características do Imóvel",
-        icone: "fas fa-home",
-        itens: itensCaracteristicas,
-      });
-    }
+      // Infraestrutura
+      if (caracteristicas.tipoIluminacao) {
+        itensCaracteristicas.push(
+          `Iluminação: ${caracteristicas.tipoIluminacao}`,
+        );
+      }
+      if (caracteristicas.tipoTelhado) {
+        itensCaracteristicas.push(`Telhado: ${caracteristicas.tipoTelhado}`);
+      }
+      if (caracteristicas.caixaDAgua) {
+        itensCaracteristicas.push(
+          `Caixa d'água: ${caracteristicas.caixaDAgua} litros`,
+        );
+      }
 
-    // ACABAMENTOS
-    const itensAcabamentos = [];
-    const acabamentos = dados.acabamentos || {};
-
-    Object.entries(acabamentos)
-      .filter(([_, value]) => value === true)
-      .forEach(([key]) => {
-        const labels = {
-          pisoPorcelanato: "Piso porcelanato",
-          pisoCeramica: "Piso cerâmica",
-          pisoLaminado: "Piso laminado",
-          revestimentoAzulejo: "Azulejo",
-          revestimentoPastilha: "Pastilha",
-          tetoGessoRebaixado: "Teto em gesso",
-          bancadaGranito: "Bancada de granito",
-          bancadaMarmore: "Bancada de mármore",
+      // 👇 CAMPOS ADICIONADOS
+      // Sistema de esgoto
+      if (caracteristicas.sistemaEsgoto) {
+        const labelsEsgoto = {
+          rede_publica: "Rede Pública",
+          fossa_septica: "Fossa Séptica",
+          fossa_filtro: "Fossa e Filtro",
+          sumidouro: "Sumidouro",
+          fossa_ecologica: "Fossa Ecológica/Biodigestor",
+          inexistente: "Inexistente",
         };
-        itensAcabamentos.push(labels[key] || key);
-      });
+        itensCaracteristicas.push(
+          `Sistema de esgoto: ${labelsEsgoto[caracteristicas.sistemaEsgoto] || caracteristicas.sistemaEsgoto}`,
+        );
+      }
 
-    if (itensAcabamentos.length > 0) {
-      acordeoes.push({
-        titulo: "Acabamentos",
-        icone: "fas fa-paint-roller",
-        itens: itensAcabamentos,
-      });
-    }
-
-    // ÁREA DE LAZER
-    const itensAreaLazer = [];
-    const areaLazer = dados.areaLazer || {};
-
-    Object.entries(areaLazer)
-      .filter(([_, value]) => value === true)
-      .forEach(([key]) => {
-        const labels = {
-          piscina: "Piscina",
-          churrasqueira: "Churrasqueira",
-          espacoGourmet: "Espaço gourmet",
-          salaoFestas: "Salão de festas",
-          academia: "Academia",
-          playground: "Playground",
-          quadraPoliesportiva: "Quadra poliesportiva",
-          jardim: "Jardim",
+      // Aquecimento de água
+      if (caracteristicas.aquecimentoAgua) {
+        const labelsAquecimento = {
+          gas: "Gás",
+          solar: "Solar",
+          eletrico: "Elétrico",
+          central: "Central",
+          lenha: "Lenha",
         };
-        itensAreaLazer.push(labels[key] || key);
-      });
+        itensCaracteristicas.push(
+          `Aquecimento de água: ${labelsAquecimento[caracteristicas.aquecimentoAgua] || caracteristicas.aquecimentoAgua}`,
+        );
+      }
 
-    if (itensAreaLazer.length > 0) {
-      acordeoes.push({
-        titulo: "Área de Lazer",
-        icone: "fas fa-swimming-pool",
-        itens: itensAreaLazer,
-      });
+      if (itensCaracteristicas.length > 0) {
+        acordeoes.push({
+          titulo: "Características do Imóvel",
+          icone: "fas fa-home",
+          itens: itensCaracteristicas,
+        });
+      }
+      // ===== 2. ACABAMENTOS =====
+      const itensAcabamentos = [];
+      const acabamentos = dados.acabamentos || {};
+
+      const labelsAcabamentos = {
+        pisoPorcelanato: "Piso porcelanato",
+        pisoCeramica: "Piso cerâmica",
+        pisoLaminado: "Piso laminado",
+        pisoMadeira: "Piso de madeira",
+        revestimentoAzulejo: "Revestimento em azulejo",
+        revestimentoPastilha: "Revestimento em pastilha",
+        revestimentoPedra: "Revestimento em pedra",
+        tetoGessoRebaixado: "Teto em gesso rebaixado",
+        tetoForroMadeira: "Forro de madeira",
+        bancadaGranito: "Bancada de granito",
+        bancadaMarmore: "Bancada de mármore",
+        bancadaQuartzo: "Bancada de quartzo",
+        armariosPlanejados: "Armários planejados",
+        pinturaAcoramento: "Pintura acrílica",
+        esquadriasAluminio: "Esquadrias de alumínio",
+        vidrosTemperados: "Vidros temperados",
+      };
+
+      Object.entries(acabamentos)
+        .filter(([_, value]) => value === true)
+        .forEach(([key]) => {
+          itensAcabamentos.push(
+            labelsAcabamentos[key] ||
+              key
+                .replace(/([A-Z])/g, " $1")
+                .replace(/^./, (str) => str.toUpperCase()),
+          );
+        });
+
+      if (itensAcabamentos.length > 0) {
+        acordeoes.push({
+          titulo: "Acabamentos",
+          icone: "fas fa-paint-roller",
+          itens: itensAcabamentos,
+        });
+      }
+
+      // ===== 3. ÁREA DE LAZER =====
+      const itensAreaLazer = [];
+      const areaLazer = dados.areaLazer || {};
+
+      const labelsAreaLazer = {
+        piscina: "Piscina",
+        churrasqueira: "Churrasqueira",
+        fornoPizza: "Forno a lenha",
+        espacoGourmet: "Espaço gourmet",
+        salaoFestas: "Salão de festas",
+        academia: "Academia",
+        playground: "Playground",
+        quadraPoliesportiva: "Quadra poliesportiva",
+        quadraTenis: "Quadra de tênis",
+        campoFutebol: "Campo de futebol",
+        sauna: "Sauna",
+        espacoKids: "Espaço kids",
+        jardim: "Jardim",
+        horta: "Horta",
+        pomar: "Pomar",
+      };
+
+      Object.entries(areaLazer)
+        .filter(([_, value]) => value === true)
+        .forEach(([key]) => {
+          itensAreaLazer.push(
+            labelsAreaLazer[key] ||
+              key
+                .replace(/([A-Z])/g, " $1")
+                .replace(/^./, (str) => str.toUpperCase()),
+          );
+        });
+
+      if (itensAreaLazer.length > 0) {
+        acordeoes.push({
+          titulo: "Área de Lazer",
+          icone: "fas fa-swimming-pool",
+          itens: itensAreaLazer,
+        });
+      }
+
+      // ===== 4. LOCALIZAÇÃO E VIZINHANÇA =====
+      const itensLocalizacao = [];
+      const localizacao = dados.localizacaoVizinhanca || {};
+
+      const labelsLocalizacao = {
+        proximoCentro: "Próximo ao centro",
+        proximoSupermercado: "Próximo a supermercado",
+        proximoEscola: "Próximo a escola",
+        proximoHospital: "Próximo a hospital",
+        proximoFarmacia: "Próximo a farmácia",
+        proximoBanco: "Próximo a banco",
+        proximoTransporte: "Próximo a transporte público",
+        bairroResidencial: "Bairro residencial",
+        bairroComercial: "Bairro comercial",
+        ruaAsfaltada: "Rua asfaltada",
+        ruaArborizada: "Rua arborizada",
+        vistaPanoramica: "Vista panorâmica",
+        regiaoValorizada: "Região valorizada",
+      };
+
+      Object.entries(localizacao)
+        .filter(([_, value]) => value === true)
+        .forEach(([key]) => {
+          itensLocalizacao.push(
+            labelsLocalizacao[key] ||
+              key
+                .replace(/([A-Z])/g, " $1")
+                .replace(/^./, (str) => str.toUpperCase()),
+          );
+        });
+
+      if (itensLocalizacao.length > 0) {
+        acordeoes.push({
+          titulo: "Localização & Vizinhança",
+          icone: "fas fa-map-marker-alt",
+          itens: itensLocalizacao,
+        });
+      }
+
+      // ===== 5. SEGURANÇA =====
+      const itensSeguranca = [];
+      const seguranca = dados.seguranca || {};
+
+      const labelsSeguranca = {
+        portaoEletronico: "Portão eletrônico",
+        interfone: "Interfone",
+        cercaEletrica: "Cerca elétrica",
+        sistemaCameras: "Sistema de câmeras",
+        alarme: "Alarme",
+        portaria24h: "Portaria 24h",
+        vigilanciaNoturna: "Vigilância noturna",
+        circuitoFechado: "Circuito fechado",
+        sensoresMovimento: "Sensores de movimento",
+        gradeProtecao: "Grade de proteção",
+        condominioFechado: "Condomínio fechado",
+      };
+
+      Object.entries(seguranca)
+        .filter(([_, value]) => value === true)
+        .forEach(([key]) => {
+          itensSeguranca.push(
+            labelsSeguranca[key] ||
+              key
+                .replace(/([A-Z])/g, " $1")
+                .replace(/^./, (str) => str.toUpperCase()),
+          );
+        });
+
+      if (itensSeguranca.length > 0) {
+        acordeoes.push({
+          titulo: "Segurança",
+          icone: "fas fa-shield-alt",
+          itens: itensSeguranca,
+        });
+      }
+
+      // ===== 6. ARMÁRIOS E ARMAZENAMENTO =====
+      const itensArmarios = [];
+      const armarios = dados.armariosArmazenamento || {};
+
+      const labelsArmarios = {
+        armarioCozinhaPlanejado: "Cozinha planejada",
+        armariosEmbutidos: "Armários embutidos",
+        closet: "Closet",
+        despensa: "Despensa",
+        armarioLavanderia: "Armário na lavanderia",
+        prateleiras: "Prateleiras",
+        estantes: "Estantes",
+        deposito: "Depósito",
+        adega: "Adega",
+        armarioQuarto: "Armário no quarto",
+        armarioBanheiro: "Armário no banheiro",
+      };
+
+      Object.entries(armarios)
+        .filter(([_, value]) => value === true)
+        .forEach(([key]) => {
+          itensArmarios.push(
+            labelsArmarios[key] ||
+              key
+                .replace(/([A-Z])/g, " $1")
+                .replace(/^./, (str) => str.toUpperCase()),
+          );
+        });
+
+      if (itensArmarios.length > 0) {
+        acordeoes.push({
+          titulo: "Armários e Armazenamento",
+          icone: "fas fa-boxes",
+          itens: itensArmarios,
+        });
+      }
+
+      // ===== 7. SERVIÇOS E UTILIDADES =====
+      const itensServicos = [];
+      const servicos = dados.servicosUtilidades || {};
+
+      const labelsServicos = {
+        aguaEncanada: "Água encanada",
+        energiaEletrica: "Energia elétrica",
+        esgotoSanitario: "Esgoto sanitário",
+        gasEncanado: "Gás encanado",
+        internetFibra: "Internet fibra óptica",
+        coletaLixo: "Coleta de lixo",
+        iluminacaoPublica: "Iluminação pública",
+        transportePublico: "Transporte público próximo",
+        pavimentacao: "Pavimentação",
+        calçada: "Calçada",
+      };
+
+      Object.entries(servicos)
+        .filter(([_, value]) => value === true)
+        .forEach(([key]) => {
+          itensServicos.push(
+            labelsServicos[key] ||
+              key
+                .replace(/([A-Z])/g, " $1")
+                .replace(/^./, (str) => str.toUpperCase()),
+          );
+        });
+
+      if (itensServicos.length > 0) {
+        acordeoes.push({
+          titulo: "Serviços e Utilidades",
+          icone: "fas fa-tools",
+          itens: itensServicos,
+        });
+      }
+
+      // ===== 8. DIFERENCIAIS DO IMÓVEL =====
+      const itensDiferenciais = [];
+      const diferenciais = dados.diferenciais || {};
+
+      const labelsDiferenciais = {
+        varanda: "Varanda",
+        sacada: "Sacada",
+        lavabo: "Lavabo",
+        banheira: "Banheira",
+        escritorio: "Escritório / Home office",
+        closetMaster: "Closet master",
+        lareira: "Lareira",
+        aquecimentoCentral: "Aquecimento central",
+        arCondicionado: "Ar condicionado central",
+        painelSolar: "Painel solar",
+        geradorEnergia: "Gerador de energia",
+        automacaoResidencial: "Automação residencial",
+        elevadorSocial: "Elevador social",
+        elevadorServico: "Elevador de serviço",
+        vistaMar: "Vista para o mar",
+        vistaMontanha: "Vista para montanha",
+        vistaCidade: "Vista para a cidade",
+        frentePraia: "Frente para a praia",
+      };
+
+      Object.entries(diferenciais)
+        .filter(([_, value]) => value === true)
+        .forEach(([key]) => {
+          itensDiferenciais.push(
+            labelsDiferenciais[key] ||
+              key
+                .replace(/([A-Z])/g, " $1")
+                .replace(/^./, (str) => str.toUpperCase()),
+          );
+        });
+
+      if (itensDiferenciais.length > 0) {
+        acordeoes.push({
+          titulo: "Diferenciais do Imóvel",
+          icone: "fas fa-star",
+          itens: itensDiferenciais,
+        });
+      }
+
+      return acordeoes;
+    },
+    [imovel],
+  );
+
+  // ==========================================================================
+  // BUSCAR DADOS DO IMÓVEL
+  // ==========================================================================
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchImovel = async () => {
+      try {
+        setLoading(true);
+
+        const { data: imovelData, error: imovelError } = await supabase
+          .from("imoveis")
+          .select("*")
+          .eq("slug", slug)
+          .maybeSingle();
+
+        if (imovelError) throw imovelError;
+        if (!imovelData) throw new Error("Imóvel não encontrado");
+
+        if (imovelData.id_edificios && isMounted) {
+          const { data: edificioData } = await supabase
+            .from("edificios")
+            .select("id, nome, tipo")
+            .eq("id", imovelData.id_edificios)
+            .maybeSingle();
+
+          if (edificioData) {
+            imovelData.edificios = edificioData;
+          }
+        }
+
+        if (isMounted) {
+          setImovel(imovelData);
+          await registrarVisualizacao(imovelData.id);
+          await buscarVisualizacoes(imovelData.id);
+        }
+      } catch (err) {
+        console.error("❌ Erro:", err);
+        if (isMounted) setError(err.message);
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+
+    if (slug) fetchImovel();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [slug, registrarVisualizacao, buscarVisualizacoes]);
+
+  // ==========================================================================
+  // DADOS PROCESSADOS
+  // ==========================================================================
+  const dados = useMemo(() => getImovelData(), [getImovelData]);
+  const dadosAcordeao = useMemo(
+    () => (dados ? gerarDadosAcordeao(dados) : []),
+    [dados, gerarDadosAcordeao],
+  );
+  const imagens = useMemo(() => dados?.imagens || [], [dados]);
+
+  // ==========================================================================
+  // APLICAR SEO (UMA ÚNICA VEZ)
+  // ==========================================================================
+  useEffect(() => {
+    if (dados && !seoAplicadoRef.current) {
+      const timer = setTimeout(() => {
+        atualizarTagsSEO(dados);
+      }, 100);
+
+      return () => clearTimeout(timer);
     }
+  }, [dados, atualizarTagsSEO]);
 
-    // LOCALIZAÇÃO E VIZINHANÇA
-    const itensLocalizacao = [];
-    const localizacao = dados.localizacaoVizinhanca || {};
-
-    Object.entries(localizacao)
-      .filter(([_, value]) => value === true)
-      .forEach(([key]) => {
-        const labels = {
-          proximoCentro: "Próximo ao centro",
-          proximoSupermercado: "Próximo a supermercado",
-          proximoEscola: "Próximo a escola",
-          proximoHospital: "Próximo a hospital",
-          bairroResidencial: "Bairro residencial",
-          ruaAsfaltada: "Rua asfaltada",
-        };
-        itensLocalizacao.push(labels[key] || key);
-      });
-
-    if (itensLocalizacao.length > 0) {
-      acordeoes.push({
-        titulo: "Localização & Vizinhança",
-        icone: "fas fa-map-marker-alt",
-        itens: itensLocalizacao,
-      });
+  // ==========================================================================
+  // ATUALIZAR MENSAGEM DO MODAL
+  // ==========================================================================
+  useEffect(() => {
+    if (dados && !formData.mensagem) {
+      setFormData((prev) => ({
+        ...prev,
+        mensagem: `Tenho interesse no imóvel ${dados.codigo} - ${dados.tituloSEO}. Aguardo informações.`,
+      }));
     }
-
-    // SEGURANÇA
-    const itensSeguranca = [];
-    const seguranca = dados.seguranca || {};
-
-    Object.entries(seguranca)
-      .filter(([_, value]) => value === true)
-      .forEach(([key]) => {
-        const labels = {
-          portaoEletronico: "Portão eletrônico",
-          interfone: "Interfone",
-          cercaEletrica: "Cerca elétrica",
-          sistemaCameras: "Sistema de câmeras",
-          alarme: "Alarme",
-          portaria24h: "Portaria 24h",
-        };
-        itensSeguranca.push(labels[key] || key);
-      });
-
-    if (itensSeguranca.length > 0) {
-      acordeoes.push({
-        titulo: "Segurança",
-        icone: "fas fa-shield-alt",
-        itens: itensSeguranca,
-      });
-    }
-
-    // ARMÁRIOS E ARMAZENAMENTO
-    const itensArmarios = [];
-    const armarios = dados.armariosArmazenamento || {};
-
-    Object.entries(armarios)
-      .filter(([_, value]) => value === true)
-      .forEach(([key]) => {
-        const labels = {
-          armarioCozinhaPlanejado: "Cozinha planejada",
-          armariosEmbutidos: "Armários embutidos",
-          closet: "Closet",
-          despensa: "Despensa",
-        };
-        itensArmarios.push(labels[key] || key);
-      });
-
-    if (itensArmarios.length > 0) {
-      acordeoes.push({
-        titulo: "Armários e Armazenamento",
-        icone: "fas fa-boxes",
-        itens: itensArmarios,
-      });
-    }
-
-    // DIFERENCIAIS
-    const itensDiferenciais = [];
-    const diferenciais = dados.diferenciais || {};
-
-    Object.entries(diferenciais)
-      .filter(([_, value]) => value === true)
-      .forEach(([key]) => {
-        const labels = {
-          varanda: "Varanda",
-          sacada: "Sacada",
-          lavabo: "Lavabo",
-          banheira: "Banheira",
-          escritorio: "Escritório",
-          vistaPanoramica: "Vista panorâmica",
-        };
-        itensDiferenciais.push(labels[key] || key);
-      });
-
-    if (itensDiferenciais.length > 0) {
-      acordeoes.push({
-        titulo: "Diferenciais do Imóvel",
-        icone: "fas fa-star",
-        itens: itensDiferenciais,
-      });
-    }
-
-    return acordeoes;
-  };
-
-  const dados = getImovelData();
-  const dadosAcordeao = dados ? gerarDadosAcordeao(dados) : [];
+  }, [dados, formData.mensagem]);
 
   // ==========================================================================
   // CONTROLES DO MODAL
   // ==========================================================================
-
   useEffect(() => {
-    if (modalAberto) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "unset";
-    }
+    document.body.style.overflow = modalAberto ? "hidden" : "unset";
   }, [modalAberto]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (overlayRef.current === event.target) fecharModal();
     };
+
     if (modalAberto) {
       document.addEventListener("mousedown", handleClickOutside);
       document.addEventListener("touchstart", handleClickOutside);
     }
+
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
       document.removeEventListener("touchstart", handleClickOutside);
@@ -665,124 +1132,148 @@ const DetalheImovel = () => {
   // AUTO-PLAY DO CARROSSEL
   // ==========================================================================
   useEffect(() => {
-    if (!dados?.imagens?.length) return;
+    if (!imagens.length) return;
+
     const intervalo = setInterval(() => {
-      setImagemAtual((prev) => (prev + 1) % dados.imagens.length);
+      setImagemAtual((prev) => (prev + 1) % imagens.length);
     }, 5000);
+
     return () => clearInterval(intervalo);
-  }, [dados?.imagens?.length]);
+  }, [imagens.length]);
 
-  const mudarImagem = (direcao) => {
-    if (!dados?.imagens?.length) return;
-    setImagemAtual(
-      (prev) => (prev + direcao + dados.imagens.length) % dados.imagens.length,
-    );
-  };
+  const mudarImagem = useCallback(
+    (direcao) => {
+      if (!imagens.length) return;
+      setImagemAtual(
+        (prev) => (prev + direcao + imagens.length) % imagens.length,
+      );
+    },
+    [imagens.length],
+  );
 
-  const abrirModal = () => setModalAberto(true);
+  const abrirModal = useCallback(() => setModalAberto(true), []);
 
-  const fecharModal = () => {
+  const fecharModal = useCallback(() => {
     setModalAberto(false);
     setEnviado(false);
     setFormData({
       nome: "",
       telefone: "",
       email: "",
-      mensagem: dados?.titulo
-        ? `Tenho interesse no imóvel ${dados.codigo} - ${dados.titulo}. Aguardo informações.`
+      mensagem: dados?.tituloSEO
+        ? `Tenho interesse no imóvel ${dados.codigo} - ${dados.tituloSEO}. Aguardo informações.`
         : "",
       horarioPreferencia: "",
       diaSemana: "",
     });
-  };
-
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
-  };
-
-  // ==========================================================================
-  // HANDLE SUBMIT DO MODAL - COM RASTREAMENTO
-  // ==========================================================================
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setEnviando(true);
-
-    try {
-      if (
-        !formData.nome ||
-        !formData.telefone ||
-        !formData.email ||
-        !formData.diaSemana ||
-        !formData.horarioPreferencia
-      ) {
-        throw new Error("Por favor, preencha todos os campos obrigatórios");
-      }
-
-      const dataVisita = new Date();
-      dataVisita.setDate(dataVisita.getDate() + 7);
-
-      console.log("📤 [VISITA] Enviando solicitação:", {
-        imovel_id: dados.id,
-        nome_cliente: formData.nome,
-        telefone: formData.telefone,
-        email: formData.email,
-        data_visita: dataVisita.toISOString(),
-        dia_preferencia: formData.diaSemana,
-        horario_preferencia: formData.horarioPreferencia,
-      });
-
-      const { data, error } = await visitasService.criarVisita({
-        imovel_id: dados.id,
-        nome_cliente: formData.nome,
-        telefone: formData.telefone,
-        email: formData.email,
-        data_visita: dataVisita.toISOString(),
-        dia_preferencia: formData.diaSemana,
-        horario_preferencia: formData.horarioPreferencia,
-      });
-
-      console.log("🔍 DATA RECEBIDA:", data);
-      console.log("📥 [VISITA] Resposta do serviço:", { data, error });
-
-      if (error) throw error;
-
-      if (data && data.id) {
-        console.log("✅ ID da visita encontrado:", data.id);
-        await registrarSolicitacaoVisita(
-          dados.id,
-          {
-            nome: formData.nome,
-            email: formData.email,
-            telefone: formData.telefone,
-          },
-          data.id,
-        );
-      } else {
-        console.warn("⚠️ Não foi possível obter o ID da visita", data);
-      }
-
-      incrementarContador("visitas");
-      console.log("✅ [VISITA] Agendamento realizado com sucesso!");
-
-      setEnviado(true);
-      setEnviando(false);
-      setTimeout(fecharModal, 3000);
-    } catch (error) {
-      console.error("❌ [VISITA] Erro ao agendar visita:", error);
-      setEnviando(false);
-      alert(error.message || "Erro ao enviar. Tente novamente.");
-    }
-  };
-
-  // ==========================================================================
-  // ATUALIZAR TÍTULO DA PÁGINA
-  // ==========================================================================
-  useEffect(() => {
-    if (dados) {
-      document.title = dados.titulo || "Detalhes do Imóvel | Adventus Imóveis";
-    }
   }, [dados]);
+
+  const handleInputChange = useCallback((e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  }, []);
+
+  // ==========================================================================
+  // FUNÇÃO DO ACORDEÃO - SEM SALTO
+  // ==========================================================================
+  const toggleAcordeao = useCallback((index, event) => {
+    if (event) {
+      event.preventDefault();
+    }
+
+    const buttonElement = event.currentTarget;
+    const scrollPosition = window.scrollY;
+
+    setAcordeoesAbertos((prev) => {
+      if (prev[index]) {
+        return {};
+      }
+      return { [index]: true };
+    });
+
+    setTimeout(() => {
+      if (buttonElement) {
+        const rect = buttonElement.getBoundingClientRect();
+        const absoluteTop = window.scrollY + rect.top;
+        const offset = 84;
+
+        window.scrollTo({
+          top: absoluteTop - offset,
+          behavior: "smooth",
+        });
+      } else {
+        window.scrollTo({
+          top: scrollPosition,
+          behavior: "auto",
+        });
+      }
+    }, 100);
+  }, []);
+
+  // ==========================================================================
+  // HANDLE SUBMIT DO MODAL
+  // ==========================================================================
+  const handleSubmit = useCallback(
+    async (e) => {
+      e.preventDefault();
+      setEnviando(true);
+
+      try {
+        if (
+          !formData.nome ||
+          !formData.telefone ||
+          !formData.email ||
+          !formData.diaSemana ||
+          !formData.horarioPreferencia
+        ) {
+          throw new Error("Por favor, preencha todos os campos obrigatórios");
+        }
+
+        const dataVisita = new Date();
+        dataVisita.setDate(dataVisita.getDate() + 7);
+
+        const { data, error } = await visitasService.criarVisita({
+          imovel_id: dados.id,
+          nome_cliente: formData.nome,
+          telefone: formData.telefone,
+          email: formData.email,
+          data_visita: dataVisita.toISOString(),
+          dia_preferencia: formData.diaSemana,
+          horario_preferencia: formData.horarioPreferencia,
+        });
+
+        if (error) throw error;
+
+        if (data && data.id) {
+          await registrarSolicitacaoVisita(
+            dados.id,
+            {
+              nome: formData.nome,
+              email: formData.email,
+              telefone: formData.telefone,
+            },
+            data.id,
+          );
+        }
+
+        incrementarContador("visitas");
+        setEnviado(true);
+        setEnviando(false);
+        setTimeout(fecharModal, 3000);
+      } catch (error) {
+        console.error("❌ [VISITA] Erro:", error);
+        setEnviando(false);
+        alert(error.message || "Erro ao enviar. Tente novamente.");
+      }
+    },
+    [
+      formData,
+      dados,
+      registrarSolicitacaoVisita,
+      incrementarContador,
+      fecharModal,
+    ],
+  );
 
   // ==========================================================================
   // LOADING STATE
@@ -823,14 +1314,12 @@ const DetalheImovel = () => {
     );
   }
 
-  const imagens = dados.imagens || [];
-
   // ==========================================================================
-  // RENDERIZAÇÃO DO COMPONENTE
+  // RENDERIZAÇÃO
   // ==========================================================================
   return (
     <>
-      {/* ===== BREADCRUMB ===== */}
+      {/* BREADCRUMB */}
       <div className="bg-gray-100 border-b border-gray-200 py-3">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex items-center text-xs md:text-sm text-gray-600">
@@ -850,43 +1339,47 @@ const DetalheImovel = () => {
         </div>
       </div>
 
-      {/* ===== GALERIA DE FOTOS ===== */}
+      {/* GALERIA DE FOTOS */}
       <section className="mb-0">
         <div className="relative w-full">
           <div className="relative h-[380px] md:h-[540px] lg:h-[560px] w-full overflow-hidden">
-            <div
-              className="absolute inset-0 bg-cover bg-center transition-all duration-500 ease-out"
-              style={{
-                backgroundImage: `url('${imagens[imagemAtual] || imagens[0]}')`,
-              }}
-            />
+            {imagens.map((img, index) => (
+              <img
+                key={index}
+                src={img}
+                alt={gerarAltImagem(dados, index)}
+                className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ${
+                  index === imagemAtual ? "opacity-100" : "opacity-0"
+                }`}
+              />
+            ))}
+
+            {/* INDICADORES */}
             <div className="absolute bottom-5 left-1/2 transform -translate-x-1/2 flex space-x-2 z-10">
               {imagens.map((_, index) => (
                 <button
                   key={index}
                   onClick={() => setImagemAtual(index)}
-                  className={`
-                    w-3 h-3 md:w-3.5 md:h-3.5 rounded-full transition-all duration-300 border-2 border-white/30
-                    focus:outline-none focus:ring-0
-                    ${
-                      imagemAtual === index
-                        ? "bg-[#D4A24D] scale-110 shadow-[0_0_10px_rgba(212,162,77,0.8)] border-white"
-                        : "bg-white/90 hover:bg-white hover:scale-105"
-                    }
-                  `}
+                  className={`w-3 h-3 md:w-3.5 md:h-3.5 rounded-full transition-all duration-300 border-2 border-white/30 ${
+                    imagemAtual === index
+                      ? "bg-[#D4A24D] scale-110 shadow-[0_0_10px_rgba(212,162,77,0.8)] border-white"
+                      : "bg-white/90 hover:bg-white hover:scale-105"
+                  }`}
                   aria-label={`Ir para imagem ${index + 1}`}
                 />
               ))}
             </div>
+
+            {/* SETAS */}
             <button
               onClick={() => mudarImagem(-1)}
-              className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white/80 hover:bg-white text-[#D4A24D] w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center shadow-lg transition-all hover:scale-110 z-20 focus:outline-none focus:ring-0"
+              className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white/80 hover:bg-white text-[#D4A24D] w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center shadow-lg transition-all hover:scale-110 z-20"
             >
               <i className="fas fa-chevron-left"></i>
             </button>
             <button
               onClick={() => mudarImagem(1)}
-              className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white/80 hover:bg-white text-[#D4A24D] w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center shadow-lg transition-all hover:scale-110 z-20 focus:outline-none focus:ring-0"
+              className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white/80 hover:bg-white text-[#D4A24D] w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center shadow-lg transition-all hover:scale-110 z-20"
             >
               <i className="fas fa-chevron-right"></i>
             </button>
@@ -894,11 +1387,12 @@ const DetalheImovel = () => {
         </div>
       </section>
 
-      {/* ===== CABEÇALHO DO IMÓVEL ===== */}
+      {/* CABEÇALHO DO IMÓVEL */}
       <section className="bg-[#31353E] text-white pt-8 pb-12 md:pt-10 md:pb-14">
         <div className="max-w-7xl mx-auto px-4">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
             <div className="flex flex-col justify-center">
+              {/* DESTAQUE SEMANA */}
               {dados.destaqueSemana && (
                 <div className="self-start mb-6">
                   <div className="inline-flex items-center bg-gradient-to-r from-[#D4A24D] to-[#E6B85C] text-white px-3 py-1 rounded-full text-xs font-semibold shadow-md">
@@ -910,6 +1404,7 @@ const DetalheImovel = () => {
                 </div>
               )}
 
+              {/* EMPREENDIMENTO */}
               {dados.empreendimento?.nome && (
                 <div className="self-start mb-4">
                   <div className="inline-flex items-center bg-[#D4A24D]/20 text-[#D4A24D] border border-[#D4A24D]/30 px-4 py-2 rounded-full text-sm font-semibold">
@@ -919,21 +1414,39 @@ const DetalheImovel = () => {
                 </div>
               )}
 
-              <h1 className="text-2xl md:text-3xl font-bold mb-3 text-white">
-                {dados.titulo}
+              {/* TÍTULO */}
+              <h1 className="text-[22px] md:text-2xl font-bold mb-3 text-white">
+                {dados.tituloSEO}
               </h1>
-              <div className="text-sm text-gray-300 mb-2">
-                Código: {dados.codigo}
+
+              {/* CÓDIGO + FINANCIÁVEL */}
+              <div className="flex items-center gap-3 mb-1">
+                <div className="text-xs text-gray-300">
+                  Código: {dados.codigo}
+                </div>
+                {dados.financiavel && (
+                  <div className="inline-flex items-center bg-green-600 text-white px-2 py-0.5 rounded text-[10px] font-semibold">
+                    <i className="fas fa-hand-holding-usd mr-1 text-[8px]"></i>
+                    FINANCIÁVEL
+                  </div>
+                )}
               </div>
 
-              <div className="flex items-center space-x-2 text-white mb-5">
-                <i className="fas fa-map-marker-alt text-[#D4A24D] text-sm"></i>
-                <span className="text-sm md:text-base">
-                  <strong>{dados.localizacaoCompleta}</strong>
-                  {dados.endereco && ` - ${dados.enderecoCompleto}`}
-                </span>
-              </div>
+              {/* ENDEREÇO - SÓ APARECE NO SITE SE TIVER PERMISSÃO E ENDEREÇO CADASTRADO */}
+              {dados.exibir_endereco_site && dados.endereco && (
+                <div className="flex items-center space-x-2 text-white mb-1">
+                  <i className="fas fa-map-marker-alt text-[#D4A24D] text-sm"></i>
+                  <span className="text-sm md:text-base">
+                    <strong>{dados.localizacaoCompleta}</strong>
+                    {dados.endereco && ` - ${dados.enderecoCompleto}`}
+                  </span>
+                </div>
+              )}
 
+              {/* LINHA DIVISÓRIA SUTIL - AGORA MAIS PRÓXIMA */}
+              <div className="w-full h-px bg-gradient-to-r from-transparent via-[#D4A24D]/30 to-transparent my-2"></div>
+
+              {/* PREÇO */}
               <div className="mb-6">
                 <div className="text-3xl md:text-4xl font-black text-white">
                   {dados.ocultarPreco
@@ -952,12 +1465,9 @@ const DetalheImovel = () => {
                       para aluguel
                     </div>
                   )}
-
-                <div className="my-4">
-                  <div className="w-full border-t border-dashed border-[#D4A24D]/40"></div>
-                </div>
               </div>
 
+              {/* ÍCONES DE CARACTERÍSTICAS */}
               <div className="grid grid-cols-3 md:flex md:flex-wrap justify-center md:justify-start gap-3 md:gap-4 text-white">
                 {dados.quartos > 0 && (
                   <div className="flex flex-col items-center">
@@ -1001,31 +1511,52 @@ const DetalheImovel = () => {
                     </div>
                   </div>
                 )}
-                {dados.areaTotal > 0 && (
+
+                {/* ÁREA CONSTRUÍDA COM LABEL */}
+                {dados.areaConstruida > 0 && (
                   <div className="flex flex-col items-center">
                     <div className="w-12 h-12 rounded-full bg-[#D4A24D]/20 flex items-center justify-center mb-2">
                       <i className="fas fa-arrows-alt text-[#D4A24D] text-lg"></i>
                     </div>
                     <div className="text-base font-light">
-                      {dados.areaTotal} m²
+                      {dados.areaConstruida} m²
+                    </div>
+                    <div className="text-[10px] text-gray-300 mt-1">
+                      Área construída
                     </div>
                   </div>
                 )}
+
+                {/* ÁREA TOTAL COM LABEL (se diferente da construída) */}
+                {dados.areaTotal > 0 &&
+                  dados.areaTotal !== dados.areaConstruida && (
+                    <div className="flex flex-col items-center">
+                      <div className="w-12 h-12 rounded-full bg-[#D4A24D]/20 flex items-center justify-center mb-2">
+                        <i className="fas fa-arrows-alt text-[#D4A24D] text-lg"></i>
+                      </div>
+                      <div className="text-base font-light">
+                        {dados.areaTotal} m²
+                      </div>
+                      <div className="text-[10px] text-gray-300 mt-1">
+                        Área total
+                      </div>
+                    </div>
+                  )}
               </div>
             </div>
 
-            {/* COLUNA DA DIREITA - VISUALIZAÇÕES REAIS */}
+            {/* COLUNA VISUALIZAÇÕES */}
             <div className="relative flex items-center justify-center">
               <div className="hidden lg:block absolute -left-6 top-0 bottom-0 w-px">
                 <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/10 to-transparent"></div>
               </div>
               <div className="lg:pl-8 w-full">
-                <div className="bg-gradient-to-br from-[#2a2e36]/60 via-[#2a2e36]/50 to-[#D4A24D]/5 backdrop-blur-sm rounded-xl p-6 border border-[#D4A24D]/10 shadow-lg shadow-[#D4A24D]/5 relative overflow-hidden">
+                <div className="bg-gradient-to-br from-[#2a2e36]/60 via-[#2a2e36]/50 to-[#D4A24D]/5 backdrop-blur-sm rounded-xl p-6 border border-[#D4A24D]/10 shadow-lg relative overflow-hidden">
                   <div className="light-sweep-premium"></div>
                   <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent"></div>
                   <div className="text-center relative z-10">
                     <div className="flex justify-center mb-4">
-                      <div className="w-14 h-14 rounded-full bg-gradient-to-r from-[#D4A24D]/15 to-[#E6B85C]/10 flex items-center justify-center border border-[#D4A24D]/15 shadow-inner shadow-[#D4A24D]/10 pulse-wave">
+                      <div className="w-14 h-14 rounded-full bg-gradient-to-r from-[#D4A24D]/15 to-[#E6B85C]/10 flex items-center justify-center border border-[#D4A24D]/15 shadow-inner pulse-wave">
                         <i className="fas fa-eye text-[#D4A24D]/90 text-2xl"></i>
                       </div>
                     </div>
@@ -1038,7 +1569,8 @@ const DetalheImovel = () => {
                       </div>
                     </div>
                     <p className="text-xs text-white/70 mt-4 max-w-xs mx-auto font-light">
-                      Este imóvel foi visualizado{" "}
+                      Este {dados.tipo?.toLowerCase() || "imóvel"} foi
+                      visualizado{" "}
                       {visualizacoes === 1 ? "1 vez" : `${visualizacoes} vezes`}{" "}
                       desde sua publicação.
                     </p>
@@ -1052,58 +1584,107 @@ const DetalheImovel = () => {
 
       <div className="py-6 md:py-8"></div>
 
-      {/* ===== ACORDEÕES RESTAURADOS ===== */}
+      {/* ACORDEÕES */}
       <section className="max-w-7xl mx-auto px-4">
-        <div className="w-full bg-white shadow-lg rounded-xl overflow-hidden border border-gray-200">
+        <div className="w-full bg-white rounded-2xl overflow-hidden border border-gray-200 shadow-sm">
           {dadosAcordeao.length > 0 ? (
-            dadosAcordeao.map((acordeao, index) => (
-              <div
-                key={index}
-                className="border-b border-gray-300 last:border-b-0"
-              >
-                <button
-                  onClick={() => toggleAcordeao(index)}
-                  className="w-full px-6 py-5 text-left flex justify-between items-center bg-white hover:bg-gray-50 transition-all duration-300 focus:outline-none focus:ring-0"
-                >
-                  <span className="flex items-center space-x-3">
-                    <i
-                      className={`${acordeao.icone} text-[#D4A24D] text-xl`}
-                    ></i>
-                    <span className="font-semibold text-gray-800">
-                      {acordeao.titulo}
-                    </span>
-                  </span>
-                  <i
-                    className={`fas fa-chevron-down text-[#D4A24D] transition-transform duration-300 ${
-                      acordeoesAbertos[index] ? "rotate-180" : ""
-                    }`}
-                  ></i>
-                </button>
+            dadosAcordeao.map((acordeao, index) => {
+              const isAberto = acordeoesAbertos[index];
 
+              return (
                 <div
-                  className={`overflow-hidden transition-all duration-400 ${
-                    acordeoesAbertos[index]
-                      ? "max-h-[500px] p-6"
-                      : "max-h-0 p-0"
-                  } bg-gray-50`}
+                  key={index}
+                  className="border-b border-gray-200 last:border-b-0"
                 >
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                    {acordeao.itens.map((item, itemIndex) => (
-                      <div
-                        key={itemIndex}
-                        className="flex items-center space-x-2 py-1.5"
-                      >
-                        <span className="text-green-600 font-bold">✓</span>
-                        <span className="text-gray-700">{item}</span>
+                  {/* CABEÇALHO DO ACORDEÃO */}
+                  <button
+                    onClick={(e) => toggleAcordeao(index, e)}
+                    className={`w-full px-6 py-5 text-left flex justify-between items-center transition-all duration-300 focus:outline-none focus:ring-0 ${
+                      isAberto ? "bg-gray-900" : "bg-white hover:bg-gray-50"
+                    }`}
+                  >
+                    <div className="flex items-center space-x-4">
+                      {/* ÍCONE */}
+                      <div className="w-10 h-10 rounded-xl bg-[#D4A24D]/10 flex items-center justify-center">
+                        <i
+                          className={`${acordeao.icone} text-lg text-[#D4A24D]`}
+                        ></i>
                       </div>
-                    ))}
-                  </div>
+
+                      {/* TÍTULO */}
+                      <span
+                        className={`font-medium transition-colors duration-300 ${
+                          isAberto ? "text-white" : "text-gray-700"
+                        }`}
+                      >
+                        {acordeao.titulo}
+                      </span>
+                    </div>
+
+                    {/* SETA */}
+                    <div
+                      className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 ${
+                        isAberto ? "bg-[#D4A24D]" : "bg-[#D4A24D]/10"
+                      }`}
+                    >
+                      <i
+                        className={`fas fa-chevron-down text-sm transition-all duration-300 ${
+                          isAberto ? "text-white rotate-180" : "text-[#D4A24D]"
+                        }`}
+                      ></i>
+                    </div>
+                  </button>
+
+                  {/* CONTEÚDO DO ACORDEÃO */}
+                  {isAberto && (
+                    <div className="bg-white px-6 pb-6">
+                      <div className="border-t border-gray-200 pt-4"></div>
+
+                      {/* GRADE DE ITENS */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mt-4">
+                        {acordeao.itens.map((item, itemIndex) => (
+                          <div
+                            key={itemIndex}
+                            className="flex items-center space-x-3 py-3 px-4 rounded-lg bg-gray-50 border border-gray-100 hover:border-[#D4A24D]/30 hover:bg-white transition-all duration-200 group"
+                          >
+                            {/* CHECK PREMIUM */}
+                            <div className="w-5 h-5 rounded-full bg-gradient-to-br from-[#D4A24D] to-green-500 flex items-center justify-center shadow-lg shadow-[#D4A24D]/20 relative overflow-hidden group-hover:shadow-xl group-hover:scale-110 transition-all duration-200">
+                              <div className="absolute inset-0 bg-gradient-to-t from-white/30 to-transparent"></div>
+                              <svg
+                                className="w-3 h-3 text-white relative z-10"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth="3"
+                                  d="M5 13l4 4L19 7"
+                                />
+                              </svg>
+                            </div>
+
+                            {/* TEXTO */}
+                            <span className="text-gray-700 text-sm group-hover:text-[#D4A24D] transition-colors">
+                              {item}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
-              </div>
-            ))
+              );
+            })
           ) : (
-            <div className="p-8 text-center text-gray-500">
-              Nenhuma característica adicional cadastrada para este imóvel.
+            <div className="p-12 text-center">
+              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i className="fas fa-info-circle text-gray-400 text-2xl"></i>
+              </div>
+              <p className="text-gray-500">
+                Nenhuma característica adicional cadastrada para este imóvel.
+              </p>
             </div>
           )}
         </div>
@@ -1111,14 +1692,14 @@ const DetalheImovel = () => {
 
       <div className="py-6 md:py-8"></div>
 
-      {/* ===== SEÇÃO DE CALL-TO-ACTION ===== */}
+      {/* CALL-TO-ACTION */}
       <section className="max-w-7xl mx-auto px-4">
         <div className="bg-[#31353E] text-white rounded-xl shadow-xl relative overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-br from-transparent via-[#D4A24D]/5 to-transparent"></div>
           <div className="relative z-10">
             <div className="p-10 md:p-14">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 lg:gap-8">
-                {/* COLUNA 1 - WHATSAPP */}
+                {/* WHATSAPP */}
                 <div className="pb-10 lg:pb-0 lg:pr-8 flex flex-col justify-center border-b lg:border-b-0 lg:border-r border-gray-600">
                   <div className="flex flex-col items-center text-center">
                     <h2 className="text-2xl md:text-3xl font-bold mb-4 text-[#D4A24D]">
@@ -1130,12 +1711,12 @@ const DetalheImovel = () => {
                     <div className="relative mb-8">
                       <a
                         href={`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(
-                          `Olá! Tenho interesse no imóvel ${dados.codigo} - ${dados.titulo} e gostaria de mais informações.`,
+                          `Olá! Tenho interesse no imóvel ${dados.codigo} - ${dados.tituloSEO} e gostaria de mais informações.`,
                         )}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         onClick={() => registrarCliqueWhatsApp(dados.id)}
-                        className="btn-whatsapp-premium inline-flex items-center justify-center px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white text-sm md:text-base font-semibold rounded-lg hover:from-green-600 hover:to-green-700 hover:shadow-lg transition-all duration-300 space-x-2 shadow-md relative overflow-hidden group whitespace-nowrap focus:outline-none focus:ring-0"
+                        className="btn-whatsapp-premium inline-flex items-center justify-center px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white text-sm md:text-base font-semibold rounded-lg hover:from-green-600 hover:to-green-700 hover:shadow-lg transition-all duration-300 space-x-2 shadow-md relative overflow-hidden group whitespace-nowrap"
                       >
                         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
                         <i className="fab fa-whatsapp text-base"></i>
@@ -1145,7 +1726,7 @@ const DetalheImovel = () => {
                   </div>
                 </div>
 
-                {/* COLUNA 2 - SOLICITAR VISITA */}
+                {/* VISITA */}
                 <div className="pt-10 lg:pt-0 lg:pl-8 flex flex-col justify-center">
                   <div className="flex flex-col items-center text-center">
                     <h2 className="text-2xl md:text-3xl font-bold mb-4 text-white">
@@ -1157,7 +1738,7 @@ const DetalheImovel = () => {
                     <div className="relative">
                       <button
                         onClick={abrirModal}
-                        className="btn-visita-premium inline-flex items-center justify-center px-6 py-3 bg-gradient-to-r from-[#D4A24D] to-[#E6B85C] text-white text-sm md:text-base font-semibold rounded-lg hover:from-[#C4933E] hover:to-[#D4A24D] hover:shadow-lg transition-all duration-300 space-x-2 shadow-md relative overflow-hidden group whitespace-nowrap focus:outline-none focus:ring-0"
+                        className="btn-visita-premium inline-flex items-center justify-center px-6 py-3 bg-gradient-to-r from-[#D4A24D] to-[#E6B85C] text-white text-sm md:text-base font-semibold rounded-lg hover:from-[#C4933E] hover:to-[#D4A24D] hover:shadow-lg transition-all duration-300 space-x-2 shadow-md relative overflow-hidden group whitespace-nowrap"
                       >
                         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/25 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
                         <i className="fas fa-calendar-alt text-base"></i>
@@ -1168,6 +1749,7 @@ const DetalheImovel = () => {
                 </div>
               </div>
             </div>
+
             <div className="w-full h-[0.5px] bg-gradient-to-r from-transparent via-[#D4A24D] to-transparent"></div>
             <div className="bg-white p-4 md:p-5 rounded-b-xl">
               <div className="text-center">
@@ -1183,12 +1765,12 @@ const DetalheImovel = () => {
 
       <div className="py-6 md:py-8"></div>
 
-      {/* ===== MODAL DE SOLICITAÇÃO DE VISITA ===== */}
+      {/* MODAL DE VISITA */}
       {modalAberto && (
         <>
           <div
             ref={overlayRef}
-            className="fixed inset-0 bg-black/50 z-[9998] transition-opacity duration-300"
+            className="fixed inset-0 bg-black/50 z-[9998]"
             onClick={fecharModal}
           ></div>
           <div
@@ -1206,8 +1788,7 @@ const DetalheImovel = () => {
                     </div>
                     <button
                       onClick={fecharModal}
-                      className="bg-white/20 hover:bg-white/30 text-white text-lg md:text-xl transition-colors rounded-full w-8 h-8 md:w-9 md:h-9 flex items-center justify-center shadow-md flex-shrink-0 ml-2 focus:outline-none focus:ring-0"
-                      aria-label="Fechar"
+                      className="bg-white/20 hover:bg-white/30 text-white text-lg md:text-xl transition-colors rounded-full w-8 h-8 md:w-9 md:h-9 flex items-center justify-center shadow-md flex-shrink-0 ml-2"
                     >
                       <span className="font-bold">×</span>
                     </button>
@@ -1224,8 +1805,7 @@ const DetalheImovel = () => {
                         Solicitação Enviada!
                       </h4>
                       <p className="text-gray-600 text-sm md:text-base">
-                        Em breve nosso corretor entrará em contato para combinar
-                        o melhor horário.
+                        Em breve nosso corretor entrará em contato.
                       </p>
                     </div>
                   ) : (
@@ -1236,7 +1816,7 @@ const DetalheImovel = () => {
                         value={formData.nome}
                         onChange={handleInputChange}
                         required
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D4A24D] focus:border-[#D4A24D] outline-none"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D4A24D] focus:border-[#D4A24D] outline-none bg-white text-gray-900"
                         placeholder="Nome completo *"
                       />
                       <input
@@ -1245,7 +1825,7 @@ const DetalheImovel = () => {
                         value={formData.telefone}
                         onChange={handleInputChange}
                         required
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D4A24D] focus:border-[#D4A24D] outline-none"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D4A24D] focus:border-[#D4A24D] outline-none bg-white text-gray-900"
                         placeholder="WhatsApp com DDD *"
                       />
                       <input
@@ -1254,7 +1834,7 @@ const DetalheImovel = () => {
                         value={formData.email}
                         onChange={handleInputChange}
                         required
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D4A24D] focus:border-[#D4A24D] outline-none"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D4A24D] focus:border-[#D4A24D] outline-none bg-white text-gray-900"
                         placeholder="Email *"
                       />
                       <select
@@ -1262,32 +1842,50 @@ const DetalheImovel = () => {
                         value={formData.diaSemana}
                         onChange={handleInputChange}
                         required
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D4A24D] focus:border-[#D4A24D] outline-none"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D4A24D] focus:border-[#D4A24D] outline-none bg-white text-gray-900"
                       >
-                        <option value="">Melhor dia *</option>
-                        <option value="segunda">Segunda</option>
-                        <option value="terca">Terça</option>
-                        <option value="quarta">Quarta</option>
-                        <option value="quinta">Quinta</option>
-                        <option value="sexta">Sexta</option>
+                        <option value="" className="text-gray-900">
+                          Melhor dia *
+                        </option>
+                        <option value="segunda" className="text-gray-900">
+                          Segunda
+                        </option>
+                        <option value="terca" className="text-gray-900">
+                          Terça
+                        </option>
+                        <option value="quarta" className="text-gray-900">
+                          Quarta
+                        </option>
+                        <option value="quinta" className="text-gray-900">
+                          Quinta
+                        </option>
+                        <option value="sexta" className="text-gray-900">
+                          Sexta
+                        </option>
                       </select>
                       <select
                         name="horarioPreferencia"
                         value={formData.horarioPreferencia}
                         onChange={handleInputChange}
                         required
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D4A24D] focus:border-[#D4A24D] outline-none"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D4A24D] focus:border-[#D4A24D] outline-none bg-white text-gray-900"
                       >
-                        <option value="">Melhor horário *</option>
-                        <option value="manha">Manhã (8h-12h)</option>
-                        <option value="tarde">Tarde (14h-18h)</option>
+                        <option value="" className="text-gray-900">
+                          Melhor horário *
+                        </option>
+                        <option value="manha" className="text-gray-900">
+                          Manhã (8h-12h)
+                        </option>
+                        <option value="tarde" className="text-gray-900">
+                          Tarde (14h-18h)
+                        </option>
                       </select>
                       <textarea
                         name="mensagem"
                         value={formData.mensagem}
                         onChange={handleInputChange}
                         rows="3"
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D4A24D] focus:border-[#D4A24D] outline-none"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D4A24D] focus:border-[#D4A24D] outline-none bg-white text-gray-900"
                         placeholder="Mensagem (opcional)"
                       />
                       <button
@@ -1315,6 +1913,33 @@ const DetalheImovel = () => {
           font-family: "Montserrat", sans-serif;
           background: #f8f9fa;
           color: #333;
+        }
+
+        /* ===== SCROLLBAR PERSONALIZADA ===== */
+        ::-webkit-scrollbar {
+          width: 8px;
+          height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+          background: #f1f1f1;
+          border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+          background: #d4a24d;
+          border-radius: 10px;
+          transition: all 0.3s ease;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+          background: #b38f3a;
+        }
+
+        /* Para Firefox */
+        * {
+          scrollbar-width: thin;
+          scrollbar-color: #d4a24d #f1f1f1;
         }
 
         .light-sweep-premium {

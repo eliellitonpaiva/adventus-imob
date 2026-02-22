@@ -37,7 +37,7 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
     cliquesWhatsApp: 0,
     solicitacoesVisita: 0,
     interessadosAtivos: 0,
-    status: "Disponível",
+    status: imovel.status || "Disponível",
     tempoNegociacao: "0 dias",
     ultimaAtualizacao: "Agora mesmo",
     engajamentoCalculado: 0,
@@ -62,7 +62,9 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
             cliquesWhatsApp: estatisticas.cliques_whatsapp || 0,
             solicitacoesVisita: estatisticas.solicitacoes_visita || 0,
             interessadosAtivos: estatisticas.interessados_ativos || 0,
-            status: imovel.status,
+            status: localMarcadoComoVendido
+              ? "Vendido"
+              : imovel.status || "Disponível",
             tempoNegociacao: estatisticas.tempo_negociacao || "0 dias",
             ultimaAtualizacao: estatisticas.updated_at
               ? new Date(estatisticas.updated_at).toLocaleString("pt-BR")
@@ -70,13 +72,14 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
             engajamentoCalculado: estatisticas.engajamento || 0,
           });
         } else {
-          // 🟢 SEM MOCKS - TUDO ZERADO
           setMetricsData({
             visualizacoes: 0,
             cliquesWhatsApp: 0,
             solicitacoesVisita: 0,
             interessadosAtivos: 0,
-            status: imovel.status,
+            status: localMarcadoComoVendido
+              ? "Vendido"
+              : imovel.status || "Disponível",
             tempoNegociacao: "0 dias",
             ultimaAtualizacao: "Ainda sem interações",
             engajamentoCalculado: 0,
@@ -88,7 +91,7 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
     };
 
     fetchPerformanceData();
-  }, [imovel.id, imovel.desempenho, imovel.status]);
+  }, [imovel.id, imovel.desempenho, imovel.status, localMarcadoComoVendido]);
 
   // Efeito para atualizar os dados quando marcado como vendido localmente
   useEffect(() => {
@@ -99,13 +102,20 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
         cliquesWhatsApp: prev.cliquesWhatsApp + 5,
         solicitacoesVisita: prev.solicitacoesVisita + 2,
         interessadosAtivos: 0,
-        status: "Vendido", // 👈 MUDAR AQUI - usar "Vendido" em vez de "VENDIDO"
+        status: "Vendido",
         tempoNegociacao: "Concluído",
         ultimaAtualizacao: "Agora mesmo",
         engajamentoCalculado: 150,
       }));
     }
   }, [localMarcadoComoVendido]);
+
+  // Verificar se o imóvel já está vendido ou alugado
+  const isVendidoOuAlugado =
+    imovel.status === "Vendido" ||
+    imovel.status === "Alugado" ||
+    localMarcadoComoVendido ||
+    metricsData.status === "Vendido";
 
   // ==========================================================================
   // CALCULAR ENGAJAMENTO COM NOVOS PESOS (CLIQUE=1, VISITA=20)
@@ -125,19 +135,15 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
 
   const getClassificacaoDesempenho = () => {
     // Caso especial: imóvel vendido
-    if (
-      localMarcadoComoVendido ||
-      imovel.status === "Vendido" ||
-      imovel.status === "Alugado"
-    ) {
+    if (isVendidoOuAlugado) {
       return {
         label: "Destaque",
         texto: "Imóvel vendido com sucesso!",
         cor: "text-[#D4A24D]",
         corIcone: "text-yellow-500",
-        bgIcone: "bg-transparent", // 👈 SEM BACKGROUND
+        bgIcone: "bg-transparent",
         Icone: TrophyIcon,
-        iconSize: "w-6 h-6", // 👈 UM POUCO MAIOR FORA DA BOX
+        iconSize: "w-6 h-6",
         marginBottom: "mb-2",
       };
     }
@@ -230,12 +236,7 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
   const ClassificacaoIcon = classificacao.Icone;
 
   const getEngajamentoInfo = () => {
-    if (
-      localMarcadoComoVendido ||
-      imovel.status === "Vendido" ||
-      imovel.status === "Alugado" ||
-      engajamento >= 150
-    ) {
+    if (isVendidoOuAlugado || engajamento >= 150) {
       return {
         color: "text-green-600",
         bgColor: "bg-green-100",
@@ -276,11 +277,7 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
   const gerarInsights = () => {
     const insights = [];
 
-    if (
-      localMarcadoComoVendido ||
-      imovel.status === "Vendido" ||
-      imovel.status === "Alugado"
-    ) {
+    if (isVendidoOuAlugado) {
       insights.push("✅ Imóvel vendido com sucesso!");
       insights.push("🎉 Parabéns pela venda concluída!");
       insights.push("📊 Este imóvel teve excelente performance comercial.");
@@ -396,7 +393,7 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
 
       if (error) throw error;
 
-      // 👇 ATUALIZA O STATUS DIRETAMENTE NO metricsData
+      // ATUALIZA O STATUS DIRETAMENTE NO metricsData
       setMetricsData((prev) => ({
         ...prev,
         status: "Vendido",
@@ -405,6 +402,7 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
 
       setLocalMarcadoComoVendido(true);
 
+      // Chama o callback onAction para notificar o componente pai
       if (onAction) {
         onAction("marcarVendido", imovel.id);
       }
@@ -413,11 +411,6 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
       alert("Erro ao marcar imóvel como vendido. Tente novamente.");
     }
   };
-  // Verificar se o imóvel já está vendido ou alugado
-  const isVendidoOuAlugado =
-    imovel.status === "Vendido" ||
-    imovel.status === "Alugado" ||
-    localMarcadoComoVendido;
 
   return (
     <div
@@ -468,21 +461,14 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
             <div>
               <div className="flex flex-wrap items-center gap-2 text-sm text-gray-200">
                 <span>{imovelCompleto.endereco}</span>
-
                 <span className="text-white/40">•</span>
                 <span>{imovelCompleto.bairro}</span>
-
                 <span className="text-white/40">|</span>
                 <span>{imovelCompleto.cidade}</span>
-
                 {imovelCompleto.estado && (
                   <span> - {imovelCompleto.estado}</span>
                 )}
-
-                {/* Divisória */}
                 <span className="text-white/40">—</span>
-
-                {/* Preço alinhado */}
                 <span className="text-lg font-semibold text-white drop-shadow-lg">
                   {typeof imovelCompleto.preco === "number"
                     ? new Intl.NumberFormat("pt-BR", {
@@ -566,12 +552,6 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
                 }}
               />
             </div>
-
-            <div
-              className={`text-xs ${
-                isDark ? "text-gray-500" : "text-gray-500"
-              } mt-3 text-center`}
-            ></div>
           </div>
 
           {/* Card de Status e Classificação */}
@@ -582,18 +562,20 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
               <div className="flex flex-col md:flex-row items-center justify-between gap-4">
                 {/* Status */}
                 <div className="flex-1 text-center md:text-left md:pr-6 md:border-r border-amber-300">
-                  {/* Container com altura fixa para manter consistência */}
                   <div className="flex flex-col items-center md:items-start h-[110px] relative">
-                    {/* Conteúdo principal centralizado verticalmente */}
                     <div className="flex flex-col items-center md:items-start justify-center h-full w-full">
                       {/* Status */}
                       <div className="mb-1">
                         <div
-                          className={`px-3 py-1 ${isVendidoOuAlugado ? "bg-green-600 text-white" : "bg-[#1E293B] text-white"} text-sm font-medium rounded-full uppercase inline-block`}
+                          className={`px-3 py-1 ${
+                            isVendidoOuAlugado
+                              ? "bg-green-600 text-white"
+                              : metricsData.status === "Em Negociação"
+                                ? "bg-purple-600 text-white"
+                                : "bg-[#1E293B] text-white"
+                          } text-sm font-medium rounded-full uppercase inline-block`}
                         >
-                          {isVendidoOuAlugado
-                            ? imovel.status?.toUpperCase() || "VENDIDO"
-                            : metricsData.status}
+                          {isVendidoOuAlugado ? "VENDIDO" : metricsData.status}
                         </div>
                       </div>
 
@@ -628,11 +610,9 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
                           </span>
                         </div>
                       )}
-
-                      {/* Quando Disponível, NÃO MOSTRA NADA sobre tempo */}
                     </div>
 
-                    {/* Alerta - aparece por cima, deslocando o conteúdo principal para cima */}
+                    {/* Alerta para negociação prolongada */}
                     {!isVendidoOuAlugado &&
                       metricsData.status === "Em Negociação" && (
                         <>
@@ -691,7 +671,15 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
                     className={`w-full h-2 ${isDark ? "bg-gray-700" : "bg-gray-300"} rounded-full overflow-hidden mb-1`}
                   >
                     <div
-                      className={`h-full ${isVendidoOuAlugado || engajamento >= 100 ? "bg-green-500" : engajamento >= 80 ? "bg-blue-500" : engajamento >= 50 ? "bg-amber-500" : "bg-red-500"}`}
+                      className={`h-full ${
+                        isVendidoOuAlugado || engajamento >= 100
+                          ? "bg-green-500"
+                          : engajamento >= 80
+                            ? "bg-blue-500"
+                            : engajamento >= 50
+                              ? "bg-amber-500"
+                              : "bg-red-500"
+                      }`}
                       style={{ width: `${Math.min(engajamento, 100)}%` }}
                     ></div>
                   </div>
@@ -706,21 +694,16 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
                 {/* Classificação */}
                 <div className="flex-1 text-center md:pl-6">
                   <div className="flex flex-col items-center">
-                    {/* ÍCONE - sem box, ajustado 1px para baixo */}
                     <div className="relative top-[1px] mb-1">
                       <ClassificacaoIcon
                         className={`w-6 h-6 ${classificacao.corIcone}`}
                       />
                     </div>
-
-                    {/* DESTAQUE - sem margem inferior */}
                     <div className="mb-0">
                       <div className={`text-lg font-bold ${classificacao.cor}`}>
                         {classificacao.label}
                       </div>
                     </div>
-
-                    {/* RESULTADO - subiu 1px para aproximar */}
                     <div className="relative -top-[1px]">
                       <div
                         className={`text-sm ${isDark ? "text-gray-300" : "text-gray-700"}`}
@@ -894,19 +877,29 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             {/* Botão de informação */}
             <div
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border ${isDark ? "border-amber-800 bg-amber-900/30 hover:bg-amber-900/50" : "border-amber-300 bg-amber-50 hover:bg-amber-100 hover:border-amber-400"} transition-all duration-200 cursor-help`}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border ${
+                isDark
+                  ? "border-amber-800 bg-amber-900/30 hover:bg-amber-900/50"
+                  : "border-amber-300 bg-amber-50 hover:bg-amber-100 hover:border-amber-400"
+              } transition-all duration-200 cursor-help`}
               onMouseEnter={() => setShowTooltipInfo(true)}
               onMouseLeave={() => setShowTooltipInfo(false)}
               onTouchStart={() => setShowTooltipInfo(!showTooltipInfo)}
             >
               <div
-                className={`p-1 ${isDark ? "bg-amber-900/50 border-amber-800" : "bg-amber-100 border-amber-200"} border rounded-md`}
+                className={`p-1 ${
+                  isDark
+                    ? "bg-amber-900/50 border-amber-800"
+                    : "bg-amber-100 border-amber-200"
+                } border rounded-md`}
               >
                 <InformationCircleIcon className="w-3.5 h-3.5 text-amber-700" />
               </div>
 
               <span
-                className={`text-xs font-medium ${isDark ? "text-amber-300" : "text-amber-800"} whitespace-nowrap`}
+                className={`text-xs font-medium ${
+                  isDark ? "text-amber-300" : "text-amber-800"
+                } whitespace-nowrap`}
               >
                 Como calculamos este índice
               </span>
@@ -914,7 +907,7 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
 
             {/* Botões de ação */}
             <div className="flex items-center gap-3">
-              {/* BOTÃO FECHAR - vermelho suave */}
+              {/* BOTÃO FECHAR */}
               <button
                 onClick={onClose}
                 className={`px-4 py-2.5 rounded-lg transition-all duration-200 font-medium shadow-sm hover:shadow flex items-center gap-2 ${
@@ -927,7 +920,7 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
                 Fechar
               </button>
 
-              {/* BOTÃO MARCAR COMO VENDIDO - azul escuro normal */}
+              {/* BOTÃO MARCAR COMO VENDIDO */}
               {!isVendidoOuAlugado && (
                 <button
                   onClick={handleMarcarComoVendido}
@@ -942,7 +935,7 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
                 </button>
               )}
 
-              {/* BOTÃO VENDIDO/ALUGADO - verde quando já vendido */}
+              {/* BOTÃO VENDIDO/ALUGADO */}
               {isVendidoOuAlugado && (
                 <div
                   className={`px-4 py-2.5 rounded-lg font-medium shadow-sm flex items-center gap-2 ${

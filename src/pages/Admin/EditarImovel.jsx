@@ -62,6 +62,7 @@ const EditarImovel = () => {
       area_total: "",
       area_construida: "",
     },
+    // LOCALIZAÇÃO SIMPLIFICADA
     cep: "",
     endereco: "",
     numero: "",
@@ -69,8 +70,8 @@ const EditarImovel = () => {
     bairro: "",
     cidade: "",
     estado: "",
-    ocultarNumero: false,
-    ocultarEndereco: false,
+    exibirEnderecoSite: false, // CHECKBOX ÚNICO
+    // ETIQUETAS DA VITRINE
     etiquetas: {
       destaqueSemana: false,
       novoSite: false,
@@ -304,6 +305,7 @@ const EditarImovel = () => {
           area_total: data.area_total || "",
           area_construida: data.area_construida || "",
         },
+        // LOCALIZAÇÃO SIMPLIFICADA
         cep: data.cep || "",
         endereco: data.endereco || "",
         numero: data.numero || "",
@@ -311,8 +313,8 @@ const EditarImovel = () => {
         bairro: data.bairro || "",
         cidade: data.cidade || "",
         estado: data.estado || "",
-        ocultarNumero: data.ocultar_numero || false,
-        ocultarEndereco: data.ocultar_endereco || false,
+        exibirEnderecoSite: data.exibir_endereco_site || false, // NOVO CAMPO
+        // ETIQUETAS DA VITRINE
         etiquetas: data.etiquetas || {
           destaqueSemana: false,
           novoSite: false,
@@ -506,17 +508,16 @@ const EditarImovel = () => {
         parseFloat(formData.caracteristicas.condominioTaxaMensal) || 0,
       iptu_anual: parseFloat(formData.iptu_anual) || 0,
       data_disponibilidade: null,
-      cep: formData.cep,
-      endereco: formData.endereco,
-      numero: formData.numero,
-      complemento: formData.complemento,
-      bairro: formData.bairro,
-      cidade: formData.cidade,
-      estado: formData.estado,
-      ocultar_numero: formData.ocultarNumero,
-      ocultar_endereco: formData.ocultarEndereco,
-      descricao: formData.descricao || "",
-      observacoes: formData.observacoes || "",
+      // LOCALIZAÇÃO SIMPLIFICADA
+      cep: formData.cep || "",
+      endereco: formData.endereco || "",
+      numero: formData.numero || "",
+      complemento: formData.complemento || "",
+      bairro: formData.bairro || "",
+      cidade: formData.cidade || "",
+      estado: formData.estado || "",
+      exibir_endereco_site: formData.exibirEnderecoSite || false, // NOVO CAMPO
+      // ETIQUETAS DA VITRINE
       etiquetas: formData.etiquetas,
       caracteristicas: {
         ...formData.caracteristicas,
@@ -630,13 +631,15 @@ const EditarImovel = () => {
 
   // =============== OPÇÕES PARA SELECTS ===============
   const tiposImovel = [
-    { value: "casa", label: "Casa" },
     { value: "apartamento", label: "Apartamento" },
+    { value: "casa", label: "Casa" },
     { value: "terreno", label: "Terreno" },
     { value: "comercial", label: "Comercial" },
     { value: "sobrado", label: "Sobrado" },
     { value: "kitnet", label: "Kitnet" },
     { value: "fazenda", label: "Fazenda" },
+    { value: "chacara", label: "Chácara" },
+    { value: "sitio", label: "Sítio" },
     { value: "galpao", label: "Galpão" },
   ];
 
@@ -778,24 +781,14 @@ const EditarImovel = () => {
                 </p>
               </div>
             </div>
-            {/* Status Preview */}
-            <div className="flex items-center space-x-4">
+            {/* Apenas badge Financiável (se existir) */}
+            {formData.etiquetas.financiável && (
               <div
-                className={`px-3 py-1.5 rounded-full text-sm font-medium ${getStatusColor(formData.status)}`}
+                className={`px-3 py-1.5 rounded-full text-sm font-medium ${getFinanciavelColor()}`}
               >
-                {formData.status === "disponivel" && "Disponível"}
-                {formData.status === "reservado" && "Reservado"}
-                {formData.status === "vendido" && "Vendido"}
-                {formData.status === "alugado" && "Alugado"}
+                Financiável
               </div>
-              {formData.etiquetas.financiável && (
-                <div
-                  className={`px-3 py-1.5 rounded-full text-sm font-medium ${getFinanciavelColor()}`}
-                >
-                  Financiável
-                </div>
-              )}
-            </div>
+            )}
           </div>
         </div>
       </div>
@@ -838,7 +831,7 @@ const EditarImovel = () => {
                   value={formData.codigo}
                   onChange={handleChange}
                   required
-                  placeholder="Ex: IMV-001"
+                  placeholder="Ex: APT-001"
                   className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors duration-200 ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()} ${getPlaceholderClass()}`}
                 />
               </div>
@@ -1651,7 +1644,7 @@ const EditarImovel = () => {
             </div>
           </div>
 
-          {/* ========== SEÇÃO 2: LOCALIZAÇÃO APRIMORADA ========== */}
+          {/* ========== SEÇÃO 2: LOCALIZAÇÃO SIMPLIFICADA ========== */}
           <div
             className={`rounded-xl border p-6 transition-colors duration-200 ${getBgClass()} ${getBorderClass()}`}
           >
@@ -1663,22 +1656,23 @@ const EditarImovel = () => {
                 <h2
                   className={`text-xl font-semibold transition-colors ${getTextClass()}`}
                 >
-                  Localização Aprimorada
+                  Localização do Imóvel
                 </h2>
                 <p
                   className={`text-sm transition-colors ${getTextSecondaryClass()}`}
                 >
-                  Endereço completo e configurações de privacidade
+                  Endereço para controle interno e exibição no site
                 </p>
               </div>
             </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {/* CEP */}
               <div>
                 <label
                   className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
                 >
-                  CEP *
+                  CEP
                 </label>
                 <div className="relative">
                   <input
@@ -1686,7 +1680,6 @@ const EditarImovel = () => {
                     name="cep"
                     value={formData.cep}
                     onChange={handleCepChange}
-                    required
                     placeholder="00000-000"
                     maxLength="9"
                     className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors duration-200 ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()} ${getPlaceholderClass()}`}
@@ -1714,42 +1707,41 @@ const EditarImovel = () => {
                     </p>
                   )}
               </div>
+
               {/* Endereço */}
               <div className="md:col-span-2">
                 <label
                   className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
                 >
-                  Endereço *
+                  Endereço
                 </label>
                 <input
                   type="text"
                   name="endereco"
                   value={formData.endereco}
                   onChange={handleChange}
-                  required
                   placeholder="Ex: Rua das Flores"
                   className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors duration-200 ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()} ${getPlaceholderClass()}`}
                 />
               </div>
+
               {/* Número */}
               <div>
                 <label
                   className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
                 >
-                  Número *
+                  Número
                 </label>
-                <div className="flex items-center space-x-3">
-                  <input
-                    type="text"
-                    name="numero"
-                    value={formData.numero}
-                    onChange={handleChange}
-                    required
-                    placeholder="123"
-                    className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors duration-200 ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()} ${getPlaceholderClass()}`}
-                  />
-                </div>
+                <input
+                  type="text"
+                  name="numero"
+                  value={formData.numero}
+                  onChange={handleChange}
+                  placeholder="Ex: 123"
+                  className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors duration-200 ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()} ${getPlaceholderClass()}`}
+                />
               </div>
+
               {/* Complemento */}
               <div>
                 <label
@@ -1766,6 +1758,7 @@ const EditarImovel = () => {
                   className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors duration-200 ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()} ${getPlaceholderClass()}`}
                 />
               </div>
+
               {/* Bairro */}
               <div>
                 <label
@@ -1783,6 +1776,7 @@ const EditarImovel = () => {
                   className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors duration-200 ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()} ${getPlaceholderClass()}`}
                 />
               </div>
+
               {/* Cidade */}
               <div>
                 <label
@@ -1796,10 +1790,11 @@ const EditarImovel = () => {
                   value={formData.cidade}
                   onChange={handleChange}
                   required
-                  placeholder="Ex: São Paulo"
+                  placeholder="Ex: Açailândia"
                   className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors duration-200 ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()} ${getPlaceholderClass()}`}
                 />
               </div>
+
               {/* Estado */}
               <div>
                 <label
@@ -1828,107 +1823,57 @@ const EditarImovel = () => {
                   ))}
                 </select>
               </div>
-              {/* Privacidade */}
-              <div className="md:col-span-3 space-y-4 p-4 border rounded-lg">
-                <h3
-                  className={`font-medium transition-colors ${getTextClass()}`}
-                >
-                  Configurações de Privacidade
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <label className="flex items-center space-x-3">
-                    <input
-                      type="checkbox"
-                      name="ocultarNumero"
-                      checked={formData.ocultarNumero}
-                      onChange={handleChange}
-                      className={getCheckboxClass()}
-                    />
-                    <div>
-                      <div
-                        className={`font-medium transition-colors ${getTextClass()}`}
-                      >
-                        Ocultar número na vitrine
-                      </div>
-                      <div
-                        className={`text-sm transition-colors ${getTextSecondaryClass()}`}
-                      >
-                        Só exibe o endereço sem número
-                      </div>
+
+              {/* CHECKBOX ÚNICO - MOSTRAR ENDEREÇO NO SITE */}
+              <div className="md:col-span-3">
+                <label className="flex items-center space-x-3 p-4 border rounded-lg cursor-pointer transition-all duration-200 hover:border-[#D4A24D]">
+                  <input
+                    type="checkbox"
+                    name="exibirEnderecoSite"
+                    checked={formData.exibirEnderecoSite}
+                    onChange={handleChange}
+                    className={getCheckboxClass()}
+                  />
+                  <div>
+                    <div className={`font-medium ${getTextClass()}`}>
+                      🌐 Mostrar endereço completo no site
                     </div>
-                  </label>
-                  <label className="flex items-center space-x-3">
-                    <input
-                      type="checkbox"
-                      name="ocultarEndereco"
-                      checked={formData.ocultarEndereco}
-                      onChange={handleChange}
-                      className={getCheckboxClass()}
-                    />
-                    <div>
-                      <div
-                        className={`font-medium transition-colors ${getTextClass()}`}
-                      >
-                        Ocultar endereço completo
-                      </div>
-                      <div
-                        className={`text-sm transition-colors ${getTextSecondaryClass()}`}
-                      >
-                        Só exibe bairro e cidade
-                      </div>
+                    <div className={`text-sm ${getTextSecondaryClass()}`}>
+                      Se marcado, o endereço (Rua, Número) aparecerá na página
+                      pública do imóvel. Se desmarcado, fica visível apenas
+                      internamente.
                     </div>
-                  </label>
-                </div>
-                <div
-                  className={`mt-4 p-3 rounded-lg ${isDark ? "bg-gray-800" : "bg-gray-50"}`}
-                >
-                  <h4
-                    className={`text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
-                  >
-                    Como será exibido na vitrine:
-                  </h4>
-                  <p className={`text-sm transition-colors ${getTextClass()}`}>
-                    {formData.ocultarEndereco
-                      ? `${formData.bairro || "Bairro"}, ${formData.cidade || "Cidade"}`
-                      : `${formData.endereco || "Endereço"}${
-                          !formData.ocultarNumero && formData.numero
-                            ? `, ${formData.numero}`
-                            : ""
-                        }, ${formData.bairro || "Bairro"}`}
-                  </p>
-                </div>
+                  </div>
+                </label>
               </div>
             </div>
           </div>
 
-          {/* ========== SEÇÃO 3: ETIQUETAS ========== */}
+          {/* ========== SEÇÃO: EXIBIR NA VITRINE ========== */}
           <div
             className={`rounded-xl border p-6 transition-colors duration-200 ${getBgClass()} ${getBorderClass()}`}
           >
             <div className="flex items-center space-x-3 mb-6">
-              <div className={`p-2 rounded-lg ${getIconBgClass()}`}>
-                <TagIcon className={`w-6 h-6 ${getIconColorClass()}`} />
+              <div
+                className={`p-2 rounded-lg bg-gradient-to-r from-[#D4A24D] to-yellow-500`}
+              >
+                <SparklesIcon className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h2
-                  className={`text-xl font-semibold transition-colors ${getTextClass()}`}
-                >
-                  Etiquetas do Imóvel
+                <h2 className={`text-xl font-semibold ${getTextClass()}`}>
+                  ✨ Exibir na Vitrine
                 </h2>
-                <p
-                  className={`text-sm transition-colors ${getTextSecondaryClass()}`}
-                >
-                  Configure as etiquetas que aparecerão na vitrine da homepage
+                <p className={`text-sm ${getTextSecondaryClass()}`}>
+                  Dê destaque especial ao seu imóvel na página principal
                 </p>
               </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+
+            {/* Badges de destaque */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* Destaque da Semana */}
               <label
-                className={`flex items-center space-x-3 p-4 border rounded-lg transition-all duration-200 cursor-pointer ${getBorderClass()} ${getHoverBgClass()} ${
-                  isDark
-                    ? "hover:border-[#D4A24D]/50"
-                    : "hover:border-[#D4A24D]"
-                }`}
+                className={`flex items-start space-x-3 p-4 border rounded-lg cursor-pointer transition-all duration-300 group hover:shadow-lg ${getBorderClass()} ${getHoverBgClass()}`}
               >
                 <input
                   type="checkbox"
@@ -1939,23 +1884,19 @@ const EditarImovel = () => {
                 />
                 <div>
                   <div
-                    className={`font-medium transition-colors ${getTextClass()}`}
+                    className={`font-medium flex items-center gap-1 group-hover:text-[#D4A24D] ${getTextClass()}`}
                   >
-                    Destaque da Semana
+                    ⭐ Destaque da Semana
                   </div>
-                  <div
-                    className={`text-sm transition-colors ${getTextSecondaryClass()}`}
-                  >
-                    Exibir na seção de destaques
+                  <div className={`text-xs ${getTextSecondaryClass()}`}>
+                    Aparece como badge dourado na vitrine
                   </div>
                 </div>
               </label>
+
+              {/* Novo no Site */}
               <label
-                className={`flex items-center space-x-3 p-4 border rounded-lg transition-all duration-200 cursor-pointer ${getBorderClass()} ${getHoverBgClass()} ${
-                  isDark
-                    ? "hover:border-[#D4A24D]/50"
-                    : "hover:border-[#D4A24D]"
-                }`}
+                className={`flex items-start space-x-3 p-4 border rounded-lg cursor-pointer transition-all duration-300 group hover:shadow-lg ${getBorderClass()} ${getHoverBgClass()}`}
               >
                 <input
                   type="checkbox"
@@ -1966,23 +1907,19 @@ const EditarImovel = () => {
                 />
                 <div>
                   <div
-                    className={`font-medium transition-colors ${getTextClass()}`}
+                    className={`font-medium flex items-center gap-1 group-hover:text-[#D4A24D] ${getTextClass()}`}
                   >
-                    Novo no Site
+                    🆕 Novo no Site
                   </div>
-                  <div
-                    className={`text-sm transition-colors ${getTextSecondaryClass()}`}
-                  >
-                    Recém cadastrado
+                  <div className={`text-xs ${getTextSecondaryClass()}`}>
+                    Badge azul para imóveis recentes
                   </div>
                 </div>
               </label>
+
+              {/* Baixou o Preço */}
               <label
-                className={`flex items-center space-x-3 p-4 border rounded-lg transition-all duration-200 cursor-pointer ${getBorderClass()} ${getHoverBgClass()} ${
-                  isDark
-                    ? "hover:border-[#D4A24D]/50"
-                    : "hover:border-[#D4A24D]"
-                }`}
+                className={`flex items-start space-x-3 p-4 border rounded-lg cursor-pointer transition-all duration-300 group hover:shadow-lg ${getBorderClass()} ${getHoverBgClass()}`}
               >
                 <input
                   type="checkbox"
@@ -1993,23 +1930,19 @@ const EditarImovel = () => {
                 />
                 <div>
                   <div
-                    className={`font-medium transition-colors ${getTextClass()}`}
+                    className={`font-medium flex items-center gap-1 group-hover:text-[#D4A24D] ${getTextClass()}`}
                   >
-                    Baixou o Preço
+                    📉 Baixou o Preço
                   </div>
-                  <div
-                    className={`text-sm transition-colors ${getTextSecondaryClass()}`}
-                  >
-                    Redução recente no valor
+                  <div className={`text-xs ${getTextSecondaryClass()}`}>
+                    Badge verde indicando redução
                   </div>
                 </div>
               </label>
+
+              {/* Financiável */}
               <label
-                className={`flex items-center space-x-3 p-4 border rounded-lg transition-all duration-200 cursor-pointer ${getBorderClass()} ${getHoverBgClass()} ${
-                  isDark
-                    ? "hover:border-[#D4A24D]/50"
-                    : "hover:border-[#D4A24D]"
-                }`}
+                className={`flex items-start space-x-3 p-4 border rounded-lg cursor-pointer transition-all duration-300 group hover:shadow-lg ${getBorderClass()} ${getHoverBgClass()}`}
               >
                 <input
                   type="checkbox"
@@ -2020,17 +1953,67 @@ const EditarImovel = () => {
                 />
                 <div>
                   <div
-                    className={`font-medium transition-colors ${getTextClass()}`}
+                    className={`font-medium flex items-center gap-1 group-hover:text-[#D4A24D] ${getTextClass()}`}
                   >
-                    Financiável
+                    💰 Financiável
                   </div>
-                  <div
-                    className={`text-sm transition-colors ${getTextSecondaryClass()}`}
-                  >
-                    Exibir badge financiável
+                  <div className={`text-xs ${getTextSecondaryClass()}`}>
+                    Badge roxo para imóveis com financiamento
                   </div>
                 </div>
               </label>
+            </div>
+
+            {/* Preview da Vitrine */}
+            <div
+              className={`mt-6 p-4 rounded-lg ${isDark ? "bg-gray-800" : "bg-gray-50"}`}
+            >
+              <h4
+                className={`text-sm font-medium mb-3 ${getTextSecondaryClass()}`}
+              >
+                Preview da Vitrine:
+              </h4>
+
+              <div className="bg-white rounded-lg shadow-sm p-4 border">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <h3 className="text-lg font-semibold text-gray-800">
+                    {formData.titulo || "Título do Imóvel"}
+                  </h3>
+                  <div className="flex gap-1 flex-wrap">
+                    {formData.etiquetas.destaqueSemana && (
+                      <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded text-xs font-medium flex items-center gap-1">
+                        ⭐ Destaque
+                      </span>
+                    )}
+                    {formData.etiquetas.novoSite && (
+                      <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs font-medium flex items-center gap-1">
+                        🆕 Novo
+                      </span>
+                    )}
+                    {formData.etiquetas.baixouPreco && (
+                      <span className="px-2 py-1 bg-green-100 text-green-800 rounded text-xs font-medium flex items-center gap-1">
+                        📉 Baixou
+                      </span>
+                    )}
+                    {formData.etiquetas.financiável && (
+                      <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded text-xs font-medium flex items-center gap-1">
+                        💰 Financiável
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-center text-sm text-gray-500 mt-2">
+                  <MapPinIcon className="w-4 h-4 mr-1 text-[#D4A24D]" />
+                  <span>
+                    {formData.bairro || "Bairro"}, {formData.cidade || "Cidade"}
+                    /{formData.estado || "UF"}
+                  </span>
+                </div>
+              </div>
+              <p className={`text-xs mt-3 ${getTextSecondaryClass()}`}>
+                ℹ️ Na vitrine, sempre mostramos: Título + Badges + Bairro,
+                Cidade/UF
+              </p>
             </div>
           </div>
 
@@ -2546,6 +2529,24 @@ const EditarImovel = () => {
                               className={getOptionBgClass()}
                             >
                               Fossa e Filtro
+                            </option>
+                            <option
+                              value="fossa_filtro"
+                              className={getOptionBgClass()}
+                            >
+                              Sumidoro
+                            </option>
+                            <option
+                              value="fossa_filtro"
+                              className={getOptionBgClass()}
+                            >
+                              Fossa Ecológica/Biodigestor
+                            </option>
+                            <option
+                              value="Fossa Ecológica/Biodigestor"
+                              className={getOptionBgClass()}
+                            >
+                              Inexistente
                             </option>
                           </select>
                         </div>

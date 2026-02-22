@@ -25,7 +25,7 @@ import {
 import Button from "../../componentes/ui/Button";
 import { useTheme } from "../../contexts/ThemeContext";
 import { supabase } from "../../lib/supabase";
-import { slugify } from "../../lib/slugify"; // 🔥 IMPORT DO SLUG (mantido para gerar automaticamente)
+import { slugify } from "../../lib/slugify";
 
 const CadastrarImovel = () => {
   const navigate = useNavigate();
@@ -86,7 +86,6 @@ const CadastrarImovel = () => {
         }
       }
 
-      // Código com 4 dígitos (0001, 0002, etc.)
       const novoNumero = (ultimoNumero + 1).toString().padStart(4, "0");
       return `${prefixo}-${novoNumero}`;
     } catch (error) {
@@ -110,7 +109,6 @@ const CadastrarImovel = () => {
   const gerarSlug = (formData) => {
     const dados = extrairDadosImovel(formData);
 
-    // 🔥 BASE DO SLUG COM PALAVRAS-CHAVE PRINCIPAIS
     let slugBase = "";
 
     if (formData.tipo) {
@@ -129,12 +127,10 @@ const CadastrarImovel = () => {
       slugBase += ` ${dados.areaTotal}-m`;
     }
 
-    // Se não tiver nenhuma informação, usa título ou código como fallback
     if (!slugBase.trim()) {
       slugBase = formData.titulo || `imovel-${formData.codigo}`;
     }
 
-    // 🔥 SLUG HÍBRIDO: palavras-chave + código do imóvel
     const slug = `${slugify(slugBase)}-${formData.codigo || "sem-codigo"}`;
 
     return slug;
@@ -171,7 +167,6 @@ const CadastrarImovel = () => {
 
   // =============== ESTADO DO FORMULÁRIO ===============
   const [formData, setFormData] = useState({
-    // Seção 1: Informações Gerais
     codigo: "",
     titulo: "",
     finalidade: { venda: true, aluguel: false },
@@ -183,9 +178,8 @@ const CadastrarImovel = () => {
     proprietarioId: "",
     corretorId: "",
     ocultarPreco: false,
-    slug: "", // 🔥 CAMPO SLUG (interno, não mostrado na UI)
+    slug: "",
 
-    // VÍNCULO COM EMPREENDIMENTO
     empreendimento_id: "",
     unidade: "",
     andar: "",
@@ -193,7 +187,6 @@ const CadastrarImovel = () => {
     bloco: "",
     quadra: "",
 
-    // Dependências do Imóvel (URBANO)
     dependencias: {
       dormitorios: "",
       banheiros: "",
@@ -203,7 +196,7 @@ const CadastrarImovel = () => {
       area_construida: "",
     },
 
-    // Seção 2: Localização Aprimorada
+    // LOCALIZAÇÃO SIMPLIFICADA
     cep: "",
     endereco: "",
     numero: "",
@@ -211,10 +204,9 @@ const CadastrarImovel = () => {
     bairro: "",
     cidade: "",
     estado: "",
-    ocultarNumero: false,
-    ocultarEndereco: false,
+    exibirEnderecoSite: false, // CHECKBOX ÚNICO
 
-    // Seção 3: Etiquetas
+    // ETIQUETAS DA VITRINE
     etiquetas: {
       destaqueSemana: false,
       novoSite: false,
@@ -222,10 +214,7 @@ const CadastrarImovel = () => {
       financiável: false,
     },
 
-    // ============ ACCORDION 1: CARACTERÍSTICAS DO IMÓVEL ============
-    // 📦 JSONB - TODOS os campos (urbanos e rurais) vão AQUI dentro!
     caracteristicas: {
-      // 📐 Medidas e Dimensões (Urbanos)
       areaUtil: "",
       areaPrivativa: "",
       frenteTerreno: "",
@@ -233,12 +222,8 @@ const CadastrarImovel = () => {
       lateralEsquerda: "",
       lateralDireita: "",
       peDireito: "",
-
-      // Lote específico
       topografia: "",
       esquina: false,
-
-      // 🏗 Estrutura do Imóvel
       tipoConstrucao: "",
       anoConstrucao: "",
       reformadoRecentemente: false,
@@ -246,8 +231,6 @@ const CadastrarImovel = () => {
       imovelAverbado: false,
       financiavel: false,
       aceitaPermuta: false,
-
-      // ⚡ Infraestrutura interna
       tipoIluminacao: "",
       tipoTelhado: "",
       forroLaje: false,
@@ -255,8 +238,6 @@ const CadastrarImovel = () => {
       caixaDAgua: "",
       sistemaEsgoto: "",
       aquecimentoAgua: "",
-
-      // 🏘 Informações estratégicas
       posicaoSolar: "",
       ventilacaoCruzada: false,
       vistaLivre: false,
@@ -265,7 +246,6 @@ const CadastrarImovel = () => {
       esquinaInfo: false,
       condominioTaxaMensal: "",
 
-      // 🚜 CAMPOS RURAIS - AGRICULTURA
       area_total_hectares: "",
       area_agricultavel_hectares: "",
       area_preservacao_hectares: "",
@@ -277,8 +257,6 @@ const CadastrarImovel = () => {
       plantacao_fruticultura: "",
       tipo_cultura: "",
       sistemas_irrigacao: "",
-
-      // 🐄 CAMPOS RURAIS - PECUÁRIA
       tipo_pecuaria: "",
       numero_cabecas: "",
       racas_gado: "",
@@ -289,23 +267,18 @@ const CadastrarImovel = () => {
       tem_cerca_eletrificada: false,
       tem_sala_ordenha: false,
       tipo_confinamento: "",
-
-      // 💧 RECURSOS HÍDRICOS
       tem_agude: false,
       tem_represa: false,
       tem_cacimba: false,
       tem_poco_artesiano: false,
       tem_riacho: false,
       fontes_agua: "",
-
-      // 🌳 OUTROS RECURSOS
       tem_extrativismo: false,
       tipo_extrativismo: "",
       tem_ecoturismo: false,
       atividades_complementares: "",
     },
 
-    // INFRAESTRUTURA (URBANO)
     infraestrutura: {
       agua: false,
       energia: false,
@@ -323,9 +296,7 @@ const CadastrarImovel = () => {
       alarme: false,
     },
 
-    // ============ ACCORDION 2: ACABAMENTOS ============
     acabamentos: {
-      // 🔹 Pisos
       pisoPorcelanato: false,
       pisoCeramica: false,
       pisoLaminado: false,
@@ -336,35 +307,25 @@ const CadastrarImovel = () => {
       pisoMarmore: false,
       pisoGranito: false,
       pisoFrio: false,
-
-      // 🔹 Revestimentos de parede
       revestimentoAzulejo: false,
       revestimentoPastilha: false,
       revestimentoPorcelanato: false,
       revestimentoPedraNatural: false,
       revestimentoPapelParede: false,
       revestimento3D: false,
-
-      // 🔹 Teto e forro
       tetoGessoRebaixado: false,
       tetoSancaGesso: false,
       tetoForroPVC: false,
       tetoLaje: false,
-
-      // 🔹 Esquadrias e portas
       portaMadeiraMaciça: false,
       portaLaqueada: false,
       esquadriaAluminio: false,
       esquadriaPVC: false,
       portaPivotante: false,
-
-      // 🔹 Bancadas
       bancadaGranito: false,
       bancadaMarmore: false,
       bancadaQuartzo: false,
       bancadaNanoglass: false,
-
-      // Campos antigos (mantidos para compatibilidade)
       piso: "",
       azulejo: "",
       porta: "",
@@ -380,7 +341,6 @@ const CadastrarImovel = () => {
       dependenciaEmpregada: false,
     },
 
-    // ============ ACCORDION 3: ÁREA DE LAZER ============
     areaLazer: {
       piscina: false,
       churrasqueira: false,
@@ -400,7 +360,6 @@ const CadastrarImovel = () => {
       brinquedoteca: false,
     },
 
-    // ============ ACCORDION 4: LOCALIZAÇÃO E VIZINHANÇA ============
     localizacaoVizinhanca: {
       proximoCentro: false,
       proximoSupermercado: false,
@@ -417,7 +376,6 @@ const CadastrarImovel = () => {
       regiaoValorizada: false,
     },
 
-    // ============ ACCORDION 5: SEGURANÇA ============
     seguranca: {
       portaoEletronico: false,
       interfone: false,
@@ -432,7 +390,6 @@ const CadastrarImovel = () => {
       murosAltos: false,
     },
 
-    // ============ ACCORDION 6: ARMÁRIOS E ARMAZENAMENTO ============
     armariosArmazenamento: {
       armarioCozinhaPlanejado: false,
       armariosEmbutidos: false,
@@ -445,7 +402,6 @@ const CadastrarImovel = () => {
       maleiro: false,
     },
 
-    // ============ ACCORDION 7: SERVIÇOS E UTILIDADES ============
     servicosUtilidades: {
       aguaEncanada: false,
       energiaEletrica: false,
@@ -462,7 +418,6 @@ const CadastrarImovel = () => {
       coletaLixo: false,
     },
 
-    // ============ ACCORDION 8: DIFERENCIAIS DO IMÓVEL ============
     diferenciais: {
       varanda: false,
       sacada: false,
@@ -476,15 +431,12 @@ const CadastrarImovel = () => {
       vistaPanoramica: false,
     },
 
-    // NOVOS CAMPOS
     descricao: "",
     observacoes: "",
     iptu_anual: "",
   });
 
-  // =============== STATE PARA CONTROLE DE VISIBILIDADE DOS CAMPOS RURAIS ===============
   const [showRuralFields, setShowRuralFields] = useState({
-    // Agricultura
     area_total_hectares: false,
     area_agricultavel_hectares: false,
     area_preservacao_hectares: false,
@@ -496,8 +448,6 @@ const CadastrarImovel = () => {
     plantacao_fruticultura: false,
     tipo_cultura: false,
     sistemas_irrigacao: false,
-
-    // Pecuária
     tipo_pecuaria: false,
     numero_cabecas: false,
     racas_gado: false,
@@ -508,26 +458,20 @@ const CadastrarImovel = () => {
     tem_cerca_eletrificada: false,
     tem_sala_ordenha: false,
     tipo_confinamento: false,
-
-    // Recursos Hídricos
     tem_agude: false,
     tem_represa: false,
     tem_cacimba: false,
     tem_poco_artesiano: false,
     tem_riacho: false,
     fontes_agua: false,
-
-    // Outros
     tem_extrativismo: false,
     tipo_extrativismo: false,
     tem_ecoturismo: false,
     atividades_complementares: false,
   });
 
-  // =============== STATE PARA IDENTIFICAR SE É IMÓVEL RURAL ===============
   const [isRural, setIsRural] = useState(false);
 
-  // =============== EFFECT PARA GERAR CÓDIGO QUANDO TIPO MUDAR ===============
   useEffect(() => {
     const atualizarCodigo = async () => {
       if (formData.tipo) {
@@ -544,7 +488,6 @@ const CadastrarImovel = () => {
     atualizarCodigo();
   }, [formData.tipo]);
 
-  // =============== EFFECT PARA CONTROLAR VISIBILIDADE DOS CAMPOS RURAIS ===============
   useEffect(() => {
     const tipo = formData.tipo;
     const tiposRuraisCompletos = ["fazenda", "chacara", "sitio"];
@@ -555,9 +498,7 @@ const CadastrarImovel = () => {
     setIsRural(rural);
 
     if (tiposRuraisCompletos.includes(tipo)) {
-      // FAZENDA, CHÁCARA, SÍTIO - Mostrar TODOS os campos rurais
       setShowRuralFields({
-        // Agricultura
         area_total_hectares: true,
         area_agricultavel_hectares: true,
         area_preservacao_hectares: true,
@@ -569,8 +510,6 @@ const CadastrarImovel = () => {
         plantacao_fruticultura: true,
         tipo_cultura: true,
         sistemas_irrigacao: true,
-
-        // Pecuária
         tipo_pecuaria: true,
         numero_cabecas: true,
         racas_gado: true,
@@ -581,23 +520,18 @@ const CadastrarImovel = () => {
         tem_cerca_eletrificada: true,
         tem_sala_ordenha: true,
         tipo_confinamento: true,
-
-        // Recursos Hídricos
         tem_agude: true,
         tem_represa: true,
         tem_cacimba: true,
         tem_poco_artesiano: true,
         tem_riacho: true,
         fontes_agua: true,
-
-        // Outros
         tem_extrativismo: true,
         tipo_extrativismo: true,
         tem_ecoturismo: true,
         atividades_complementares: true,
       });
     } else if (tiposRuraisBasicos.includes(tipo)) {
-      // TERRENO - mostrar apenas campos básicos
       setShowRuralFields({
         area_total_hectares: true,
         area_agricultavel_hectares: false,
@@ -632,7 +566,6 @@ const CadastrarImovel = () => {
         atividades_complementares: false,
       });
     } else {
-      // URBANO - esconder TODOS os campos rurais
       setShowRuralFields({
         area_total_hectares: false,
         area_agricultavel_hectares: false,
@@ -669,7 +602,6 @@ const CadastrarImovel = () => {
     }
   }, [formData.tipo]);
 
-  // =============== CONTROLE DOS ACCORDIONS ===============
   const [accordionOpen, setAccordionOpen] = useState({
     caracteristicas: false,
     acabamentos: false,
@@ -681,11 +613,9 @@ const CadastrarImovel = () => {
     diferenciais: false,
   });
 
-  // =============== ESTADOS DE CARREGAMENTO ===============
   const [cepLoading, setCepLoading] = useState(false);
   const [cepError, setCepError] = useState("");
 
-  // =============== OPÇÕES PARA SELECTS ===============
   const tiposImovel = [
     { value: "apartamento", label: "Apartamento" },
     { value: "casa", label: "Casa" },
@@ -779,6 +709,7 @@ const CadastrarImovel = () => {
     { value: "fossa_septica", label: "Fossa Séptica" },
     { value: "fossa_filtro", label: "Fossa e Filtro" },
     { value: "sumidouro", label: "Sumidouro" },
+    { value: "fossa_ecologica", label: "Fossa Ecológica/Biodigestor" },
     { value: "inexistente", label: "Inexistente" },
   ];
 
@@ -797,7 +728,6 @@ const CadastrarImovel = () => {
     { value: "sul", label: "Sul" },
   ];
 
-  // Dados de exemplo
   const proprietarios = [
     { id: "1", nome: "Maria Silva" },
     { id: "2", nome: "João Santos" },
@@ -810,7 +740,6 @@ const CadastrarImovel = () => {
     { id: "103", nome: "Roberto Lima" },
   ];
 
-  // =============== FUNÇÕES DE BUSCA CEP ===============
   const buscarCep = async (cep) => {
     const cepLimpo = cep.replace(/\D/g, "");
     if (cepLimpo.length !== 8) {
@@ -855,7 +784,6 @@ const CadastrarImovel = () => {
     }
   };
 
-  // =============== HANDLERS ===============
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     if (name.includes(".")) {
@@ -882,7 +810,6 @@ const CadastrarImovel = () => {
     }));
   };
 
-  // =============== FUNÇÃO PARA FORMATAR PREÇO ===============
   const formatPrice = (price) => {
     if (!price) return "";
     return Number(price).toLocaleString("pt-BR", {
@@ -891,22 +818,19 @@ const CadastrarImovel = () => {
     });
   };
 
-  // =============== SUBMIT CORRIGIDO (COM SLUG GERADO AUTOMATICAMENTE) ===============
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setSubmitMessage({ type: "", text: "" });
 
-    // 🔥 GERA O SLUG HÍBRIDO AUTOMATICAMENTE (para SEO, mas invisível para o usuário)
     const slug = gerarSlug(formData);
     console.log("🔨 Slug híbrido gerado (interno):", slug);
 
     const dadosParaSupabase = {
       visualizado: false,
-      // Campos básicos
       codigo: formData.codigo,
       titulo: formData.titulo,
-      slug: slug, // 🔥 Slug gerado automaticamente (campo interno)
+      slug: slug,
       finalidade_venda: formData.finalidade.venda,
       finalidade_aluguel: formData.finalidade.aluguel,
       tipo: formData.tipo,
@@ -918,7 +842,6 @@ const CadastrarImovel = () => {
       corretor_id: formData.corretorId || null,
       ocultar_preco: formData.ocultarPreco,
 
-      // Vínculo com empreendimento - só para urbanos
       id_edificios: isRural ? null : formData.empreendimento_id || null,
       unidade: isRural ? "" : formData.unidade || "",
       andar: isRural ? 0 : formData.andar ? parseInt(formData.andar) : 0,
@@ -926,7 +849,6 @@ const CadastrarImovel = () => {
       bloco: isRural ? "" : formData.bloco || "",
       quadra: formData.quadra || "",
 
-      // Dependências - só para urbanos
       quartos: isRural ? 0 : parseInt(formData.dependencias.dormitorios) || 0,
       suites: isRural ? 0 : parseInt(formData.dependencias.suites) || 0,
       banheiros: isRural ? 0 : parseInt(formData.dependencias.banheiros) || 0,
@@ -941,14 +863,13 @@ const CadastrarImovel = () => {
         ? 0
         : parseFloat(formData.caracteristicas.areaPrivativa) || 0,
 
-      // Custos
       condominio_mensal: isRural
         ? 0
         : parseFloat(formData.caracteristicas.condominioTaxaMensal) || 0,
       iptu_anual: parseFloat(formData.iptu_anual) || 0,
       data_disponibilidade: null,
 
-      // LOCALIZAÇÃO - CEP, endereço e número NÃO são obrigatórios para rurais
+      // LOCALIZAÇÃO - com controle de exibição
       cep: formData.cep || "",
       endereco: formData.endereco || "",
       numero: formData.numero || "",
@@ -956,14 +877,11 @@ const CadastrarImovel = () => {
       bairro: isRural ? "" : formData.bairro,
       cidade: formData.cidade || "",
       estado: formData.estado || "",
-      ocultar_numero: formData.ocultarNumero || false,
-      ocultar_endereco: formData.ocultarEndereco || false,
+      exibir_endereco_site: formData.exibirEnderecoSite || false, // NOVO CAMPO
 
-      // Descrição
       descricao: formData.descricao || "",
       observacoes: formData.observacoes || "",
 
-      // Etiquetas
       etiquetas: {
         destaqueSemana: formData.etiquetas.destaqueSemana || false,
         novoSite: formData.etiquetas.novoSite || false,
@@ -971,9 +889,7 @@ const CadastrarImovel = () => {
         financiavel: formData.etiquetas.financiável || false,
       },
 
-      // ===== CARACTERÍSTICAS (JSONB) =====
       caracteristicas: {
-        // Campos urbanos (só relevantes se não for rural)
         ...(isRural
           ? {}
           : {
@@ -1022,7 +938,6 @@ const CadastrarImovel = () => {
               aceitaPermuta: formData.caracteristicas.aceitaPermuta || false,
             }),
 
-        // 🚜 CAMPOS RURAIS
         area_total_hectares: formData.caracteristicas.area_total_hectares
           ? parseFloat(formData.caracteristicas.area_total_hectares)
           : null,
@@ -1077,7 +992,6 @@ const CadastrarImovel = () => {
           formData.caracteristicas.atividades_complementares || "",
       },
 
-      // Outros JSONBs (só para urbanos)
       infraestrutura: isRural ? {} : formData.infraestrutura || {},
       acabamentos: isRural ? {} : formData.acabamentos || {},
       area_lazer: isRural ? {} : formData.areaLazer || {},
@@ -1115,9 +1029,8 @@ const CadastrarImovel = () => {
         text: `Imóvel "${formData.titulo}" cadastrado com sucesso! Código: ${formData.codigo}`,
       });
 
-      // 🔥 REDIRECIONA PARA A ROTA CORRETA DO DASHBOARD
       setTimeout(() => {
-        navigate("/admin"); // ← USE "/admin" EM VEZ DE "/admin/dashboard"
+        navigate("/admin");
       }, 2000);
     } catch (error) {
       console.error("Erro detalhado:", error);
@@ -1140,7 +1053,6 @@ const CadastrarImovel = () => {
     }
   };
 
-  // =============== FUNÇÕES DE CORES (TEMA) ===============
   const getBgClass = () => (isDark ? "bg-gray-900" : "bg-white");
   const getBorderClass = () => (isDark ? "border-gray-700" : "border-gray-200");
   const getTextClass = () => (isDark ? "text-gray-100" : "text-gray-900");
@@ -1235,14 +1147,7 @@ const CadastrarImovel = () => {
               </div>
             </div>
             <div className="flex items-center space-x-4">
-              <div
-                className={`px-3 py-1.5 rounded-full text-sm font-medium ${getStatusColor(formData.status)}`}
-              >
-                {formData.status === "disponivel" && "Disponível"}
-                {formData.status === "reservado" && "Reservado"}
-                {formData.status === "vendido" && "Vendido"}
-                {formData.status === "alugado" && "Alugado"}
-              </div>
+              {/* Badge Financiável (se a etiqueta estiver marcada) */}
               {formData.etiquetas.financiável && (
                 <div
                   className={`px-3 py-1.5 rounded-full text-sm font-medium ${getFinanciavelColor()}`}
@@ -1255,7 +1160,7 @@ const CadastrarImovel = () => {
         </div>
       </div>
 
-      {/* Conteúdo Principal - A PARTIR DAQUI É O MESMO CÓDIGO ANTERIOR, APENAS REMOVI A SEÇÃO DE PREVIEW DO SLUG */}
+      {/* Conteúdo Principal */}
       <div className="max-w-7xl mx-auto px-4 py-6">
         <form onSubmit={handleSubmit} className="space-y-8">
           {/* ========== SEÇÃO 1: INFORMAÇÕES GERAIS ========== */}
@@ -1282,7 +1187,6 @@ const CadastrarImovel = () => {
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {/* Tipo do Imóvel */}
               <div>
                 <label
                   className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
@@ -1311,7 +1215,6 @@ const CadastrarImovel = () => {
                 </select>
               </div>
 
-              {/* Código do Imóvel */}
               <div>
                 <label
                   className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
@@ -1335,7 +1238,6 @@ const CadastrarImovel = () => {
                 </p>
               </div>
 
-              {/* Título do Anúncio */}
               <div>
                 <label
                   className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
@@ -1357,7 +1259,6 @@ const CadastrarImovel = () => {
                 />
               </div>
 
-              {/* Finalidade */}
               <div>
                 <label
                   className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
@@ -1396,7 +1297,6 @@ const CadastrarImovel = () => {
                 </div>
               </div>
 
-              {/* Preço */}
               <div>
                 <label
                   className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
@@ -1438,7 +1338,6 @@ const CadastrarImovel = () => {
                   </label>
                 </div>
 
-                {/* ✅ PREVIEW DO PREÇO FORMATADO - MANTIDO! */}
                 {formData.preco && !formData.ocultarPreco && (
                   <p
                     className={`mt-2 text-sm transition-colors ${getTextSecondaryClass()}`}
@@ -1456,7 +1355,6 @@ const CadastrarImovel = () => {
                 )}
               </div>
 
-              {/* Proprietário */}
               <div>
                 <label
                   className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
@@ -1484,7 +1382,6 @@ const CadastrarImovel = () => {
                 </select>
               </div>
 
-              {/* Corretor Responsável */}
               <div>
                 <label
                   className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
@@ -1512,7 +1409,6 @@ const CadastrarImovel = () => {
                 </select>
               </div>
 
-              {/* Status */}
               <div>
                 <label
                   className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
@@ -1541,7 +1437,6 @@ const CadastrarImovel = () => {
                 </select>
               </div>
 
-              {/* Financiável */}
               <div className="flex items-center space-x-3 pt-6">
                 <input
                   type="checkbox"
@@ -1559,7 +1454,6 @@ const CadastrarImovel = () => {
                 </label>
               </div>
 
-              {/* Em Condomínio - só para urbanos */}
               {!isRural && (
                 <div className="flex items-center space-x-3 pt-6">
                   <input
@@ -1580,7 +1474,6 @@ const CadastrarImovel = () => {
               )}
             </div>
 
-            {/* ========== BLOCO VÍNCULO COM EMPREENDIMENTO (só para urbanos) ========== */}
             {!isRural && formData.emCondominio && (
               <div
                 className={`col-span-3 mt-6 p-5 border rounded-lg transition-colors duration-200 ${
@@ -1782,7 +1675,6 @@ const CadastrarImovel = () => {
               </div>
             )}
 
-            {/* ========== SEÇÃO: CAMPOS RURAIS (SÓ APARECE SE FOR RURAL) ========== */}
             {isRural && (
               <div
                 className={`mt-6 p-5 border rounded-lg transition-colors duration-200 ${
@@ -1802,7 +1694,6 @@ const CadastrarImovel = () => {
                   </h3>
                 </div>
 
-                {/* AGRICULTURA */}
                 <div className="mb-6">
                   <h4
                     className={`text-md font-semibold mb-3 ${getTextClass()}`}
@@ -1810,7 +1701,6 @@ const CadastrarImovel = () => {
                     🌱 Agricultura
                   </h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {/* Área total em hectares */}
                     {showRuralFields.area_total_hectares && (
                       <div>
                         <label
@@ -1832,7 +1722,6 @@ const CadastrarImovel = () => {
                       </div>
                     )}
 
-                    {/* Área agricultável */}
                     {showRuralFields.area_agricultavel_hectares && (
                       <div>
                         <label
@@ -1855,7 +1744,6 @@ const CadastrarImovel = () => {
                       </div>
                     )}
 
-                    {/* Área de preservação */}
                     {showRuralFields.area_preservacao_hectares && (
                       <div>
                         <label
@@ -1878,7 +1766,6 @@ const CadastrarImovel = () => {
                       </div>
                     )}
 
-                    {/* Área de reflorestamento */}
                     {showRuralFields.area_reflorestamento_hectares && (
                       <div>
                         <label
@@ -1902,7 +1789,6 @@ const CadastrarImovel = () => {
                       </div>
                     )}
 
-                    {/* Proximidade BR */}
                     {showRuralFields.proximidade_br && (
                       <div>
                         <label
@@ -1921,7 +1807,6 @@ const CadastrarImovel = () => {
                       </div>
                     )}
 
-                    {/* Município/Distrito */}
                     {showRuralFields.municipio_distrito && (
                       <div>
                         <label
@@ -1940,7 +1825,6 @@ const CadastrarImovel = () => {
                       </div>
                     )}
 
-                    {/* Solo/Topografia */}
                     {showRuralFields.solo_topografia_rural && (
                       <div>
                         <label
@@ -1970,7 +1854,6 @@ const CadastrarImovel = () => {
                       </div>
                     )}
 
-                    {/* Tipo de Cultura */}
                     {showRuralFields.tipo_cultura && (
                       <div>
                         <label
@@ -2000,7 +1883,6 @@ const CadastrarImovel = () => {
                       </div>
                     )}
 
-                    {/* Sistemas de Irrigação */}
                     {showRuralFields.sistemas_irrigacao && (
                       <div>
                         <label
@@ -2019,7 +1901,6 @@ const CadastrarImovel = () => {
                       </div>
                     )}
 
-                    {/* Plantação/Fruticultura */}
                     {showRuralFields.plantacao_fruticultura && (
                       <div>
                         <label
@@ -2040,7 +1921,6 @@ const CadastrarImovel = () => {
                       </div>
                     )}
 
-                    {/* Benfeitorias */}
                     {showRuralFields.benfeitorias && (
                       <div>
                         <label
@@ -2061,7 +1941,6 @@ const CadastrarImovel = () => {
                   </div>
                 </div>
 
-                {/* PECUÁRIA */}
                 <div className="mb-6 pt-4 border-t">
                   <h4
                     className={`text-md font-semibold mb-3 ${getTextClass()}`}
@@ -2069,7 +1948,6 @@ const CadastrarImovel = () => {
                     🐄 Pecuária
                   </h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {/* Tipo de Pecuária */}
                     {showRuralFields.tipo_pecuaria && (
                       <div>
                         <label
@@ -2099,7 +1977,6 @@ const CadastrarImovel = () => {
                       </div>
                     )}
 
-                    {/* Número de Cabeças */}
                     {showRuralFields.numero_cabecas && (
                       <div>
                         <label
@@ -2119,7 +1996,6 @@ const CadastrarImovel = () => {
                       </div>
                     )}
 
-                    {/* Raças */}
                     {showRuralFields.racas_gado && (
                       <div>
                         <label
@@ -2138,7 +2014,6 @@ const CadastrarImovel = () => {
                       </div>
                     )}
 
-                    {/* Área de Pastagem */}
                     {showRuralFields.area_pastagem_hectares && (
                       <div>
                         <label
@@ -2161,7 +2036,6 @@ const CadastrarImovel = () => {
                       </div>
                     )}
 
-                    {/* Capacidade de Suporte */}
                     {showRuralFields.capacidade_suporte && (
                       <div>
                         <label
@@ -2180,7 +2054,6 @@ const CadastrarImovel = () => {
                       </div>
                     )}
 
-                    {/* Estruturas Pecuárias */}
                     {showRuralFields.estruturas_pecuarias && (
                       <div>
                         <label
@@ -2199,7 +2072,6 @@ const CadastrarImovel = () => {
                       </div>
                     )}
 
-                    {/* Tipo de Confinamento */}
                     {showRuralFields.tipo_confinamento && (
                       <div>
                         <label
@@ -2229,7 +2101,6 @@ const CadastrarImovel = () => {
                       </div>
                     )}
 
-                    {/* Checkboxes Pecuária */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {showRuralFields.tem_agudada && (
                         <label className="flex items-center space-x-3">
@@ -2287,7 +2158,6 @@ const CadastrarImovel = () => {
                   </div>
                 </div>
 
-                {/* RECURSOS HÍDRICOS */}
                 <div className="mb-6 pt-4 border-t">
                   <h4
                     className={`text-md font-semibold mb-3 ${getTextClass()}`}
@@ -2295,7 +2165,6 @@ const CadastrarImovel = () => {
                     💧 Recursos Hídricos
                   </h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {/* Checkboxes Recursos Hídricos */}
                     {showRuralFields.tem_agude && (
                       <label className="flex items-center space-x-3">
                         <input
@@ -2391,7 +2260,6 @@ const CadastrarImovel = () => {
                   </div>
                 </div>
 
-                {/* OUTROS RECURSOS */}
                 <div className="pt-4 border-t">
                   <h4
                     className={`text-md font-semibold mb-3 ${getTextClass()}`}
@@ -2481,7 +2349,6 @@ const CadastrarImovel = () => {
             )}
           </div>
 
-          {/* ========== NOVA SEÇÃO: DEPENDÊNCIAS DO IMÓVEL (só para urbanos) ========== */}
           {!isRural && (
             <div
               className={`rounded-xl border p-6 transition-colors duration-200 ${getBgClass()} ${getBorderClass()}`}
@@ -2506,7 +2373,6 @@ const CadastrarImovel = () => {
                 </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {/* Dormitórios */}
                 <div>
                   <label
                     className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
@@ -2561,7 +2427,6 @@ const CadastrarImovel = () => {
                     </button>
                   </div>
                 </div>
-                {/* Banheiros */}
                 <div>
                   <label
                     className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
@@ -2614,7 +2479,6 @@ const CadastrarImovel = () => {
                     </button>
                   </div>
                 </div>
-                {/* Suíte */}
                 <div>
                   <label
                     className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
@@ -2667,7 +2531,6 @@ const CadastrarImovel = () => {
                     </button>
                   </div>
                 </div>
-                {/* Vagas */}
                 <div>
                   <label
                     className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
@@ -2720,7 +2583,6 @@ const CadastrarImovel = () => {
                   </div>
                 </div>
 
-                {/* Área Total */}
                 <div>
                   <label
                     className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
@@ -2746,7 +2608,6 @@ const CadastrarImovel = () => {
                   </div>
                 </div>
 
-                {/* Área Construída */}
                 <div>
                   <label
                     className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
@@ -2775,7 +2636,7 @@ const CadastrarImovel = () => {
             </div>
           )}
 
-          {/* ========== SEÇÃO 2: LOCALIZAÇÃO APRIMORADA (COM VALIDAÇÃO CONDICIONAL) ========== */}
+          {/* ========== SEÇÃO 2: LOCALIZAÇÃO DO IMÓVEL ========== */}
           <div
             className={`rounded-xl border p-6 transition-colors duration-200 ${getBgClass()} ${getBorderClass()}`}
           >
@@ -2787,26 +2648,23 @@ const CadastrarImovel = () => {
                 <h2
                   className={`text-xl font-semibold transition-colors ${getTextClass()}`}
                 >
-                  {isRural
-                    ? "Localização (opcional)"
-                    : "Localização Aprimorada"}
+                  Localização do Imóvel
                 </h2>
                 <p
                   className={`text-sm transition-colors ${getTextSecondaryClass()}`}
                 >
-                  {isRural
-                    ? "Informações de localização não são obrigatórias para imóveis rurais"
-                    : "Endereço completo e configurações de privacidade"}
+                  Endereço para controle interno e exibição no site
                 </p>
               </div>
             </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {/* CEP - não obrigatório para rurais */}
+              {/* CEP */}
               <div>
                 <label
                   className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
                 >
-                  {isRural ? "CEP (opcional)" : "CEP *"}
+                  CEP
                 </label>
                 <div className="relative">
                   <input
@@ -2814,7 +2672,6 @@ const CadastrarImovel = () => {
                     name="cep"
                     value={formData.cep}
                     onChange={handleCepChange}
-                    required={!isRural}
                     placeholder="00000-000"
                     maxLength="9"
                     className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors duration-200 ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()} ${getPlaceholderClass()}`}
@@ -2834,66 +2691,50 @@ const CadastrarImovel = () => {
                 )}
                 {!cepError &&
                   !cepLoading &&
-                  formData.cep.replace(/\D/g, "").length === 8 &&
-                  !isRural && (
+                  formData.cep.replace(/\D/g, "").length === 8 && (
                     <p
                       className={`mt-1 text-sm ${isDark ? "text-green-400" : "text-green-600"}`}
                     >
                       CEP válido. Endereço preenchido automaticamente.
                     </p>
                   )}
-                {isRural && (
-                  <p
-                    className={`mt-1 text-xs ${isDark ? "text-gray-500" : "text-gray-500"}`}
-                  >
-                    Campo não obrigatório para imóveis rurais
-                  </p>
-                )}
               </div>
 
-              {/* Endereço - não obrigatório para rurais */}
+              {/* Endereço */}
               <div className="md:col-span-2">
                 <label
                   className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
                 >
-                  {isRural ? "Endereço/Referência (opcional)" : "Endereço *"}
+                  Endereço
                 </label>
                 <input
                   type="text"
                   name="endereco"
                   value={formData.endereco}
                   onChange={handleChange}
-                  required={!isRural}
-                  placeholder={
-                    isRural
-                      ? "Ex: Estrada vicinal, km 25"
-                      : "Ex: Rua das Flores"
-                  }
+                  placeholder="Ex: Rua das Flores"
                   className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors duration-200 ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()} ${getPlaceholderClass()}`}
                 />
               </div>
 
-              {/* Número - não obrigatório para rurais */}
+              {/* Número */}
               <div>
                 <label
                   className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
                 >
-                  {isRural ? "Número (opcional)" : "Número *"}
+                  Número
                 </label>
-                <div className="flex items-center space-x-3">
-                  <input
-                    type="text"
-                    name="numero"
-                    value={formData.numero}
-                    onChange={handleChange}
-                    required={!isRural}
-                    placeholder={isRural ? "S/N" : "123"}
-                    className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors duration-200 ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()} ${getPlaceholderClass()}`}
-                  />
-                </div>
+                <input
+                  type="text"
+                  name="numero"
+                  value={formData.numero}
+                  onChange={handleChange}
+                  placeholder="Ex: 123"
+                  className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors duration-200 ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()} ${getPlaceholderClass()}`}
+                />
               </div>
 
-              {/* Complemento - opcional para todos */}
+              {/* Complemento */}
               <div>
                 <label
                   className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
@@ -2905,34 +2746,30 @@ const CadastrarImovel = () => {
                   name="complemento"
                   value={formData.complemento}
                   onChange={handleChange}
-                  placeholder={
-                    isRural ? "Ex: Fazenda Boa Vista" : "Ex: Apto 101, Bloco B"
-                  }
+                  placeholder="Ex: Apto 101, Bloco B"
                   className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors duration-200 ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()} ${getPlaceholderClass()}`}
                 />
               </div>
 
-              {/* Bairro - visível apenas para urbanos */}
-              {!isRural && (
-                <div>
-                  <label
-                    className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
-                  >
-                    Bairro *
-                  </label>
-                  <input
-                    type="text"
-                    name="bairro"
-                    value={formData.bairro}
-                    onChange={handleChange}
-                    required
-                    placeholder="Ex: Centro"
-                    className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors duration-200 ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()} ${getPlaceholderClass()}`}
-                  />
-                </div>
-              )}
+              {/* Bairro */}
+              <div>
+                <label
+                  className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
+                >
+                  Bairro *
+                </label>
+                <input
+                  type="text"
+                  name="bairro"
+                  value={formData.bairro}
+                  onChange={handleChange}
+                  required
+                  placeholder="Ex: Centro"
+                  className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors duration-200 ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()} ${getPlaceholderClass()}`}
+                />
+              </div>
 
-              {/* Cidade - obrigatório para todos */}
+              {/* Cidade */}
               <div>
                 <label
                   className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
@@ -2945,12 +2782,12 @@ const CadastrarImovel = () => {
                   value={formData.cidade}
                   onChange={handleChange}
                   required
-                  placeholder="Ex: São Paulo"
+                  placeholder="Ex: Açailândia"
                   className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors duration-200 ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()} ${getPlaceholderClass()}`}
                 />
               </div>
 
-              {/* Estado - obrigatório para todos */}
+              {/* Estado */}
               <div>
                 <label
                   className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
@@ -2979,103 +2816,56 @@ const CadastrarImovel = () => {
                 </select>
               </div>
 
-              {/* Privacidade - apenas para urbanos */}
-              {!isRural && (
-                <div className="md:col-span-3 space-y-4 p-4 border rounded-lg">
-                  <h3
-                    className={`font-medium transition-colors ${getTextClass()}`}
-                  >
-                    Configurações de Privacidade
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <label className="flex items-center space-x-3">
-                      <input
-                        type="checkbox"
-                        name="ocultarNumero"
-                        checked={formData.ocultarNumero}
-                        onChange={handleChange}
-                        className={getCheckboxClass()}
-                      />
-                      <div>
-                        <div
-                          className={`font-medium transition-colors ${getTextClass()}`}
-                        >
-                          Ocultar número na vitrine
-                        </div>
-                        <div
-                          className={`text-sm transition-colors ${getTextSecondaryClass()}`}
-                        >
-                          Só exibe o endereço sem número
-                        </div>
-                      </div>
-                    </label>
-                    <label className="flex items-center space-x-3">
-                      <input
-                        type="checkbox"
-                        name="ocultarEndereco"
-                        checked={formData.ocultarEndereco}
-                        onChange={handleChange}
-                        className={getCheckboxClass()}
-                      />
-                      <div>
-                        <div
-                          className={`font-medium transition-colors ${getTextClass()}`}
-                        >
-                          Ocultar endereço completo
-                        </div>
-                        <div
-                          className={`text-sm transition-colors ${getTextSecondaryClass()}`}
-                        >
-                          Só exibe bairro e cidade
-                        </div>
-                      </div>
-                    </label>
+              {/* CHECKBOX ÚNICO - MOSTRAR ENDEREÇO NO SITE */}
+              <div className="md:col-span-3">
+                <label className="flex items-center space-x-3 p-4 border rounded-lg cursor-pointer transition-all duration-200 hover:border-[#D4A24D]">
+                  <input
+                    type="checkbox"
+                    name="exibirEnderecoSite"
+                    checked={formData.exibirEnderecoSite}
+                    onChange={handleChange}
+                    className={getCheckboxClass()}
+                  />
+                  <div>
+                    <div className={`font-medium ${getTextClass()}`}>
+                      🌐 Mostrar endereço completo no site
+                    </div>
+                    <div className={`text-sm ${getTextSecondaryClass()}`}>
+                      Se marcado, o endereço (Rua, Número) aparecerá na página
+                      pública do imóvel. Se desmarcado, fica visível apenas
+                      internamente.
+                    </div>
                   </div>
-                  <div
-                    className={`mt-4 p-3 rounded-lg ${isDark ? "bg-gray-800" : "bg-gray-50"}`}
-                  >
-                    <h4
-                      className={`text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
-                    >
-                      Como será exibido na vitrine:
-                    </h4>
-                    <p
-                      className={`text-sm transition-colors ${getTextClass()}`}
-                    >
-                      {formData.ocultarEndereco
-                        ? `${formData.bairro || "Bairro"}, ${formData.cidade || "Cidade"}`
-                        : `${formData.endereco || "Endereço"}${!formData.ocultarNumero && formData.numero ? `, ${formData.numero}` : ""}, ${formData.bairro || "Bairro"}`}
-                    </p>
-                  </div>
-                </div>
-              )}
+                </label>
+              </div>
             </div>
           </div>
 
-          {/* ========== SEÇÃO 3: ETIQUETAS ========== */}
+          {/* ========== SEÇÃO: EXIBIR NA VITRINE ========== */}
           <div
-            className={`rounded-xl border p-6 transition-colors duration-200 ${getBgClass()} ${getBorderClass()}`}
+            className={`rounded-xl border p-6 mt-6 ${getBgClass()} ${getBorderClass()}`}
           >
             <div className="flex items-center space-x-3 mb-6">
-              <div className={`p-2 rounded-lg ${getIconBgClass()}`}>
-                <TagIcon className={`w-6 h-6 ${getIconColorClass()}`} />
+              <div
+                className={`p-2 rounded-lg bg-gradient-to-r from-[#D4A24D] to-yellow-500`}
+              >
+                <SparklesIcon className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h2
-                  className={`text-xl font-semibold transition-colors ${getTextClass()}`}
-                >
-                  Etiquetas do Imóvel
+                <h2 className={`text-xl font-semibold ${getTextClass()}`}>
+                  ✨ Exibir na Vitrine
                 </h2>
-                <p
-                  className={`text-sm transition-colors ${getTextSecondaryClass()}`}
-                >
-                  Configure as etiquetas que aparecerão na vitrine da homepage
+                <p className={`text-sm ${getTextSecondaryClass()}`}>
+                  Dê destaque especial ao seu imóvel na página principal
                 </p>
               </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+
+            {/* Badges de destaque */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* Destaque da Semana */}
               <label
-                className={`flex items-center space-x-3 p-4 border rounded-lg transition-all duration-200 cursor-pointer ${getBorderClass()} ${getHoverBgClass()} ${isDark ? "hover:border-[#D4A24D]/50" : "hover:border-[#D4A24D]"}`}
+                className={`flex items-start space-x-3 p-4 border rounded-lg cursor-pointer transition-all duration-300 group hover:shadow-lg ${getBorderClass()} ${getHoverBgClass()}`}
               >
                 <input
                   type="checkbox"
@@ -3086,19 +2876,19 @@ const CadastrarImovel = () => {
                 />
                 <div>
                   <div
-                    className={`font-medium transition-colors ${getTextClass()}`}
+                    className={`font-medium flex items-center gap-1 group-hover:text-[#D4A24D] ${getTextClass()}`}
                   >
-                    Destaque da Semana
+                    ⭐ Destaque da Semana
                   </div>
-                  <div
-                    className={`text-sm transition-colors ${getTextSecondaryClass()}`}
-                  >
-                    Exibir na seção de destaques
+                  <div className={`text-xs ${getTextSecondaryClass()}`}>
+                    Aparece como badge dourado na vitrine
                   </div>
                 </div>
               </label>
+
+              {/* Novo no Site */}
               <label
-                className={`flex items-center space-x-3 p-4 border rounded-lg transition-all duration-200 cursor-pointer ${getBorderClass()} ${getHoverBgClass()} ${isDark ? "hover:border-[#D4A24D]/50" : "hover:border-[#D4A24D]"}`}
+                className={`flex items-start space-x-3 p-4 border rounded-lg cursor-pointer transition-all duration-300 group hover:shadow-lg ${getBorderClass()} ${getHoverBgClass()}`}
               >
                 <input
                   type="checkbox"
@@ -3109,19 +2899,19 @@ const CadastrarImovel = () => {
                 />
                 <div>
                   <div
-                    className={`font-medium transition-colors ${getTextClass()}`}
+                    className={`font-medium flex items-center gap-1 group-hover:text-[#D4A24D] ${getTextClass()}`}
                   >
-                    Novo no Site
+                    🆕 Novo no Site
                   </div>
-                  <div
-                    className={`text-sm transition-colors ${getTextSecondaryClass()}`}
-                  >
-                    Recém cadastrado
+                  <div className={`text-xs ${getTextSecondaryClass()}`}>
+                    Badge azul para imóveis recentes
                   </div>
                 </div>
               </label>
+
+              {/* Baixou o Preço */}
               <label
-                className={`flex items-center space-x-3 p-4 border rounded-lg transition-all duration-200 cursor-pointer ${getBorderClass()} ${getHoverBgClass()} ${isDark ? "hover:border-[#D4A24D]/50" : "hover:border-[#D4A24D]"}`}
+                className={`flex items-start space-x-3 p-4 border rounded-lg cursor-pointer transition-all duration-300 group hover:shadow-lg ${getBorderClass()} ${getHoverBgClass()}`}
               >
                 <input
                   type="checkbox"
@@ -3132,19 +2922,19 @@ const CadastrarImovel = () => {
                 />
                 <div>
                   <div
-                    className={`font-medium transition-colors ${getTextClass()}`}
+                    className={`font-medium flex items-center gap-1 group-hover:text-[#D4A24D] ${getTextClass()}`}
                   >
-                    Baixou o Preço
+                    📉 Baixou o Preço
                   </div>
-                  <div
-                    className={`text-sm transition-colors ${getTextSecondaryClass()}`}
-                  >
-                    Redução recente no valor
+                  <div className={`text-xs ${getTextSecondaryClass()}`}>
+                    Badge verde indicando redução
                   </div>
                 </div>
               </label>
+
+              {/* Financiável */}
               <label
-                className={`flex items-center space-x-3 p-4 border rounded-lg transition-all duration-200 cursor-pointer ${getBorderClass()} ${getHoverBgClass()} ${isDark ? "hover:border-[#D4A24D]/50" : "hover:border-[#D4A24D]"}`}
+                className={`flex items-start space-x-3 p-4 border rounded-lg cursor-pointer transition-all duration-300 group hover:shadow-lg ${getBorderClass()} ${getHoverBgClass()}`}
               >
                 <input
                   type="checkbox"
@@ -3155,21 +2945,71 @@ const CadastrarImovel = () => {
                 />
                 <div>
                   <div
-                    className={`font-medium transition-colors ${getTextClass()}`}
+                    className={`font-medium flex items-center gap-1 group-hover:text-[#D4A24D] ${getTextClass()}`}
                   >
-                    Financiável
+                    💰 Financiável
                   </div>
-                  <div
-                    className={`text-sm transition-colors ${getTextSecondaryClass()}`}
-                  >
-                    Exibir badge financiável
+                  <div className={`text-xs ${getTextSecondaryClass()}`}>
+                    Badge roxo para imóveis com financiamento
                   </div>
                 </div>
               </label>
             </div>
+
+            {/* Preview da Vitrine */}
+            <div
+              className={`mt-6 p-4 rounded-lg ${isDark ? "bg-gray-800" : "bg-gray-50"}`}
+            >
+              <h4
+                className={`text-sm font-medium mb-3 ${getTextSecondaryClass()}`}
+              >
+                Preview da Vitrine:
+              </h4>
+
+              <div className="bg-white rounded-lg shadow-sm p-4 border">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <h3 className="text-lg font-semibold text-gray-800">
+                    {formData.titulo || "Título do Imóvel"}
+                  </h3>
+                  <div className="flex gap-1 flex-wrap">
+                    {formData.etiquetas.destaqueSemana && (
+                      <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded text-xs font-medium flex items-center gap-1">
+                        ⭐ Destaque
+                      </span>
+                    )}
+                    {formData.etiquetas.novoSite && (
+                      <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs font-medium flex items-center gap-1">
+                        🆕 Novo
+                      </span>
+                    )}
+                    {formData.etiquetas.baixouPreco && (
+                      <span className="px-2 py-1 bg-green-100 text-green-800 rounded text-xs font-medium flex items-center gap-1">
+                        📉 Baixou
+                      </span>
+                    )}
+                    {formData.etiquetas.financiável && (
+                      <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded text-xs font-medium flex items-center gap-1">
+                        💰 Financiável
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-center text-sm text-gray-500 mt-2">
+                  <MapPinIcon className="w-4 h-4 mr-1 text-[#D4A24D]" />
+                  <span>
+                    {formData.bairro || "Bairro"}, {formData.cidade || "Cidade"}
+                    /{formData.estado || "UF"}
+                  </span>
+                </div>
+              </div>
+              <p className={`text-xs mt-3 ${getTextSecondaryClass()}`}>
+                ℹ️ Na vitrine, sempre mostramos: Título + Badges + Bairro,
+                Cidade/UF
+              </p>
+            </div>
           </div>
 
-          {/* ========== SEÇÃO 4: CUSTOS ADICIONAIS ========== */}
+          {/* ========== SEÇÃO: CUSTOS ADICIONAIS ========== */}
           <div
             className={`rounded-xl border p-6 transition-colors duration-200 ${getBgClass()} ${getBorderClass()}`}
           >
@@ -3191,7 +3031,6 @@ const CadastrarImovel = () => {
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {/* IPTU Anual */}
               <div>
                 <label
                   className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
@@ -3394,7 +3233,6 @@ const CadastrarImovel = () => {
                           </div>
                         </div>
 
-                        {/* Se for lote */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
                           <div>
                             <label

@@ -63,7 +63,7 @@ const Login = () => {
               <BuildingOfficeIcon className="w-6 h-6 text-white" />
             </div>
           </div>
-          <h1 className="text-2xl font-bold text-white">Imobi Admin</h1>
+          <h1 className="text-2xl font-bold text-white">Imobi XOU</h1>
           <p className="text-gray-200 mt-0.5 text-center text-xs">
             Área administrativa da imobiliária
           </p>
@@ -194,7 +194,7 @@ const Login = () => {
 
         {/* Footer */}
         <div className="mt-5 text-center text-xs text-gray-300">
-          <p>© {new Date().getFullYear()} Imobi Admin</p>
+          <p>© {new Date().getFullYear()} Imobi XOU</p>
         </div>
       </div>
     </div>

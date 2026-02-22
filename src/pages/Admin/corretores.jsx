@@ -1,20 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
 // Ícones outline (vazados) do Heroicons
-// Ícones do react-icons/io5
-import {
-  IoHeartOutline,
-  IoNuclearOutline,
-  IoBarChartOutline,
-  IoTimeOutline,
-  IoCarOutline,
-  IoBriefcaseOutline,
-  IoChatbubbleOutline,
-  IoScaleOutline,
-  IoPeopleOutline,
-  IoRocketOutline,
-} from "react-icons/io5";
-
-// Ícones outline (vazados) do Heroicons
 import {
   PlusIcon,
   EnvelopeIcon,
@@ -46,9 +31,10 @@ import {
   ArchiveBoxIcon,
   BriefcaseIcon,
   RocketLaunchIcon,
+  InformationCircleIcon,
 } from "@heroicons/react/24/outline";
 
-// Ícones solid (preenchidos) do Heroicons
+// 🟢 Ícones solid (preenchidos) do Heroicons - ADICIONE ISSO!
 import {
   StarIcon as StarIconSolid,
   CheckCircleIcon as CheckCircleIconSolid,
@@ -687,9 +673,22 @@ const ModalPerfilCorretor = ({
     return "2 meses e 5 dias";
   };
 
-  const formatarDataBR = (data) => {
-    if (!data) return "Não informada";
-    return data.toLocaleDateString("pt-BR");
+  const formatarData = (dataString) => {
+    if (!dataString) return "Não informada";
+
+    if (typeof dataString === "string") {
+      const parteData = dataString.split("T")[0];
+      if (parteData.includes("-")) {
+        const [ano, mes, dia] = parteData.split("-");
+        return `${dia}/${mes}/${ano}`;
+      }
+    }
+
+    try {
+      return new Date(dataString).toLocaleDateString("pt-BR");
+    } catch {
+      return "Não informada";
+    }
   };
 
   // ===========================================
@@ -1085,7 +1084,7 @@ const ModalPerfilCorretor = ({
                       <div>
                         <span className="text-xs text-gray-500">início</span>
                         <p className="text-sm font-medium">
-                          {formatarDataBR(dataInicio)}
+                          {formatarData(dataInicio)}
                         </p>
                       </div>
                       <div>
@@ -1093,7 +1092,7 @@ const ModalPerfilCorretor = ({
                           término previsto
                         </span>
                         <p className="text-sm font-medium">
-                          {formatarDataBR(dataFim)}
+                          {formatarData(dataFim)}
                         </p>
                       </div>
                     </div>
@@ -1105,8 +1104,8 @@ const ModalPerfilCorretor = ({
                           <CheckCircleIcon className="w-4 h-4 text-green-600 dark:text-green-400" />
                           <span className="text-xs text-green-700 dark:text-green-300">
                             {ativacaoAntecipada
-                              ? `✅ Ativado antecipadamente em ${formatarDataBR(dataAtivacao)} (${diasPassados}/${diasTotais} dias)`
-                              : `✅ Ativado em ${formatarDataBR(dataAtivacao)}`}
+                              ? `✅ Ativado antecipadamente em ${formatarData(dataAtivacao)} (${diasPassados}/${diasTotais} dias)`
+                              : `✅ Ativado em ${formatarData(dataAtivacao)}`}
                           </span>
                         </div>
                       </div>
@@ -1377,7 +1376,7 @@ const ModalPerfilCorretor = ({
                   </div>
                 </div>
 
-                {/* ALERTAS */}
+                {/* ALERTAS - CRECI */}
                 <div>
                   <h3
                     className={`text-sm font-medium uppercase tracking-wider mb-4 flex items-center gap-2 ${
@@ -1387,19 +1386,147 @@ const ModalPerfilCorretor = ({
                     <ExclamationCircleIcon className="w-4 h-4" />
                     ALERTAS
                   </h3>
-                  <div className="p-4 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/10">
-                    <div className="flex items-start gap-3">
-                      <ExclamationCircleIcon className="w-5 h-5 text-red-500 flex-shrink-0" />
-                      <div>
-                        <p className="text-sm font-medium text-red-700 dark:text-red-400">
-                          CRECI próximo do vencimento
-                        </p>
-                        <p className="text-xs text-red-600 dark:text-red-500 mt-1">
-                          Vence em 30 dias
-                        </p>
+
+                  {corretor.creci_validade ? (
+                    (() => {
+                      const diasParaVencer = calcularDiasParaVencimento(
+                        corretor.creci_validade,
+                      );
+
+                      // Se está perto de vencer (30 dias ou menos) OU já venceu
+                      if (diasParaVencer !== null && diasParaVencer <= 30) {
+                        return (
+                          <div
+                            className={`p-4 rounded-lg border ${
+                              isDark
+                                ? diasParaVencer < 0
+                                  ? "bg-red-900/30 border-red-800"
+                                  : "bg-amber-900/20 border-amber-800"
+                                : diasParaVencer < 0
+                                  ? "bg-red-50 border-red-200"
+                                  : "bg-amber-50 border-amber-200"
+                            }`}
+                          >
+                            <div className="flex items-start gap-3">
+                              <ExclamationCircleIcon
+                                className={`w-5 h-5 flex-shrink-0 ${
+                                  isDark
+                                    ? diasParaVencer < 0
+                                      ? "text-red-400"
+                                      : "text-amber-400"
+                                    : diasParaVencer < 0
+                                      ? "text-red-600"
+                                      : "text-amber-600"
+                                }`}
+                              />
+                              <div>
+                                <p
+                                  className={`text-sm font-medium ${
+                                    isDark
+                                      ? diasParaVencer < 0
+                                        ? "text-red-300"
+                                        : "text-amber-300"
+                                      : diasParaVencer < 0
+                                        ? "text-red-800"
+                                        : "text-amber-800"
+                                  }`}
+                                >
+                                  {diasParaVencer < 0
+                                    ? "🚨 CRECI VENCIDO!"
+                                    : "⚠️ CRECI próximo do vencimento"}
+                                </p>
+                                <p
+                                  className={`text-xs mt-1 ${
+                                    isDark
+                                      ? diasParaVencer < 0
+                                        ? "text-red-400"
+                                        : "text-amber-400"
+                                      : diasParaVencer < 0
+                                        ? "text-red-600"
+                                        : "text-amber-600"
+                                  }`}
+                                >
+                                  {diasParaVencer < 0
+                                    ? `Vencido há ${Math.abs(diasParaVencer)} ${Math.abs(diasParaVencer) === 1 ? "dia" : "dias"}`
+                                    : diasParaVencer === 0
+                                      ? "Vence HOJE!"
+                                      : `Vence em ${diasParaVencer} ${diasParaVencer === 1 ? "dia" : "dias"}`}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      } else {
+                        // Se está regular (mais de 30 dias)
+                        return (
+                          <div
+                            className={`p-4 rounded-lg border ${
+                              isDark
+                                ? "bg-green-900/10 border-green-800"
+                                : "bg-green-50 border-green-200"
+                            }`}
+                          >
+                            <div className="flex items-start gap-3">
+                              <CheckCircleIcon
+                                className={`w-5 h-5 flex-shrink-0 ${
+                                  isDark ? "text-green-400" : "text-green-600"
+                                }`}
+                              />
+                              <div>
+                                <p
+                                  className={`text-sm font-medium ${
+                                    isDark ? "text-green-300" : "text-green-800"
+                                  }`}
+                                >
+                                  ✅ CRECI regular
+                                </p>
+                                <p
+                                  className={`text-xs mt-1 ${
+                                    isDark ? "text-green-400" : "text-green-600"
+                                  }`}
+                                >
+                                  Válido por mais de 30 dias
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      }
+                    })()
+                  ) : (
+                    // Se não tem data de validade cadastrada
+                    <div
+                      className={`p-4 rounded-lg border ${
+                        isDark
+                          ? "bg-gray-800 border-gray-700"
+                          : "bg-gray-50 border-gray-200"
+                      }`}
+                    >
+                      <div className="flex items-start gap-3">
+                        <InformationCircleIcon
+                          className={`w-5 h-5 flex-shrink-0 ${
+                            isDark ? "text-gray-400" : "text-gray-500"
+                          }`}
+                        />
+                        <div>
+                          <p
+                            className={`text-sm font-medium ${
+                              isDark ? "text-gray-300" : "text-gray-700"
+                            }`}
+                          >
+                            Data de validade não cadastrada
+                          </p>
+                          <p
+                            className={`text-xs mt-1 ${
+                              isDark ? "text-gray-400" : "text-gray-500"
+                            }`}
+                          >
+                            Adicione a validade do CRECI
+                          </p>
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  )}
                 </div>
 
                 {/* OBSERVAÇÕES */}
@@ -2943,7 +3070,7 @@ const FeedbackCompacto = ({ candidato, isDark }) => {
           <span
             className={`text-xs ${isDark ? "text-gray-500" : "text-gray-500"}`}
           >
-            {new Date(candidato.feedback_data).toLocaleDateString("pt-BR")}
+            {formatarData(candidato.feedback_data)} {/* ← CORRIGIDO! */}
           </span>
         )}
       </div>
@@ -3027,10 +3154,18 @@ const calcularProgressoExperiencia = (corretor) => {
 
 const formatarData = (dataString) => {
   if (!dataString) return "";
-  if (typeof dataString === "string" && dataString.includes("-")) {
-    const [ano, mes, dia] = dataString.split("-");
-    return `${dia}/${mes}/${ano}`;
+
+  // Se for string, extrai apenas a parte da data (YYYY-MM-DD)
+  if (typeof dataString === "string") {
+    // Pega só a parte antes do T (se houver)
+    const parteData = dataString.split("T")[0];
+    if (parteData.includes("-")) {
+      const [ano, mes, dia] = parteData.split("-");
+      return `${dia}/${mes}/${ano}`;
+    }
   }
+
+  // Fallback para outros formatos
   return new Date(dataString).toLocaleDateString("pt-BR");
 };
 
@@ -3861,11 +3996,13 @@ const Corretores = () => {
         .from("corretores")
         .select(
           `
-        *,
-        creci_desde,
-        experiencia_anos,
-        formacao
-      `,
+    *,
+    creci_desde,
+    experiencia_anos,
+    formacao,
+    feedback_data,
+    creci_validade
+    `, // ← SEM COMENTÁRIO!
         )
         .order("created_at", { ascending: false });
 
@@ -3873,7 +4010,6 @@ const Corretores = () => {
 
       console.log("🔥 DADOS CARREGADOS:", data);
 
-      // ✅ DEFINIR dadosProcessados AQUI!
       const dadosProcessados = data || [];
 
       const pendentes = dadosProcessados.filter((c) => c.etapa === "pendentes");
@@ -3893,6 +4029,20 @@ const Corretores = () => {
         (c) => c.treinamento_status === "arquivado",
       );
 
+      console.log("🔍 CANDIDATOS EM ENTREVISTA:", entrevista);
+      console.log("🔍 PRIMEIRO CANDIDATO EM ENTREVISTA:", entrevista[0]);
+
+      if (entrevista[0]?.feedback_data) {
+        console.log(
+          "📅 feedback_data do primeiro candidato:",
+          entrevista[0].feedback_data,
+        );
+        console.log(
+          "📅 feedback_data formatado:",
+          formatarData(entrevista[0].feedback_data),
+        );
+      }
+
       setCandidatosPorEtapa({
         pendentes,
         entrevista,
@@ -3902,7 +4052,7 @@ const Corretores = () => {
         inativos,
         arquivados,
       });
-      // 🚨 LOG DO PRIMEIRO CANDIDATO EM TREINAMENTO
+
       console.log("🔍 PRIMEIRO CANDIDATO EM TREINAMENTO:", treinamento[0]);
       console.log("🔍 campos novos:", {
         creci_desde: treinamento[0]?.creci_desde,
@@ -3916,6 +4066,7 @@ const Corretores = () => {
       setLoading(false);
     }
   };
+
   // -----------------------------------------
   // 3. FUNÇÕES AUXILIARES
   // -----------------------------------------
@@ -3926,7 +4077,6 @@ const Corretores = () => {
     return Math.round((concluidos / totalModulos) * 100);
   };
 
-  // 🔥 NOVAS FUNÇÕES (COLOQUE AQUI!)
   const calcularDiasRestantes = (dataFim) => {
     if (!dataFim) return 0;
     const fim = new Date(dataFim);
@@ -3935,61 +4085,93 @@ const Corretores = () => {
     return diff > 0 ? diff : 0;
   };
 
+  const calcularDiasPassados = (dataInicio) => {
+    if (!dataInicio) return 0;
+    const inicio = new Date(dataInicio);
+    const hoje = new Date();
+    const diff = Math.ceil((hoje - inicio) / (1000 * 60 * 60 * 24));
+    return diff > 0 ? diff : 0;
+  };
+
   const calcularProgressoExperiencia = (corretor) => {
     if (!corretor.treinamento_conclusao || !corretor.data_experiencia_fim)
       return 0;
-
     const inicio = new Date(corretor.treinamento_conclusao);
     const fim = new Date(corretor.data_experiencia_fim);
     const hoje = new Date();
-
     const total = Math.ceil((fim - inicio) / (1000 * 60 * 60 * 24));
     const passado = Math.ceil((hoje - inicio) / (1000 * 60 * 60 * 24));
-
     const progresso = Math.min(100, Math.max(0, (passado / total) * 100));
     return Math.round(progresso);
   };
 
+  const calcularDiasParaVencimento = (dataValidade) => {
+    if (!dataValidade) return null;
+
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
+
+    const vencimento = new Date(dataValidade);
+    vencimento.setHours(0, 0, 0, 0);
+
+    const diff = Math.ceil((vencimento - hoje) / (1000 * 60 * 60 * 24));
+    return diff;
+  };
+
   const formatarData = (dataString) => {
-    if (!dataString) return "";
-    const data = new Date(dataString);
-    return data.toLocaleDateString("pt-BR");
+    if (!dataString) return "Não informada";
+
+    if (typeof dataString === "string") {
+      const parteData = dataString.split("T")[0];
+      if (parteData.includes("-")) {
+        const [ano, mes, dia] = parteData.split("-");
+        return `${dia}/${mes}/${ano}`;
+      }
+    }
+
+    try {
+      return new Date(dataString).toLocaleDateString("pt-BR");
+    } catch {
+      return "Não informada";
+    }
   };
 
   const formatarNumeroWhatsApp = (telefone) => {
+    if (!telefone || typeof telefone !== "string") return "";
+
     const numeroLimpo = telefone.replace(/\D/g, "");
     return numeroLimpo.startsWith("55") ? numeroLimpo : `55${numeroLimpo}`;
   };
 
   const criarLinkWhatsApp = (telefone, nome) => {
+    if (!telefone || !nome) return "#";
+
     const numero = formatarNumeroWhatsApp(telefone);
+    if (!numero) return "#";
+
     const mensagem = `Olá ${nome}, tudo bem?`;
     return `https://wa.me/${numero}?text=${encodeURIComponent(mensagem)}`;
   };
 
   const formatarDataParaExibicao = (dataString) => {
-    // Criar datas sem considerar horário (zerar horas)
     const hoje = new Date();
     hoje.setHours(0, 0, 0, 0);
 
     const amanha = new Date(hoje);
     amanha.setDate(amanha.getDate() + 1);
 
-    // IMPORTANTE: Converter a data string para Date sem timezone
     let dataEntrevista;
     let horaOriginal = "";
 
     if (typeof dataString === "string" && dataString.includes("-")) {
-      // Formato YYYY-MM-DD
       const [ano, mes, dia] = dataString.split("-").map(Number);
       dataEntrevista = new Date(ano, mes - 1, dia);
     } else {
-      // Tentar extrair hora se vier junto
       const partes = dataString.split(" ");
       if (partes.length > 1) {
         const [ano, mes, dia] = partes[0].split("-").map(Number);
         dataEntrevista = new Date(ano, mes - 1, dia);
-        horaOriginal = partes[1]; // Preserva a hora original
+        horaOriginal = partes[1];
       } else {
         dataEntrevista = new Date(dataString);
       }
@@ -4000,7 +4182,6 @@ const Corretores = () => {
     const mes = (dataEntrevista.getMonth() + 1).toString().padStart(2, "0");
     const ano = dataEntrevista.getFullYear();
 
-    // Determinar o texto da data
     let textoData;
     if (dataEntrevista.getTime() === hoje.getTime()) {
       textoData = "Hoje";
@@ -4010,7 +4191,6 @@ const Corretores = () => {
       textoData = `${dia}/${mes}/${ano}`;
     }
 
-    // Retornar com a hora (se tiver)
     return horaOriginal ? `${textoData}, ${horaOriginal}` : textoData;
   };
 
@@ -4400,8 +4580,13 @@ const Corretores = () => {
     console.log("🔵 FUNÇÃO INICIAR FOI CHAMADA! ID:", candidatoId);
 
     try {
-      const hoje = new Date().toISOString().split("T")[0];
-      const previsao = new Date();
+      // ✅ DATA CORRETA (DO SEU COMPUTADOR) - SEM FUSO!
+      const dataLocal = new Date();
+      dataLocal.setHours(0, 0, 0, 0); // Zera a hora
+      const hoje = dataLocal.toISOString().split("T")[0];
+
+      // ✅ PREVISÃO BASEADA NA DATA CORRETA
+      const previsao = new Date(dataLocal);
       previsao.setDate(previsao.getDate() + 15);
       const previsaoStr = previsao.toISOString().split("T")[0];
 
@@ -4643,59 +4828,26 @@ const Corretores = () => {
   };
 
   const handleSalvarFeedback = async (candidatoId, feedback) => {
-    // 1️⃣ Verificar se candidatoId existe
-    if (!candidatoId) {
-      console.error("❌ ERRO: candidatoId não fornecido");
-      alert("Erro: ID do candidato não encontrado");
-      return;
-    }
-
-    // 2️⃣ Verificar se feedback existe
-    if (!feedback) {
-      console.error("❌ ERRO: feedback não fornecido");
-      alert("Erro: Dados do feedback não encontrados");
-      return;
-    }
-
-    // 3️⃣ Verificar se feedback tem as propriedades necessárias
-    if (feedback.nota === undefined || feedback.nota === null) {
-      console.error("❌ ERRO: nota não fornecida");
-      alert("Erro: Nota não fornecida");
-      return;
-    }
-
-    if (!feedback.status) {
-      console.error("❌ ERRO: status não fornecido");
-      alert("Erro: Status não fornecido");
-      return;
-    }
+    if (!candidatoId || !feedback) return;
 
     try {
-      // 4️⃣ Calcular nova etapa baseada no status
       let novaEtapa = "entrevista";
-      if (feedback.status === "aprovado") {
-        novaEtapa = "treinamento";
-      } else if (feedback.status === "reprovado") {
-        novaEtapa = "reprovados";
-      }
+      if (feedback.status === "aprovado") novaEtapa = "treinamento";
+      if (feedback.status === "reprovado") novaEtapa = "reprovados";
 
-      // 5️⃣ Formatar data corretamente
-      const agora = new Date();
-      const dataFormatada =
-        agora.toISOString().split("T")[0] +
-        " " +
-        agora.toTimeString().split(" ")[0];
+      // ✅ DATA CORRETA (DO SEU COMPUTADOR)
+      const dataLocal = new Date();
+      dataLocal.setHours(0, 0, 0, 0);
+      const dataFormatada = dataLocal.toISOString().split("T")[0];
 
-      // 6️⃣ Fazer o update no Supabase
       const { error } = await supabase
         .from("corretores")
         .update({
           feedback_nota: feedback.nota,
           feedback_status: feedback.status,
           feedback_observacoes: feedback.observacoes || "",
-          feedback_data: dataFormatada,
+          feedback_data: dataFormatada, // ← AGORA SIM! ENVIA A DATA!
           etapa: novaEtapa,
-          // ✅ ADICIONAR OS CAMPOS NOVOS AQUI!
           creci_desde: feedback.creci_desde,
           experiencia_anos: feedback.experiencia_anos,
           formacao: feedback.formacao,
@@ -4704,17 +4856,14 @@ const Corretores = () => {
 
       if (error) throw error;
 
-      // 7️⃣ Recarregar dados e fechar modal
       await carregarDados();
       setModalFeedbackAberto(false);
       setCandidatoParaFeedback(null);
       alert("✅ Feedback salvo com sucesso!");
     } catch (err) {
-      console.error("❌ Erro ao salvar feedback:", err);
-      alert("Erro ao salvar feedback. Tente novamente.");
+      console.error("Erro ao salvar feedback:", err);
     }
   };
-
   // 🆕 ABRIR DETALHES DO ARQUIVADO
   const handleAbrirDetalhesArquivado = (candidato) => {
     setCandidatoDetalhes(candidato);
@@ -5138,8 +5287,9 @@ const Corretores = () => {
     const feedbackNota = candidato.feedback_nota || 0;
     const feedbackStatus = candidato.feedback_status || "";
     const feedbackObs = candidato.feedback_observacoes || "";
+    // ✅ CORRIGIDO - usa formatarData em vez de new Date()
     const feedbackData = candidato.feedback_data
-      ? new Date(candidato.feedback_data).toLocaleDateString("pt-BR")
+      ? formatarData(candidato.feedback_data)
       : "";
 
     // Função para formatar horário
@@ -5788,8 +5938,9 @@ const Corretores = () => {
     const feedbackNota = candidato.feedback_nota || 0;
     const feedbackStatus = candidato.feedback_status || "";
     const feedbackObs = candidato.feedback_observacoes || "";
+    // ✅ CORRIGIDO - usa formatarData
     const feedbackData = candidato.feedback_data
-      ? new Date(candidato.feedback_data).toLocaleDateString("pt-BR")
+      ? formatarData(candidato.feedback_data)
       : "";
 
     // Função para renderizar estrelas no card
@@ -6583,30 +6734,15 @@ const Corretores = () => {
             {/* CARDS CORRETORES (ATIVOS/INATIVOS) */}
             {abaAtiva !== "candidatos" &&
               dadosAtuais.dados.map((corretor) => {
-                // CARD PARA ATIVOS - COM CÁLCULO CORRIGIDO
+                // CARD PARA ATIVOS - LAYOUT CORRIGIDO
                 if (abaAtiva === "ativos") {
-                  console.log(
-                    "🔍 RENDERIZANDO CARD - periodoExperiencia:",
-                    corretor.periodoExperiencia,
-                  );
-                  console.log("🔍 Nome:", corretor.nome);
-                  console.log(
-                    "🔍 Deveria mostrar:",
-                    corretor.periodoExperiencia
-                      ? "período de experiência"
-                      : "ativo",
-                  );
-                  // 🔥 CORREÇÃO: Cálculo correto dos dias
                   const diasPassados =
                     corretor.periodoExperiencia &&
                     corretor.treinamento_conclusao
                       ? calcularDiasPassados(corretor.treinamento_conclusao)
                       : 0;
-
-                  const diasTotais = 90; // Fixo em 90 dias
-
+                  const diasTotais = 90;
                   const diasRestantes = Math.max(0, diasTotais - diasPassados);
-
                   const progresso =
                     corretor.periodoExperiencia &&
                     corretor.treinamento_conclusao &&
@@ -6621,19 +6757,56 @@ const Corretores = () => {
                         isDark
                           ? "bg-gray-800 border-gray-700 hover:bg-gray-750"
                           : "bg-white border-gray-200 hover:bg-gray-50"
-                      } rounded-xl shadow-sm border overflow-hidden hover:shadow-md transition-all duration-200`}
+                      } rounded-xl shadow-sm border overflow-hidden hover:shadow-md transition-all duration-200 flex flex-col h-full`}
                     >
-                      {/* CABEÇALHO */}
+                      {/* CABEÇALHO - COM ATIVO E NOTA JUNTOS */}
                       <div className="p-6 pb-4">
-                        <h3
-                          className={`text-xl font-bold uppercase ${
-                            isDark ? "text-gray-100" : "text-gray-900"
-                          }`}
-                        >
-                          {corretor.nome}
-                        </h3>
+                        <div className="flex items-center justify-between">
+                          <h3
+                            className={`text-xl font-bold ${
+                              isDark ? "text-gray-100" : "text-gray-900"
+                            }`}
+                          >
+                            {corretor.nome}
+                          </h3>
+
+                          {/* GRUPO: ATIVO + NOTA */}
+                          <div className="flex items-center gap-2">
+                            {/* ATIVO - SÓ PARA ATIVOS */}
+                            {!corretor.periodoExperiencia && (
+                              <div
+                                className={`flex items-center gap-1 bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded-full`}
+                              >
+                                <CheckCircleIcon className="w-3 h-3 text-green-600 dark:text-green-400" />
+                                <span
+                                  className={`text-[10px] font-medium uppercase tracking-wider ${
+                                    isDark ? "text-green-400" : "text-green-700"
+                                  }`}
+                                >
+                                  ativo
+                                </span>
+                              </div>
+                            )}
+
+                            {/* NOTA - SEMPRE PRESENTE */}
+                            <div
+                              className={`flex items-center gap-1 bg-amber-50 dark:bg-amber-900/20 px-2 py-1 rounded-full`}
+                            >
+                              <StarIconSolid className="w-3.5 h-3.5 text-amber-500" />
+                              <span
+                                className={`text-xs font-semibold ${
+                                  isDark ? "text-amber-400" : "text-amber-600"
+                                }`}
+                              >
+                                {corretor.rating || 4.8}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* CRECI */}
                         <p
-                          className={`text-sm ${
+                          className={`text-sm mt-1 ${
                             isDark ? "text-gray-400" : "text-gray-600"
                           }`}
                         >
@@ -6641,66 +6814,68 @@ const Corretores = () => {
                         </p>
                       </div>
 
-                      {/* DIVISÓRIA SUTIL APÓS CABEÇALHO */}
+                      {/* SEÇÃO DE EXPERIÊNCIA - SÓ PARA EXPERIÊNCIA */}
+                      {corretor.periodoExperiencia && (
+                        <>
+                          {/* BADGE DE EXPERIÊNCIA - AJUSTADA */}
+                          <div className="px-6 pt-2">
+                            <div
+                              className={`inline-flex items-center gap-1.5 bg-amber-50 dark:bg-amber-900/20 px-2.5 py-1 rounded-full border border-amber-200 dark:border-amber-800`}
+                            >
+                              <div className="relative">
+                                <div className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse"></div>
+                                <div className="absolute inset-0 w-1.5 h-1.5 bg-amber-400 rounded-full animate-ping opacity-75"></div>
+                              </div>
+                              <span
+                                className={`text-[10px] font-semibold uppercase tracking-wider leading-none ${
+                                  isDark ? "text-amber-400" : "text-amber-700"
+                                }`}
+                              >
+                                EM PERÍODO DE EXPERIÊNCIA
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* BARRA DE PROGRESSO */}
+                          {corretor.data_experiencia_fim &&
+                            corretor.treinamento_conclusao && (
+                              <div className="px-6 py-3">
+                                <div className="flex items-center justify-between mb-1">
+                                  <span
+                                    className={`text-xs ${
+                                      isDark ? "text-gray-400" : "text-gray-600"
+                                    }`}
+                                  >
+                                    ⏱️ {diasPassados} de 90 dias (
+                                    {diasRestantes} restantes)
+                                  </span>
+                                  <span
+                                    className={`text-xs font-semibold ${
+                                      isDark
+                                        ? "text-amber-400"
+                                        : "text-amber-600"
+                                    }`}
+                                  >
+                                    {progresso}%
+                                  </span>
+                                </div>
+                                <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                                  <div
+                                    className="h-full bg-amber-500 rounded-full"
+                                    style={{ width: `${progresso}%` }}
+                                  />
+                                </div>
+                              </div>
+                            )}
+                        </>
+                      )}
+
+                      {/* DIVISÓRIA */}
                       <div
                         className={`h-px mx-6 ${
                           isDark ? "bg-gray-700" : "bg-gray-200"
                         }`}
                       />
-
-                      {/* BADGE DE EXPERIÊNCIA - ÂMBAR, SEMIBOLD E REDUZIDA */}
-                      {corretor.periodoExperiencia && (
-                        <div className="px-6 pt-3">
-                          <div className="inline-flex items-center gap-1.5 bg-amber-50 dark:bg-amber-900/20 px-2 py-1 rounded-full border border-amber-200 dark:border-amber-800">
-                            {/* Pontinho âmbar pulsante */}
-                            <div className="relative">
-                              <div className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse"></div>
-                              <div className="absolute inset-0 w-1.5 h-1.5 bg-amber-400 rounded-full animate-ping opacity-75"></div>
-                            </div>
-                            <span
-                              className={`text-[9px] font-semibold uppercase tracking-wider ${
-                                isDark ? "text-amber-400" : "text-amber-700"
-                              }`}
-                            >
-                              período de experiência
-                            </span>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* PROGRESSO DA EXPERIÊNCIA */}
-                      {corretor.periodoExperiencia &&
-                        corretor.data_experiencia_fim &&
-                        corretor.treinamento_conclusao && (
-                          <div className="px-6 py-2">
-                            <div className="flex items-center justify-between mb-1">
-                              <span
-                                className={`text-xs ${isDark ? "text-gray-400" : "text-gray-600"}`}
-                              >
-                                ⏱️ {diasPassados} de 90 dias ({diasRestantes}{" "}
-                                restantes)
-                              </span>
-                              <span
-                                className={`text-xs font-medium ${isDark ? "text-amber-400" : "text-amber-600"}`}
-                              >
-                                {progresso}%
-                              </span>
-                            </div>
-                            <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
-                              <div
-                                className="h-full bg-amber-500 rounded-full"
-                                style={{ width: `${progresso}%` }}
-                              />
-                            </div>
-                            <div className="text-right mt-1">
-                              <span
-                                className={`text-xs ${isDark ? "text-gray-500" : "text-gray-500"}`}
-                              >
-                                ▸ {progresso}% concluído
-                              </span>
-                            </div>
-                          </div>
-                        )}
 
                       {/* DATAS DE REGISTRO */}
                       <div className="px-6 py-2">
@@ -6711,7 +6886,7 @@ const Corretores = () => {
                         >
                           <div>
                             CRECI desde:{" "}
-                            {formatarData(corretor.creci_desde) || "20/05/2020"}
+                            {formatarData(corretor.creci_desde) || "09/09/2014"}
                           </div>
                           <div>
                             Na imobiliária desde:{" "}
@@ -6721,7 +6896,7 @@ const Corretores = () => {
                         </div>
                       </div>
 
-                      {/* DIVISÓRIA SUTIL */}
+                      {/* DIVISÓRIA */}
                       <div
                         className={`h-px mx-6 ${
                           isDark ? "bg-gray-700" : "bg-gray-200"
@@ -6741,7 +6916,10 @@ const Corretores = () => {
                           </span>
                         </div>
                         <a
-                          href={`https://wa.me/55${corretor.telefone?.replace(/\D/g, "")}`}
+                          href={`https://wa.me/55${corretor.telefone?.replace(
+                            /\D/g,
+                            "",
+                          )}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className={`flex items-center ${
@@ -6755,16 +6933,16 @@ const Corretores = () => {
                         </a>
                       </div>
 
-                      {/* DIVISÓRIA SUTIL */}
+                      {/* DIVISÓRIA */}
                       <div
                         className={`h-px mx-6 ${
                           isDark ? "bg-gray-700" : "bg-gray-200"
                         }`}
                       />
 
-                      {/* MÉTRICAS */}
-                      <div className="px-6 py-3">
-                        <div className="flex items-center justify-between gap-4">
+                      {/* MÉTRICAS - COM FONTE REDUZIDA */}
+                      <div className="px-6 py-4">
+                        <div className="flex items-center justify-between">
                           <div className="flex-1 text-center">
                             <div
                               className={`text-2xl font-bold ${
@@ -6774,7 +6952,7 @@ const Corretores = () => {
                               {corretor.imoveis || 0}
                             </div>
                             <div
-                              className={`text-sm font-medium mt-1 ${
+                              className={`text-[11px] font-medium mt-1 ${
                                 isDark ? "text-gray-400" : "text-gray-500"
                               }`}
                             >
@@ -6797,7 +6975,7 @@ const Corretores = () => {
                               {corretor.vendas_mes || 0}
                             </div>
                             <div
-                              className={`text-sm font-medium mt-1 ${
+                              className={`text-[11px] font-medium mt-1 whitespace-nowrap ${
                                 isDark ? "text-gray-400" : "text-gray-500"
                               }`}
                             >
@@ -6820,7 +6998,7 @@ const Corretores = () => {
                               {corretor.leads || 0}
                             </div>
                             <div
-                              className={`text-sm font-medium mt-1 ${
+                              className={`text-[11px] font-medium mt-1 ${
                                 isDark ? "text-gray-400" : "text-gray-500"
                               }`}
                             >
@@ -6873,16 +7051,16 @@ const Corretores = () => {
                         </div>
                       </div>
 
-                      {/* DIVISÓRIA SUTIL ANTES DOS BOTÕES */}
+                      {/* DIVISÓRIA ANTES DOS BOTÕES */}
                       <div
                         className={`h-px mx-6 ${
                           isDark ? "bg-gray-700" : "bg-gray-200"
                         }`}
                       />
 
-                      {/* BOTÕES DE AÇÃO */}
+                      {/* BOTÕES DE AÇÃO - NO RODAPÉ */}
                       <div
-                        className={`px-6 py-3 ${
+                        className={`px-6 py-4 mt-auto ${
                           isDark ? "bg-gray-800/70" : "bg-gray-50/80"
                         } flex justify-end space-x-3`}
                       >
@@ -6890,25 +7068,25 @@ const Corretores = () => {
                           onClick={() =>
                             navigate(`/admin/corretores/editar/${corretor.id}`)
                           }
-                          className={`p-3 rounded-lg ${
+                          className={`p-2.5 rounded-lg ${
                             isDark
                               ? "bg-blue-900/30 text-blue-300 hover:bg-blue-800/50"
                               : "bg-blue-100 text-blue-600 hover:bg-blue-200"
                           }`}
                           title="Editar"
                         >
-                          <PencilIcon className="w-5 h-5" />
+                          <PencilIcon className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => handleDelete(corretor.id, "corretor")}
-                          className={`p-3 rounded-lg ${
+                          className={`p-2.5 rounded-lg ${
                             isDark
                               ? "bg-red-900/40 text-white hover:bg-red-800/60"
                               : "bg-red-600 text-white hover:bg-red-700"
                           }`}
                           title="Excluir"
                         >
-                          <TrashIcon className="w-5 h-5" />
+                          <TrashIcon className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => handleAbrirPerfil(corretor)}
@@ -7003,7 +7181,10 @@ const Corretores = () => {
                           <span className="truncate">{corretor.email}</span>
                         </div>
                         <a
-                          href={`https://wa.me/55${corretor.telefone?.replace(/\D/g, "")}`}
+                          href={`https://wa.me/55${corretor.telefone?.replace(
+                            /\D/g,
+                            "",
+                          )}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className={`flex items-center ${
