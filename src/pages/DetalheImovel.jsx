@@ -1,5 +1,5 @@
 // ============================================================================
-// DETALHE DO IMÓVEL - VERSÃO FINAL
+// DETALHE DO IMÓVEL - VERSÃO FINAL COM CARROSSEL DE FOTOS
 // ============================================================================
 // Arquivo: src/pages/DetalheImovel.jsx
 // ============================================================================
@@ -32,6 +32,9 @@ const DetalheImovel = () => {
   const [error, setError] = useState(null);
   const [visualizacoes, setVisualizacoes] = useState(0);
   const [seoAplicado, setSeoAplicado] = useState(false);
+
+  // =============== NOVO ESTADO PARA FOTOS ===============
+  const [fotos, setFotos] = useState([]);
 
   // Estados do carrossel e modal
   const [imagemAtual, setImagemAtual] = useState(0);
@@ -223,6 +226,75 @@ const DetalheImovel = () => {
   );
 
   // ==========================================================================
+  // FUNÇÕES PARA DESLIZE NO MOBILE
+  // ==========================================================================
+  const touchStartX = useRef(0);
+  const touchEndX = useRef(0);
+
+  const handleTouchStart = (e) => {
+    touchStartX.current = e.touches[0].clientX;
+  };
+
+  const handleTouchMove = (e) => {
+    touchEndX.current = e.touches[0].clientX;
+  };
+
+  const handleTouchEnd = () => {
+    if (!touchStartX.current || !touchEndX.current) return;
+
+    const diffX = touchStartX.current - touchEndX.current;
+    const sensibilidade = 50; // Mínimo de 50px para considerar como deslize
+
+    if (Math.abs(diffX) > sensibilidade) {
+      if (diffX > 0) {
+        // Deslizou para esquerda → próxima imagem
+        mudarImagem(1);
+      } else {
+        // Deslizou para direita → imagem anterior
+        mudarImagem(-1);
+      }
+    }
+
+    // Reset
+    touchStartX.current = 0;
+    touchEndX.current = 0;
+  };
+  // ==========================================================================
+  // FUNÇÃO PARA CARREGAR FOTOS DO IMÓVEL
+  // ==========================================================================
+  const carregarFotos = useCallback(async (imovelId) => {
+    try {
+      const { data, error } = await supabase
+        .from("fotos_imovel")
+        .select("*")
+        .eq("imovel_id", imovelId)
+        .order("ordem", { ascending: true });
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        // Extrair apenas as URLs e ordenar
+        const fotosUrls = data.map((foto) => foto.url);
+        setFotos(fotosUrls);
+
+        console.log(
+          `✅ ${fotosUrls.length} fotos carregadas para o imóvel ${imovelId}`,
+        );
+      } else {
+        // Fallback para imagem padrão se não houver fotos
+        setFotos([
+          "https://images.unsplash.com/photo-1568605114967-8130f3a36994?auto=format&fit=crop&w=1200&h=800&q=80",
+        ]);
+      }
+    } catch (error) {
+      console.error("❌ Erro ao carregar fotos:", error);
+      setFotos([
+        "https://images.unsplash.com/photo-1568605114967-8130f3a36994?auto=format&fit=crop&w=1200&h=800&q=80",
+      ]);
+    }
+  }, []);
+
+  // ==========================================================================
   // FUNÇÕES DE FORMATAÇÃO
   // ==========================================================================
 
@@ -389,6 +461,9 @@ const DetalheImovel = () => {
       "Banheiro",
       "Área externa",
       "Vista",
+      "Detalhe",
+      "Detalhe",
+      "Detalhe",
     ];
     const tipo = index < tipos.length ? tipos[index] : "Detalhe";
 
@@ -573,7 +648,6 @@ const DetalheImovel = () => {
       bairro: imovel.bairro || "",
       cidade: imovel.cidade || "Açailândia",
       estado: imovel.estado || "MA",
-      // 👇 ADICIONE ESTA LINHA AQUI
       exibir_endereco_site: imovel.exibir_endereco_site || false,
       localizacaoCompleta: `${imovel.bairro || ""}, ${imovel.cidade || "Açailândia"}${imovel.estado ? ` - ${imovel.estado}` : ""}`,
       enderecoCompleto: `${imovel.endereco || ""}${imovel.numero ? `, ${imovel.numero}` : ""}${imovel.complemento ? ` - ${imovel.complemento}` : ""}`,
@@ -600,10 +674,13 @@ const DetalheImovel = () => {
       servicosUtilidades,
       diferenciais,
 
-      imagens: [
-        imovel.imagem_url ||
-          "https://images.unsplash.com/photo-1568605114967-8130f3a36994?auto=format&fit=crop&w=1200&h=800&q=80",
-      ],
+      // =============== FOTOS AGORA VÊM DO ESTADO ===============
+      imagens:
+        fotos.length > 0
+          ? fotos
+          : [
+              "https://images.unsplash.com/photo-1568605114967-8130f3a36994?auto=format&fit=crop&w=1200&h=800&q=80",
+            ],
     };
 
     dados.tituloSEO = gerarTituloSEO(dados);
@@ -613,6 +690,7 @@ const DetalheImovel = () => {
     return dados;
   }, [
     imovel,
+    fotos, // 👈 ADICIONADO FOTOS COMO DEPENDÊNCIA
     formatPrice,
     formatarFinalidade,
     gerarTituloSEO,
@@ -1052,6 +1130,8 @@ const DetalheImovel = () => {
 
         if (isMounted) {
           setImovel(imovelData);
+          // =============== CARREGAR FOTOS ===============
+          await carregarFotos(imovelData.id);
           await registrarVisualizacao(imovelData.id);
           await buscarVisualizacoes(imovelData.id);
         }
@@ -1068,7 +1148,7 @@ const DetalheImovel = () => {
     return () => {
       isMounted = false;
     };
-  }, [slug, registrarVisualizacao, buscarVisualizacoes]);
+  }, [slug, registrarVisualizacao, buscarVisualizacoes, carregarFotos]);
 
   // ==========================================================================
   // DADOS PROCESSADOS
@@ -1339,54 +1419,103 @@ const DetalheImovel = () => {
         </div>
       </div>
 
-      {/* GALERIA DE FOTOS */}
+      {/* =============== CARROSSEL DE FOTOS =============== */}
       <section className="mb-0">
         <div className="relative w-full">
-          <div className="relative h-[380px] md:h-[540px] lg:h-[560px] w-full overflow-hidden">
+          <div
+            className="relative h-[380px] md:h-[540px] lg:h-[560px] w-full overflow-hidden bg-gray-900"
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+          >
             {imagens.map((img, index) => (
               <img
                 key={index}
                 src={img}
                 alt={gerarAltImagem(dados, index)}
-                className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ${
+                className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ${
                   index === imagemAtual ? "opacity-100" : "opacity-0"
                 }`}
               />
             ))}
 
-            {/* INDICADORES */}
-            <div className="absolute bottom-5 left-1/2 transform -translate-x-1/2 flex space-x-2 z-10">
+            {/* CONTADOR */}
+            <div
+              className="absolute top-3 left-3 md:top-5 md:left-5 z-20 backdrop-blur-md rounded-full"
+              style={{
+                backgroundColor: "rgba(0, 0, 0, 0.4)",
+              }}
+            >
+              <div className="flex items-center justify-center px-2 py-1 md:px-3 md:py-1.5 space-x-1">
+                <i
+                  className="fas fa-camera text-[#D4A24D]"
+                  style={{ fontSize: "10px" }}
+                ></i>
+                <span
+                  className="text-white font-medium"
+                  style={{ fontSize: "11px", letterSpacing: "0.3px" }}
+                >
+                  {imagemAtual + 1}/{imagens.length}
+                </span>
+              </div>
+            </div>
+
+            {/* PONTINHOS */}
+            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-1.5 z-20">
               {imagens.map((_, index) => (
                 <button
                   key={index}
                   onClick={() => setImagemAtual(index)}
-                  className={`w-3 h-3 md:w-3.5 md:h-3.5 rounded-full transition-all duration-300 border-2 border-white/30 ${
-                    imagemAtual === index
-                      ? "bg-[#D4A24D] scale-110 shadow-[0_0_10px_rgba(212,162,77,0.8)] border-white"
-                      : "bg-white/90 hover:bg-white hover:scale-105"
-                  }`}
+                  className="rounded-full transition-all duration-300 focus:outline-none focus:ring-0"
+                  style={{
+                    width: imagemAtual === index ? "8px" : "6px",
+                    height: imagemAtual === index ? "8px" : "6px",
+                    backgroundColor:
+                      imagemAtual === index
+                        ? "#D4A24D"
+                        : "rgba(255,255,255,0.6)",
+                    boxShadow:
+                      imagemAtual === index
+                        ? "0 0 8px rgba(212,162,77,0.8)"
+                        : "none",
+                    border: "none",
+                    padding: 0,
+                    cursor: "pointer",
+                    outline: "none",
+                  }}
                   aria-label={`Ir para imagem ${index + 1}`}
                 />
               ))}
             </div>
 
-            {/* SETAS */}
-            <button
-              onClick={() => mudarImagem(-1)}
-              className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white/80 hover:bg-white text-[#D4A24D] w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center shadow-lg transition-all hover:scale-110 z-20"
-            >
-              <i className="fas fa-chevron-left"></i>
-            </button>
-            <button
-              onClick={() => mudarImagem(1)}
-              className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white/80 hover:bg-white text-[#D4A24D] w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center shadow-lg transition-all hover:scale-110 z-20"
-            >
-              <i className="fas fa-chevron-right"></i>
-            </button>
+            {/* SETAS (APENAS DESKTOP) */}
+            {imagens.length > 1 && (
+              <>
+                <button
+                  onClick={() => mudarImagem(-1)}
+                  className="hidden md:flex absolute left-4 top-1/2 transform -translate-y-1/2 bg-black/30 hover:bg-black/50 text-white rounded-full items-center justify-center shadow-lg transition-all hover:scale-110 z-20 backdrop-blur-sm border border-white/10 focus:outline-none focus:ring-0"
+                  style={{
+                    width: "36px",
+                    height: "36px",
+                  }}
+                >
+                  <i className="fas fa-chevron-left text-sm"></i>
+                </button>
+                <button
+                  onClick={() => mudarImagem(1)}
+                  className="hidden md:flex absolute right-4 top-1/2 transform -translate-y-1/2 bg-black/30 hover:bg-black/50 text-white rounded-full items-center justify-center shadow-lg transition-all hover:scale-110 z-20 backdrop-blur-sm border border-white/10 focus:outline-none focus:ring-0"
+                  style={{
+                    width: "36px",
+                    height: "36px",
+                  }}
+                >
+                  <i className="fas fa-chevron-right text-sm"></i>
+                </button>
+              </>
+            )}
           </div>
         </div>
       </section>
-
       {/* CABEÇALHO DO IMÓVEL */}
       <section className="bg-[#31353E] text-white pt-8 pb-12 md:pt-10 md:pb-14">
         <div className="max-w-7xl mx-auto px-4">
@@ -1545,37 +1674,43 @@ const DetalheImovel = () => {
               </div>
             </div>
 
-            {/* COLUNA VISUALIZAÇÕES */}
+            {/* COLUNA VISUALIZAÇÕES + BOTÃO */}
             <div className="relative flex items-center justify-center">
               <div className="hidden lg:block absolute -left-6 top-0 bottom-0 w-px">
                 <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/10 to-transparent"></div>
               </div>
-              <div className="lg:pl-8 w-full">
-                <div className="bg-gradient-to-br from-[#2a2e36]/60 via-[#2a2e36]/50 to-[#D4A24D]/5 backdrop-blur-sm rounded-xl p-6 border border-[#D4A24D]/10 shadow-lg relative overflow-hidden">
-                  <div className="light-sweep-premium"></div>
-                  <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent"></div>
-                  <div className="text-center relative z-10">
-                    <div className="flex justify-center mb-4">
-                      <div className="w-14 h-14 rounded-full bg-gradient-to-r from-[#D4A24D]/15 to-[#E6B85C]/10 flex items-center justify-center border border-[#D4A24D]/15 shadow-inner pulse-wave">
-                        <i className="fas fa-eye text-[#D4A24D]/90 text-2xl"></i>
-                      </div>
-                    </div>
-                    <div className="mb-3">
-                      <div className="text-5xl md:text-6xl font-black text-white leading-tight">
+              <div className="lg:pl-8 w-full max-w-xs">
+                {" "}
+                {/* 👈 LARGURA CONTROLADA */}
+                {/* BOX DE VISUALIZAÇÕES */}
+                <div className="bg-gradient-to-br from-[#2a2e36]/60 via-[#2a2e36]/50 to-[#D4A24D]/5 backdrop-blur-sm rounded-xl p-5 md:p-6 border border-[#D4A24D]/10 shadow-lg relative overflow-hidden">
+                  <div className="text-center">
+                    <div className="flex items-center justify-center gap-2 mb-2">
+                      <i className="fas fa-eye text-white text-xl md:text-2xl"></i>
+                      <span className="text-4xl md:text-5xl font-black text-white">
                         {visualizacoes.toLocaleString()}
-                      </div>
-                      <div className="text-xs font-semibold text-[#E6B85C] mt-2 tracking-wider">
-                        VISUALIZAÇÕES TOTAIS
-                      </div>
+                      </span>
                     </div>
-                    <p className="text-xs text-white/70 mt-4 max-w-xs mx-auto font-light">
-                      Este {dados.tipo?.toLowerCase() || "imóvel"} foi
-                      visualizado{" "}
-                      {visualizacoes === 1 ? "1 vez" : `${visualizacoes} vezes`}{" "}
-                      desde sua publicação.
+                    <div className="text-xs font-semibold text-[#E6B85C] tracking-wider">
+                      VISUALIZAÇÕES
+                    </div>
+                    <p className="text-xs text-white/70 mt-3 max-w-xs mx-auto font-light">
+                      Desde sua publicação
                     </p>
                   </div>
                 </div>
+                {/* LINHA DIVISÓRIA */}
+                <div className="w-full h-px bg-gradient-to-r from-transparent via-[#D4A24D] to-transparent my-4"></div>
+                {/* BOTÃO AGENDE UMA VISITA */}
+                <button
+                  onClick={abrirModal}
+                  className="w-full py-3 px-4 bg-gradient-to-r from-[#D4A24D] to-[#E6B85C] hover:from-[#C4933E] hover:to-[#D4A24D] text-white font-semibold rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center gap-2 text-sm md:text-base relative overflow-hidden group"
+                >
+                  {/* EFEITO DE LUZ NO HOVER */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
+                  <i className="fas fa-calendar-check relative z-10"></i>
+                  <span className="relative z-10">Agende uma visita</span>
+                </button>
               </div>
             </div>
           </div>
@@ -1751,12 +1886,13 @@ const DetalheImovel = () => {
             </div>
 
             <div className="w-full h-[0.5px] bg-gradient-to-r from-transparent via-[#D4A24D] to-transparent"></div>
+
             <div className="bg-white p-4 md:p-5 rounded-b-xl">
               <div className="text-center">
-                <p className="text-[#31353E] text-sm font-light flex items-center justify-center">
-                  <i className="far fa-clock text-[#D4A24D] mr-2 text-sm"></i>
-                  <span>Atendimento de segunda a sexta, das 8h às 18h</span>
-                </p>
+                <div className="text-[#31353E] text-sm font-light">
+                  <i className="far fa-clock text-[#D4A24D] mr-1"></i>
+                  Atendimento de segunda a sexta, das 8h às 18h
+                </div>
               </div>
             </div>
           </div>
@@ -2030,6 +2166,34 @@ const DetalheImovel = () => {
             transform: scale(1.5);
             opacity: 0;
           }
+        }
+
+        /* ===== REMOVER BORDAS DE FOCO ===== */
+        button:focus {
+          outline: none !important;
+          box-shadow: none !important;
+          border-color: transparent !important;
+        }
+
+        button:focus-visible {
+          outline: none !important;
+          box-shadow: none !important;
+          border-color: transparent !important;
+        }
+
+        /* Para as setas do carrossel e pontinhos */
+        .carousel-arrow:focus,
+        .carousel-dot:focus {
+          outline: none !important;
+          box-shadow: none !important;
+          border-color: transparent !important;
+        }
+
+        /* Remove qualquer ring que apareça */
+        .focus\:ring-0:focus,
+        .focus\:ring:focus {
+          --tw-ring-color: transparent !important;
+          --tw-ring-shadow: 0 0 #0000 !important;
         }
       `}</style>
     </>

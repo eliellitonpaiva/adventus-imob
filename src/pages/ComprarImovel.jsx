@@ -70,7 +70,7 @@ const ComprarImovel = () => {
     }
   }, []);
 
-  // 🔥 FUNÇÃO CORRIGIDA - 100% FUNCIONAL
+  // 🔥 FUNÇÃO CORRIGIDA - AGORA COM FOTOS
   const fetchImoveis = async (filtros) => {
     setLoading(true);
     setError(null);
@@ -78,13 +78,13 @@ const ComprarImovel = () => {
     try {
       console.log("🟡 Buscando imóveis com filtros:", filtros);
 
-      // 1. Primeiro busca TODOS os imóveis SEM filtro de quartos problemático
+      // 1. Primeiro busca TODOS os imóveis
       let query = supabase
         .from("imoveis")
         .select("*")
         .order("created_at", { ascending: false });
 
-      // 2. Aplicar filtros básicos (exceto quartos)
+      // 2. Aplicar filtros básicos
       if (filtros.city !== "all") {
         query = query.eq("cidade", filtros.city);
       }
@@ -113,7 +113,7 @@ const ComprarImovel = () => {
         return;
       }
 
-      // 5. Filtrar por quartos MANUALMENTE (para evitar erro de sintaxe)
+      // 5. Filtrar por quartos MANUALMENTE
       let imoveisFiltrados = imoveisData;
 
       if (filtros.bedrooms !== "all") {
@@ -133,16 +133,57 @@ const ComprarImovel = () => {
 
       console.log(`✅ ${imoveisFiltrados.length} imóveis após filtro manual`);
 
-      // 6. Agora busca os empreendimentos SEPARADAMENTE
-      const imoveisComEmpreendimento = await Promise.all(
+      // =============== 🔥 NOVO: BUSCAR FOTOS DE CAPA ===============
+      const imoveisComFotos = await Promise.all(
         imoveisFiltrados.map(async (imovel) => {
-          // Se não tem id_edificios, retorna o imóvel sem empreendimento
+          try {
+            // Buscar a foto de capa do imóvel
+            const { data: fotos, error: fotosError } = await supabase
+              .from("fotos_imovel")
+              .select("url, is_capa, ordem")
+              .eq("imovel_id", imovel.id)
+              .order("ordem", { ascending: true });
+
+            if (fotosError) {
+              console.error("Erro ao buscar fotos do imóvel:", fotosError);
+              return { ...imovel, fotos: [] };
+            }
+
+            // Encontrar a foto de capa ou pegar a primeira
+            let fotoCapa = null;
+            if (fotos && fotos.length > 0) {
+              const capa = fotos.find((f) => f.is_capa === true);
+              fotoCapa = capa ? capa.url : fotos[0].url;
+            }
+
+            return {
+              ...imovel,
+              fotos: fotos || [],
+              fotoCapa:
+                fotoCapa ||
+                "https://images.unsplash.com/photo-1568605114967-8130f3a36994?auto=format&fit=crop&w=400&h=300&q=60", // Fallback
+            };
+          } catch (err) {
+            console.error("Erro ao processar fotos:", err);
+            return {
+              ...imovel,
+              fotos: [],
+              fotoCapa:
+                "https://images.unsplash.com/photo-1568605114967-8130f3a36994?auto=format&fit=crop&w=400&h=300&q=60",
+            };
+          }
+        }),
+      );
+      // =============================================================
+
+      // 6. Buscar empreendimentos
+      const imoveisComEmpreendimento = await Promise.all(
+        imoveisComFotos.map(async (imovel) => {
           if (!imovel.id_edificios) {
             return { ...imovel, edificios: null };
           }
 
           try {
-            // Busca o empreendimento pelo ID
             const { data: edificioData, error: edificioError } = await supabase
               .from("edificios")
               .select("id, nome, tipo")
@@ -166,7 +207,7 @@ const ComprarImovel = () => {
       );
 
       console.log(
-        `✅ ${imoveisComEmpreendimento?.length || 0} imóveis com empreendimentos`,
+        `✅ ${imoveisComEmpreendimento?.length || 0} imóveis processados`,
       );
       setImoveis(imoveisComEmpreendimento || []);
     } catch (err) {
@@ -395,10 +436,7 @@ const ComprarImovel = () => {
                       unidade={imovel.unidade || ""}
                       andar={imovel.andar || ""}
                       bloco={imovel.bloco || ""}
-                      imagem={
-                        imovel.imagem_url ||
-                        "https://images.unsplash.com/photo-1568605114967-8130f3a36994?auto=format&fit=crop&w=400&h=300&q=60"
-                      }
+                      imagem={imovel.fotoCapa} // 🔥 NOVA LINHA - Foto real do imóvel!
                     />
                   );
                 })

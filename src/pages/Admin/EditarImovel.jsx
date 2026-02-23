@@ -19,10 +19,138 @@ import {
   LightBulbIcon,
   BuildingOfficeIcon,
   PlusIcon,
+  CameraIcon,
+  StarIcon,
+  TrashIcon,
+  ArrowUpTrayIcon,
 } from "@heroicons/react/24/outline";
+import { StarIcon as StarIconSolid } from "@heroicons/react/24/solid";
 import Button from "../../componentes/ui/Button";
 import { useTheme } from "../../contexts/ThemeContext";
 import { supabase } from "../../lib/supabase";
+
+// Componentes de drag-and-drop
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+
+// Componente SortableItem para as fotos
+const SortableItem = ({
+  id,
+  url,
+  isCapa,
+  onSetCapa,
+  onRemove,
+  index,
+  isDark,
+}) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 999 : "auto",
+  };
+
+  const getBorderClass = () => (isDark ? "border-gray-700" : "border-gray-200");
+  const getBgClass = () => (isDark ? "bg-gray-800" : "bg-white");
+  const getTextClass = () => (isDark ? "text-gray-100" : "text-gray-900");
+  const getIconColorClass = () =>
+    isDark ? "text-[#D4A24D]" : "text-[#D4A24D]";
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      {...listeners}
+      className={`relative group rounded-lg border-2 overflow-hidden ${isCapa ? "border-[#D4A24D]" : getBorderClass()} ${isDragging ? "shadow-xl cursor-grabbing" : "cursor-grab"} transition-all hover:shadow-lg`}
+    >
+      <div className="aspect-square relative">
+        <img
+          src={url}
+          alt={`Foto ${index + 1}`}
+          className="w-full h-full object-cover"
+        />
+
+        {/* Overlay com ações */}
+        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onSetCapa(id);
+            }}
+            className={`p-2 rounded-full ${isCapa ? "bg-[#D4A24D] text-white" : "bg-white/90 hover:bg-white text-gray-700"} transition-colors`}
+            title={isCapa ? "Foto de capa" : "Definir como capa"}
+          >
+            {isCapa ? (
+              <StarIconSolid className="w-5 h-5" />
+            ) : (
+              <StarIcon className="w-5 h-5" />
+            )}
+          </button>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onRemove(id);
+            }}
+            className="p-2 rounded-full bg-red-500/90 hover:bg-red-600 text-white transition-colors"
+            title="Remover foto"
+          >
+            <TrashIcon className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Badge de ordem */}
+        <div
+          className={`absolute top-2 left-2 ${isCapa ? "bg-[#D4A24D]" : "bg-black/70"} text-white text-xs font-bold px-2 py-1 rounded-full`}
+        >
+          {isCapa ? "⭐ CAPA" : `#${index + 1}`}
+        </div>
+
+        {/* Badge de arrastar */}
+        <div className="absolute bottom-2 right-2 bg-black/70 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+          <svg
+            className="w-4 h-4"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M4 8h16M4 16h16"
+            />
+          </svg>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const EditarImovel = () => {
   const navigate = useNavigate();
@@ -31,6 +159,167 @@ const EditarImovel = () => {
   const [loading, setLoading] = useState(false);
   const [loadingDados, setLoadingDados] = useState(true);
   const [submitMessage, setSubmitMessage] = useState({ type: "", text: "" });
+
+  // =============== ESTADO DAS FOTOS ===============
+  const [fotos, setFotos] = useState([]);
+  const [uploadingFotos, setUploadingFotos] = useState(false);
+  const [fotosError, setFotosError] = useState("");
+  const [fotosCarregadas, setFotosCarregadas] = useState(false);
+
+  // Configuração dos sensores para drag-and-drop
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 5,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
+  );
+
+  // =============== FUNÇÕES DO GERENCIADOR DE FOTOS ===============
+  const handleDragEnd = (event) => {
+    const { active, over } = event;
+
+    if (active.id !== over.id) {
+      setFotos((items) => {
+        const oldIndex = items.findIndex((item) => item.id === active.id);
+        const newIndex = items.findIndex((item) => item.id === over.id);
+
+        const newItems = arrayMove(items, oldIndex, newIndex);
+
+        return newItems.map((item, index) => ({
+          ...item,
+          ordem: index,
+        }));
+      });
+    }
+  };
+
+  const handleSetCapa = (fotoId) => {
+    setFotos((items) => {
+      const fotoClicada = items.find((f) => f.id === fotoId);
+      const semFotoClicada = items.filter((f) => f.id !== fotoId);
+
+      const novasFotos = [fotoClicada, ...semFotoClicada].map(
+        (item, index) => ({
+          ...item,
+          ordem: index,
+          isCapa: index === 0,
+        }),
+      );
+
+      return novasFotos;
+    });
+  };
+
+  const handleRemoveFoto = (fotoId) => {
+    setFotos((items) => {
+      const novasFotos = items
+        .filter((f) => f.id !== fotoId)
+        .map((item, index) => ({
+          ...item,
+          ordem: index,
+          isCapa: index === 0,
+        }));
+      return novasFotos;
+    });
+  };
+
+  const handleUploadFotos = async (event) => {
+    const files = Array.from(event.target.files);
+    if (files.length === 0) return;
+
+    if (fotos.length + files.length > 20) {
+      setFotosError("Máximo de 20 fotos permitidas");
+      return;
+    }
+
+    setUploadingFotos(true);
+    setFotosError("");
+
+    try {
+      const uploadPromises = files.map(async (file, index) => {
+        if (!file.type.startsWith("image/")) {
+          throw new Error("Apenas imagens são permitidas");
+        }
+
+        if (file.size > 5 * 1024 * 1024) {
+          throw new Error("Imagem muito grande. Máximo 5MB");
+        }
+
+        const fileExt = file.name.split(".").pop();
+        const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+        const filePath = `imoveis/temp/${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from("imoveis")
+          .upload(filePath, file);
+
+        if (uploadError) throw uploadError;
+
+        const {
+          data: { publicUrl },
+        } = supabase.storage.from("imoveis").getPublicUrl(filePath);
+
+        return {
+          id: `temp-${Date.now()}-${index}`,
+          url: publicUrl,
+          path: filePath,
+          file: file,
+          ordem: fotos.length + index,
+          isCapa: fotos.length === 0 && index === 0,
+        };
+      });
+
+      const novasFotos = await Promise.all(uploadPromises);
+
+      setFotos((prev) => {
+        const todasFotos = [...prev, ...novasFotos];
+        const temCapa = todasFotos.some((f) => f.isCapa);
+        if (!temCapa && todasFotos.length > 0) {
+          todasFotos[0].isCapa = true;
+        }
+        return todasFotos;
+      });
+    } catch (error) {
+      console.error("Erro no upload:", error);
+      setFotosError(error.message || "Erro ao fazer upload das fotos");
+    } finally {
+      setUploadingFotos(false);
+      event.target.value = "";
+    }
+  };
+
+  // =============== CARREGAR FOTOS DO IMÓVEL ===============
+  const carregarFotos = async (imovelId) => {
+    try {
+      const { data, error } = await supabase
+        .from("fotos_imovel")
+        .select("*")
+        .eq("imovel_id", imovelId)
+        .order("ordem", { ascending: true });
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        const fotosFormatadas = data.map((foto) => ({
+          id: foto.id,
+          url: foto.url,
+          path: null,
+          ordem: foto.ordem,
+          isCapa: foto.is_capa,
+          existing: true,
+        }));
+        setFotos(fotosFormatadas);
+      }
+    } catch (error) {
+      console.error("Erro ao carregar fotos:", error);
+    } finally {
+      setFotosCarregadas(true);
+    }
+  };
 
   // =============== BUSCAR EMPREENDIMENTOS ===============
   const [empreendimentos, setEmpreendimentos] = useState([]);
@@ -70,7 +359,7 @@ const EditarImovel = () => {
     bairro: "",
     cidade: "",
     estado: "",
-    exibirEnderecoSite: false, // CHECKBOX ÚNICO
+    exibirEnderecoSite: false,
     // ETIQUETAS DA VITRINE
     etiquetas: {
       destaqueSemana: false,
@@ -305,7 +594,6 @@ const EditarImovel = () => {
           area_total: data.area_total || "",
           area_construida: data.area_construida || "",
         },
-        // LOCALIZAÇÃO SIMPLIFICADA
         cep: data.cep || "",
         endereco: data.endereco || "",
         numero: data.numero || "",
@@ -313,8 +601,7 @@ const EditarImovel = () => {
         bairro: data.bairro || "",
         cidade: data.cidade || "",
         estado: data.estado || "",
-        exibirEnderecoSite: data.exibir_endereco_site || false, // NOVO CAMPO
-        // ETIQUETAS DA VITRINE
+        exibirEnderecoSite: data.exibir_endereco_site || false,
         etiquetas: data.etiquetas || {
           destaqueSemana: false,
           novoSite: false,
@@ -365,6 +652,8 @@ const EditarImovel = () => {
         observacoes: data.observacoes || "",
         iptu_anual: data.iptu_anual || "",
       });
+
+      await carregarFotos(id);
     } catch (error) {
       console.error("Erro ao carregar imóvel:", error);
       setSubmitMessage({
@@ -508,7 +797,6 @@ const EditarImovel = () => {
         parseFloat(formData.caracteristicas.condominioTaxaMensal) || 0,
       iptu_anual: parseFloat(formData.iptu_anual) || 0,
       data_disponibilidade: null,
-      // LOCALIZAÇÃO SIMPLIFICADA
       cep: formData.cep || "",
       endereco: formData.endereco || "",
       numero: formData.numero || "",
@@ -516,8 +804,7 @@ const EditarImovel = () => {
       bairro: formData.bairro || "",
       cidade: formData.cidade || "",
       estado: formData.estado || "",
-      exibir_endereco_site: formData.exibirEnderecoSite || false, // NOVO CAMPO
-      // ETIQUETAS DA VITRINE
+      exibir_endereco_site: formData.exibirEnderecoSite || false,
       etiquetas: formData.etiquetas,
       caracteristicas: {
         ...formData.caracteristicas,
@@ -566,6 +853,68 @@ const EditarImovel = () => {
         .eq("id", id);
 
       if (error) throw error;
+
+      // =============== ATUALIZAR FOTOS ===============
+      try {
+        // Deletar fotos antigas
+        console.log("🗑️ Deletando fotos antigas do imóvel:", id);
+
+        const { error: deleteError } = await supabase
+          .from("fotos_imovel")
+          .delete()
+          .eq("imovel_id", id);
+
+        if (deleteError) throw deleteError;
+
+        // Se NÃO TEM fotos novas, para por aqui
+        if (fotos.length === 0) {
+          console.log("📸 Nenhuma foto para salvar");
+          return;
+        }
+
+        // Inserir as novas fotos
+        console.log(`📸 Preparando ${fotos.length} novas fotos`);
+
+        const fotosParaInserir = await Promise.all(
+          fotos.map(async (foto, index) => {
+            if (foto.id.startsWith("temp-") && foto.file) {
+              const newPath = `imoveis/${id}/${foto.file.name}`;
+
+              await supabase.storage.from("imoveis").move(foto.path, newPath);
+
+              const {
+                data: { publicUrl },
+              } = supabase.storage.from("imoveis").getPublicUrl(newPath);
+
+              return {
+                imovel_id: id,
+                url: publicUrl,
+                ordem: index,
+                is_capa: foto.isCapa,
+              };
+            }
+
+            return {
+              imovel_id: id,
+              url: foto.url,
+              ordem: index,
+              is_capa: foto.isCapa,
+            };
+          }),
+        );
+
+        if (fotosParaInserir.length > 0) {
+          const { error: insertError } = await supabase
+            .from("fotos_imovel")
+            .insert(fotosParaInserir);
+
+          if (insertError) throw insertError;
+          console.log(`✅ ${fotosParaInserir.length} fotos salvas`);
+        }
+      } catch (fotoError) {
+        console.error("💥 Erro nas fotos:", fotoError);
+        throw fotoError;
+      }
 
       setSubmitMessage({
         type: "success",
@@ -728,7 +1077,7 @@ const EditarImovel = () => {
   };
 
   // =============== LOADING ===============
-  if (loadingDados) {
+  if (loadingDados || !fotosCarregadas) {
     return (
       <div className="p-6 flex justify-center items-center h-64">
         <div className="text-center">
@@ -749,15 +1098,16 @@ const EditarImovel = () => {
           : "bg-gradient-to-b from-[#D4A24D]/5 to-[#31353E]/5"
       }`}
     >
-      {/* Header da Página */}
+      {/* ===== HEADER COM BOTÕES FIXOS ===== */}
       <div
-        className={`border-b px-4 py-4 transition-colors duration-200 ${
+        className={`sticky top-0 z-50 border-b px-4 py-3 transition-colors duration-200 ${
           isDark ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"
         }`}
       >
         <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="flex items-center space-x-4">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+            {/* Lado Esquerdo - Título e Navegação */}
+            <div className="flex items-center space-x-3">
               <button
                 onClick={() => navigate("/admin/imoveis")}
                 className={`p-2 rounded-lg transition-colors ${
@@ -770,32 +1120,60 @@ const EditarImovel = () => {
               </button>
               <div>
                 <h1
-                  className={`text-2xl font-bold transition-colors ${getTextClass()}`}
+                  className={`text-xl md:text-2xl font-bold transition-colors ${getTextClass()}`}
                 >
                   Editar Imóvel
                 </h1>
                 <p
-                  className={`text-sm transition-colors ${getTextSecondaryClass()}`}
+                  className={`text-xs md:text-sm transition-colors ${getTextSecondaryClass()}`}
                 >
-                  Altere os dados do imóvel e clique em salvar
+                  {formData.codigo} • {formData.titulo?.substring(0, 40)}
+                  {formData.titulo?.length > 40 ? "..." : ""}
                 </p>
               </div>
             </div>
-            {/* Apenas badge Financiável (se existir) */}
-            {formData.etiquetas.financiável && (
-              <div
-                className={`px-3 py-1.5 rounded-full text-sm font-medium ${getFinanciavelColor()}`}
-              >
-                Financiável
+
+            {/* Lado Direito - Badge + Botões */}
+            <div className="flex items-center justify-end space-x-2 md:space-x-3">
+              {/* Badge Financiável */}
+              {formData.etiquetas.financiável && (
+                <div
+                  className={`hidden md:block px-3 py-1.5 rounded-full text-xs font-medium ${getFinanciavelColor()}`}
+                >
+                  Financiável
+                </div>
+              )}
+
+              {/* BOTÕES DE AÇÃO */}
+              <div className="flex items-center space-x-2">
+                <button
+                  type="button"
+                  onClick={handleCancel}
+                  className="px-3 md:px-4 py-1.5 md:py-2 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg border border-transparent transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 text-xs md:text-sm"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  form="form-editar-imovel" // 👈 LINHA IMPORTANTE!
+                  disabled={loading}
+                  className="px-3 md:px-4 py-1.5 md:py-2 bg-[#D4A24D] hover:bg-[#C4933E] text-white font-medium rounded-lg border border-transparent transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-[#D4A24D] focus:ring-offset-2 text-xs md:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loading ? "Salvando..." : "Atualizar Imóvel"}
+                </button>
               </div>
-            )}
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Conteúdo Principal */}
+      {/* Conteúdo Principal - TODO O RESTO DO CÓDICO PERMANECE IGUAL */}
       <div className="max-w-7xl mx-auto px-4 py-6">
-        <form onSubmit={handleSubmit} className="space-y-8">
+        <form
+          id="form-editar-imovel"
+          onSubmit={handleSubmit}
+          className="space-y-8"
+        >
           {/* ========== SEÇÃO 1: INFORMAÇÕES GERAIS ========== */}
           <div
             className={`rounded-xl border p-6 transition-colors duration-200 ${getBgClass()} ${getBorderClass()}`}
@@ -2017,6 +2395,116 @@ const EditarImovel = () => {
             </div>
           </div>
 
+          {/* ========== NOVA SEÇÃO: FOTOS DO IMÓVEL ========== */}
+          <div
+            className={`rounded-xl border p-6 transition-colors duration-200 ${getBgClass()} ${getBorderClass()}`}
+          >
+            <div className="flex items-center space-x-3 mb-6">
+              <div className={`p-2 rounded-lg ${getIconBgClass()}`}>
+                <CameraIcon className={`w-6 h-6 ${getIconColorClass()}`} />
+              </div>
+              <div>
+                <h2
+                  className={`text-xl font-semibold transition-colors ${getTextClass()}`}
+                >
+                  Fotos do Imóvel
+                </h2>
+                <p
+                  className={`text-sm transition-colors ${getTextSecondaryClass()}`}
+                >
+                  Arraste para organizar • Clique na estrela para definir a capa
+                  • Máximo 20 fotos
+                </p>
+              </div>
+            </div>
+
+            {/* Área de upload */}
+            <div className="mb-6">
+              <label
+                className={`relative flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer transition-colors hover:border-[#D4A24D] ${getBorderClass()} ${getHoverBgClass()}`}
+              >
+                <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                  <ArrowUpTrayIcon
+                    className={`w-8 h-8 mb-2 ${getTextSecondaryClass()}`}
+                  />
+                  <p className={`text-sm font-medium ${getTextClass()}`}>
+                    {uploadingFotos
+                      ? "Enviando..."
+                      : "Clique para fazer upload"}
+                  </p>
+                  <p className={`text-xs ${getTextSecondaryClass()}`}>
+                    PNG, JPG ou JPEG (máx. 5MB cada)
+                  </p>
+                  <p className={`text-xs ${getTextSecondaryClass()} mt-1`}>
+                    {fotos.length}/20 fotos
+                  </p>
+                </div>
+                <input
+                  type="file"
+                  multiple
+                  accept="image/*"
+                  onChange={handleUploadFotos}
+                  disabled={uploadingFotos || fotos.length >= 20}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
+                />
+              </label>
+              {fotosError && (
+                <p
+                  className={`mt-2 text-sm ${isDark ? "text-red-400" : "text-red-600"}`}
+                >
+                  {fotosError}
+                </p>
+              )}
+            </div>
+
+            {/* Grid de fotos com drag-and-drop */}
+            {fotos.length > 0 && (
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd}
+              >
+                <SortableContext
+                  items={fotos.map((f) => f.id)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                    {fotos.map((foto, index) => (
+                      <SortableItem
+                        key={foto.id}
+                        id={foto.id}
+                        url={foto.url}
+                        isCapa={foto.isCapa}
+                        index={index}
+                        onSetCapa={handleSetCapa}
+                        onRemove={handleRemoveFoto}
+                        isDark={isDark}
+                      />
+                    ))}
+                  </div>
+                </SortableContext>
+              </DndContext>
+            )}
+
+            {/* Informações adicionais */}
+            {fotos.length > 0 && (
+              <div
+                className={`mt-4 p-3 rounded-lg ${isDark ? "bg-gray-800" : "bg-gray-50"}`}
+              >
+                <p className={`text-sm ${getTextSecondaryClass()}`}>
+                  <span className="font-medium text-[#D4A24D]">
+                    ⭐ Foto de capa:
+                  </span>{" "}
+                  Será a primeira imagem do carrossel e a miniatura do imóvel.
+                </p>
+                <p className={`text-sm ${getTextSecondaryClass()} mt-1`}>
+                  <span className="font-medium">🖱️ Arraste:</span> As fotos
+                  podem ser reorganizadas livremente.
+                </p>
+              </div>
+            )}
+          </div>
+
           {/* ========== SEÇÃO 4: CUSTOS ADICIONAIS ========== */}
           <div
             className={`rounded-xl border p-6 transition-colors duration-200 ${getBgClass()} ${getBorderClass()}`}
@@ -2241,7 +2729,6 @@ const EditarImovel = () => {
                         </div>
                       </div>
 
-                      {/* Se for lote */}
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
                         <div>
                           <label
@@ -3650,42 +4137,6 @@ const EditarImovel = () => {
               )}
             </div>
           )}
-
-          {/* ========== SEÇÃO 7: AÇÕES ========== */}
-          <div
-            className={`rounded-xl border p-6 transition-colors duration-200 ${getBgClass()} ${getBorderClass()}`}
-          >
-            <div className="flex flex-col sm:flex-row justify-end space-y-4 sm:space-y-0 sm:space-x-4">
-              <button
-                type="button"
-                onClick={handleCancel}
-                className="px-8 py-3 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg border border-transparent transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
-              >
-                Cancelar
-              </button>
-              <Button
-                type="submit"
-                variant="primary"
-                size="lg"
-                className="px-8"
-                disabled={loading}
-              >
-                <div className="flex items-center space-x-2">
-                  {loading ? (
-                    <>
-                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                      <span>Salvando...</span>
-                    </>
-                  ) : (
-                    <>
-                      <CheckCircleIcon className="w-5 h-5" />
-                      <span>Atualizar Imóvel</span>
-                    </>
-                  )}
-                </div>
-              </Button>
-            </div>
-          </div>
         </form>
       </div>
     </div>

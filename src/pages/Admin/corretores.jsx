@@ -1,4 +1,18 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
+// Ícones do react-icons/io5
+import {
+  IoHeartOutline,
+  IoNuclearOutline,
+  IoBarChartOutline,
+  IoTimeOutline,
+  IoCarOutline,
+  IoBriefcaseOutline,
+  IoChatbubbleOutline,
+  IoScaleOutline,
+  IoPeopleOutline,
+  IoRocketOutline,
+} from "react-icons/io5";
+
 // Ícones outline (vazados) do Heroicons
 import {
   PlusIcon,
@@ -34,7 +48,7 @@ import {
   InformationCircleIcon,
 } from "@heroicons/react/24/outline";
 
-// 🟢 Ícones solid (preenchidos) do Heroicons - ADICIONE ISSO!
+// Ícones solid (preenchidos) do Heroicons
 import {
   StarIcon as StarIconSolid,
   CheckCircleIcon as CheckCircleIconSolid,
@@ -653,7 +667,7 @@ const ModalProgressoTreinamento = ({
 };
 
 // -------------------------------------------
-// MODAL DE PERFIL ÚNICO - COM OU SEM EXPERIÊNCIA
+// MODAL DE PERFIL ÚNICO - VERSÃO CORRIGIDA
 // -------------------------------------------
 const ModalPerfilCorretor = ({
   isOpen,
@@ -665,14 +679,40 @@ const ModalPerfilCorretor = ({
   if (!isOpen || !corretor) return null;
 
   // ===========================================
-  // 1. FUNÇÕES AUXILIARES
+  // 1. FUNÇÕES AUXILIARES (VERSÕES CORRIGIDAS)
   // ===========================================
 
-  const calcularTempoConosco = (dataContratacao) => {
-    if (!dataContratacao) return "2 meses e 5 dias";
-    return "2 meses e 5 dias";
+  // ✅ Calcular dias passados com UTC
+  const calcularDiasPassados = (dataStr) => {
+    if (!dataStr) return 0;
+
+    const [ano, mes, dia] = dataStr.split("T")[0].split("-").map(Number);
+    const inicio = new Date(Date.UTC(ano, mes - 1, dia));
+    const hoje = new Date();
+    const hojeUTC = new Date(
+      Date.UTC(hoje.getUTCFullYear(), hoje.getUTCMonth(), hoje.getUTCDate()),
+    );
+
+    const diff = Math.ceil((hojeUTC - inicio) / (1000 * 60 * 60 * 24));
+    return diff > 0 ? diff : 1;
   };
 
+  // ✅ Calcular dias restantes com UTC
+  const calcularDiasRestantes = (dataFimStr) => {
+    if (!dataFimStr) return 0;
+
+    const [ano, mes, dia] = dataFimStr.split("T")[0].split("-").map(Number);
+    const fim = new Date(Date.UTC(ano, mes - 1, dia));
+    const hoje = new Date();
+    const hojeUTC = new Date(
+      Date.UTC(hoje.getUTCFullYear(), hoje.getUTCMonth(), hoje.getUTCDate()),
+    );
+
+    const diff = Math.ceil((fim - hojeUTC) / (1000 * 60 * 60 * 24));
+    return diff > 0 ? diff : 0;
+  };
+
+  // ✅ Formatar data para exibição (já estava correta)
   const formatarData = (dataString) => {
     if (!dataString) return "Não informada";
 
@@ -691,31 +731,26 @@ const ModalPerfilCorretor = ({
     }
   };
 
+  const calcularTempoConosco = (dataContratacao) => {
+    if (!dataContratacao) return "2 meses e 5 dias";
+    return "2 meses e 5 dias";
+  };
+
   // ===========================================
-  // 2. CONSTANTES DE CÁLCULO
+  // 2. CONSTANTES DE CÁLCULO (TODAS CORRIGIDAS)
   // ===========================================
 
   const emExperiencia = corretor.periodoExperiencia || false;
   const estaAtivo = !emExperiencia;
 
-  const dataInicio = corretor.treinamento_conclusao
-    ? new Date(corretor.treinamento_conclusao)
-    : null;
-  const dataFim = corretor.data_experiencia_fim
-    ? new Date(corretor.data_experiencia_fim)
-    : null;
-  const dataAtivacao = corretor.data_ativacao
-    ? new Date(corretor.data_ativacao)
-    : null;
+  // ✅ USANDO STRINGS DIRETAMENTE (NÃO CRIA new Date!)
+  const dataInicioStr = corretor.treinamento_conclusao;
+  const dataFimStr = corretor.data_experiencia_fim;
+  const dataAtivacaoStr = corretor.data_ativacao;
 
-  const hoje = new Date();
-
-  const diasPassados = dataInicio
-    ? Math.ceil((hoje - dataInicio) / (1000 * 60 * 60 * 24))
-    : 0;
-
+  // ✅ USANDO AS FUNÇÕES CORRIGIDAS
+  const diasPassados = calcularDiasPassados(dataInicioStr);
   const diasTotais = 90;
-
   const diasRestantes = Math.max(0, diasTotais - diasPassados);
 
   const progresso =
@@ -724,7 +759,7 @@ const ModalPerfilCorretor = ({
       : 0;
 
   const experienciaConcluida = diasPassados >= diasTotais;
-  const ativacaoAntecipada = dataAtivacao && diasPassados < diasTotais;
+  const ativacaoAntecipada = dataAtivacaoStr && diasPassados < diasTotais;
 
   const imoveis = corretor.imoveis || 0;
   const vendas = corretor.vendas_mes || 0;
@@ -740,7 +775,7 @@ const ModalPerfilCorretor = ({
   const projecaoLeads = Math.round(mediaLeads * diasTotais);
 
   // ===========================================
-  // 3. OBJETO DE DADOS
+  // 3. OBJETO DE DADOS (NÃO USA MAIS new Date!)
   // ===========================================
 
   const corretorData = {
@@ -748,10 +783,10 @@ const ModalPerfilCorretor = ({
     creciDesde: corretor.creci_desde
       ? formatarData(corretor.creci_desde)
       : "15/06/2018",
-    naImobiliariaDesde: corretor.treinamento_conclusao
-      ? formatarData(corretor.treinamento_conclusao)
+    naImobiliariaDesde: dataInicioStr
+      ? formatarData(dataInicioStr)
       : "10/03/2024",
-    tempoConosco: calcularTempoConosco(corretor.treinamento_conclusao),
+    tempoConosco: calcularTempoConosco(dataInicioStr),
     kpis: {
       imoveisResponsabilidade: corretor.imoveis || 12,
       imoveisVendidosMes: corretor.vendas_mes || 3,
@@ -805,19 +840,21 @@ const ModalPerfilCorretor = ({
   };
 
   // ===========================================
-  // 4. STATES E HANDLERS
+  // 4. STATES E HANDLERS (mantém como estava)
   // ===========================================
 
   const [observacoes, setObservacoes] = useState(corretor.observacoes || "");
   const [ativando, setAtivando] = useState(false);
 
-  // 🔥 useEffect para monitorar mudanças no corretor
   useEffect(() => {
     console.log("🔄 Modal recebeu novo corretor:", corretor);
     console.log("   • periodoExperiencia:", corretor.periodoExperiencia);
     console.log("   • data_ativacao:", corretor.data_ativacao);
     console.log("   • estaAtivo:", !corretor.periodoExperiencia);
-  }, [corretor]);
+    console.log("   • diasPassados (corrigido):", diasPassados);
+    console.log("   • dataInicioStr:", dataInicioStr);
+    console.log("   • dataInicio formatada:", formatarData(dataInicioStr));
+  }, [corretor, diasPassados, dataInicioStr]);
 
   const handleSalvarObservacoes = async () => {
     try {
@@ -831,20 +868,22 @@ const ModalPerfilCorretor = ({
     }
   };
 
-  // ===========================================
-  // 5. HANDLER DE ATIVAÇÃO
-  // ===========================================
   const handleAtivarCorretor = async () => {
+    console.log("🔵 FUNÇÃO handleAtivarCorretor FOI CLICADA!");
     if (ativando) return;
-
     setAtivando(true);
-    console.log("🚀 handleAtivarCorretor chamado no MODAL");
-    console.log("📦 Corretor atual:", corretor);
-    console.log("🆔 ID do corretor:", corretor.id);
+
+    // ✅ DATA DE HOJE (CORRETA, SEM FUSO!)
+    const hoje = new Date();
+    const ano = hoje.getFullYear();
+    const mes = String(hoje.getMonth() + 1).padStart(2, "0");
+    const dia = String(hoje.getDate()).padStart(2, "0");
+    const dataHoje = `${ano}-${mes}-${dia}`;
+
+    console.log("📅 Ativando antecipadamente em:", dataHoje);
 
     try {
-      await onAtivar(corretor.id);
-      console.log("✅ onAtivar executado com sucesso");
+      await onAtivar(corretor.id, dataHoje);
     } catch (error) {
       console.error("❌ Erro no onAtivar:", error);
     } finally {
@@ -853,7 +892,7 @@ const ModalPerfilCorretor = ({
   };
 
   // ===========================================
-  // 6. RENDERIZAÇÃO
+  // 5. RENDERIZAÇÃO (TUDO CORRIGIDO)
   // ===========================================
 
   return (
@@ -1050,7 +1089,7 @@ const ModalPerfilCorretor = ({
               {/* COLUNA ESQUERDA - 2/3 */}
               <div className="lg:col-span-2 space-y-6">
                 {/* SEÇÃO DE EXPERIÊNCIA - SEMPRE VISÍVEL (HISTÓRICO) */}
-                {dataInicio && (
+                {dataInicioStr && (
                   <div
                     className={`p-6 rounded-xl border-2 ${
                       isDark
@@ -1079,12 +1118,12 @@ const ModalPerfilCorretor = ({
                           : "acompanhamento da experiência"}
                     </h3>
 
-                    {/* DATAS */}
+                    {/* DATAS - CORRIGIDO: usando formatarData com as strings */}
                     <div className="grid grid-cols-2 gap-4 mb-4">
                       <div>
                         <span className="text-xs text-gray-500">início</span>
                         <p className="text-sm font-medium">
-                          {formatarData(dataInicio)}
+                          {formatarData(dataInicioStr)}
                         </p>
                       </div>
                       <div>
@@ -1092,23 +1131,31 @@ const ModalPerfilCorretor = ({
                           término previsto
                         </span>
                         <p className="text-sm font-medium">
-                          {formatarData(dataFim)}
+                          {formatarData(dataFimStr)}
                         </p>
                       </div>
                     </div>
 
                     {/* DATA DE ATIVAÇÃO (se já estiver ativo) */}
-                    {estaAtivo && dataAtivacao && (
-                      <div className="mb-4 p-2 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
-                        <div className="flex items-center gap-2">
-                          <CheckCircleIcon className="w-4 h-4 text-green-600 dark:text-green-400" />
-                          <span className="text-xs text-green-700 dark:text-green-300">
-                            {ativacaoAntecipada
-                              ? `✅ Ativado antecipadamente em ${formatarData(dataAtivacao)} (${diasPassados}/${diasTotais} dias)`
-                              : `✅ Ativado em ${formatarData(dataAtivacao)}`}
-                          </span>
+                    {estaAtivo && dataAtivacaoStr && (
+                      <>
+                        {console.log("🔍 DATA DE ATIVAÇÃO DETALHADA:", {
+                          dataAtivacao_bruto: dataAtivacaoStr,
+                          dataAtivacao_formatado: formatarData(dataAtivacaoStr),
+                          diasPassados,
+                          diasTotais,
+                        })}
+                        <div className="mb-4 p-2 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
+                          <div className="flex items-center gap-2">
+                            <CheckCircleIcon className="w-4 h-4 text-green-600 dark:text-green-400" />
+                            <span className="text-xs text-green-700 dark:text-green-300">
+                              {ativacaoAntecipada
+                                ? `✅ Ativado antecipadamente em ${formatarData(dataAtivacaoStr)} (${diasPassados}/${diasTotais} dias)`
+                                : `✅ Ativado em ${formatarData(dataAtivacaoStr)}`}
+                            </span>
+                          </div>
                         </div>
-                      </div>
+                      </>
                     )}
 
                     {/* DIVISÓRIA APÓS DATAS */}
@@ -1322,7 +1369,7 @@ const ModalPerfilCorretor = ({
                 </div>
               </div>
 
-              {/* COLUNA DIREITA - 1/3 */}
+              {/* COLUNA DIREITA - 1/3 (mantém como estava) */}
               <div className="space-y-6">
                 {/* TREINAMENTOS */}
                 <div>
@@ -1376,7 +1423,7 @@ const ModalPerfilCorretor = ({
                   </div>
                 </div>
 
-                {/* ALERTAS - CRECI */}
+                {/* ALERTAS - CRECI (CORRIGIDO: usando calcularDiasParaVencimento) */}
                 <div>
                   <h3
                     className={`text-sm font-medium uppercase tracking-wider mb-4 flex items-center gap-2 ${
@@ -1389,11 +1436,10 @@ const ModalPerfilCorretor = ({
 
                   {corretor.creci_validade ? (
                     (() => {
-                      const diasParaVencer = calcularDiasParaVencimento(
-                        corretor.creci_validade,
-                      );
+                      const diasParaVencer = calcularDiasParaVencimento
+                        ? calcularDiasParaVencimento(corretor.creci_validade)
+                        : null;
 
-                      // Se está perto de vencer (30 dias ou menos) OU já venceu
                       if (diasParaVencer !== null && diasParaVencer <= 30) {
                         return (
                           <div
@@ -1456,8 +1502,7 @@ const ModalPerfilCorretor = ({
                             </div>
                           </div>
                         );
-                      } else {
-                        // Se está regular (mais de 30 dias)
+                      } else if (diasParaVencer !== null) {
                         return (
                           <div
                             className={`p-4 rounded-lg border ${
@@ -1491,10 +1536,43 @@ const ModalPerfilCorretor = ({
                             </div>
                           </div>
                         );
+                      } else {
+                        return (
+                          <div
+                            className={`p-4 rounded-lg border ${
+                              isDark
+                                ? "bg-gray-800 border-gray-700"
+                                : "bg-gray-50 border-gray-200"
+                            }`}
+                          >
+                            <div className="flex items-start gap-3">
+                              <InformationCircleIcon
+                                className={`w-5 h-5 flex-shrink-0 ${
+                                  isDark ? "text-gray-400" : "text-gray-500"
+                                }`}
+                              />
+                              <div>
+                                <p
+                                  className={`text-sm font-medium ${
+                                    isDark ? "text-gray-300" : "text-gray-700"
+                                  }`}
+                                >
+                                  Data de validade não cadastrada
+                                </p>
+                                <p
+                                  className={`text-xs mt-1 ${
+                                    isDark ? "text-gray-400" : "text-gray-500"
+                                  }`}
+                                >
+                                  Adicione a validade do CRECI
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        );
                       }
                     })()
                   ) : (
-                    // Se não tem data de validade cadastrada
                     <div
                       className={`p-4 rounded-lg border ${
                         isDark
@@ -1781,7 +1859,13 @@ const ModalAtivacao = ({
   isDark,
 }) => {
   const [dataInicio, setDataInicio] = useState(
-    new Date().toISOString().split("T")[0],
+    (() => {
+      const hoje = new Date();
+      const ano = hoje.getFullYear();
+      const mes = String(hoje.getMonth() + 1).padStart(2, "0");
+      const dia = String(hoje.getDate()).padStart(2, "0");
+      return `${ano}-${mes}-${dia}`;
+    })(),
   );
   const [erro, setErro] = useState("");
 
@@ -3898,8 +3982,10 @@ const Corretores = () => {
   // 2. FUNÇÃO DE ATIVAÇÃO DIRETA COM DEBUG
   // -----------------------------------------
   const handleAtivacaoDireta = async (corretorId) => {
+    console.log("🚨🚨🚨 HANDLE ATIVACAO DIRETA FOI CHAMADA! 🚨🚨🚨");
     console.log("🔍 FUNÇÃO DE ATIVAÇÃO DIRETA CHAMADA! ID:", corretorId);
     console.log("📊 Corretor selecionado antes:", corretorSelecionado);
+    console.log("📌 data e hora da chamada:", new Date().toLocaleString());
 
     try {
       // Verifica se o ID é válido
@@ -3964,7 +4050,7 @@ const Corretores = () => {
       console.error("❌ Stack:", error.stack);
       alert(`Erro ao ativar corretor: ${error.message || "Tente novamente."}`);
     }
-  };
+  }; // ← FECHA A FUNÇÃO AQUI!
 
   // -----------------------------------------
   // 2. CARREGAR DADOS DO SUPABASE
@@ -4068,7 +4154,7 @@ const Corretores = () => {
   };
 
   // -----------------------------------------
-  // 3. FUNÇÕES AUXILIARES
+  // 3. FUNÇÕES AUXILIARES (VERSÕES CORRIGIDAS - UTC)
   // -----------------------------------------
   const calcularProgresso = (checkpoints) => {
     if (!checkpoints) return 0;
@@ -4077,49 +4163,93 @@ const Corretores = () => {
     return Math.round((concluidos / totalModulos) * 100);
   };
 
-  const calcularDiasRestantes = (dataFim) => {
-    if (!dataFim) return 0;
-    const fim = new Date(dataFim);
+  // ✅ CORRIGIDA: calcularDiasRestantes com UTC
+  const calcularDiasRestantes = (dataFimStr) => {
+    if (!dataFimStr) return 0;
+
+    const [ano, mes, dia] = dataFimStr.split("T")[0].split("-").map(Number);
+    const fim = new Date(Date.UTC(ano, mes - 1, dia));
     const hoje = new Date();
-    const diff = Math.ceil((fim - hoje) / (1000 * 60 * 60 * 24));
+    const hojeUTC = new Date(
+      Date.UTC(hoje.getUTCFullYear(), hoje.getUTCMonth(), hoje.getUTCDate()),
+    );
+
+    const diff = Math.ceil((fim - hojeUTC) / (1000 * 60 * 60 * 24));
     return diff > 0 ? diff : 0;
   };
 
-  const calcularDiasPassados = (dataInicio) => {
-    if (!dataInicio) return 0;
-    const inicio = new Date(dataInicio);
+  // ✅ CORRIGIDA: calcularDiasPassados com UTC
+  const calcularDiasPassados = (dataInicioStr) => {
+    if (!dataInicioStr) return 0;
+
+    const [ano, mes, dia] = dataInicioStr.split("T")[0].split("-").map(Number);
+    const inicio = new Date(Date.UTC(ano, mes - 1, dia));
     const hoje = new Date();
-    const diff = Math.ceil((hoje - inicio) / (1000 * 60 * 60 * 24));
+    const hojeUTC = new Date(
+      Date.UTC(hoje.getUTCFullYear(), hoje.getUTCMonth(), hoje.getUTCDate()),
+    );
+
+    const diff = Math.ceil((hojeUTC - inicio) / (1000 * 60 * 60 * 24));
     return diff > 0 ? diff : 0;
   };
 
+  // ✅ CORRIGIDA: calcularProgressoExperiencia com UTC
   const calcularProgressoExperiencia = (corretor) => {
     if (!corretor.treinamento_conclusao || !corretor.data_experiencia_fim)
       return 0;
-    const inicio = new Date(corretor.treinamento_conclusao);
-    const fim = new Date(corretor.data_experiencia_fim);
+
+    const [anoInicio, mesInicio, diaInicio] = corretor.treinamento_conclusao
+      .split("T")[0]
+      .split("-")
+      .map(Number);
+    const [anoFim, mesFim, diaFim] = corretor.data_experiencia_fim
+      .split("T")[0]
+      .split("-")
+      .map(Number);
+
+    const inicio = new Date(Date.UTC(anoInicio, mesInicio - 1, diaInicio));
+    const fim = new Date(Date.UTC(anoFim, mesFim - 1, diaFim));
     const hoje = new Date();
+    const hojeUTC = new Date(
+      Date.UTC(hoje.getUTCFullYear(), hoje.getUTCMonth(), hoje.getUTCDate()),
+    );
+
     const total = Math.ceil((fim - inicio) / (1000 * 60 * 60 * 24));
-    const passado = Math.ceil((hoje - inicio) / (1000 * 60 * 60 * 24));
+    const passado = Math.ceil((hojeUTC - inicio) / (1000 * 60 * 60 * 24));
     const progresso = Math.min(100, Math.max(0, (passado / total) * 100));
     return Math.round(progresso);
   };
 
-  const calcularDiasParaVencimento = (dataValidade) => {
-    if (!dataValidade) return null;
+  // ✅ CORRIGIDA: calcularDiasParaVencimento com UTC
+  const calcularDiasParaVencimento = (dataValidadeStr) => {
+    if (!dataValidadeStr) return null;
+
+    const [ano, mes, dia] = dataValidadeStr
+      .split("T")[0]
+      .split("-")
+      .map(Number);
+    const vencimento = new Date(Date.UTC(ano, mes - 1, dia));
 
     const hoje = new Date();
-    hoje.setHours(0, 0, 0, 0);
+    const hojeUTC = new Date(
+      Date.UTC(hoje.getUTCFullYear(), hoje.getUTCMonth(), hoje.getUTCDate()),
+    );
 
-    const vencimento = new Date(dataValidade);
-    vencimento.setHours(0, 0, 0, 0);
-
-    const diff = Math.ceil((vencimento - hoje) / (1000 * 60 * 60 * 24));
+    const diff = Math.ceil((vencimento - hojeUTC) / (1000 * 60 * 60 * 24));
     return diff;
   };
 
+  // ✅ formatarData (já estava correta, mas adicionei tratamento para objetos Date)
   const formatarData = (dataString) => {
     if (!dataString) return "Não informada";
+
+    // Se for objeto Date, usar UTC
+    if (dataString instanceof Date) {
+      const ano = dataString.getUTCFullYear();
+      const mes = String(dataString.getUTCMonth() + 1).padStart(2, "0");
+      const dia = String(dataString.getUTCDate()).padStart(2, "0");
+      return `${dia}/${mes}/${ano}`;
+    }
 
     if (typeof dataString === "string") {
       const parteData = dataString.split("T")[0];
@@ -4130,7 +4260,11 @@ const Corretores = () => {
     }
 
     try {
-      return new Date(dataString).toLocaleDateString("pt-BR");
+      const data = new Date(dataString);
+      const ano = data.getUTCFullYear();
+      const mes = String(data.getUTCMonth() + 1).padStart(2, "0");
+      const dia = String(data.getUTCDate()).padStart(2, "0");
+      return `${dia}/${mes}/${ano}`;
     } catch {
       return "Não informada";
     }
@@ -4153,39 +4287,45 @@ const Corretores = () => {
     return `https://wa.me/${numero}?text=${encodeURIComponent(mensagem)}`;
   };
 
+  // ✅ CORRIGIDA: formatarDataParaExibicao com UTC
   const formatarDataParaExibicao = (dataString) => {
     const hoje = new Date();
-    hoje.setHours(0, 0, 0, 0);
+    const hojeUTC = new Date(
+      Date.UTC(hoje.getUTCFullYear(), hoje.getUTCMonth(), hoje.getUTCDate()),
+    );
 
-    const amanha = new Date(hoje);
-    amanha.setDate(amanha.getDate() + 1);
+    const amanhaUTC = new Date(hojeUTC);
+    amanhaUTC.setUTCDate(amanhaUTC.getUTCDate() + 1);
 
-    let dataEntrevista;
+    let dataEntrevistaUTC;
     let horaOriginal = "";
 
-    if (typeof dataString === "string" && dataString.includes("-")) {
-      const [ano, mes, dia] = dataString.split("-").map(Number);
-      dataEntrevista = new Date(ano, mes - 1, dia);
-    } else {
+    if (typeof dataString === "string") {
+      // Separa data e hora se houver
       const partes = dataString.split(" ");
-      if (partes.length > 1) {
-        const [ano, mes, dia] = partes[0].split("-").map(Number);
-        dataEntrevista = new Date(ano, mes - 1, dia);
-        horaOriginal = partes[1];
-      } else {
-        dataEntrevista = new Date(dataString);
-      }
-    }
-    dataEntrevista.setHours(0, 0, 0, 0);
+      const dataParte = partes[0].split("T")[0];
+      horaOriginal = partes.length > 1 ? partes[1] : "";
 
-    const dia = dataEntrevista.getDate().toString().padStart(2, "0");
-    const mes = (dataEntrevista.getMonth() + 1).toString().padStart(2, "0");
-    const ano = dataEntrevista.getFullYear();
+      const [ano, mes, dia] = dataParte.split("-").map(Number);
+      dataEntrevistaUTC = new Date(Date.UTC(ano, mes - 1, dia));
+    } else {
+      dataEntrevistaUTC = new Date(
+        Date.UTC(
+          dataString.getUTCFullYear(),
+          dataString.getUTCMonth(),
+          dataString.getUTCDate(),
+        ),
+      );
+    }
+
+    const dia = String(dataEntrevistaUTC.getUTCDate()).padStart(2, "0");
+    const mes = String(dataEntrevistaUTC.getUTCMonth() + 1).padStart(2, "0");
+    const ano = dataEntrevistaUTC.getUTCFullYear();
 
     let textoData;
-    if (dataEntrevista.getTime() === hoje.getTime()) {
+    if (dataEntrevistaUTC.getTime() === hojeUTC.getTime()) {
       textoData = "Hoje";
-    } else if (dataEntrevista.getTime() === amanha.getTime()) {
+    } else if (dataEntrevistaUTC.getTime() === amanhaUTC.getTime()) {
       textoData = "Amanhã";
     } else {
       textoData = `${dia}/${mes}/${ano}`;
@@ -4194,17 +4334,23 @@ const Corretores = () => {
     return horaOriginal ? `${textoData}, ${horaOriginal}` : textoData;
   };
 
+  // ✅ validarFormulario (já está correta, usa formAgendamento.dataEntrevista que é string YYYY-MM-DD)
   const validarFormulario = () => {
     const novosErros = {};
 
     if (!formAgendamento.dataEntrevista) {
       novosErros.dataEntrevista = "Data da entrevista é obrigatória";
     } else {
-      const dataSelecionada = new Date(formAgendamento.dataEntrevista);
+      const [ano, mes, dia] = formAgendamento.dataEntrevista
+        .split("-")
+        .map(Number);
+      const dataSelecionada = new Date(Date.UTC(ano, mes - 1, dia));
       const hoje = new Date();
-      hoje.setHours(0, 0, 0, 0);
+      const hojeUTC = new Date(
+        Date.UTC(hoje.getUTCFullYear(), hoje.getUTCMonth(), hoje.getUTCDate()),
+      );
 
-      if (dataSelecionada < hoje) {
+      if (dataSelecionada < hojeUTC) {
         novosErros.dataEntrevista =
           "Não é possível agendar para datas passadas";
       }
@@ -4513,61 +4659,112 @@ const Corretores = () => {
     }
   };
 
+  // ✅ FUNÇÃO PARA INICIAR EXPERIÊNCIA (saindo do treinamento)
   const handleConfirmarAtivacao = async (candidatoId, dataInicio) => {
+    console.log("🚨🚨🚨 HANDLE CONFIRMAR ATIVACAO FOI CHAMADA! 🚨🚨🚨");
+    console.log("📌 candidatoId:", candidatoId);
+    console.log("📌 dataInicio:", dataInicio);
+    console.log("📌 tipo do dataInicio:", typeof dataInicio);
     console.log("🔥 ATIVANDO CORRETOR - ID:", candidatoId, "Data:", dataInicio);
 
     try {
-      // 1️⃣ Buscar dias de experiência do banco de configurações
       const diasExperiencia = await configuracoesService.getDiasExperiencia();
-      console.log(
-        `📅 Período de experiência configurado: ${diasExperiencia} dias`,
-      );
+      // USA A DATA QUE VEIO DO MODAL
+      const dataAtivacao = dataInicio;
 
-      // 2️⃣ Calcular data fim da experiência (USA O VALOR DO BANCO!)
-      const dataFimExperiencia = new Date(dataInicio);
-      dataFimExperiencia.setDate(
-        dataFimExperiencia.getDate() + diasExperiencia,
-      );
-      const dataFimStr = dataFimExperiencia.toISOString().split("T")[0];
+      // CALCULA FIM DA EXPERIÊNCIA
+      const [ano, mes, dia] = dataAtivacao.split("-").map(Number);
+      const dataFim = new Date(ano, mes - 1, dia);
+      dataFim.setDate(dataFim.getDate() + diasExperiencia);
 
-      console.log("📅 Data início:", dataInicio);
+      const anoFim = dataFim.getFullYear();
+      const mesFim = String(dataFim.getMonth() + 1).padStart(2, "0");
+      const diaFim = String(dataFim.getDate()).padStart(2, "0");
+      const dataFimStr = `${anoFim}-${mesFim}-${diaFim}`;
+
+      console.log("📅 Data início:", dataAtivacao);
       console.log("📅 Data fim:", dataFimStr);
 
-      // 3️⃣ ATUALIZAR com APENAS os campos que EXISTEM
+      // ✅ ATUALIZAÇÃO PARA INICIAR EXPERIÊNCIA
       const { error } = await supabase
         .from("corretores")
         .update({
           etapa: "ativos",
-          periodoExperiencia: true,
-          treinamento_conclusao: dataInicio,
+          periodoExperiencia: true, // ← MARCA COMO EM EXPERIÊNCIA!
+          treinamento_conclusao: dataAtivacao,
           data_experiencia_fim: dataFimStr,
-          // 👇 NÃO USAR NENHUM DESSES:
-          // status ❌
-          // updated_at ❌
-          // data_ativacao ❌
-          // periodo_experiencia ❌
-          // dias_experiencia ❌
+          // data_ativacao: NÃO SALVA AINDA!
         })
         .eq("id", candidatoId);
 
-      if (error) {
-        console.error("❌ Erro no update:", error);
-        throw error;
-      }
-
-      console.log("✅ Corretor ativado com sucesso!");
+      if (error) throw error;
 
       await carregarDados();
       setModalAtivacaoAberto(false);
       setCandidatoParaAtivar(null);
 
-      alert(`✅ Período de experiência iniciado! (${diasExperiencia} dias)`);
+      alert(`✅ Período de experiência iniciado em ${dataAtivacao}!`);
     } catch (err) {
       console.error("❌ Erro ao ativar:", err);
       alert("Erro ao ativar corretor: " + err.message);
     }
   };
 
+  // ✅ NOVA FUNÇÃO PARA ATIVAR CORRETOR DURANTE EXPERIÊNCIA
+  const handleAtivarDuranteExperiencia = async (candidatoId, dataAtivacao) => {
+    console.log("🚀🚀🚀 HANDLE ATIVAR DURANTE EXPERIENCIA FOI CHAMADA! 🚀🚀🚀");
+    console.log("📌 candidatoId:", candidatoId);
+    console.log("📌 dataAtivacao:", dataAtivacao);
+
+    try {
+      // 1️⃣ ATUALIZA O BANCO
+      const { error } = await supabase
+        .from("corretores")
+        .update({
+          periodoExperiencia: false,
+          data_ativacao: dataAtivacao,
+        })
+        .eq("id", candidatoId)
+        .select(); // ← IMPORTANTE: retorna os dados atualizados!
+
+      if (error) throw error;
+
+      // 2️⃣ ATUALIZA O ESTADO LOCAL DIRETAMENTE
+      setCandidatosPorEtapa((prev) => {
+        // Atualiza na lista de ativos
+        const novosAtivos = prev.ativos.map((c) =>
+          c.id === candidatoId
+            ? { ...c, periodoExperiencia: false, data_ativacao: dataAtivacao }
+            : c,
+        );
+
+        // Atualiza na lista de treinamento (se existir)
+        const novoTreinamento = prev.treinamento.map((c) =>
+          c.id === candidatoId
+            ? { ...c, periodoExperiencia: false, data_ativacao: dataAtivacao }
+            : c,
+        );
+
+        return {
+          ...prev,
+          ativos: novosAtivos,
+          treinamento: novoTreinamento,
+        };
+      });
+
+      // 3️⃣ ATUALIZA O CORRETOR SELECIONADO NO MODAL
+      setCorretorSelecionado((prev) => ({
+        ...prev,
+        periodoExperiencia: false,
+        data_ativacao: dataAtivacao,
+      }));
+
+      alert(`✅ Corretor ativado antecipadamente em ${dataAtivacao}!`);
+    } catch (err) {
+      console.error("❌ Erro ao ativar antecipadamente:", err);
+      alert("Erro ao ativar corretor: " + err.message);
+    }
+  };
   const handleVerDetalhesReprovado = (candidato) => {
     alert(`Detalhes de ${candidato.nome}: ${candidato.motivoReprovacao}`);
   };
@@ -4743,28 +4940,53 @@ const Corretores = () => {
     }
   };
 
-  const handleAtivarCorretor = async (candidatoId, dataInicio) => {
+  const handleAtivarCorretor = async (candidatoId) => {
     try {
       const diasExperiencia = await configuracoesService.getDiasExperiencia();
-      const dataFim = new Date(dataInicio);
+
+      // ✅ DATA CORRETA USANDO O FUSO DO SISTEMA (NÃO UTC!)
+      const agora = new Date();
+
+      // Ajusta para o fuso local corretamente
+      const ano = agora.getFullYear();
+      const mes = String(agora.getMonth() + 1).padStart(2, "0");
+      const dia = String(agora.getDate()).padStart(2, "0");
+
+      const dataHoje = `${ano}-${mes}-${dia}`; // "2026-02-22" ✅
+
+      console.log("📅 Data de ativação (local):", dataHoje);
+
+      // CALCULAR FIM DA EXPERIÊNCIA - USANDO A MESMA LÓGICA LOCAL
+      const dataFim = new Date(ano, mes - 1, dia); // mês é 0-indexed
       dataFim.setDate(dataFim.getDate() + diasExperiencia);
-      const dataFimStr = dataFim.toISOString().split("T")[0];
+
+      const anoFim = dataFim.getFullYear();
+      const mesFim = String(dataFim.getMonth() + 1).padStart(2, "0");
+      const diaFim = String(dataFim.getDate()).padStart(2, "0");
+      const dataFimStr = `${anoFim}-${mesFim}-${diaFim}`;
+
+      console.log("📅 Data fim experiência:", dataFimStr);
 
       const { error } = await supabase
         .from("corretores")
         .update({
           etapa: "ativos",
-          periodoExperiencia: true, // ← ISSO É CRÍTICO!
-          treinamento_conclusao: dataInicio,
+          periodoExperiencia: true,
+          treinamento_conclusao: dataHoje,
           data_experiencia_fim: dataFimStr,
+          data_ativacao: dataHoje,
         })
         .eq("id", candidatoId);
 
       if (error) throw error;
+
       await carregarDados();
-      alert(`✅ Período de experiência iniciado!`);
+      alert(
+        `✅ Período de experiência iniciado em ${dataHoje}! (${diasExperiencia} dias)`,
+      );
     } catch (err) {
-      console.error("Erro ao ativar:", err);
+      console.error("❌ Erro ao ativar:", err);
+      alert("Erro ao ativar corretor: " + err.message);
     }
   };
 
@@ -6846,8 +7068,45 @@ const Corretores = () => {
                                       isDark ? "text-gray-400" : "text-gray-600"
                                     }`}
                                   >
-                                    ⏱️ {diasPassados} de 90 dias (
-                                    {diasRestantes} restantes)
+                                    ⏱️{" "}
+                                    {(() => {
+                                      // CALCULA OS DIAS DIRETAMENTE AQUI!
+                                      const dataInicio =
+                                        corretor.treinamento_conclusao;
+                                      const [ano, mes, dia] = dataInicio
+                                        .split("T")[0]
+                                        .split("-")
+                                        .map(Number);
+                                      const inicio = new Date(
+                                        Date.UTC(ano, mes - 1, dia),
+                                      );
+                                      const hoje = new Date();
+                                      const hojeUTC = new Date(
+                                        Date.UTC(
+                                          hoje.getUTCFullYear(),
+                                          hoje.getUTCMonth(),
+                                          hoje.getUTCDate(),
+                                        ),
+                                      );
+                                      const diff = Math.ceil(
+                                        (hojeUTC - inicio) /
+                                          (1000 * 60 * 60 * 24),
+                                      );
+                                      const diasPassadosCard =
+                                        diff > 0 ? diff : 1;
+                                      const diasRestantesCard = Math.max(
+                                        0,
+                                        90 - diasPassadosCard,
+                                      );
+                                      const progressoCard = Math.min(
+                                        100,
+                                        Math.round(
+                                          (diasPassadosCard / 90) * 100,
+                                        ),
+                                      );
+
+                                      return `${diasPassadosCard} de 90 dias (${diasRestantesCard} restantes)`;
+                                    })()}
                                   </span>
                                   <span
                                     className={`text-xs font-semibold ${
@@ -6856,13 +7115,76 @@ const Corretores = () => {
                                         : "text-amber-600"
                                     }`}
                                   >
-                                    {progresso}%
+                                    {(() => {
+                                      const dataInicio =
+                                        corretor.treinamento_conclusao;
+                                      const [ano, mes, dia] = dataInicio
+                                        .split("T")[0]
+                                        .split("-")
+                                        .map(Number);
+                                      const inicio = new Date(
+                                        Date.UTC(ano, mes - 1, dia),
+                                      );
+                                      const hoje = new Date();
+                                      const hojeUTC = new Date(
+                                        Date.UTC(
+                                          hoje.getUTCFullYear(),
+                                          hoje.getUTCMonth(),
+                                          hoje.getUTCDate(),
+                                        ),
+                                      );
+                                      const diff = Math.ceil(
+                                        (hojeUTC - inicio) /
+                                          (1000 * 60 * 60 * 24),
+                                      );
+                                      const diasPassadosCard =
+                                        diff > 0 ? diff : 1;
+                                      return Math.min(
+                                        100,
+                                        Math.round(
+                                          (diasPassadosCard / 90) * 100,
+                                        ),
+                                      );
+                                    })()}
+                                    %
                                   </span>
                                 </div>
                                 <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
                                   <div
                                     className="h-full bg-amber-500 rounded-full"
-                                    style={{ width: `${progresso}%` }}
+                                    style={{
+                                      width: `${(() => {
+                                        const dataInicio =
+                                          corretor.treinamento_conclusao;
+                                        const [ano, mes, dia] = dataInicio
+                                          .split("T")[0]
+                                          .split("-")
+                                          .map(Number);
+                                        const inicio = new Date(
+                                          Date.UTC(ano, mes - 1, dia),
+                                        );
+                                        const hoje = new Date();
+                                        const hojeUTC = new Date(
+                                          Date.UTC(
+                                            hoje.getUTCFullYear(),
+                                            hoje.getUTCMonth(),
+                                            hoje.getUTCDate(),
+                                          ),
+                                        );
+                                        const diff = Math.ceil(
+                                          (hojeUTC - inicio) /
+                                            (1000 * 60 * 60 * 24),
+                                        );
+                                        const diasPassadosCard =
+                                          diff > 0 ? diff : 1;
+                                        return Math.min(
+                                          100,
+                                          Math.round(
+                                            (diasPassadosCard / 90) * 100,
+                                          ),
+                                        );
+                                      })()}%`,
+                                    }}
                                   />
                                 </div>
                               </div>
@@ -7449,7 +7771,7 @@ const Corretores = () => {
           onClose={handleFecharModal}
           corretor={corretorSelecionado}
           isDark={isDark}
-          onAtivar={handleAtivacaoDireta} // ← FUNÇÃO CORRETA!
+          onAtivar={handleAtivarDuranteExperiencia} // ← ESSA USA DATA DO MODAL (22/02)!
         />
       )}
 

@@ -21,17 +21,290 @@ import {
   LightBulbIcon,
   BuildingOfficeIcon,
   PlusIcon,
+  CameraIcon,
+  StarIcon,
+  TrashIcon,
+  ArrowUpTrayIcon,
 } from "@heroicons/react/24/outline";
+import { StarIcon as StarIconSolid } from "@heroicons/react/24/solid";
 import Button from "../../componentes/ui/Button";
 import { useTheme } from "../../contexts/ThemeContext";
 import { supabase } from "../../lib/supabase";
 import { slugify } from "../../lib/slugify";
+
+// Componentes de drag-and-drop
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+
+// Componente SortableItem para as fotos
+const SortableItem = ({
+  id,
+  url,
+  isCapa,
+  onSetCapa,
+  onRemove,
+  index,
+  isDark,
+}) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 999 : "auto",
+  };
+
+  const getBorderClass = () => (isDark ? "border-gray-700" : "border-gray-200");
+  const getBgClass = () => (isDark ? "bg-gray-800" : "bg-white");
+  const getTextClass = () => (isDark ? "text-gray-100" : "text-gray-900");
+  const getIconColorClass = () =>
+    isDark ? "text-[#D4A24D]" : "text-[#D4A24D]";
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      {...listeners}
+      className={`relative group rounded-lg border-2 overflow-hidden ${isCapa ? "border-[#D4A24D]" : getBorderClass()} ${isDragging ? "shadow-xl cursor-grabbing" : "cursor-grab"} transition-all hover:shadow-lg`}
+    >
+      <div className="aspect-square relative">
+        <img
+          src={url}
+          alt={`Foto ${index + 1}`}
+          className="w-full h-full object-cover"
+        />
+
+        {/* Overlay com ações */}
+        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onSetCapa(id);
+            }}
+            className={`p-2 rounded-full ${isCapa ? "bg-[#D4A24D] text-white" : "bg-white/90 hover:bg-white text-gray-700"} transition-colors`}
+            title={isCapa ? "Foto de capa" : "Definir como capa"}
+          >
+            {isCapa ? (
+              <StarIconSolid className="w-5 h-5" />
+            ) : (
+              <StarIcon className="w-5 h-5" />
+            )}
+          </button>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onRemove(id);
+            }}
+            className="p-2 rounded-full bg-red-500/90 hover:bg-red-600 text-white transition-colors"
+            title="Remover foto"
+          >
+            <TrashIcon className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Badge de ordem */}
+        <div
+          className={`absolute top-2 left-2 ${isCapa ? "bg-[#D4A24D]" : "bg-black/70"} text-white text-xs font-bold px-2 py-1 rounded-full`}
+        >
+          {isCapa ? "⭐ CAPA" : `#${index + 1}`}
+        </div>
+
+        {/* Badge de arrastar */}
+        <div className="absolute bottom-2 right-2 bg-black/70 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+          <svg
+            className="w-4 h-4"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M4 8h16M4 16h16"
+            />
+          </svg>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const CadastrarImovel = () => {
   const navigate = useNavigate();
   const { isDark } = useTheme();
   const [loading, setLoading] = useState(false);
   const [submitMessage, setSubmitMessage] = useState({ type: "", text: "" });
+
+  // =============== ESTADO DAS FOTOS ===============
+  const [fotos, setFotos] = useState([]);
+  const [uploadingFotos, setUploadingFotos] = useState(false);
+  const [fotosError, setFotosError] = useState("");
+
+  // Configuração dos sensores para drag-and-drop
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 5, // Ativa após 5px de movimento (evita conflito com cliques)
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
+  );
+
+  // =============== FUNÇÕES DO GERENCIADOR DE FOTOS ===============
+  const handleDragEnd = (event) => {
+    const { active, over } = event;
+
+    if (active.id !== over.id) {
+      setFotos((items) => {
+        const oldIndex = items.findIndex((item) => item.id === active.id);
+        const newIndex = items.findIndex((item) => item.id === over.id);
+
+        // Reorganiza o array
+        const newItems = arrayMove(items, oldIndex, newIndex);
+
+        // Atualiza as ordens (a capa continua sendo a primeira se existir)
+        return newItems.map((item, index) => ({
+          ...item,
+          ordem: index,
+        }));
+      });
+    }
+  };
+
+  const handleSetCapa = (fotoId) => {
+    setFotos((items) => {
+      // Encontra a foto que foi clicada
+      const fotoClicada = items.find((f) => f.id === fotoId);
+
+      // Remove a foto da posição atual
+      const semFotoClicada = items.filter((f) => f.id !== fotoId);
+
+      // Coloca a foto clicada no início e atualiza as ordens
+      const novasFotos = [fotoClicada, ...semFotoClicada].map(
+        (item, index) => ({
+          ...item,
+          ordem: index,
+          isCapa: index === 0, // A primeira foto é a capa
+        }),
+      );
+
+      return novasFotos;
+    });
+  };
+
+  const handleRemoveFoto = (fotoId) => {
+    setFotos((items) => {
+      const novasFotos = items
+        .filter((f) => f.id !== fotoId)
+        .map((item, index) => ({
+          ...item,
+          ordem: index,
+          isCapa: index === 0, // Se removeu a capa, a nova primeira vira capa
+        }));
+      return novasFotos;
+    });
+  };
+
+  const handleUploadFotos = async (event) => {
+    const files = Array.from(event.target.files);
+    if (files.length === 0) return;
+
+    // Validação: máximo 20 fotos
+    if (fotos.length + files.length > 20) {
+      setFotosError("Máximo de 20 fotos permitidas");
+      return;
+    }
+
+    setUploadingFotos(true);
+    setFotosError("");
+
+    try {
+      const uploadPromises = files.map(async (file, index) => {
+        // Validação de tipo de arquivo
+        if (!file.type.startsWith("image/")) {
+          throw new Error("Apenas imagens são permitidas");
+        }
+
+        // Validação de tamanho (máximo 5MB)
+        if (file.size > 5 * 1024 * 1024) {
+          throw new Error("Imagem muito grande. Máximo 5MB");
+        }
+
+        // Criar nome único para o arquivo
+        const fileExt = file.name.split(".").pop();
+        const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+        const filePath = `imoveis/temp/${fileName}`;
+
+        // Upload para o Supabase Storage
+        const { error: uploadError } = await supabase.storage
+          .from("imoveis")
+          .upload(filePath, file);
+
+        if (uploadError) throw uploadError;
+
+        // Gerar URL pública
+        const {
+          data: { publicUrl },
+        } = supabase.storage.from("imoveis").getPublicUrl(filePath);
+
+        return {
+          id: `temp-${Date.now()}-${index}`, // ID temporário
+          url: publicUrl,
+          path: filePath,
+          file: file,
+          ordem: fotos.length + index,
+          isCapa: fotos.length === 0 && index === 0, // Primeira foto vira capa se não houver nenhuma
+        };
+      });
+
+      const novasFotos = await Promise.all(uploadPromises);
+
+      setFotos((prev) => {
+        const todasFotos = [...prev, ...novasFotos];
+        // Garantir que apenas uma seja capa
+        const temCapa = todasFotos.some((f) => f.isCapa);
+        if (!temCapa && todasFotos.length > 0) {
+          todasFotos[0].isCapa = true;
+        }
+        return todasFotos;
+      });
+    } catch (error) {
+      console.error("Erro no upload:", error);
+      setFotosError(error.message || "Erro ao fazer upload das fotos");
+    } finally {
+      setUploadingFotos(false);
+      // Limpar o input para permitir selecionar o mesmo arquivo novamente
+      event.target.value = "";
+    }
+  };
 
   // =============== BUSCAR EMPREENDIMENTOS ===============
   const [empreendimentos, setEmpreendimentos] = useState([]);
@@ -677,7 +950,6 @@ const CadastrarImovel = () => {
     { value: "PI", label: "Piauí" },
     { value: "RJ", label: "Rio de Janeiro" },
     { value: "RN", label: "Rio Grande do Norte" },
-    { value: "RS", label: "Rio Grande do Sul" },
     { value: "RO", label: "Rondônia" },
     { value: "RR", label: "Roraima" },
     { value: "SC", label: "Santa Catarina" },
@@ -818,6 +1090,7 @@ const CadastrarImovel = () => {
     });
   };
 
+  // =============== FUNÇÃO DE SUBMIT MODIFICADA PARA INCLUIR FOTOS ===============
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -1017,12 +1290,57 @@ const CadastrarImovel = () => {
     };
 
     try {
-      const { data, error } = await supabase
+      // Primeiro, insere o imóvel
+      const { data: imovelData, error } = await supabase
         .from("imoveis")
         .insert([dadosParaSupabase])
         .select();
 
       if (error) throw error;
+
+      const imovelId = imovelData[0].id;
+
+      // Depois, se houver fotos, move os arquivos do temp para a pasta definitiva e salva no banco
+      if (fotos.length > 0) {
+        const fotosPromises = fotos.map(async (foto, index) => {
+          // Se for uma foto temporária (ainda não movida)
+          if (foto.id.startsWith("temp-")) {
+            // Move o arquivo da pasta temp para a pasta do imóvel
+            const newPath = `imoveis/${imovelId}/${foto.file.name}`;
+
+            const { error: moveError } = await supabase.storage
+              .from("imoveis")
+              .move(foto.path, newPath);
+
+            if (moveError) throw moveError;
+
+            // Gera a nova URL pública
+            const {
+              data: { publicUrl },
+            } = supabase.storage.from("imoveis").getPublicUrl(newPath);
+
+            return {
+              imovel_id: imovelId,
+              url: publicUrl,
+              ordem: index,
+              is_capa: foto.isCapa,
+            };
+          }
+          return null;
+        });
+
+        const fotosParaInserir = (await Promise.all(fotosPromises)).filter(
+          Boolean,
+        );
+
+        if (fotosParaInserir.length > 0) {
+          const { error: fotosError } = await supabase
+            .from("fotos_imovel")
+            .insert(fotosParaInserir);
+
+          if (fotosError) throw fotosError;
+        }
+      }
 
       setSubmitMessage({
         type: "success",
@@ -3009,6 +3327,116 @@ const CadastrarImovel = () => {
             </div>
           </div>
 
+          {/* ========== SEÇÃO 7: FOTOS DO IMÓVEL (NOVA) ========== */}
+          <div
+            className={`rounded-xl border p-6 transition-colors duration-200 ${getBgClass()} ${getBorderClass()}`}
+          >
+            <div className="flex items-center space-x-3 mb-6">
+              <div className={`p-2 rounded-lg ${getIconBgClass()}`}>
+                <CameraIcon className={`w-6 h-6 ${getIconColorClass()}`} />
+              </div>
+              <div>
+                <h2
+                  className={`text-xl font-semibold transition-colors ${getTextClass()}`}
+                >
+                  Fotos do Imóvel
+                </h2>
+                <p
+                  className={`text-sm transition-colors ${getTextSecondaryClass()}`}
+                >
+                  Arraste para organizar • Clique na estrela para definir a capa
+                  • Máximo 20 fotos
+                </p>
+              </div>
+            </div>
+
+            {/* Área de upload */}
+            <div className="mb-6">
+              <label
+                className={`relative flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer transition-colors hover:border-[#D4A24D] ${getBorderClass()} ${getHoverBgClass()}`}
+              >
+                <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                  <ArrowUpTrayIcon
+                    className={`w-8 h-8 mb-2 ${getTextSecondaryClass()}`}
+                  />
+                  <p className={`text-sm font-medium ${getTextClass()}`}>
+                    {uploadingFotos
+                      ? "Enviando..."
+                      : "Clique para fazer upload"}
+                  </p>
+                  <p className={`text-xs ${getTextSecondaryClass()}`}>
+                    PNG, JPG ou JPEG (máx. 5MB cada)
+                  </p>
+                  <p className={`text-xs ${getTextSecondaryClass()} mt-1`}>
+                    {fotos.length}/20 fotos selecionadas
+                  </p>
+                </div>
+                <input
+                  type="file"
+                  multiple
+                  accept="image/*"
+                  onChange={handleUploadFotos}
+                  disabled={uploadingFotos || fotos.length >= 20}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
+                />
+              </label>
+              {fotosError && (
+                <p
+                  className={`mt-2 text-sm ${isDark ? "text-red-400" : "text-red-600"}`}
+                >
+                  {fotosError}
+                </p>
+              )}
+            </div>
+
+            {/* Grid de fotos com drag-and-drop */}
+            {fotos.length > 0 && (
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd}
+              >
+                <SortableContext
+                  items={fotos.map((f) => f.id)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                    {fotos.map((foto, index) => (
+                      <SortableItem
+                        key={foto.id}
+                        id={foto.id}
+                        url={foto.url}
+                        isCapa={foto.isCapa}
+                        index={index}
+                        onSetCapa={handleSetCapa}
+                        onRemove={handleRemoveFoto}
+                        isDark={isDark}
+                      />
+                    ))}
+                  </div>
+                </SortableContext>
+              </DndContext>
+            )}
+
+            {/* Informações adicionais */}
+            {fotos.length > 0 && (
+              <div
+                className={`mt-4 p-3 rounded-lg ${isDark ? "bg-gray-800" : "bg-gray-50"}`}
+              >
+                <p className={`text-sm ${getTextSecondaryClass()}`}>
+                  <span className="font-medium text-[#D4A24D]">
+                    ⭐ Foto de capa:
+                  </span>{" "}
+                  Será a primeira imagem do carrossel e a miniatura do imóvel.
+                </p>
+                <p className={`text-sm ${getTextSecondaryClass()} mt-1`}>
+                  <span className="font-medium">🖱️ Arraste:</span> As fotos
+                  podem ser reorganizadas livremente.
+                </p>
+              </div>
+            )}
+          </div>
+
           {/* ========== SEÇÃO: CUSTOS ADICIONAIS ========== */}
           <div
             className={`rounded-xl border p-6 transition-colors duration-200 ${getBgClass()} ${getBorderClass()}`}
@@ -4523,7 +4951,7 @@ const CadastrarImovel = () => {
             </div>
           )}
 
-          {/* ========== SEÇÃO 6: DESCRIÇÃO E OBSERVAÇÕES ========== */}
+          {/* ========== SEÇÃO 8: DESCRIÇÃO E OBSERVAÇÕES ========== */}
           <div
             className={`rounded-xl border p-6 transition-colors duration-200 ${getBgClass()} ${getBorderClass()}`}
           >
@@ -4609,7 +5037,7 @@ const CadastrarImovel = () => {
             </div>
           )}
 
-          {/* ========== SEÇÃO 7: AÇÕES ========== */}
+          {/* ========== SEÇÃO 9: AÇÕES ========== */}
           <div
             className={`rounded-xl border p-6 transition-colors duration-200 ${getBgClass()} ${getBorderClass()}`}
           >
