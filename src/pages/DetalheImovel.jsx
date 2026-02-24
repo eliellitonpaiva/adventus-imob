@@ -324,6 +324,13 @@ const DetalheImovel = () => {
     }).format(valorNumerico);
   }, []);
 
+  // 🔥 NOVA FUNÇÃO ADICIONADA AQUI
+  const calcularDesconto = (anterior, atual) => {
+    if (!anterior || !atual || anterior <= 0 || atual <= 0) return 0;
+    const desconto = ((anterior - atual) / anterior) * 100;
+    return Math.round(desconto);
+  };
+
   const formatarFinalidade = useCallback((imovel) => {
     if (imovel.finalidade_venda && imovel.finalidade_aluguel)
       return "Venda e Aluguel";
@@ -577,6 +584,10 @@ const DetalheImovel = () => {
   const getImovelData = useCallback(() => {
     if (!imovel) return null;
 
+    console.log("🔥 imovel cru:", imovel);
+    console.log("🔥 preco_anterior cru:", imovel.preco_anterior);
+    console.log("🔥 etiquetas cruas:", imovel.etiquetas);
+
     const caracteristicas = imovel.caracteristicas || {};
     const dependencias = imovel.dependencias || {};
     const acabamentos = imovel.acabamentos || {};
@@ -634,6 +645,14 @@ const DetalheImovel = () => {
       titulo: imovel.titulo || "Imóvel em Açailândia",
       preco: imovel.preco,
       precoFormatado: formatPrice(imovel.preco),
+
+      // 👇 ADICIONAR ESTA LINHA (as etiquetas!)
+      etiquetas: imovel.etiquetas || {},
+
+      // 👇 ADICIONAR ESTAS DUAS LINHAS AQUI (depois do precoFormatado)
+      precoAnterior: imovel.preco_anterior,
+      precoAnteriorFormatado: formatPrice(imovel.preco_anterior),
+
       precoAluguel: imovel.preco_aluguel,
       precoAluguelFormatado: formatPrice(imovel.preco_aluguel),
       finalidade: formatarFinalidade(imovel),
@@ -686,6 +705,12 @@ const DetalheImovel = () => {
     dados.tituloSEO = gerarTituloSEO(dados);
     dados.slugSEO = gerarSlugSEO(dados);
     dados.metaDescription = gerarMetaDescription(dados);
+
+    console.log("🎯 dados processados:", {
+      precoAnterior: dados.precoAnterior,
+      precoAnteriorFormatado: dados.precoAnteriorFormatado,
+      baixouPreco: dados.etiquetas?.baixouPreco,
+    });
 
     return dados;
   }, [
@@ -1130,6 +1155,15 @@ const DetalheImovel = () => {
 
         if (isMounted) {
           setImovel(imovelData);
+          // 🔥 VERIFICA SE O IMÓVEL FOI VENDIDO
+          if (
+            imovelData.status === "vendido" ||
+            imovelData.status === "alugado"
+          ) {
+            // Redireciona para a listagem
+            navigate("/comprar");
+            return;
+          }
           // =============== CARREGAR FOTOS ===============
           await carregarFotos(imovelData.id);
           await registrarVisualizacao(imovelData.id);
@@ -1397,6 +1431,11 @@ const DetalheImovel = () => {
   // ==========================================================================
   // RENDERIZAÇÃO
   // ==========================================================================
+  console.log("👀 renderizando com:", {
+    temPrecoAnterior: !!dados?.precoAnterior,
+    temBaixouPreco: dados?.etiquetas?.baixouPreco,
+    condicao: dados?.etiquetas?.baixouPreco && dados?.precoAnterior,
+  });
   return (
     <>
       {/* BREADCRUMB */}
@@ -1577,16 +1616,45 @@ const DetalheImovel = () => {
 
               {/* PREÇO */}
               <div className="mb-6">
-                <div className="text-3xl md:text-4xl font-black text-white">
-                  {dados.ocultarPreco
-                    ? "Preço sob consulta"
-                    : dados.precoFormatado}
-                </div>
+                {/* VERIFICA SE TEM DESCONTO */}
+                {dados.etiquetas?.baixouPreco &&
+                dados.precoAnterior &&
+                dados.precoAnterior > 0 ? (
+                  <div className="flex flex-col">
+                    {/* PREÇO ANTERIOR EM CIMA COM BADGE VERMELHO */}
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-gray-400 line-through text-lg md:text-xl">
+                        {dados.precoAnteriorFormatado}
+                      </span>
+                      <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                        -{calcularDesconto(dados.precoAnterior, dados.preco)}%
+                        OFF
+                      </span>
+                    </div>
+
+                    {/* PREÇO ATUAL EM BAIXO (DESTAQUE) */}
+                    <div className="text-3xl md:text-4xl font-black text-white">
+                      {dados.precoFormatado}
+                    </div>
+
+                    {/* MENSAGEM DE ECONOMIA */}
+                    <p className="text-green-400 text-xs md:text-sm mt-2">
+                      🎉 Você economiza{" "}
+                      {formatPrice(dados.precoAnterior - dados.preco)}!
+                    </p>
+                  </div>
+                ) : (
+                  <div className="text-3xl md:text-4xl font-black text-white">
+                    {dados.ocultarPreco
+                      ? "Preço sob consulta"
+                      : dados.precoFormatado}
+                  </div>
+                )}
 
                 {dados.finalidade_aluguel &&
                   dados.precoAluguel &&
                   !dados.ocultarPreco && (
-                    <div className="text-lg md:text-xl text-gray-300 mt-1">
+                    <div className="text-lg md:text-xl text-gray-300 mt-3">
                       ou{" "}
                       <span className="font-bold text-white">
                         {dados.precoAluguelFormatado}/mês

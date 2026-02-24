@@ -1018,18 +1018,33 @@ const CadastrarImovel = () => {
       setCepError("CEP deve ter 8 dígitos");
       return;
     }
+
     setCepLoading(true);
     setCepError("");
+
     try {
       const response = await fetch(
-        `https://viacep.com.br/ws/${cepLimpo}/json/`,
+        `https://aqhiaherelldknfpscrd.supabase.co/functions/v1/buscar-cep/${cepLimpo}`,
       );
-      if (!response.ok) throw new Error("Erro na resposta da API");
+
       const data = await response.json();
-      if (data.erro) {
-        setCepError("CEP não encontrado");
+      console.log("📦 Resposta da API:", data);
+
+      // Tratar erros conhecidos
+      if (data.error) {
+        if (data.error === "CEP não encontrado") {
+          setCepError("CEP não encontrado");
+        } else if (data.error === "ViaCEP temporariamente indisponível") {
+          setCepError(
+            "Serviço de CEP está fora do ar. Tente novamente em alguns minutos ou digite o endereço manualmente.",
+          );
+        } else {
+          setCepError("Erro ao buscar CEP. Tente novamente.");
+        }
         return;
       }
+
+      // Preencher os campos
       setFormData((prev) => ({
         ...prev,
         endereco: data.logradouro || "",
@@ -1039,7 +1054,8 @@ const CadastrarImovel = () => {
         complemento: data.complemento || prev.complemento,
       }));
     } catch (error) {
-      setCepError("Erro ao buscar CEP. Verifique a conexão.");
+      console.error("❌ Erro:", error);
+      setCepError("Erro ao buscar CEP. Verifique sua conexão.");
     } finally {
       setCepLoading(false);
     }

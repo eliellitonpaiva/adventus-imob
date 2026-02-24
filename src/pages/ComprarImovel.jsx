@@ -70,7 +70,7 @@ const ComprarImovel = () => {
     }
   }, []);
 
-  // 🔥 FUNÇÃO CORRIGIDA - AGORA COM FOTOS
+  /// 🔥 FUNÇÃO CORRIGIDA - AGORA COM FOTOS
   const fetchImoveis = async (filtros) => {
     setLoading(true);
     setError(null);
@@ -83,6 +83,10 @@ const ComprarImovel = () => {
         .from("imoveis")
         .select("*")
         .order("created_at", { ascending: false });
+
+      // 🔥 FILTRO CORRIGIDO - EXCLUIR APENAS OS QUE NÃO QUEREMOS
+      // Só mostra imóveis com status "disponivel" ou "reservado"
+      query = query.in("status", ["disponivel", "reservado"]);
 
       // 2. Aplicar filtros básicos
       if (filtros.city !== "all") {

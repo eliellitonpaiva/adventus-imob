@@ -3,314 +3,179 @@ import { useNavigate } from "react-router-dom";
 
 const Hero = () => {
   const navigate = useNavigate();
-
-  const [activeTab, setActiveTab] = useState("alugar");
-
+  const [activeTab, setActiveTab] = useState("comprar");
   const [formValues, setFormValues] = useState({
-    city: "",
-    neighborhood: "",
-    propertyType: "",
     priceRange: "",
+    propertyType: "",
     bedrooms: "",
-    parking: "",
   });
 
   const handleInputChange = (field, value) => {
-    setFormValues((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
+    setFormValues((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleSearch = (e) => {
     e.preventDefault();
-
-    if (activeTab === "alugar") {
-      localStorage.setItem(
-        "hero_filters",
-        JSON.stringify({
-          tipo: "alugar",
-          filtros: formValues,
-        }),
-      );
-
-      navigate("/alugar", {
-        state: {
-          tipo: "alugar",
-          filtros: formValues,
-        },
-      });
-      return;
-    }
-
-    if (!formValues.city) {
-      alert("Selecione uma cidade para continuar.");
-      return;
-    }
-
-    localStorage.setItem(
-      "hero_filters",
-      JSON.stringify({
-        tipo: "comprar",
-        filtros: formValues,
-      }),
-    );
-
-    navigate("/comprar", {
-      state: {
-        tipo: "comprar",
-        filtros: formValues,
-      },
-    });
+    const searchParams = { tipo: activeTab, ...formValues };
+    localStorage.setItem("hero_filters", JSON.stringify(searchParams));
+    navigate(`/${activeTab}`, { state: searchParams });
   };
 
-  const hasValue = (field) => formValues[field] !== "";
+  const cleanButtonStyle = {
+    outline: "none",
+    boxShadow: "none",
+    WebkitTapHighlightColor: "transparent",
+    backgroundColor: "transparent",
+    border: "none",
+  };
 
   return (
-    <>
-      <style jsx="true" global="true">{`
-        .form-select-identical {
-          appearance: none;
-          background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23a0aec0'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
-          background-repeat: no-repeat;
-          background-position: right 20px center;
-          background-size: 20px;
-        }
+    <section className="relative w-full bg-white overflow-hidden">
+      {/* CONTAINER DA IMAGEM 
+          Ajustado: h-[500px] em notebooks (md) e max-h-[80vh] para nunca sumir o form 
+      */}
+      <div className="relative w-full h-[400px] md:h-[550px] lg:h-[650px] max-h-[85vh] overflow-hidden">
+        <img
+          src="https://adventusimobiliaria.com.br/img/banner/image/20/Equipe.jpg"
+          alt="Imóveis Adventus"
+          className="w-full h-full object-cover object-center"
+        />
+        {/* Overlay gradiente mais suave para não "achatar" a imagem */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/70"></div>
+      </div>
 
-        .form-select-identical:focus {
-          background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23D4A24D'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
-        }
-      `}</style>
+      {/* CONTAINER DO CONTEÚDO 
+          Mudamos de margem negativa fixa para um posicionamento que se adapta melhor
+      */}
+      <div className="relative -mt-32 md:-mt-48 lg:-mt-56 z-20 px-4 md:px-8">
+        <div className="max-w-6xl mx-auto">
+          {/* TÍTULO - Ajustado para não empurrar o form muito para baixo */}
+          <div className="mb-6 md:mb-10 text-center md:text-left">
+            <h1 className="text-[28px] md:text-[45px] lg:text-[56px] font-bold text-white drop-shadow-[0_4px_10px_rgba(0,0,0,0.8)] tracking-tight leading-tight">
+              Encontre seu <span className="text-[#D4A24D]">lar ideal</span>
+            </h1>
+          </div>
 
-      {/* SEÇÃO HERO - ALTURA EXATA: 600px */}
-      <section className="relative min-h-[600px] flex items-center px-0 overflow-hidden bg-black">
-        {/* Background */}
-        <div
-          className="absolute top-0 left-0 w-full h-full bg-cover bg-center bg-no-repeat z-10"
-          style={{
-            backgroundImage:
-              "url('https://adventusimobiliaria.com.br/img/banner/image/20/Equipe.jpg')",
-            backgroundPosition: "center 30%",
-          }}
-        ></div>
-
-        {/* Overlay */}
-        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-black/70 via-black/50 to-black/70 z-20"></div>
-
-        {/* Container - EXATAMENTE IGUAL */}
-        <div className="relative z-30 w-full max-w-7xl mx-auto px-4 py-8 md:py-10">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
-            {/* BOX COM LARGURA REDUZIDA NO DESKTOP - COMO ARRASTAR BORDA DIREITA NO ILLUSTRATOR */}
-            <div className="w-full lg:w-[calc(100%-40px)] lg:max-w-[580px]">
-              {/* CARD - REDUZIDO HORIZONTALMENTE (8px de cada lado = 16px total) */}
-              <div className="bg-white/95 backdrop-blur-sm rounded-2xl p-[30px] lg:px-[22px] lg:py-[30px] shadow-xl border border-white/20">
-                {/* TÍTULO - CENTRALIZADO EM TODAS AS TELAS */}
-                <h2 className="text-[28px] md:text-[36px] lg:text-[40px] font-bold text-[#1a365d] text-center mb-6 whitespace-nowrap leading-tight">
-                  Encontre seu{" "}
-                  <span className="text-[#1a365d] font-bold">lar ideal</span>
-                </h2>
-
-                {/* TABS - AGORA MAIS COMPACTAS HORIZONTALMENTE */}
-                <div className="flex bg-gray-100 rounded-xl p-1 mb-6 lg:px-0">
-                  <button
-                    type="button"
-                    className={`flex-1 flex items-center justify-center gap-3 py-[14px] px-5 lg:px-4 rounded-lg border-none transition-all duration-300 ${
-                      activeTab === "alugar"
-                        ? "bg-[#D4A24D] text-white shadow-md shadow-[#D4A24D]/30"
-                        : "bg-transparent text-gray-600 hover:text-[#1a365d] hover:bg-[#1a365d]/5"
-                    }`}
-                    onClick={() => setActiveTab("alugar")}
-                  >
-                    <i className="fas fa-key text-[18px]"></i>
-                    <span className="font-semibold text-[16px]">Alugar</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    className={`flex-1 flex items-center justify-center gap-3 py-[14px] px-5 lg:px-4 rounded-lg border-none transition-all duration-300 ${
-                      activeTab === "comprar"
-                        ? "bg-[#D4A24D] text-white shadow-md shadow-[#D4A24D]/30"
-                        : "bg-transparent text-gray-600 hover:text-[#1a365d] hover:bg-[#1a365d]/5"
-                    }`}
-                    onClick={() => setActiveTab("comprar")}
-                  >
-                    <i className="fas fa-home text-[18px]"></i>
-                    <span className="font-semibold text-[16px]">Comprar</span>
-                  </button>
-                </div>
-
-                {/* FORMULÁRIO - GAP REDUZIDO HORIZONTALMENTE */}
-                <form
-                  onSubmit={handleSearch}
-                  className="space-y-4 lg:space-y-4"
+          {/* BOX DO FORMULÁRIO */}
+          <div className="bg-white rounded-2xl shadow-[0_20px_50px_-12px_rgba(0,0,0,0.3)] p-5 md:p-8 border border-gray-100">
+            {/* SEGMENTED CONTROL - Abas Comprar/Alugar */}
+            <div className="mb-6 max-w-[280px] md:max-w-xs mx-auto md:mx-0">
+              <div className="relative bg-gray-100 rounded-full h-10 md:h-12 w-full p-1 flex items-center">
+                <div
+                  className={`absolute h-8 md:h-10 w-[calc(50%-4px)] bg-[#D4A24D] rounded-full shadow-md transition-transform duration-300 ease-in-out ${
+                    activeTab === "comprar"
+                      ? "translate-x-0"
+                      : "translate-x-full"
+                  }`}
+                />
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("comprar")}
+                  style={cleanButtonStyle}
+                  className={`relative z-10 flex-1 h-full font-bold text-xs md:text-base transition-colors duration-300 flex items-center justify-center ${
+                    activeTab === "comprar" ? "text-white" : "text-gray-600"
+                  }`}
                 >
-                  {/* LINHA 1 - GAP REDUZIDO */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-3">
-                    {/* CIDADE - MESMO PADDING VERTICAL, REDUZIDO HORIZONTALMENTE */}
-                    <div className="relative">
-                      <i
-                        className={`fas fa-city absolute left-4 lg:left-3 top-1/2 transform -translate-y-1/2 text-[18px] transition-colors duration-300 z-10 ${
-                          hasValue("city") ? "text-[#D4A24D]" : "text-gray-400"
-                        }`}
-                      ></i>
-                      <select
-                        className="w-full pl-[52px] lg:pl-[44px] pr-10 lg:pr-9 py-[16px] border-2 border-gray-300 rounded-xl bg-white text-gray-800 font-medium form-select-identical focus:outline-none focus:border-[#D4A24D] focus:ring-2 focus:ring-[#D4A24D]/10 transition-all duration-300 cursor-pointer"
-                        value={formValues.city}
-                        onChange={(e) =>
-                          handleInputChange("city", e.target.value)
-                        }
-                      >
-                        <option value="">Selecione a cidade</option>
-                        <option value="Açailândia">Açailândia</option>
-                        <option value="Imperatriz">Imperatriz</option>
-                        <option value="São Luís">São Luís</option>
-                      </select>
-                    </div>
-
-                    {/* BAIRRO */}
-                    <div className="relative">
-                      <i
-                        className={`fas fa-map-marker-alt absolute left-4 lg:left-3 top-1/2 transform -translate-y-1/2 text-[18px] transition-colors duration-300 z-10 ${
-                          hasValue("neighborhood")
-                            ? "text-[#D4A24D]"
-                            : "text-gray-400"
-                        }`}
-                      ></i>
-                      <select
-                        className="w-full pl-[52px] lg:pl-[44px] pr-10 lg:pr-9 py-[16px] border-2 border-gray-300 rounded-xl bg-white text-gray-800 font-medium form-select-identical focus:outline-none focus:border-[#D4A24D] focus:ring-2 focus:ring-[#D4A24D]/10 transition-all duration-300 cursor-pointer"
-                        value={formValues.neighborhood}
-                        onChange={(e) =>
-                          handleInputChange("neighborhood", e.target.value)
-                        }
-                      >
-                        <option value="">Selecione o bairro</option>
-                        <option value="Centro">Centro</option>
-                        <option value="Barra Azul">Barra Azul</option>
-                        <option value="Jardim Glória">Jardim Glória</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  {/* LINHA 2 - GAP REDUZIDO */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-3">
-                    {/* TIPO */}
-                    <div className="relative">
-                      <i
-                        className={`fas fa-building absolute left-4 lg:left-3 top-1/2 transform -translate-y-1/2 text-[18px] transition-colors duration-300 z-10 ${
-                          hasValue("propertyType")
-                            ? "text-[#D4A24D]"
-                            : "text-gray-400"
-                        }`}
-                      ></i>
-                      <select
-                        className="w-full pl-[52px] lg:pl-[44px] pr-10 lg:pr-9 py-[16px] border-2 border-gray-300 rounded-xl bg-white text-gray-800 font-medium form-select-identical focus:outline-none focus:border-[#D4A24D] focus:ring-2 focus:ring-[#D4A24D]/10 transition-all duration-300 cursor-pointer"
-                        value={formValues.propertyType}
-                        onChange={(e) =>
-                          handleInputChange("propertyType", e.target.value)
-                        }
-                      >
-                        <option value="">Tipo de imóvel</option>
-                        <option value="casa">Casa</option>
-                        <option value="apartamento">Apartamento</option>
-                        <option value="comercial">Comercial</option>
-                      </select>
-                    </div>
-
-                    {/* PREÇO */}
-                    <div className="relative">
-                      <i
-                        className={`fas fa-tag absolute left-4 lg:left-3 top-1/2 transform -translate-y-1/2 text-[18px] transition-colors duration-300 z-10 ${
-                          hasValue("priceRange")
-                            ? "text-[#D4A24D]"
-                            : "text-gray-400"
-                        }`}
-                      ></i>
-                      <select
-                        className="w-full pl-[52px] lg:pl-[44px] pr-10 lg:pr-9 py-[16px] border-2 border-gray-300 rounded-xl bg-white text-gray-800 font-medium form-select-identical focus:outline-none focus:border-[#D4A24D] focus:ring-2 focus:ring-[#D4A24D]/10 transition-all duration-300 cursor-pointer"
-                        value={formValues.priceRange}
-                        onChange={(e) =>
-                          handleInputChange("priceRange", e.target.value)
-                        }
-                      >
-                        <option value="">Faixa de preço</option>
-                        <option value="0-100000">Até R$ 100.000</option>
-                        <option value="100000-200000">
-                          R$ 100.000 – R$ 200.000
-                        </option>
-                        <option value="200000-300000">
-                          R$ 200.000 – R$ 300.000
-                        </option>
-                      </select>
-                    </div>
-                  </div>
-
-                  {/* LINHA 3 - GAP REDUZIDO */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-3">
-                    {/* QUARTOS */}
-                    <div className="relative">
-                      <i
-                        className={`fas fa-bed absolute left-4 lg:left-3 top-1/2 transform -translate-y-1/2 text-[18px] transition-colors duration-300 z-10 ${
-                          hasValue("bedrooms")
-                            ? "text-[#D4A24D]"
-                            : "text-gray-400"
-                        }`}
-                      ></i>
-                      <select
-                        className="w-full pl-[52px] lg:pl-[44px] pr-10 lg:pr-9 py-[16px] border-2 border-gray-300 rounded-xl bg-white text-gray-800 font-medium form-select-identical focus:outline-none focus:border-[#D4A24D] focus:ring-2 focus:ring-[#D4A24D]/10 transition-all duration-300 cursor-pointer"
-                        value={formValues.bedrooms}
-                        onChange={(e) =>
-                          handleInputChange("bedrooms", e.target.value)
-                        }
-                      >
-                        <option value="">Quartos</option>
-                        <option value="1">1 quarto</option>
-                        <option value="2">2 quartos</option>
-                        <option value="3">3 quartos</option>
-                        <option value="4+">4+ quartos</option>
-                      </select>
-                    </div>
-
-                    {/* VAGAS */}
-                    <div className="relative">
-                      <i
-                        className={`fas fa-car absolute left-4 lg:left-3 top-1/2 transform -translate-y-1/2 text-[18px] transition-colors duration-300 z-10 ${
-                          hasValue("parking")
-                            ? "text-[#D4A24D]"
-                            : "text-gray-400"
-                        }`}
-                      ></i>
-                      <select
-                        className="w-full pl-[52px] lg:pl-[44px] pr-10 lg:pr-9 py-[16px] border-2 border-gray-300 rounded-xl bg-white text-gray-800 font-medium form-select-identical focus:outline-none focus:border-[#D4A24D] focus:ring-2 focus:ring-[#D4A24D]/10 transition-all duration-300 cursor-pointer"
-                        value={formValues.parking}
-                        onChange={(e) =>
-                          handleInputChange("parking", e.target.value)
-                        }
-                      >
-                        <option value="">Vagas</option>
-                        <option value="1">1 vaga</option>
-                        <option value="2">2 vagas</option>
-                        <option value="3+">3+ vagas</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  {/* BOTÃO - MESMA ALTURA, LARGURA REDUZIDA */}
-                  <button
-                    type="submit"
-                    className="w-full py-[18px] px-[30px] lg:px-[24px] bg-gradient-to-r from-[#D4A24D] to-[#E6B85C] text-white text-[18px] font-bold rounded-xl flex items-center justify-center gap-3 cursor-pointer transition-all duration-300 mt-6 shadow-lg shadow-[#D4A24D]/30 hover:shadow-xl hover:shadow-[#D4A24D]/40 hover:translate-y-[-2px] active:translate-y-0 hover:bg-gradient-to-r hover:from-[#C4933E] hover:to-[#D4A24D]"
-                  >
-                    <i className="fas fa-search text-[18px]"></i>
-                    <span>Buscar imóvel</span>
-                  </button>
-                </form>
+                  <i className="fas fa-home mr-2"></i> Comprar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("alugar")}
+                  style={cleanButtonStyle}
+                  className={`relative z-10 flex-1 h-full font-bold text-xs md:text-base transition-colors duration-300 flex items-center justify-center ${
+                    activeTab === "alugar" ? "text-white" : "text-gray-600"
+                  }`}
+                >
+                  <i className="fas fa-key mr-2"></i> Alugar
+                </button>
               </div>
             </div>
 
-            <div className="hidden lg:block"></div>
+            {/* FORMULÁRIO - Grid responsivo */}
+            <form onSubmit={handleSearch}>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-3 md:gap-4">
+                {/* Preço */}
+                <div className="relative w-full">
+                  <i
+                    className={`fas fa-tag absolute left-4 top-1/2 -translate-y-1/2 text-sm z-10 ${formValues.priceRange ? "text-[#D4A24D]" : "text-gray-400"}`}
+                  ></i>
+                  <select
+                    className="w-full h-[50px] md:h-[58px] pl-11 pr-10 bg-gray-50 border border-gray-200 rounded-xl appearance-none focus:outline-none focus:border-[#D4A24D] text-sm cursor-pointer"
+                    value={formValues.priceRange}
+                    onChange={(e) =>
+                      handleInputChange("priceRange", e.target.value)
+                    }
+                  >
+                    <option value="">Preço</option>
+                    <option value="0-500k">Até R$ 500 mil</option>
+                    <option value="500k-1m">R$ 500 mil a 1 Mi</option>
+                  </select>
+                  <i className="fas fa-chevron-down absolute right-4 top-1/2 -translate-y-1/2 text-gray-300 text-[10px] pointer-events-none"></i>
+                </div>
+
+                {/* Tipo */}
+                <div className="relative w-full">
+                  <i
+                    className={`fas fa-building absolute left-4 top-1/2 -translate-y-1/2 text-sm z-10 ${formValues.propertyType ? "text-[#D4A24D]" : "text-gray-400"}`}
+                  ></i>
+                  <select
+                    className="w-full h-[50px] md:h-[58px] pl-11 pr-10 bg-gray-50 border border-gray-200 rounded-xl appearance-none focus:outline-none focus:border-[#D4A24D] text-sm cursor-pointer"
+                    value={formValues.propertyType}
+                    onChange={(e) =>
+                      handleInputChange("propertyType", e.target.value)
+                    }
+                  >
+                    <option value="">Tipo de imóvel</option>
+                    <option value="casa">Casa</option>
+                    <option value="apartamento">Apartamento</option>
+                  </select>
+                  <i className="fas fa-chevron-down absolute right-4 top-1/2 -translate-y-1/2 text-gray-300 text-[10px] pointer-events-none"></i>
+                </div>
+
+                {/* Dormitórios */}
+                <div className="relative w-full">
+                  <i
+                    className={`fas fa-bed absolute left-4 top-1/2 -translate-y-1/2 text-sm z-10 ${formValues.bedrooms ? "text-[#D4A24D]" : "text-gray-400"}`}
+                  ></i>
+                  <select
+                    className="w-full h-[50px] md:h-[58px] pl-11 pr-10 bg-gray-50 border border-gray-200 rounded-xl appearance-none focus:outline-none focus:border-[#D4A24D] text-sm cursor-pointer"
+                    value={formValues.bedrooms}
+                    onChange={(e) =>
+                      handleInputChange("bedrooms", e.target.value)
+                    }
+                  >
+                    <option value="">Dormitórios</option>
+                    <option value="1">1 Dormitório</option>
+                    <option value="2">2+ Dormitórios</option>
+                  </select>
+                  <i className="fas fa-chevron-down absolute right-4 top-1/2 -translate-y-1/2 text-gray-300 text-[10px] pointer-events-none"></i>
+                </div>
+
+                {/* Botão Buscar */}
+                <button
+                  type="submit"
+                  className="w-full bg-[#D4A24D] text-white font-bold text-base rounded-xl h-[50px] md:h-[58px] flex items-center justify-center gap-2 hover:bg-[#c0903d] transition-all shadow-md active:scale-95"
+                >
+                  <i className="fas fa-search"></i> Buscar
+                </button>
+              </div>
+            </form>
+
+            <p className="text-[10px] md:text-xs text-gray-400 text-center mt-4 flex items-center justify-center gap-2">
+              <i className="fas fa-check-circle text-[#D4A24D]"></i>
+              Mais de 500 imóveis disponíveis hoje
+            </p>
           </div>
         </div>
-      </section>
-    </>
+      </div>
+
+      <div className="h-12 md:h-20"></div>
+
+      <link
+        rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+      />
+    </section>
   );
 };
 

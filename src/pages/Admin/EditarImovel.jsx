@@ -351,6 +351,10 @@ const EditarImovel = () => {
       area_total: "",
       area_construida: "",
     },
+
+    // 👇 ADICIONAR AQUI (depois de dependencias)
+    precoAnterior: "", // Preço anterior para quando o imóvel baixou de preço
+
     // LOCALIZAÇÃO SIMPLIFICADA
     cep: "",
     endereco: "",
@@ -360,6 +364,7 @@ const EditarImovel = () => {
     cidade: "",
     estado: "",
     exibirEnderecoSite: false,
+
     // ETIQUETAS DA VITRINE
     etiquetas: {
       destaqueSemana: false,
@@ -594,6 +599,9 @@ const EditarImovel = () => {
           area_total: data.area_total || "",
           area_construida: data.area_construida || "",
         },
+        // 👇 ADICIONAR ESTA LINHA (carrega o preço anterior do banco)
+        precoAnterior: data.preco_anterior || "",
+
         cep: data.cep || "",
         endereco: data.endereco || "",
         numero: data.numero || "",
@@ -805,6 +813,12 @@ const EditarImovel = () => {
       cidade: formData.cidade || "",
       estado: formData.estado || "",
       exibir_endereco_site: formData.exibirEnderecoSite || false,
+
+      // 👇 NOVA LINHA: preço anterior (só envia se tiver valor, senão manda null)
+      preco_anterior: formData.precoAnterior
+        ? parseFloat(formData.precoAnterior)
+        : null,
+
       etiquetas: formData.etiquetas,
       caracteristicas: {
         ...formData.caracteristicas,
@@ -1135,15 +1149,6 @@ const EditarImovel = () => {
 
             {/* Lado Direito - Badge + Botões */}
             <div className="flex items-center justify-end space-x-2 md:space-x-3">
-              {/* Badge Financiável */}
-              {formData.etiquetas.financiável && (
-                <div
-                  className={`hidden md:block px-3 py-1.5 rounded-full text-xs font-medium ${getFinanciavelColor()}`}
-                >
-                  Financiável
-                </div>
-              )}
-
               {/* BOTÕES DE AÇÃO */}
               <div className="flex items-center space-x-2">
                 <button
@@ -2247,7 +2252,7 @@ const EditarImovel = () => {
               </div>
             </div>
 
-            {/* Badges de destaque */}
+            {/* Badges de destaque - TODOS UNIFORMIZADOS */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {/* Destaque da Semana */}
               <label
@@ -2260,14 +2265,14 @@ const EditarImovel = () => {
                   onChange={handleChange}
                   className={getCheckboxClass()}
                 />
-                <div>
+                <div className="flex-1">
                   <div
                     className={`font-medium flex items-center gap-1 group-hover:text-[#D4A24D] ${getTextClass()}`}
                   >
                     ⭐ Destaque da Semana
                   </div>
                   <div className={`text-xs ${getTextSecondaryClass()}`}>
-                    Aparece como badge dourado na vitrine
+                    Badge dourado na vitrine
                   </div>
                 </div>
               </label>
@@ -2283,7 +2288,7 @@ const EditarImovel = () => {
                   onChange={handleChange}
                   className={getCheckboxClass()}
                 />
-                <div>
+                <div className="flex-1">
                   <div
                     className={`font-medium flex items-center gap-1 group-hover:text-[#D4A24D] ${getTextClass()}`}
                   >
@@ -2306,14 +2311,14 @@ const EditarImovel = () => {
                   onChange={handleChange}
                   className={getCheckboxClass()}
                 />
-                <div>
+                <div className="flex-1">
                   <div
                     className={`font-medium flex items-center gap-1 group-hover:text-[#D4A24D] ${getTextClass()}`}
                   >
                     📉 Baixou o Preço
                   </div>
                   <div className={`text-xs ${getTextSecondaryClass()}`}>
-                    Badge verde indicando redução
+                    Badge vermelho indicando redução
                   </div>
                 </div>
               </label>
@@ -2329,18 +2334,91 @@ const EditarImovel = () => {
                   onChange={handleChange}
                   className={getCheckboxClass()}
                 />
-                <div>
+                <div className="flex-1">
                   <div
                     className={`font-medium flex items-center gap-1 group-hover:text-[#D4A24D] ${getTextClass()}`}
                   >
                     💰 Financiável
                   </div>
                   <div className={`text-xs ${getTextSecondaryClass()}`}>
-                    Badge roxo para imóveis com financiamento
+                    Badge roxo para financiamento
                   </div>
                 </div>
               </label>
             </div>
+            {/* ===== CAMPO DE PREÇO ANTERIOR (só aparece quando "Baixou o Preço" está marcado) ===== */}
+            {formData.etiquetas.baixouPreco && (
+              <div className="mt-6 p-5 border-2 border-red-500/30 bg-red-500/10 rounded-xl backdrop-blur-sm">
+                <div className="flex items-start space-x-4">
+                  <div className="text-3xl">📉</div>
+                  <div className="flex-1">
+                    <h4 className="text-base font-semibold text-white mb-1">
+                      Informe o preço anterior
+                    </h4>
+                    <p className="text-sm text-white/80 mb-4">
+                      Este valor aparecerá riscado ao lado do preço atual na
+                      página do imóvel, destacando a economia para o cliente.
+                    </p>
+
+                    <div className="max-w-md mb-4">
+                      <label className="block text-sm font-medium text-white/90 mb-2">
+                        Preço anterior (R$)
+                      </label>
+                      <div className="relative">
+                        <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-white/60">
+                          R$
+                        </span>
+                        <input
+                          type="number"
+                          name="precoAnterior"
+                          value={formData.precoAnterior}
+                          onChange={handleChange}
+                          min="0"
+                          step="0.01"
+                          placeholder="0,00"
+                          className="w-full pl-12 pr-4 py-3 bg-white/10 border border-red-500/50 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent text-white placeholder-white/50 backdrop-blur-sm"
+                        />
+                      </div>
+                    </div>
+
+                    {/* 🔥 NOVO: PREVIEW DO PREÇO COM DESCONTO (dentro da box vermelha) */}
+                    {formData.preco && formData.precoAnterior && (
+                      <div className="mt-4 p-4 bg-red-500/20 border border-red-500/30 rounded-lg">
+                        <p className="text-xs text-white/70 mb-2">
+                          Preview do preço na página do imóvel:
+                        </p>
+                        <div className="flex items-baseline gap-3 flex-wrap">
+                          <span className="text-gray-300 line-through text-sm">
+                            {formatPrice(formData.precoAnterior)}
+                          </span>
+                          <span className="text-white font-bold text-base">
+                            {formatPrice(formData.preco)}
+                          </span>
+                          <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                            -
+                            {Math.round(
+                              ((formData.precoAnterior - formData.preco) /
+                                formData.precoAnterior) *
+                                100,
+                            )}
+                            % OFF
+                          </span>
+                        </div>
+                        <p className="text-green-400 text-xs mt-2">
+                          🎉 Economia de{" "}
+                          {formatPrice(formData.precoAnterior - formData.preco)}
+                        </p>
+                      </div>
+                    )}
+
+                    <p className="text-xs text-white/60 mt-2">
+                      💡 Dica: Quanto maior o desconto aparente, mais atrativo o
+                      imóvel fica.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Preview da Vitrine */}
             <div
