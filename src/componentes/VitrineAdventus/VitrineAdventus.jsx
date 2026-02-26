@@ -465,7 +465,10 @@ const VitrineAdventus = () => {
     return (
       <section
         className="relative overflow-hidden"
-        style={{ padding: "5rem 1rem", backgroundColor: "#31353e" }}
+        style={{
+          padding: "calc(5rem - 40px) 1rem 5rem 1rem",
+          backgroundColor: "#31353e",
+        }}
       >
         <div
           className="flex justify-center items-center"
@@ -484,7 +487,10 @@ const VitrineAdventus = () => {
     return (
       <section
         className="relative overflow-hidden"
-        style={{ padding: "5rem 1rem", backgroundColor: "#31353e" }}
+        style={{
+          padding: "calc(5rem - 40px) 1rem 5rem 1rem",
+          backgroundColor: "#31353e",
+        }}
       >
         <div
           className="flex justify-center items-center"
@@ -503,7 +509,10 @@ const VitrineAdventus = () => {
     return (
       <section
         className="relative overflow-hidden"
-        style={{ padding: "5rem 1rem", backgroundColor: "#31353e" }}
+        style={{
+          padding: "calc(5rem - 40px) 1rem 5rem 1rem",
+          backgroundColor: "#31353e",
+        }}
       >
         <div
           className="flex justify-center items-center"
@@ -522,7 +531,7 @@ const VitrineAdventus = () => {
       className="relative overflow-hidden"
       id="vitrineAdventus"
       style={{
-        padding: "5rem 1rem",
+        padding: "calc(5rem - 40px) 1rem 5rem 1rem", // Reduzi 40px do padding superior
         backgroundColor: "#31353e",
       }}
     >
@@ -540,7 +549,7 @@ const VitrineAdventus = () => {
       <div className="relative max-w-[1400px] mx-auto">
         <div className="text-center mb-16">
           <h2
-            className="mobile-heading relative inline-block mb-4"
+            className="mobile-heading relative inline-block mb-2"
             style={{
               fontSize: "3.5rem",
               fontWeight: 800,
@@ -553,7 +562,7 @@ const VitrineAdventus = () => {
           >
             Vitrine Adventus
             <span
-              className="absolute bottom-[-10px] left-1/2 transform -translate-x-1/2 w-[150px] h-0.5 rounded"
+              className="absolute bottom-[-8px] left-1/2 transform -translate-x-1/2 w-[150px] h-[1px] rounded"
               style={{
                 background:
                   "linear-gradient(90deg, transparent, #D4A24D, transparent)",

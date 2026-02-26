@@ -73,7 +73,7 @@ const SejaCorretor = () => {
         if (!value.trim()) {
           newErrors.creci = "CRECI é obrigatório";
         } else {
-          delete newErrors.creci; // Aceita qualquer formato
+          delete newErrors.creci;
         }
         break;
 
@@ -118,6 +118,26 @@ const SejaCorretor = () => {
     validateField(name, value);
   };
 
+  const isFormValid = () => {
+    if (!formData.name?.trim()) return false;
+    if (!formData.creci?.trim()) return false;
+    if (!formData.whatsapp?.trim()) return false;
+
+    const whatsappClean = formData.whatsapp.replace(/\D/g, "");
+    if (whatsappClean.length < 10 || whatsappClean.length > 11) return false;
+
+    if (formData.name.trim().length < 3) return false;
+
+    if (
+      formData.email?.trim() &&
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)
+    ) {
+      return false;
+    }
+
+    return Object.keys(errors).length === 0;
+  };
+
   const salvarNoSupabase = async (dados) => {
     try {
       console.log("📤 Enviando dados:", dados);
@@ -128,7 +148,7 @@ const SejaCorretor = () => {
           creci: dados.creci,
           telefone: dados.whatsapp,
           email: dados.email || null,
-          etapa: "pendentes", // 👈 AGORA EXISTE!
+          etapa: "pendentes",
           checkpoints_treinamento: {
             modulo1: false,
             modulo2: false,
@@ -168,10 +188,25 @@ const SejaCorretor = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    if (!isFormValid()) {
+      setTouched({
+        name: true,
+        creci: true,
+        whatsapp: true,
+        email: true,
+      });
+
+      validateField("name", formData.name);
+      validateField("creci", formData.creci);
+      validateField("whatsapp", formData.whatsapp);
+      if (formData.email) validateField("email", formData.email);
+
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
-      // ✅ SOMENTE salvar no Supabase
       const resultado = await salvarNoSupabase({
         name: formData.name?.trim() || "",
         creci: formData.creci?.trim() || "",
@@ -181,7 +216,6 @@ const SejaCorretor = () => {
 
       console.log("✅ Cadastro realizado:", resultado);
 
-      // ✅ Resetar formulário
       setFormData({
         name: "",
         creci: "",
@@ -196,10 +230,8 @@ const SejaCorretor = () => {
         formRef.current.reset();
       }
 
-      // ✅ Mensagem de sucesso (opcional)
       alert("Cadastro realizado com sucesso!");
 
-      // ✅ Esconder mensagem de sucesso após 5 segundos
       setTimeout(() => {
         setSubmitSuccess(false);
       }, 5000);
@@ -211,62 +243,52 @@ const SejaCorretor = () => {
     }
   };
 
-  const canSubmit = () => {
-    // SÓ VERIFICA SE TEM CONTEÚDO NOS CAMPOS OBRIGATÓRIOS
-    if (!formData.name) return false;
-    if (!formData.creci) return false;
-    if (!formData.whatsapp) return false;
-
-    return true;
-  };
-
   return (
-    <section className="partner-broker-section py-16 md:py-20 relative overflow-hidden">
-      <div className="absolute inset-0 bg-gradient-to-br from-[#0a0a0a] via-[#1a1a1a] to-[#0c4a6e]"></div>
-
+    <section className="relative overflow-hidden py-16 md:py-20 bg-[#D4A24D]">
+      {/* Elementos decorativos de fundo */}
       <div className="absolute inset-0 pointer-events-none">
         <div
-          className="absolute top-0 left-0 right-0 bottom-0"
+          className="absolute inset-0"
           style={{
-            background:
-              "radial-gradient(circle at 20% 30%, rgba(245, 158, 11, 0.1) 0%, transparent 50%), radial-gradient(circle at 80% 70%, rgba(59, 130, 246, 0.1) 0%, transparent 50%)",
+            background: `
+              radial-gradient(circle at 20% 30%, rgba(255, 255, 255, 0.2) 0%, transparent 50%),
+              radial-gradient(circle at 80% 70%, rgba(255, 255, 255, 0.15) 0%, transparent 50%)
+            `,
           }}
-        ></div>
-
-        <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-yellow-500/20 rounded-full mix-blend-screen blur-3xl opacity-30 animate-pulse"></div>
-        <div className="absolute bottom-1/3 right-1/3 w-80 h-80 bg-blue-600/20 rounded-full mix-blend-screen blur-3xl opacity-30"></div>
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full h-px bg-gradient-to-r from-transparent via-yellow-500/30 to-transparent"></div>
+        />
+        <div className="absolute top-1/4 left-1/4 w-64 h-64 rounded-full bg-white/20 mix-blend-overlay blur-3xl opacity-30 animate-pulse" />
+        <div className="absolute bottom-1/3 right-1/3 w-80 h-80 rounded-full bg-white/20 mix-blend-overlay blur-3xl opacity-30" />
       </div>
 
-      <div className="container mx-auto px-4 md:px-6 lg:px-8 relative z-10">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl md:text-4xl lg:text-5xl font-extrabold mb-4 bg-gradient-to-r from-[#fbbf24] via-white to-[#60a5fa] bg-clip-text text-transparent inline-block relative">
+      {/* AZUL DA PALETA NA PARTE INFERIOR */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background:
+            "linear-gradient(0deg, rgba(49, 54, 62, 0.5) 0%, rgba(49, 54, 62, 0.3) 20%, rgba(49, 54, 62, 0.15) 40%, rgba(49, 54, 62, 0.05) 60%, transparent 80%)",
+          mixBlendMode: "multiply",
+        }}
+      />
+
+      <div className="relative z-10 container mx-auto px-4 md:px-6 lg:px-8">
+        {/* Cabeçalho da seção */}
+        <div className="text-center mb-10 md:mb-12">
+          <h2 className="relative inline-block mb-4 text-3xl md:text-4xl lg:text-5xl font-extrabold text-white">
             Seja um Corretor Adventus
-            <span className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-32 md:w-48 h-1 bg-gradient-to-r from-[#fbbf24] to-[#60a5fa] rounded-full"></span>
+            <span className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-32 md:w-48 h-1 bg-gradient-to-r from-white to-white rounded-full" />
           </h2>
-          <p className="text-lg md:text-xl text-white/80 font-light max-w-2xl mx-auto">
+          <p className="mx-auto max-w-2xl text-lg md:text-xl text-white/90 font-light">
             Cadastre-se e faça parte da nossa equipe de parceiros
           </p>
         </div>
 
-        <div className="max-w-2xl lg:max-w-3xl mx-auto">
-          <div className="broker-form-card bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-6 md:p-8 relative overflow-hidden shadow-2xl shadow-black/40">
-            <div
-              className="absolute top-0 left-0 right-0 h-[1px]"
-              style={{
-                background:
-                  "linear-gradient(90deg, transparent, #fbbf24, #60a5fa, transparent)",
-              }}
-            ></div>
-
-            <div className="absolute top-0 left-1/4 w-1/2 h-[1px] bg-gradient-to-r from-[#fbbf24] to-[#60a5fa] blur-sm opacity-50"></div>
-
-            <h3 className="text-xl md:text-2xl font-semibold text-white text-center mb-4 md:mb-6">
-              Formulário de Cadastro
-            </h3>
-
+        {/* Card do formulário - LIMPO e GORDINHO */}
+        <div className="mx-auto max-w-xl md:max-w-2xl lg:max-w-3xl">
+          {/* Card principal - sem bordas decorativas */}
+          <div className="relative overflow-hidden rounded-3xl bg-white/95 backdrop-blur-sm p-8 md:p-10 shadow-2xl shadow-black/20">
+            {/* Mensagem de sucesso */}
             {submitSuccess && (
-              <div className="mb-4 p-3 bg-green-500/20 border border-green-500/30 rounded-xl text-green-300 text-center">
+              <div className="mb-8 p-4 bg-green-500/20 border border-green-500/30 rounded-xl text-green-700 text-center">
                 ✓ Cadastro realizado com sucesso! Entraremos em contato em
                 breve.
               </div>
@@ -275,14 +297,16 @@ const SejaCorretor = () => {
             <form
               ref={formRef}
               onSubmit={handleSubmit}
-              className="space-y-3 md:space-y-4"
+              className="space-y-6 md:space-y-8"
               noValidate
             >
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
-                <div>
-                  <div className="relative broker-input-container">
-                    <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-[#fbbf24] z-10 broker-input-icon">
-                      <i className="fas fa-user text-lg"></i>
+              {/* Grid dos campos */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
+                {/* Campo Nome */}
+                <div className="space-y-2">
+                  <div className="relative">
+                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-[#D4A24D] z-10">
+                      <i className="fas fa-user text-lg" />
                     </div>
                     <input
                       type="text"
@@ -296,12 +320,11 @@ const SejaCorretor = () => {
                         touched.name && errors.name ? "name-error" : undefined
                       }
                       value={formData.name}
-                      className={`broker-input w-full pl-12 pr-4 bg-white/10 border border-white/20 rounded-2xl text-white placeholder-white/60 focus:outline-none transition-all duration-300 ${
+                      className={`w-full h-14 pl-12 pr-4 bg-white border border-gray-200 rounded-2xl text-gray-800 placeholder-gray-400 focus:outline-none transition-all duration-300 ${
                         touched.name && errors.name
-                          ? "border-red-500 focus:border-red-500"
-                          : "border-white/20 focus:border-[#fbbf24] focus:ring-2 focus:ring-[#fbbf24]/20"
+                          ? "border-red-400 focus:border-red-400"
+                          : "border-gray-200 focus:border-[#D4A24D] focus:ring-2 focus:ring-[#D4A24D]/30"
                       }`}
-                      style={{ height: "56px" }}
                       placeholder="Nome completo *"
                       required
                       minLength="3"
@@ -313,19 +336,20 @@ const SejaCorretor = () => {
                   {touched.name && errors.name && (
                     <p
                       id="name-error"
-                      className="text-red-400 text-sm mt-1 flex items-center gap-1"
+                      className="text-sm text-red-500 flex items-center gap-1.5 pl-1"
                       role="alert"
                     >
-                      <i className="fas fa-exclamation-circle text-xs"></i>
+                      <i className="fas fa-exclamation-circle text-xs" />
                       {errors.name}
                     </p>
                   )}
                 </div>
 
-                <div>
-                  <div className="relative broker-input-container">
-                    <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-[#fbbf24] z-10 broker-input-icon">
-                      <i className="fas fa-id-card text-lg"></i>
+                {/* Campo CRECI */}
+                <div className="space-y-2">
+                  <div className="relative">
+                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-[#D4A24D] z-10">
+                      <i className="fas fa-id-card text-lg" />
                     </div>
                     <input
                       type="text"
@@ -341,12 +365,11 @@ const SejaCorretor = () => {
                           : undefined
                       }
                       value={formData.creci}
-                      className={`broker-input w-full pl-12 pr-4 bg-white/10 border border-white/20 rounded-2xl text-white placeholder-white/60 focus:outline-none transition-all duration-300 ${
+                      className={`w-full h-14 pl-12 pr-4 bg-white border border-gray-200 rounded-2xl text-gray-800 placeholder-gray-400 focus:outline-none transition-all duration-300 ${
                         touched.creci && errors.creci
-                          ? "border-red-500 focus:border-red-500"
-                          : "border-white/20 focus:border-[#fbbf24] focus:ring-2 focus:ring-[#fbbf24]/20"
+                          ? "border-red-400 focus:border-red-400"
+                          : "border-gray-200 focus:border-[#D4A24D] focus:ring-2 focus:ring-[#D4A24D]/30"
                       }`}
-                      style={{ height: "56px" }}
                       placeholder="Número do CRECI *"
                       required
                       onChange={handleChange}
@@ -357,19 +380,20 @@ const SejaCorretor = () => {
                   {touched.creci && errors.creci && (
                     <p
                       id="creci-error"
-                      className="text-red-400 text-sm mt-1 flex items-center gap-1"
+                      className="text-sm text-red-500 flex items-center gap-1.5 pl-1"
                       role="alert"
                     >
-                      <i className="fas fa-exclamation-circle text-xs"></i>
+                      <i className="fas fa-exclamation-circle text-xs" />
                       {errors.creci}
                     </p>
                   )}
                 </div>
 
-                <div>
-                  <div className="relative broker-input-container">
-                    <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-[#fbbf24] z-10 broker-input-icon">
-                      <i className="fab fa-whatsapp text-lg"></i>
+                {/* Campo WhatsApp */}
+                <div className="space-y-2">
+                  <div className="relative">
+                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-[#D4A24D] z-10">
+                      <i className="fab fa-whatsapp text-lg" />
                     </div>
                     <input
                       type="tel"
@@ -386,12 +410,11 @@ const SejaCorretor = () => {
                           : undefined
                       }
                       value={formData.whatsapp}
-                      className={`broker-input w-full pl-12 pr-4 bg-white/10 border border-white/20 rounded-2xl text-white placeholder-white/60 focus:outline-none transition-all duration-300 ${
+                      className={`w-full h-14 pl-12 pr-4 bg-white border border-gray-200 rounded-2xl text-gray-800 placeholder-gray-400 focus:outline-none transition-all duration-300 ${
                         touched.whatsapp && errors.whatsapp
-                          ? "border-red-500 focus:border-red-500"
-                          : "border-white/20 focus:border-[#fbbf24] focus:ring-2 focus:ring-[#fbbf24]/20"
+                          ? "border-red-400 focus:border-red-400"
+                          : "border-gray-200 focus:border-[#D4A24D] focus:ring-2 focus:ring-[#D4A24D]/30"
                       }`}
-                      style={{ height: "56px" }}
                       placeholder="WhatsApp com DDD *"
                       required
                       onChange={(e) => {
@@ -405,19 +428,20 @@ const SejaCorretor = () => {
                   {touched.whatsapp && errors.whatsapp && (
                     <p
                       id="whatsapp-error"
-                      className="text-red-400 text-sm mt-1 flex items-center gap-1"
+                      className="text-sm text-red-500 flex items-center gap-1.5 pl-1"
                       role="alert"
                     >
-                      <i className="fas fa-exclamation-circle text-xs"></i>
+                      <i className="fas fa-exclamation-circle text-xs" />
                       {errors.whatsapp}
                     </p>
                   )}
                 </div>
 
-                <div>
-                  <div className="relative broker-input-container">
-                    <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-[#fbbf24] z-10 broker-input-icon">
-                      <i className="fas fa-envelope text-lg"></i>
+                {/* Campo Email */}
+                <div className="space-y-2">
+                  <div className="relative">
+                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-[#D4A24D] z-10">
+                      <i className="fas fa-envelope text-lg" />
                     </div>
                     <input
                       type="email"
@@ -432,12 +456,11 @@ const SejaCorretor = () => {
                           : undefined
                       }
                       value={formData.email}
-                      className={`broker-input w-full pl-12 pr-4 bg-white/10 border border-white/20 rounded-2xl text-white placeholder-white/60 focus:outline-none transition-all duration-300 ${
+                      className={`w-full h-14 pl-12 pr-4 bg-white border border-gray-200 rounded-2xl text-gray-800 placeholder-gray-400 focus:outline-none transition-all duration-300 ${
                         touched.email && errors.email
-                          ? "border-red-500 focus:border-red-500"
-                          : "border-white/20 focus:border-[#fbbf24] focus:ring-2 focus:ring-[#fbbf24]/20"
+                          ? "border-red-400 focus:border-red-400"
+                          : "border-gray-200 focus:border-[#D4A24D] focus:ring-2 focus:ring-[#D4A24D]/30"
                       }`}
-                      style={{ height: "56px" }}
                       placeholder="E-mail (opcional)"
                       onChange={handleChange}
                       onBlur={handleBlur}
@@ -447,43 +470,42 @@ const SejaCorretor = () => {
                   {touched.email && errors.email && (
                     <p
                       id="email-error"
-                      className="text-red-400 text-sm mt-1 flex items-center gap-1"
+                      className="text-sm text-red-500 flex items-center gap-1.5 pl-1"
                       role="alert"
                     >
-                      <i className="fas fa-exclamation-circle text-xs"></i>
+                      <i className="fas fa-exclamation-circle text-xs" />
                       {errors.email}
                     </p>
                   )}
                 </div>
               </div>
 
-              <div className="pt-2">
+              {/* Botão de envio */}
+              <div className="pt-4 md:pt-6">
                 <button
                   type="submit"
-                  disabled={isSubmitting} // SÓ desabilita enquanto está enviando
-                  className="w-full py-4 px-6 rounded-2xl font-bold text-lg transition-all duration-300 relative overflow-hidden bg-gradient-to-r from-[#f59e0b] to-[#fbbf24] text-white shadow-lg shadow-[#f59e0b]/30"
-                  style={{
-                    height: "56px",
-                    opacity: isSubmitting ? 0.6 : 1,
-                    cursor: isSubmitting ? "wait" : "pointer",
-                  }}
+                  disabled={isSubmitting || !isFormValid()}
+                  className={`relative w-full h-14 px-6 rounded-2xl font-bold text-lg transition-all duration-300 overflow-hidden text-white shadow-lg ${
+                    !isFormValid() && !isSubmitting
+                      ? "bg-[#D4A24D]/50 cursor-not-allowed shadow-none hover:scale-100"
+                      : "bg-[#D4A24D] shadow-[#D4A24D]/30 hover:shadow-xl hover:shadow-[#D4A24D]/40 hover:scale-[1.02] active:scale-100"
+                  }`}
                 >
                   {isSubmitting ? (
                     <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                      <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                     </div>
                   ) : (
                     <span className="flex items-center justify-center gap-3">
-                      <span className="text-white font-bold">
-                        ENVIAR CADASTRO
-                      </span>
-                      <i className="fas fa-paper-plane text-white"></i>
+                      <span className="font-bold">ENVIAR CADASTRO</span>
+                      <i className="fas fa-paper-plane" />
                     </span>
                   )}
                 </button>
 
-                <p className="text-center text-white/50 text-sm mt-4 flex items-center justify-center gap-2">
-                  <i className="fas fa-lock"></i>
+                {/* Mensagem de segurança */}
+                <p className="mt-6 text-center text-sm text-black/70 flex items-center justify-center gap-2">
+                  <i className="fas fa-lock text-black/50" />
                   <span>
                     Seus dados estão seguros conosco. Entraremos em contato em
                     até 24h.
