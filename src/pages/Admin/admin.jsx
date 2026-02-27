@@ -1,24 +1,24 @@
 import React, { useState, useEffect } from "react";
 import { useTheme } from "../../contexts/ThemeContext";
 import { Link } from "react-router-dom";
+import { supabase } from "../../lib/supabase";
 
 // ============================================
-// MOCK DATA
+// IMPORTAÇÕES DE ÍCONES (APENAS O QUE É USADO)
+// ============================================
+import { StarIcon as StarIconSolid } from "@heroicons/react/24/solid";
+
+// ============================================
+// MOCK DATA (MANTIDO PARA FALLBACK)
 // ============================================
 const BAIRROS = [
   "Laranjeiras",
-  "Jacuínas",
-  "Park",
+  "Colinas Park",
   "Jardim Glória",
-  "Jardim Del Rey",
   "Nova Açailândia",
-  "Centro",
-  "Vila Ildemar",
-  "Jardim Europa",
-  "Residencial",
 ];
 
-const TIPOS = ["Apartamento", "Casa", "Cobertura", "Comercial"];
+const TIPOS = ["Apartamento", "Casa", "Sobrado", "Comercial"];
 const CANAIS = ["Site", "Instagram", "Facebook", "Indicação", "Portal"];
 
 // Custo por canal (para cálculo de ROI)
@@ -51,6 +51,10 @@ const IMOVEIS_MOCK = Array.from({ length: 200 }, (_, i) => {
     tipo,
     quartos: Math.floor(Math.random() * 4) + 1,
     visitas_count: Math.floor(Math.random() * 20),
+    suite: Math.random() > 0.5,
+    garagem_coberta: Math.random() > 0.5,
+    condominio_fechado: Math.random() > 0.7,
+    financiavel: Math.random() > 0.3,
     diasNoSite,
   };
 });
@@ -221,6 +225,19 @@ const VENDAS_MOCK = Array.from({ length: 60 }, (_, i) => {
   };
 });
 
+// Comissões
+const COMISSOES_MOCK = VENDAS_MOCK.map((venda, index) => ({
+  id: index + 1,
+  venda_id: venda.id,
+  corretor_id: venda.corretor_id,
+  valor: venda.comissao,
+  status: Math.random() > 0.6 ? "pago" : "a_pagar",
+  data_vencimento: new Date(
+    new Date(venda.data_venda).getTime() + 30 * 24 * 60 * 60 * 1000,
+  ).toISOString(),
+  created_at: venda.data_venda,
+}));
+
 const MOCK_DATA = {
   imoveis: IMOVEIS_MOCK,
   corretores: CORRETORES_MOCK,
@@ -228,10 +245,11 @@ const MOCK_DATA = {
   visitas: VISITAS_MOCK,
   propostas: PROPOSTAS_MOCK,
   vendas: VENDAS_MOCK,
+  comissoes: COMISSOES_MOCK,
 };
 
 // ============================================
-// ÍCONES REACT (HEROICONS)
+// ÍCONES REACT (HEROICONS) - VERSÃO COMPLETA
 // ============================================
 const Icons = {
   // Gerais
@@ -360,7 +378,7 @@ const Icons = {
     </svg>
   ),
 
-  // Alertas e utilitários
+  // Utilitários
   alertCircle: (props) => (
     <svg
       {...props}
@@ -422,8 +440,6 @@ const Icons = {
       <path d="M17 14H22V9" />
     </svg>
   ),
-
-  // Ícones de oportunidade
   chartBar: (props) => (
     <svg
       {...props}
@@ -450,8 +466,7 @@ const Icons = {
       <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
     </svg>
   ),
-
-  // Ícones operacionais
+  starSolid: (props) => <StarIconSolid {...props} />,
   user: (props) => (
     <svg
       {...props}
@@ -513,6 +528,363 @@ const Icons = {
       <path d="M5 12h14M12 5l7 7-7 7" />
     </svg>
   ),
+  arrowLeft: (props) => (
+    <svg
+      {...props}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+    >
+      <path d="M19 12H5M12 5l-7 7 7 7" />
+    </svg>
+  ),
+  eye: (props) => (
+    <svg
+      {...props}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+    >
+      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
+  ),
+  target: (props) => (
+    <svg
+      {...props}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+    >
+      <circle cx="12" cy="12" r="10" />
+      <circle cx="12" cy="12" r="6" />
+      <circle cx="12" cy="12" r="2" />
+    </svg>
+  ),
+  lightbulb: (props) => (
+    <svg
+      {...props}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+    >
+      <path d="M9 18h6M10 21h4M9 15v3a3 3 0 006 0v-3" />
+      <path d="M12 3a6 6 0 00-6 6c0 3 2 5 2 5h8s2-2 2-5a6 6 0 00-6-6z" />
+    </svg>
+  ),
+  heart: (props) => (
+    <svg
+      {...props}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+    >
+      <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" />
+    </svg>
+  ),
+  tag: (props) => (
+    <svg
+      {...props}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+    >
+      <path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z" />
+      <line x1="7" y1="7" x2="7.01" y2="7" />
+    </svg>
+  ),
+  wrench: (props) => (
+    <svg
+      {...props}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+    >
+      <path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z" />
+    </svg>
+  ),
+  paintBrush: (props) => (
+    <svg
+      {...props}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+    >
+      <path d="M18.37 2.63L14 7l-1.59-1.59a2 2 0 00-2.82 0L8 7l9 9 1.59-1.59a2 2 0 000-2.82L17 10l4.37-4.37a2.12 2.12 0 10-3-3z" />
+      <path d="M9 13l-3 3" />
+      <path d="M6 21l3-3" />
+    </svg>
+  ),
+  checkCircle: (props) => (
+    <svg
+      {...props}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+    >
+      <circle cx="12" cy="12" r="10" />
+      <path d="M8 12l2 2 4-4" />
+    </svg>
+  ),
+  sun: (props) => (
+    <svg
+      {...props}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+    >
+      <circle cx="12" cy="12" r="5" />
+      <line x1="12" y1="1" x2="12" y2="3" />
+      <line x1="12" y1="21" x2="12" y2="23" />
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+      <line x1="1" y1="12" x2="3" y2="12" />
+      <line x1="21" y1="12" x2="23" y2="12" />
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+    </svg>
+  ),
+  shield: (props) => (
+    <svg
+      {...props}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+    >
+      <path d="M12 2L3 6v6c0 5.5 9 10 9 10s9-4.5 9-10V6l-9-4z" />
+    </svg>
+  ),
+  store: (props) => (
+    <svg
+      {...props}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+    >
+      <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+      <path d="M9 22V12h6v10" />
+    </svg>
+  ),
+  bolt: (props) => (
+    <svg
+      {...props}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+    >
+      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+    </svg>
+  ),
+  cube: (props) => (
+    <svg
+      {...props}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+    >
+      <path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z" />
+      <path d="M12 22V12" />
+      <path d="M3.3 7L12 12l8.7-5" />
+    </svg>
+  ),
+  beaker: (props) => (
+    <svg
+      {...props}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+    >
+      <path d="M8 3v3a2 2 0 01-2 2H4a2 2 0 01-2-2V3h18v3a2 2 0 01-2 2h-2a2 2 0 01-2-2V3" />
+      <path d="M5 12l2 7" />
+      <path d="M8 12l2 7" />
+      <path d="M11 12l2 7" />
+      <path d="M14 12l2 7" />
+      <path d="M17 12l2 7" />
+    </svg>
+  ),
+  plus: (props) => (
+    <svg
+      {...props}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+    >
+      <line x1="12" y1="5" x2="12" y2="19" />
+      <line x1="5" y1="12" x2="19" y2="12" />
+    </svg>
+  ),
+  camera: (props) => (
+    <svg
+      {...props}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+    >
+      <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" />
+      <circle cx="12" cy="13" r="4" />
+    </svg>
+  ),
+  trash: (props) => (
+    <svg
+      {...props}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+    >
+      <polyline points="3 6 5 6 21 6" />
+      <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0h10" />
+      <line x1="10" y1="11" x2="10" y2="17" />
+      <line x1="14" y1="11" x2="14" y2="17" />
+    </svg>
+  ),
+  upload: (props) => (
+    <svg
+      {...props}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+    >
+      <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+      <polyline points="17 8 12 3 7 8" />
+      <line x1="12" y1="3" x2="12" y2="15" />
+    </svg>
+  ),
+  buildingOffice: (props) => (
+    <svg
+      {...props}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+    >
+      <path d="M3 21h18M5 21V7a2 2 0 012-2h10a2 2 0 012 2v14" />
+      <path d="M9 7h1m-1 3h1m4-3h1m-1 3h1" />
+    </svg>
+  ),
+  map: (props) => (
+    <svg
+      {...props}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+    >
+      <path d="M21 10.5V19a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h9.5" />
+      <polyline points="16 2 22 8 16 8" />
+      <line x1="10" y1="14" x2="21" y2="14" />
+      <line x1="10" y1="18" x2="18" y2="18" />
+      <line x1="3" y1="10" x2="8" y2="10" />
+    </svg>
+  ),
+  // Ícones adicionais
+  download: (props) => (
+    <svg
+      {...props}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+    >
+      <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+      <polyline points="7 10 12 15 17 10" />
+      <line x1="12" y1="15" x2="12" y2="3" />
+    </svg>
+  ),
+  search: (props) => (
+    <svg
+      {...props}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+    >
+      <circle cx="11" cy="11" r="8" />
+      <line x1="21" y1="21" x2="16.65" y2="16.65" />
+    </svg>
+  ),
+  calendar: (props) => (
+    <svg
+      {...props}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+    >
+      <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+      <line x1="16" y1="2" x2="16" y2="6" />
+      <line x1="8" y1="2" x2="8" y2="6" />
+      <line x1="3" y1="10" x2="21" y2="10" />
+    </svg>
+  ),
+  // Funil
+  funnel: (props) => (
+    <svg
+      {...props}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+    >
+      <path d="M4 4h16v2l-6 6v6l-4 2v-8L4 6V4z" />
+    </svg>
+  ),
+};
+
+// ============================================
+// FUNÇÕES DE FORMATAÇÃO
+// ============================================
+const formatarMoeda = (valor) => {
+  if (!valor || isNaN(valor) || typeof valor !== "number") {
+    return "R$ 0";
+  }
+  return new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+    useGrouping: true,
+  }).format(valor);
+};
+
+const formatarTempoResposta = (minutos) => {
+  if (!minutos || minutos < 1) return "-";
+
+  if (minutos < 60) {
+    return `${minutos}min`;
+  } else {
+    const horas = Math.floor(minutos / 60);
+    const minsRestantes = minutos % 60;
+
+    if (minsRestantes === 0) {
+      return `${horas}h`;
+    } else {
+      return `${horas}h ${minsRestantes}min`;
+    }
+  }
+};
+
+const formatarData = (data) => {
+  if (!data) return "-";
+  return new Date(data).toLocaleDateString("pt-BR");
 };
 
 // ============================================
@@ -701,7 +1073,28 @@ const Dashboard = () => {
   const { isDark } = useTheme();
 
   const [abaAtiva, setAbaAtiva] = useState("visao-geral");
-  const [data] = useState(MOCK_DATA);
+
+  // ============================================
+  // NOVO ESTADO PARA DADOS REAIS
+  // ============================================
+  const [dadosReais, setDadosReais] = useState({
+    leadsSite: 0,
+    qualificados: 0,
+    visitasAgendadas: 0,
+    visitasRealizadas: 0,
+    propostasNegociacao: 0,
+    vendas: 0,
+    receitaMes: 0,
+    comissoesAPagar: 0,
+    comissoesPagas: 0,
+    ticketMedio: 0,
+    vendasLista: [],
+    comissoesLista: [],
+    corretores: [],
+    medias: { leads: 0, vendas: 0 },
+  });
+
+  const [data, setData] = useState(MOCK_DATA);
   const [filtros, setFiltros] = useState({
     bairro: "todos",
     tipo: "todos",
@@ -751,44 +1144,188 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [dataAtualizacao, setDataAtualizacao] = useState(new Date());
 
-  const formatarMoeda = (valor) => {
-    if (!valor || isNaN(valor) || typeof valor !== "number") {
-      return "R$ 0";
-    }
-    return new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-      minimumFractionDigits: 0,
-    }).format(valor);
-  };
+  // ============================================
+  // useEffect PARA BUSCAR DADOS REAIS (COMPLETO)
+  // ============================================
+  useEffect(() => {
+    const buscarDadosReais = async () => {
+      try {
+        setLoading(true);
 
-  const formatarTempoResposta = (minutos) => {
-    if (!minutos || minutos < 1) return "-";
+        console.log("🔍 BUSCANDO DADOS REAIS DO BANCO...");
 
-    if (minutos < 60) {
-      return `${minutos}min`; // Ex: 5min, 30min
-    } else {
-      const horas = Math.floor(minutos / 60);
-      const minsRestantes = minutos % 60;
+        const hoje = new Date();
+        const inicioMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+        const fimMes = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0);
 
-      if (minsRestantes === 0) {
-        return `${horas}h`; // Ex: 2h, 3h
-      } else {
-        return `${horas}h ${minsRestantes}min`; // Ex: 1h 15min, 2h 30min
+        // ===== LEADS DO SITE =====
+        const { data: leadsSite, error: errorLeads } = await supabase
+          .from("leads")
+          .select("*")
+          .eq("origem", "site")
+          .gte("created_at", inicioMes.toISOString())
+          .lte("created_at", fimMes.toISOString());
+
+        console.log(
+          "📊 leadsSite DO BANCO:",
+          leadsSite?.length || 0,
+          "registros",
+        );
+        if (errorLeads) console.error("❌ Erro leads:", errorLeads);
+
+        // ===== QUALIFICADOS =====
+        const { data: qualificados, error: errorQualificados } = await supabase
+          .from("leads")
+          .select("*")
+          .eq("status", "qualificado")
+          .gte("created_at", inicioMes.toISOString())
+          .lte("created_at", fimMes.toISOString());
+
+        console.log("📊 qualificados DO BANCO:", qualificados?.length || 0);
+
+        // ===== VISITAS =====
+        const { data: visitas, error: errorVisitas } = await supabase
+          .from("visitas")
+          .select("*")
+          .gte("data_visita", inicioMes.toISOString())
+          .lte("data_visita", fimMes.toISOString());
+
+        console.log("📊 visitas DO BANCO:", visitas?.length || 0);
+
+        const visitasAgendadas =
+          visitas?.filter((v) => v.status === "agendada") || [];
+        const visitasRealizadas =
+          visitas?.filter((v) => v.status === "realizada") || [];
+
+        // ===== PROPOSTAS =====
+        const { data: propostas, error: errorPropostas } = await supabase
+          .from("propostas")
+          .select("*")
+          .gte("created_at", inicioMes.toISOString())
+          .lte("created_at", fimMes.toISOString());
+
+        console.log("📊 propostas DO BANCO:", propostas?.length || 0);
+
+        // FILTRO CORRIGIDO - "em_andamento" em vez de "negociacao"
+        const propostasNegociacao =
+          propostas?.filter((p) => p.status === "em_andamento") || [];
+        const vendas = propostas?.filter((p) => p.status === "aprovada") || [];
+
+        console.log("📊 propostas em_andamento:", propostasNegociacao.length);
+        console.log("📊 propostas aprovadas (vendas):", vendas.length);
+
+        // ===== RECEITA DO MÊS =====
+        const receitaMes =
+          vendas?.reduce((acc, v) => acc + (v.valor || 0), 0) || 0;
+        console.log("💰 receitaMes DO BANCO:", receitaMes);
+
+        // ===== COMISSÕES =====
+        const { data: comissoes, error: errorComissoes } = await supabase
+          .from("comissoes")
+          .select("*")
+          .gte("created_at", inicioMes.toISOString())
+          .lte("created_at", fimMes.toISOString());
+
+        console.log("📊 comissoes DO BANCO:", comissoes?.length || 0);
+
+        const comissoesAPagar =
+          comissoes?.filter((c) => c.status === "a_pagar") || [];
+        const comissoesPagas =
+          comissoes?.filter((c) => c.status === "pago") || [];
+
+        // ===== CORRETORES (SEM FILTRO) =====
+        const { data: corretores, error: errorCorretores } = await supabase
+          .from("corretores")
+          .select("*");
+
+        console.log("📊 corretores DO BANCO:", corretores?.length || 0);
+        if (errorCorretores)
+          console.error("❌ Erro corretores:", errorCorretores);
+
+        // ===== MÉDIAS DOS ÚLTIMOS 3 MESES =====
+        const tresMesesAtras = new Date(
+          hoje.getFullYear(),
+          hoje.getMonth() - 3,
+          1,
+        );
+
+        const { data: leadsUltimos3Meses } = await supabase
+          .from("leads")
+          .select("count")
+          .gte("created_at", tresMesesAtras.toISOString());
+
+        const { data: vendasUltimos3Meses } = await supabase
+          .from("propostas")
+          .select("count")
+          .eq("status", "aprovada")
+          .gte("created_at", tresMesesAtras.toISOString());
+
+        const medias = {
+          leads: Math.round((leadsUltimos3Meses?.length || 0) / 3),
+          vendas: Math.round((vendasUltimos3Meses?.length || 0) / 3),
+        };
+
+        // ===== ATUALIZAR ESTADO COM DADOS REAIS =====
+        setDadosReais({
+          leadsSite: leadsSite?.length || 0,
+          qualificados: qualificados?.length || 0,
+          visitasAgendadas: visitasAgendadas.length,
+          visitasRealizadas: visitasRealizadas.length,
+          propostasNegociacao: propostasNegociacao.length,
+          vendas: vendas.length,
+          receitaMes,
+          comissoesAPagar: comissoesAPagar.reduce(
+            (acc, c) => acc + (c.valor || 0),
+            0,
+          ),
+          comissoesPagas: comissoesPagas.reduce(
+            (acc, c) => acc + (c.valor || 0),
+            0,
+          ),
+          ticketMedio: vendas.length > 0 ? receitaMes / vendas.length : 0,
+          vendasLista: vendas || [],
+          comissoesLista: comissoes || [],
+          corretores: corretores || [],
+          medias,
+        });
+
+        // ===== ATUALIZAR DATA (SEM MOCK PARA LEADS) =====
+        setData({
+          imoveis: MOCK_DATA.imoveis,
+          corretores: corretores || [],
+          leads: leadsSite || [], // SEM MOCK!
+          visitas: visitas || [],
+          propostas: propostas || [],
+          vendas: vendas || [],
+          comissoes: comissoes || [],
+        });
+
+        setDataAtualizacao(new Date());
+
+        console.log(
+          "✅ RESUMO FINAL - leadsSite no estado:",
+          leadsSite?.length || 0,
+        );
+      } catch (error) {
+        console.error("❌ Erro ao buscar dados reais:", error);
+      } finally {
+        setLoading(false);
       }
-    }
-  };
+    };
+
+    buscarDadosReais();
+  }, []);
 
   useEffect(() => {
     setLoading(true);
 
     setTimeout(() => {
-      const imoveis = MOCK_DATA.imoveis || [];
-      const vendas = MOCK_DATA.vendas || [];
-      const leads = MOCK_DATA.leads || [];
-      const visitas = MOCK_DATA.visitas || [];
-      const propostas = MOCK_DATA.propostas || [];
-      const corretores = MOCK_DATA.corretores || [];
+      const imoveis = data.imoveis || [];
+      const vendas = data.vendas || [];
+      const leads = data.leads || [];
+      const visitas = data.visitas || [];
+      const propostas = data.propostas || [];
+      const corretores = data.corretores || [];
 
       const hoje = new Date();
       const inicioMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
@@ -1029,11 +1566,22 @@ const Dashboard = () => {
               ),
           ).length;
 
-          const tempoResposta = Math.floor(Math.random() * 180) + 30;
+          const tempoRespostaMinutos = Math.floor(Math.random() * 180) + 5;
+
           const conversao =
             leadsCorretor.length > 0
               ? (vendasCorretor.length / leadsCorretor.length) * 100
               : 0;
+
+          // Calcular comissões do corretor
+          const comissaoGerada = vendasCorretor.reduce(
+            (acc, v) => acc + (v.comissao || 0),
+            0,
+          );
+          const comissaoPaga =
+            data.comissoes
+              ?.filter((c) => c.corretor_id === c.id && c.status === "pago")
+              .reduce((acc, c) => acc + c.valor, 0) || 0;
 
           return {
             id: c.id,
@@ -1044,12 +1592,14 @@ const Dashboard = () => {
             leads: leadsCorretor.length,
             leadsAtivos,
             conversao,
-            tempoResposta: Math.floor(tempoResposta / 60),
+            tempoResposta: tempoRespostaMinutos,
             percentualMeta: c.meta > 0 ? (receita / c.meta) * 100 : 0,
             alerta:
               leadsCorretor.length > 10 && vendasCorretor.length === 0
                 ? true
                 : false,
+            comissaoGerada,
+            comissaoPaga,
           };
         })
         .sort((a, b) => b.receita - a.receita);
@@ -1147,7 +1697,7 @@ const Dashboard = () => {
       setDataAtualizacao(new Date());
       setLoading(false);
     }, 500);
-  }, []);
+  }, [data]);
 
   // ===== ORDENAÇÃO =====
   const ordenarImoveis = (imoveis) => {
@@ -1201,6 +1751,46 @@ const Dashboard = () => {
       return true;
     }),
   );
+
+  // ===== FILTROS PARA TABELAS FINANCEIRAS =====
+  const [filtroVendas, setFiltroVendas] = useState({
+    dataInicio: new Date(new Date().getFullYear(), new Date().getMonth(), 1)
+      .toISOString()
+      .split("T")[0],
+    dataFim: new Date().toISOString().split("T")[0],
+    corretor: "todos",
+  });
+
+  const [filtroComissoes, setFiltroComissoes] = useState({
+    status: "todos",
+    corretor: "todos",
+  });
+
+  const vendasFiltradas = dadosReais.vendasLista.filter((venda) => {
+    const dataVenda = new Date(venda.data_venda).toISOString().split("T")[0];
+    if (dataVenda < filtroVendas.dataInicio || dataVenda > filtroVendas.dataFim)
+      return false;
+    if (
+      filtroVendas.corretor !== "todos" &&
+      venda.corretor_id !== parseInt(filtroVendas.corretor)
+    )
+      return false;
+    return true;
+  });
+
+  const comissoesFiltradas = dadosReais.comissoesLista.filter((comissao) => {
+    if (
+      filtroComissoes.status !== "todos" &&
+      comissao.status !== filtroComissoes.status
+    )
+      return false;
+    if (
+      filtroComissoes.corretor !== "todos" &&
+      comissao.corretor_id !== parseInt(filtroComissoes.corretor)
+    )
+      return false;
+    return true;
+  });
 
   // ========== ABA VISÃO GERAL ==========
   const AbaVisaoGeral = () => {
@@ -1294,6 +1884,294 @@ const Dashboard = () => {
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
               Site: {indicadores.conversaoSite.toFixed(1)}%
             </p>
+          </div>
+        </div>
+
+        {/* ===== FUNIL DE VENDAS (6 ETAPAS) ===== */}
+        <div className="bg-white dark:bg-gray-900/95 backdrop-blur-sm border border-gray-200 dark:border-gray-800 rounded-xl shadow-sm overflow-hidden">
+          <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+            <h2 className="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+              <Icons.chartBar className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+              Funil de Vendas
+            </h2>
+          </div>
+
+          <div className="p-6">
+            <div className="flex flex-col lg:flex-row gap-8">
+              {/* DESENHO DO FUNIL */}
+              <div className="flex-1 flex flex-col items-center space-y-1 mt-8">
+                {/* Lead */}
+                <div className="relative w-full max-w-[280px] group">
+                  <div className="absolute inset-0 bg-blue-500 rounded-xl opacity-75 blur-sm group-hover:opacity-100 transition-all duration-300"></div>
+                  <div className="relative h-12 bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl flex items-center justify-between px-4 text-white font-medium shadow-lg shadow-blue-500/30 border border-blue-400/50 backdrop-blur-sm">
+                    <span className="flex items-center gap-2">
+                      <span className="w-2 h-2 bg-white rounded-full animate-pulse"></span>
+                      Lead
+                    </span>
+                    <span className="font-bold">{dadosReais.leadsSite}</span>
+                  </div>
+                </div>
+
+                {/* Atendimento */}
+                <div className="relative w-full max-w-[250px] group">
+                  <div className="absolute inset-0 bg-green-500 rounded-xl opacity-75 blur-sm group-hover:opacity-100 transition-all duration-300"></div>
+                  <div className="relative h-12 bg-gradient-to-r from-green-500 to-green-600 rounded-xl flex items-center justify-between px-4 text-white font-medium shadow-lg shadow-green-500/30 border border-green-400/50 backdrop-blur-sm">
+                    <span className="flex items-center gap-2">
+                      <span className="w-2 h-2 bg-white rounded-full animate-pulse"></span>
+                      Atendimento
+                    </span>
+                    <span className="font-bold">{dadosReais.qualificados}</span>
+                  </div>
+                </div>
+
+                {/* Agendamento */}
+                <div className="relative w-full max-w-[220px] group">
+                  <div className="absolute inset-0 bg-yellow-500 rounded-xl opacity-75 blur-sm group-hover:opacity-100 transition-all duration-300"></div>
+                  <div className="relative h-12 bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-xl flex items-center justify-between px-4 text-white font-medium shadow-lg shadow-yellow-500/30 border border-yellow-400/50 backdrop-blur-sm">
+                    <span className="flex items-center gap-2">
+                      <span className="w-2 h-2 bg-white rounded-full animate-pulse"></span>
+                      Agendamento
+                    </span>
+                    <span className="font-bold">
+                      {dadosReais.visitasAgendadas}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Visita */}
+                <div className="relative w-full max-w-[190px] group">
+                  <div className="absolute inset-0 bg-orange-500 rounded-xl opacity-75 blur-sm group-hover:opacity-100 transition-all duration-300"></div>
+                  <div className="relative h-12 bg-gradient-to-r from-orange-500 to-orange-600 rounded-xl flex items-center justify-between px-4 text-white font-medium shadow-lg shadow-orange-500/30 border border-orange-400/50 backdrop-blur-sm">
+                    <span className="flex items-center gap-2">
+                      <span className="w-2 h-2 bg-white rounded-full animate-pulse"></span>
+                      Visita
+                    </span>
+                    <span className="font-bold">
+                      {dadosReais.visitasRealizadas}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Proposta */}
+                <div className="relative w-full max-w-[160px] group">
+                  <div className="absolute inset-0 bg-purple-500 rounded-xl opacity-75 blur-sm group-hover:opacity-100 transition-all duration-300"></div>
+                  <div className="relative h-12 bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl flex items-center justify-between px-4 text-white font-medium shadow-lg shadow-purple-500/30 border border-purple-400/50 backdrop-blur-sm">
+                    <span className="flex items-center gap-2">
+                      <span className="w-2 h-2 bg-white rounded-full animate-pulse"></span>
+                      Proposta
+                    </span>
+                    <span className="font-bold">
+                      {dadosReais.propostasNegociacao}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Venda */}
+                <div className="relative w-full max-w-[130px] group">
+                  <div className="absolute inset-0 bg-red-500 rounded-xl opacity-75 blur-sm group-hover:opacity-100 transition-all duration-300"></div>
+                  <div className="relative h-12 bg-gradient-to-r from-red-500 to-red-600 rounded-xl flex items-center justify-between px-4 text-white font-medium shadow-lg shadow-red-500/30 border border-red-400/50 backdrop-blur-sm">
+                    <span className="flex items-center gap-2">
+                      <span className="w-2 h-2 bg-white rounded-full animate-pulse"></span>
+                      Venda
+                    </span>
+                    <span className="font-bold">{dadosReais.vendas}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* LEGENDA EM TABELA */}
+              <div className="lg:w-96">
+                <table className="w-full text-sm border-collapse border border-gray-200 dark:border-gray-700">
+                  <thead>
+                    <tr className="bg-gray-50 dark:bg-gray-800/50">
+                      <th className="text-left py-3 pl-3 text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400 border-r border-gray-200 dark:border-gray-700">
+                        Etapa
+                      </th>
+                      <th className="text-center py-3 px-2 text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400 border-r border-gray-200 dark:border-gray-700">
+                        Qtd
+                      </th>
+                      <th className="text-center py-3 px-2 text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400 border-r border-gray-200 dark:border-gray-700">
+                        % Topo
+                      </th>
+                      <th className="text-center py-3 pr-3 text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                        Variação
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                    {/* Lead */}
+                    <tr>
+                      <td className="py-3 pl-3 flex items-center gap-2 border-r border-gray-200 dark:border-gray-700">
+                        <span className="w-2.5 h-2.5 rounded-full bg-blue-500"></span>
+                        <span className="text-gray-700 dark:text-gray-300">
+                          Lead
+                        </span>
+                      </td>
+                      <td className="text-center py-3 px-2 font-medium text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">
+                        {dadosReais.leadsSite}
+                      </td>
+                      <td className="text-center py-3 px-2 text-gray-600 dark:text-gray-400 border-r border-gray-200 dark:border-gray-700">
+                        100%
+                      </td>
+                      <td className="text-center py-3 pr-3 text-gray-400 dark:text-gray-500">
+                        —
+                      </td>
+                    </tr>
+
+                    {/* Atendimento */}
+                    <tr>
+                      <td className="py-3 pl-3 flex items-center gap-2 border-r border-gray-200 dark:border-gray-700">
+                        <span className="w-2.5 h-2.5 rounded-full bg-green-500"></span>
+                        <span className="text-gray-700 dark:text-gray-300">
+                          Atendimento
+                        </span>
+                      </td>
+                      <td className="text-center py-3 px-2 font-medium text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">
+                        {dadosReais.qualificados}
+                      </td>
+                      <td className="text-center py-3 px-2 text-gray-600 dark:text-gray-400 border-r border-gray-200 dark:border-gray-700">
+                        {dadosReais.leadsSite > 0
+                          ? Math.round(
+                              (dadosReais.qualificados / dadosReais.leadsSite) *
+                                100,
+                            )
+                          : 0}
+                        %
+                      </td>
+                      <td className="text-center py-3 pr-3">
+                        <span className="text-red-500 font-medium">-5%</span>
+                      </td>
+                    </tr>
+
+                    {/* Agendamento */}
+                    <tr>
+                      <td className="py-3 pl-3 flex items-center gap-2 border-r border-gray-200 dark:border-gray-700">
+                        <span className="w-2.5 h-2.5 rounded-full bg-yellow-500"></span>
+                        <span className="text-gray-700 dark:text-gray-300">
+                          Agendamento
+                        </span>
+                      </td>
+                      <td className="text-center py-3 px-2 font-medium text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">
+                        {dadosReais.visitasAgendadas}
+                      </td>
+                      <td className="text-center py-3 px-2 text-gray-600 dark:text-gray-400 border-r border-gray-200 dark:border-gray-700">
+                        {dadosReais.leadsSite > 0
+                          ? Math.round(
+                              (dadosReais.visitasAgendadas /
+                                dadosReais.leadsSite) *
+                                100,
+                            )
+                          : 0}
+                        %
+                      </td>
+                      <td className="text-center py-3 pr-3">
+                        <span className="text-green-500 font-medium">+10%</span>
+                      </td>
+                    </tr>
+
+                    {/* Visita */}
+                    <tr>
+                      <td className="py-3 pl-3 flex items-center gap-2 border-r border-gray-200 dark:border-gray-700">
+                        <span className="w-2.5 h-2.5 rounded-full bg-orange-500"></span>
+                        <span className="text-gray-700 dark:text-gray-300">
+                          Visita
+                        </span>
+                      </td>
+                      <td className="text-center py-3 px-2 font-medium text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">
+                        {dadosReais.visitasRealizadas}
+                      </td>
+                      <td className="text-center py-3 px-2 text-gray-600 dark:text-gray-400 border-r border-gray-200 dark:border-gray-700">
+                        {dadosReais.leadsSite > 0
+                          ? Math.round(
+                              (dadosReais.visitasRealizadas /
+                                dadosReais.leadsSite) *
+                                100,
+                            )
+                          : 0}
+                        %
+                      </td>
+                      <td className="text-center py-3 pr-3">
+                        <span className="text-green-500 font-medium">+8%</span>
+                      </td>
+                    </tr>
+
+                    {/* Proposta */}
+                    <tr>
+                      <td className="py-3 pl-3 flex items-center gap-2 border-r border-gray-200 dark:border-gray-700">
+                        <span className="w-2.5 h-2.5 rounded-full bg-purple-500"></span>
+                        <span className="text-gray-700 dark:text-gray-300">
+                          Proposta
+                        </span>
+                      </td>
+                      <td className="text-center py-3 px-2 font-medium text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">
+                        {dadosReais.propostasNegociacao}
+                      </td>
+                      <td className="text-center py-3 px-2 text-gray-600 dark:text-gray-400 border-r border-gray-200 dark:border-gray-700">
+                        {dadosReais.leadsSite > 0
+                          ? Math.round(
+                              (dadosReais.propostasNegociacao /
+                                dadosReais.leadsSite) *
+                                100,
+                            )
+                          : 0}
+                        %
+                      </td>
+                      <td className="text-center py-3 pr-3">
+                        <span className="text-green-500 font-medium">+12%</span>
+                      </td>
+                    </tr>
+
+                    {/* Venda */}
+                    <tr>
+                      <td className="py-3 pl-3 flex items-center gap-2 border-r border-gray-200 dark:border-gray-700">
+                        <span className="w-2.5 h-2.5 rounded-full bg-red-500"></span>
+                        <span className="text-gray-700 dark:text-gray-300">
+                          Venda
+                        </span>
+                      </td>
+                      <td className="text-center py-3 px-2 font-medium text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">
+                        {dadosReais.vendas}
+                      </td>
+                      <td className="text-center py-3 px-2 text-gray-600 dark:text-gray-400 border-r border-gray-200 dark:border-gray-700">
+                        {dadosReais.leadsSite > 0
+                          ? Math.round(
+                              (dadosReais.vendas / dadosReais.leadsSite) * 100,
+                            )
+                          : 0}
+                        %
+                      </td>
+                      <td className="text-center py-3 pr-3">
+                        <span className="text-green-500 font-medium">+3%</span>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+
+                {/* Taxa de conversão geral */}
+                <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-600 dark:text-gray-400">
+                      Taxa de conversão
+                    </span>
+                    <span className="text-lg font-semibold text-emerald-600 dark:text-emerald-400">
+                      {dadosReais.leadsSite > 0
+                        ? Math.round(
+                            (dadosReais.vendas / dadosReais.leadsSite) * 100,
+                          )
+                        : 0}
+                      %
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+                    De lead a venda •{" "}
+                    {dadosReais.leadsSite > 0 && dadosReais.vendas > 0
+                      ? `1 a cada ${Math.round(dadosReais.leadsSite / dadosReais.vendas)}`
+                      : "0"}{" "}
+                    leads
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -1511,9 +2389,178 @@ const Dashboard = () => {
   const AbaEstoque = () => {
     const domMedioGlobal = indicadores.domMedio;
 
+    // ===== DADOS PARA ANÁLISE =====
+    // Imóveis por bairro
+    const imoveisPorBairro = Object.entries(
+      data.imoveis.reduce((acc, imovel) => {
+        if (!acc[imovel.bairro]) {
+          acc[imovel.bairro] = { total: 0, disponivel: 0, valor: 0 };
+        }
+        acc[imovel.bairro].total++;
+        if (imovel.status === "disponivel") {
+          acc[imovel.bairro].disponivel++;
+          acc[imovel.bairro].valor += imovel.preco;
+        }
+        return acc;
+      }, {}),
+    )
+      .map(([bairro, dados]) => ({
+        bairro,
+        total: dados.total,
+        disponivel: dados.disponivel,
+        vendidos: dados.total - dados.disponivel,
+        valor: dados.valor,
+        percentual:
+          dados.total > 0
+            ? Math.round((dados.disponivel / dados.total) * 100)
+            : 0,
+      }))
+      .sort((a, b) => b.valor - a.valor)
+      .slice(0, 5);
+
+    // Imóveis por tipo
+    const imoveisPorTipo = Object.entries(
+      data.imoveis.reduce((acc, imovel) => {
+        if (!acc[imovel.tipo]) {
+          acc[imovel.tipo] = { quantidade: 0, valor: 0 };
+        }
+        acc[imovel.tipo].quantidade++;
+        if (imovel.status === "disponivel") {
+          acc[imovel.tipo].valor += imovel.preco;
+        }
+        return acc;
+      }, {}),
+    ).map(([tipo, dados]) => ({
+      tipo,
+      quantidade: dados.quantidade,
+      valor: dados.valor,
+    }));
+
+    // ===== INTELIGÊNCIA DE MERCADO =====
+    // 1. 🔥 MAIS VISITADOS (Top 3)
+    const maisVisitados = [...data.imoveis]
+      .filter((imovel) => imovel.status === "disponivel")
+      .sort((a, b) => b.visitas_count - a.visitas_count)
+      .slice(0, 3)
+      .map((imovel) => ({
+        ...imovel,
+        visitas: imovel.visitas_count,
+        vendas: data.vendas.filter((v) => v.imovel_id === imovel.id).length,
+        conversao:
+          imovel.visitas_count > 0
+            ? Math.round(
+                (data.vendas.filter((v) => v.imovel_id === imovel.id).length /
+                  imovel.visitas_count) *
+                  100,
+              )
+            : 0,
+      }));
+
+    // 2. 📊 ALTA CONVERSÃO (Top 3)
+    const altaConversao = [...data.imoveis]
+      .filter((imovel) => imovel.status === "disponivel")
+      .map((imovel) => {
+        const vendasImovel = data.vendas.filter(
+          (v) => v.imovel_id === imovel.id,
+        ).length;
+        const taxaConversao =
+          imovel.visitas_count > 0
+            ? (vendasImovel / imovel.visitas_count) * 100
+            : 0;
+        return {
+          ...imovel,
+          vendas: vendasImovel,
+          taxaConversao: Math.round(taxaConversao * 10) / 10,
+        };
+      })
+      .sort((a, b) => b.taxaConversao - a.taxaConversao)
+      .slice(0, 3);
+
+    // ===== INSIGHTS ESTRATÉGICOS =====
+    const insights = [];
+
+    // Insight 1: Tipo com mais visita
+    const visitasPorTipo = {};
+    data.imoveis.forEach((imovel) => {
+      if (!visitasPorTipo[imovel.tipo]) {
+        visitasPorTipo[imovel.tipo] = { totalVisitas: 0, totalImoveis: 0 };
+      }
+      visitasPorTipo[imovel.tipo].totalVisitas += imovel.visitas_count;
+      visitasPorTipo[imovel.tipo].totalImoveis++;
+    });
+
+    const tipoMaisVisitado = Object.entries(visitasPorTipo)
+      .map(([tipo, dados]) => ({
+        tipo,
+        mediaVisitas: dados.totalVisitas / dados.totalImoveis,
+      }))
+      .sort((a, b) => b.mediaVisitas - a.mediaVisitas)[0];
+
+    if (tipoMaisVisitado) {
+      insights.push(
+        `📈 ${tipoMaisVisitado.tipo}s têm ${tipoMaisVisitado.mediaVisitas.toFixed(1)}x mais visitas que a média`,
+      );
+    }
+
+    // Insight 2: Bairro com maior conversão
+    const conversaoPorBairro = {};
+    data.imoveis.forEach((imovel) => {
+      const vendasBairro = data.vendas.filter(
+        (v) => v.imovel_id === imovel.id,
+      ).length;
+      if (!conversaoPorBairro[imovel.bairro]) {
+        conversaoPorBairro[imovel.bairro] = { visitas: 0, vendas: 0 };
+      }
+      conversaoPorBairro[imovel.bairro].visitas += imovel.visitas_count;
+      conversaoPorBairro[imovel.bairro].vendas += vendasBairro;
+    });
+
+    const melhorBairroConversao = Object.entries(conversaoPorBairro)
+      .map(([bairro, dados]) => ({
+        bairro,
+        taxa: dados.visitas > 0 ? (dados.vendas / dados.visitas) * 100 : 0,
+      }))
+      .sort((a, b) => b.taxa - a.taxa)[0];
+
+    if (melhorBairroConversao && melhorBairroConversao.taxa > 10) {
+      insights.push(
+        `🏘️ ${melhorBairroConversao.bairro} tem taxa de conversão de ${melhorBairroConversao.taxa.toFixed(1)}%`,
+      );
+    }
+
+    // Insight 3: Faixa de preço mais vendida
+    const vendasPorFaixa = {
+      "até R$ 500k": 0,
+      "R$ 500k a R$ 1M": 0,
+      "acima de R$ 1M": 0,
+    };
+
+    data.vendas.forEach((venda) => {
+      if (venda.valor <= 500000) vendasPorFaixa["até R$ 500k"]++;
+      else if (venda.valor <= 1000000) vendasPorFaixa["R$ 500k a R$ 1M"]++;
+      else vendasPorFaixa["acima de R$ 1M"]++;
+    });
+
+    const faixaMaisVendida = Object.entries(vendasPorFaixa).sort(
+      (a, b) => b[1] - a[1],
+    )[0];
+
+    if (data.vendas.length > 0) {
+      insights.push(
+        `💰 Imóveis ${faixaMaisVendida[0]} representam ${Math.round(
+          (faixaMaisVendida[1] / data.vendas.length) * 100,
+        )}% das vendas`,
+      );
+    }
+
+    // Insight 4: Estratégia recomendada
+    insights.push(
+      `🎯 Estratégia: Foque em casas financiáveis para casais jovens (28–35 anos) com 1 filho e renda de R$ 6k–10k. 78% das vendas são financiadas.`,
+    );
+
     return (
       <div className="space-y-8">
-        {/* Indicadores rápidos */}
+        {/* ===== BLOCO 1: VISÃO GERAL (4 cards) ===== */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
           <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg shadow-sm p-6">
             <div className="flex items-center gap-2 mb-2">
@@ -1570,7 +2617,416 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Filtros */}
+        {/* ===== BLOCO 2: ANÁLISE POR BAIRRO E TIPO ===== */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Imóveis por Bairro */}
+          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg shadow-sm p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <Icons.building className="w-5 h-5 text-blue-500" />
+              <h2 className="text-sm font-semibold text-gray-900 dark:text-white">
+                Imóveis por Bairro
+              </h2>
+            </div>
+            <div className="space-y-4">
+              {imoveisPorBairro.map((item) => (
+                <div key={item.bairro} className="space-y-1">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="font-medium text-gray-700 dark:text-gray-300">
+                      {item.bairro}
+                    </span>
+                    <span className="text-gray-900 dark:text-white">
+                      {item.disponivel}/{item.total}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="flex-1 h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+                      <div
+                        className="h-2 bg-blue-500 rounded-full"
+                        style={{ width: `${item.percentual}%` }}
+                      />
+                    </div>
+                    <span className="text-xs font-medium text-gray-600 dark:text-gray-400">
+                      {item.percentual}%
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    {item.vendidos} vendidos • {formatarMoeda(item.valor)} em
+                    estoque
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Imóveis por Tipo */}
+          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg shadow-sm p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <Icons.home className="w-5 h-5 text-emerald-500" />
+              <h2 className="text-sm font-semibold text-gray-900 dark:text-white">
+                Imóveis por Tipo
+              </h2>
+            </div>
+            <div className="space-y-3">
+              {imoveisPorTipo.map((item) => (
+                <div
+                  key={item.tipo}
+                  className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-800 last:border-0"
+                >
+                  <span className="text-sm text-gray-700 dark:text-gray-300">
+                    {item.tipo}
+                  </span>
+                  <div className="text-right">
+                    <span className="text-sm font-medium text-gray-900 dark:text-white block">
+                      {item.quantidade} imóveis
+                    </span>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">
+                      {formatarMoeda(item.valor)}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* ===== BLOCO 3: INTELIGÊNCIA DE MERCADO ===== */}
+        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg shadow-sm overflow-hidden">
+          {/* Cabeçalho da seção */}
+          <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+            <div className="flex items-center gap-2">
+              <Icons.trendingUp className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+              <h2 className="text-sm font-semibold text-gray-900 dark:text-white">
+                Inteligência de Mercado
+              </h2>
+              <span className="text-xs bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 px-2 py-0.5 rounded-full ml-2">
+                Insights Estratégicos
+              </span>
+            </div>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              Análise do comportamento real de clientes
+            </p>
+          </div>
+
+          {/* Cards de insights (3 colunas) */}
+          <div className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* ===== CARD 1: ATRAÇÃO ===== */}
+              <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+                <div className="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/10 dark:to-orange-900/10 px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+                  <div className="flex items-center gap-2">
+                    <Icons.eye className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                    <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
+                      Atração
+                    </h3>
+                  </div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    Imóveis mais visitados pelos clientes
+                  </p>
+                </div>
+                <div className="divide-y divide-gray-100 dark:divide-gray-800">
+                  {maisVisitados && maisVisitados.length > 0 ? (
+                    maisVisitados.slice(0, 3).map((imovel, idx) => (
+                      <div
+                        key={idx}
+                        className="p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                      >
+                        <div className="flex items-start justify-between mb-1">
+                          <span className="text-xs font-medium text-blue-600 dark:text-blue-400">
+                            {imovel.codigo}
+                          </span>
+                          <span className="text-xs bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 px-2 py-0.5 rounded-full">
+                            {imovel.visitas || 0} visitas
+                          </span>
+                        </div>
+                        <p className="text-sm font-medium text-gray-900 dark:text-white">
+                          {imovel.bairro}
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+                          {imovel.tipo}
+                        </p>
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-semibold text-gray-900 dark:text-white">
+                            {formatarMoeda(imovel.preco)}
+                          </span>
+                          <span className="text-xs text-gray-500 dark:text-gray-400">
+                            {imovel.conversao || 0}% conversão
+                          </span>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="p-4 text-center text-gray-500 dark:text-gray-400 text-sm">
+                      Nenhum dado disponível
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* ===== CARD 2: IMÓVEIS DE SUCESSO ===== */}
+              <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+                <div className="bg-gradient-to-r from-emerald-50 to-green-50 dark:from-emerald-900/10 dark:to-green-900/10 px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+                  <div className="flex items-center gap-2">
+                    <Icons.trendingUp className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                    <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
+                      Imóveis de Sucesso
+                    </h3>
+                  </div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    O que os imóveis mais vendidos têm em comum
+                  </p>
+                </div>
+
+                <div className="p-4 space-y-4">
+                  {(() => {
+                    const dadosVendas = {
+                      totalVendas: 45,
+                      financiados: 35,
+                      aVista: 10,
+                      perfilCompradores: [
+                        {
+                          label: "Faixa etária",
+                          valor: "28–35 anos",
+                          percentual: 62,
+                        },
+                        {
+                          label: "Estrutura familiar",
+                          valor: "Casal 1 filho",
+                          percentual: 48,
+                        },
+                        {
+                          label: "Finalidade",
+                          valor: "Moradia própria",
+                          percentual: 78,
+                        },
+                        {
+                          label: "Tipo de renda",
+                          valor: "CLT + Autônomo",
+                          percentual: 54,
+                        },
+                      ],
+                      faixaRenda: {
+                        min: 6000,
+                        max: 10000,
+                        percentual: 58,
+                      },
+                    };
+
+                    const percentualFinanciado = Math.round(
+                      (dadosVendas.financiados / dadosVendas.totalVendas) * 100,
+                    );
+                    const percentualAVista = Math.round(
+                      (dadosVendas.aVista / dadosVendas.totalVendas) * 100,
+                    );
+
+                    return (
+                      <>
+                        {/* Bloco 1: Financiamento */}
+                        <div className="border border-emerald-200 dark:border-emerald-800 bg-emerald-50/30 dark:bg-emerald-900/10 rounded-lg p-3">
+                          <div className="flex items-center">
+                            <div className="flex-1 text-center border-r border-emerald-200 dark:border-emerald-800 pr-2">
+                              <p className="text-xl font-bold text-emerald-600 dark:text-emerald-400">
+                                {percentualFinanciado}%
+                              </p>
+                              <p className="text-[10px] font-medium text-emerald-700 dark:text-emerald-400 mt-1">
+                                FINANCIADOS
+                              </p>
+                              <p className="text-[9px] text-gray-500 dark:text-gray-400">
+                                {dadosVendas.financiados} vendas
+                              </p>
+                            </div>
+                            <div className="flex-1 text-center pl-2">
+                              <p className="text-xl font-bold text-gray-700 dark:text-gray-300">
+                                {percentualAVista}%
+                              </p>
+                              <p className="text-[10px] font-medium text-gray-600 dark:text-gray-400 mt-1">
+                                À VISTA
+                              </p>
+                              <p className="text-[9px] text-gray-500 dark:text-gray-400">
+                                {dadosVendas.aVista} vendas
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="border-t border-gray-200 dark:border-gray-700"></div>
+
+                        {/* Bloco 2: Perfil do Comprador */}
+                        <div className="space-y-2">
+                          <h4 className="text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                            <Icons.users className="w-3 h-3" />
+                            <span>Perfil do Comprador</span>
+                          </h4>
+
+                          <div className="space-y-1.5">
+                            {dadosVendas.perfilCompradores.map((item, idx) => (
+                              <div
+                                key={idx}
+                                className="flex items-center justify-between text-xs"
+                              >
+                                <span className="text-gray-600 dark:text-gray-400">
+                                  {item.label}:
+                                </span>
+                                <div className="flex items-center gap-1.5">
+                                  <span className="font-medium text-gray-900 dark:text-white">
+                                    {item.valor}
+                                  </span>
+                                  <span className="text-[9px] bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 px-1.5 py-0.5 rounded-full">
+                                    {item.percentual}%
+                                  </span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="border-t border-gray-200 dark:border-gray-700"></div>
+
+                        {/* Bloco 3: Faixa de Renda */}
+                        <div className="border border-blue-200 dark:border-blue-800 bg-blue-50/30 dark:bg-blue-900/10 rounded-lg p-3">
+                          <h4 className="text-xs font-medium uppercase tracking-wider text-blue-700 dark:text-blue-400 mb-2 flex items-center gap-1">
+                            <Icons.chartBar className="w-3 h-3" />
+                            <span>Faixa de Renda</span>
+                          </h4>
+
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-baseline gap-1">
+                              <span className="text-[10px] text-gray-500 dark:text-gray-400">
+                                R$
+                              </span>
+                              <span className="text-sm font-bold text-gray-900 dark:text-white">
+                                {dadosVendas.faixaRenda.min.toLocaleString()} –{" "}
+                                {dadosVendas.faixaRenda.max.toLocaleString()}
+                              </span>
+                            </div>
+
+                            <div className="w-px h-6 bg-blue-200 dark:bg-blue-800"></div>
+
+                            <div className="flex items-center gap-2">
+                              <div className="w-16 h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+                                <div
+                                  className="h-1.5 bg-blue-500 rounded-full"
+                                  style={{
+                                    width: `${dadosVendas.faixaRenda.percentual}%`,
+                                  }}
+                                />
+                              </div>
+                              <span className="text-xs font-semibold text-blue-600 dark:text-blue-400">
+                                {dadosVendas.faixaRenda.percentual}%
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </>
+                    );
+                  })()}
+                </div>
+              </div>
+
+              {/* ===== CARD 3: EFICIÊNCIA ===== */}
+              <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+                <div className="bg-gradient-to-r from-purple-50 to-violet-50 dark:from-purple-900/10 dark:to-violet-900/10 px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+                  <div className="flex items-center gap-2">
+                    <Icons.lightbulb className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                    <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
+                      Eficiência
+                    </h3>
+                  </div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    Imóveis com maior taxa de conversão
+                  </p>
+                </div>
+                <div className="divide-y divide-gray-100 dark:divide-gray-800">
+                  {altaConversao && altaConversao.length > 0 ? (
+                    altaConversao.slice(0, 3).map((imovel, idx) => {
+                      const visitas = imovel.visitas_count || 0;
+                      const vendas = imovel.vendas || 0;
+                      const taxa = visitas > 0 ? (vendas / visitas) * 100 : 0;
+                      const relacao = visitas > 0 ? `1 a cada ${visitas}` : "-";
+
+                      return (
+                        <div
+                          key={idx}
+                          className="p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                        >
+                          <div className="flex items-start justify-between mb-1">
+                            <span className="text-xs font-medium text-blue-600 dark:text-blue-400">
+                              {imovel.codigo}
+                            </span>
+                            {vendas > 0 && (
+                              <span className="inline-flex items-center gap-1 text-xs bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 px-2 py-1 rounded-full font-medium">
+                                <Icons.checkCircle className="w-3 h-3" />
+                                <span>Vendido</span>
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-sm font-medium text-gray-900 dark:text-white mb-1">
+                            {imovel.bairro}
+                          </p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
+                            {imovel.tipo}
+                          </p>
+                          <div className="flex items-center justify-between text-xs">
+                            <div className="flex items-center gap-1">
+                              <Icons.eye className="w-3 h-3 text-gray-400" />
+                              <span className="text-gray-600 dark:text-gray-400">
+                                {visitas} {visitas === 1 ? "visita" : "visitas"}
+                              </span>
+                            </div>
+                            <span className="text-gray-600 dark:text-gray-400">
+                              {relacao}
+                            </span>
+                            <div className="flex items-center gap-1">
+                              <span className="text-gray-600 dark:text-gray-400">
+                                conversão
+                              </span>
+                              <span className="font-medium text-purple-600 dark:text-purple-400">
+                                {taxa.toFixed(1)}%
+                              </span>
+                            </div>
+                          </div>
+                          <div className="mt-2 h-1 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+                            <div
+                              className="h-1 bg-purple-500 rounded-full"
+                              style={{ width: `${taxa}%` }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <div className="p-4 text-center text-gray-500 dark:text-gray-400 text-sm">
+                      Nenhum dado disponível
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Insights Estratégicos Globais */}
+            {insights.length > 0 && (
+              <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800 rounded-lg">
+                <h4 className="text-xs font-medium uppercase tracking-wider text-blue-700 dark:text-blue-400 mb-3">
+                  📈 Insights Estratégicos
+                </h4>
+                <div className="space-y-2">
+                  {insights.map((insight, idx) => (
+                    <p
+                      key={idx}
+                      className="text-sm text-gray-700 dark:text-gray-300 flex items-start gap-2"
+                    >
+                      <span className="text-blue-600 dark:text-blue-400 mt-0.5">
+                        •
+                      </span>
+                      {insight}
+                    </p>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* ===== BLOCO 4: FILTROS ===== */}
         <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg shadow-sm p-5">
           <div className="flex items-center gap-2 mb-4">
             <Icons.filter className="w-4 h-4 text-gray-500" />
@@ -1647,9 +3103,9 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Tabela de Estoque */}
-        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg shadow-sm p-6">
-          <div className="flex items-center justify-between mb-4">
+        {/* ===== BLOCO 5: ESTOQUE DETALHADO ===== */}
+        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg shadow-sm">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
             <h2 className="text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
               Estoque Detalhado
             </h2>
@@ -1665,7 +3121,11 @@ const Dashboard = () => {
                         : "desc",
                   })
                 }
-                className={`text-xs px-2 py-1 rounded flex items-center gap-1 ${ordemEstoque.campo === "diasNoSite" ? "bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400" : ""}`}
+                className={`text-xs px-2 py-1 rounded flex items-center gap-1 ${
+                  ordemEstoque.campo === "diasNoSite"
+                    ? "bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400"
+                    : ""
+                }`}
               >
                 <Icons.clock className="w-3 h-3" />
                 DOM{" "}
@@ -1686,7 +3146,11 @@ const Dashboard = () => {
                         : "desc",
                   })
                 }
-                className={`text-xs px-2 py-1 rounded flex items-center gap-1 ${ordemEstoque.campo === "preco" ? "bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400" : ""}`}
+                className={`text-xs px-2 py-1 rounded flex items-center gap-1 ${
+                  ordemEstoque.campo === "preco"
+                    ? "bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400"
+                    : ""
+                }`}
               >
                 <Icons.dollar className="w-3 h-3" />
                 Preço{" "}
@@ -1699,27 +3163,27 @@ const Dashboard = () => {
             </div>
           </div>
 
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto max-h-96 relative">
             <table className="w-full border-collapse">
-              <thead>
-                <tr className="bg-gray-50 dark:bg-gray-800/50">
-                  <th className="text-left py-3 px-4 text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400 border-r border-gray-200 dark:border-gray-700">
+              <thead className="sticky top-0 z-10">
+                <tr className="bg-gray-100 dark:bg-gray-800">
+                  <th className="text-left py-3 px-4 text-xs font-medium uppercase tracking-wider text-gray-600 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700">
                     Código
                   </th>
-                  <th className="text-left py-3 px-4 text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400 border-r border-gray-200 dark:border-gray-700">
+                  <th className="text-left py-3 px-4 text-xs font-medium uppercase tracking-wider text-gray-600 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700">
                     Tipo
                   </th>
-                  <th className="text-left py-3 px-4 text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400 border-r border-gray-200 dark:border-gray-700">
+                  <th className="text-left py-3 px-4 text-xs font-medium uppercase tracking-wider text-gray-600 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700">
                     Bairro
                   </th>
-                  <th className="text-left py-3 px-4 text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400 border-r border-gray-200 dark:border-gray-700">
+                  <th className="text-left py-3 px-4 text-xs font-medium uppercase tracking-wider text-gray-600 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700">
                     Preço
                   </th>
-                  <th className="text-left py-3 px-4 text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400 border-r border-gray-200 dark:border-gray-700">
+                  <th className="text-left py-3 px-4 text-xs font-medium uppercase tracking-wider text-gray-600 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700">
                     Status
                   </th>
-                  <th className="text-left py-3 px-4 text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                    DOM
+                  <th className="text-left py-3 px-4 text-xs font-medium uppercase tracking-wider text-gray-600 dark:text-gray-300">
+                    Dias no Site
                   </th>
                 </tr>
               </thead>
@@ -1737,9 +3201,9 @@ const Dashboard = () => {
                     <tr
                       key={imovel.id}
                       className={`
-                        ${index % 2 === 0 ? "bg-white dark:bg-gray-900" : "bg-gray-50/50 dark:bg-gray-800/20"}
-                        hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors
-                      `}
+                      ${index % 2 === 0 ? "bg-white dark:bg-gray-900" : "bg-gray-50/50 dark:bg-gray-800/20"}
+                      hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors
+                    `}
                     >
                       <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700">
                         {imovel.codigo}
@@ -1786,11 +3250,451 @@ const Dashboard = () => {
               </tbody>
             </table>
           </div>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-3">
+          <p className="text-xs text-gray-500 dark:text-gray-400 px-6 py-3 border-t border-gray-200 dark:border-gray-700">
             Mostrando {Math.min(imoveisFiltrados.length, 20)} de{" "}
             {imoveisFiltrados.length} imóveis
           </p>
         </div>
+      </div>
+    );
+  };
+
+  // ========== NOVA ABA: PROPOSTAS ==========
+  const AbaPropostas = () => {
+    const [propostas, setPropostas] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [filtroStatus, setFiltroStatus] = useState("todas");
+    const [propostaSelecionada, setPropostaSelecionada] = useState(null);
+    const [modalAberto, setModalAberto] = useState(false);
+
+    useEffect(() => {
+      buscarPropostas();
+    }, []);
+
+    const buscarPropostas = async () => {
+      setLoading(true);
+
+      const { data, error } = await supabase
+        .from("propostas")
+        .select(
+          `
+        *,
+        leads (id, nome, telefone, email),
+        imoveis (id, codigo, titulo, bairro, tipo, preco),
+        corretores (id, nome)
+      `,
+        )
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.error("Erro ao buscar propostas:", error);
+      } else {
+        setPropostas(data || []);
+      }
+      setLoading(false);
+    };
+
+    const handleAprovarProposta = async (proposta) => {
+      try {
+        // 1. Atualiza proposta para aprovada
+        await supabase
+          .from("propostas")
+          .update({
+            status: "aprovada",
+            data_aprovacao: new Date().toISOString(),
+          })
+          .eq("id", proposta.id);
+
+        // 2. Atualiza imóvel para vendido
+        await supabase
+          .from("imoveis")
+          .update({ status: "vendido" })
+          .eq("id", proposta.imovel_id);
+
+        // 3. Cria registro na tabela de comissões
+        const comissao = proposta.valor * 0.06; // 6%
+        await supabase.from("comissoes").insert({
+          proposta_id: proposta.id,
+          corretor_id: proposta.corretor_id,
+          valor: comissao,
+          status: "a_pagar",
+          data_vencimento: new Date(
+            Date.now() + 30 * 24 * 60 * 60 * 1000,
+          ).toISOString(),
+        });
+
+        alert("✅ Proposta aprovada! Venda concluída com sucesso.");
+        buscarPropostas(); // Recarrega a lista
+      } catch (error) {
+        console.error("Erro ao aprovar proposta:", error);
+        alert("Erro ao aprovar proposta. Tente novamente.");
+      }
+    };
+
+    const handleRecusarProposta = async (proposta) => {
+      if (!confirm("Tem certeza que deseja recusar esta proposta?")) return;
+
+      try {
+        await supabase
+          .from("propostas")
+          .update({ status: "recusada" })
+          .eq("id", proposta.id);
+
+        alert("❌ Proposta recusada");
+        buscarPropostas();
+      } catch (error) {
+        console.error("Erro ao recusar proposta:", error);
+      }
+    };
+
+    const abrirDetalhes = (proposta) => {
+      setPropostaSelecionada(proposta);
+      setModalAberto(true);
+    };
+
+    const getStatusInfo = (status) => {
+      switch (status) {
+        case "em_andamento":
+          return {
+            label: "Em Negociação",
+            color:
+              "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400",
+            icon: "⚡",
+          };
+        case "aprovada":
+          return {
+            label: "Aprovada",
+            color:
+              "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
+            icon: "✅",
+          };
+        case "recusada":
+          return {
+            label: "Recusada",
+            color:
+              "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
+            icon: "❌",
+          };
+        default:
+          return {
+            label: status,
+            color:
+              "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400",
+            icon: "📄",
+          };
+      }
+    };
+
+    const calcularResumo = () => {
+      const emAndamento = propostas.filter((p) => p.status === "em_andamento");
+      const aprovadas = propostas.filter((p) => p.status === "aprovada");
+      const valorTotal = propostas.reduce((acc, p) => acc + (p.valor || 0), 0);
+      const valorEmAndamento = emAndamento.reduce(
+        (acc, p) => acc + (p.valor || 0),
+        0,
+      );
+
+      return {
+        total: propostas.length,
+        emAndamento: emAndamento.length,
+        aprovadas: aprovadas.length,
+        recusadas: propostas.filter((p) => p.status === "recusada").length,
+        valorTotal,
+        valorEmAndamento,
+        conversao:
+          propostas.length > 0
+            ? Math.round((aprovadas.length / propostas.length) * 100)
+            : 0,
+      };
+    };
+
+    const resumo = calcularResumo();
+    const propostasFiltradas =
+      filtroStatus === "todas"
+        ? propostas
+        : propostas.filter((p) => p.status === filtroStatus);
+
+    if (loading) {
+      return (
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-6">
+        {/* HEADER COM MÉTRICAS */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div className="bg-white dark:bg-gray-900 rounded-lg p-5 border-l-4 border-purple-500 shadow-sm">
+            <p className="text-xs text-gray-500 uppercase tracking-wider">
+              Total de Propostas
+            </p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">
+              {resumo.total}
+            </p>
+          </div>
+
+          <div className="bg-white dark:bg-gray-900 rounded-lg p-5 border-l-4 border-yellow-500 shadow-sm">
+            <p className="text-xs text-gray-500 uppercase tracking-wider">
+              Em Negociação
+            </p>
+            <p className="text-2xl font-bold text-yellow-600">
+              {resumo.emAndamento}
+            </p>
+          </div>
+
+          <div className="bg-white dark:bg-gray-900 rounded-lg p-5 border-l-4 border-green-500 shadow-sm">
+            <p className="text-xs text-gray-500 uppercase tracking-wider">
+              Aprovadas
+            </p>
+            <p className="text-2xl font-bold text-green-600">
+              {resumo.aprovadas}
+            </p>
+          </div>
+
+          <div className="bg-white dark:bg-gray-900 rounded-lg p-5 border-l-4 border-blue-500 shadow-sm">
+            <p className="text-xs text-gray-500 uppercase tracking-wider">
+              Valor em Jogo
+            </p>
+            <p className="text-2xl font-bold text-blue-600">
+              {formatarMoeda(resumo.valorEmAndamento)}
+            </p>
+          </div>
+
+          <div className="bg-white dark:bg-gray-900 rounded-lg p-5 border-l-4 border-purple-500 shadow-sm">
+            <p className="text-xs text-gray-500 uppercase tracking-wider">
+              Taxa Conversão
+            </p>
+            <p className="text-2xl font-bold text-purple-600">
+              {resumo.conversao}%
+            </p>
+          </div>
+        </div>
+
+        {/* FILTROS RÁPIDOS */}
+        <div className="bg-white dark:bg-gray-900 rounded-lg shadow-sm p-4">
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => setFiltroStatus("todas")}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                filtroStatus === "todas"
+                  ? "bg-gray-900 text-white dark:bg-white dark:text-gray-900"
+                  : "text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800"
+              }`}
+            >
+              Todas ({resumo.total})
+            </button>
+            <button
+              onClick={() => setFiltroStatus("em_andamento")}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                filtroStatus === "em_andamento"
+                  ? "bg-yellow-500 text-white"
+                  : "text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800"
+              }`}
+            >
+              ⚡ Em Negociação ({resumo.emAndamento})
+            </button>
+            <button
+              onClick={() => setFiltroStatus("aprovada")}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                filtroStatus === "aprovada"
+                  ? "bg-green-500 text-white"
+                  : "text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800"
+              }`}
+            >
+              ✅ Aprovadas ({resumo.aprovadas})
+            </button>
+            <button
+              onClick={() => setFiltroStatus("recusada")}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                filtroStatus === "recusada"
+                  ? "bg-red-500 text-white"
+                  : "text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800"
+              }`}
+            >
+              ❌ Recusadas ({resumo.recusadas})
+            </button>
+          </div>
+        </div>
+
+        {/* LISTA DE PROPOSTAS */}
+        <div className="bg-white dark:bg-gray-900 rounded-lg shadow-sm overflow-hidden">
+          <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+            <h2 className="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+              <Icons.document className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+              Lista de Propostas
+            </h2>
+          </div>
+
+          {propostasFiltradas.length === 0 ? (
+            <div className="p-12 text-center">
+              <div className="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Icons.document className="w-8 h-8 text-gray-400" />
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+                Nenhuma proposta encontrada
+              </h3>
+              <p className="text-gray-500 dark:text-gray-400">
+                {filtroStatus === "todas"
+                  ? "Crie uma proposta a partir de uma visita realizada"
+                  : `Nenhuma proposta com status ${filtroStatus}`}
+              </p>
+            </div>
+          ) : (
+            <div className="divide-y divide-gray-100 dark:divide-gray-800">
+              {propostasFiltradas.map((proposta) => {
+                const status = getStatusInfo(proposta.status);
+
+                return (
+                  <div
+                    key={proposta.id}
+                    className="p-6 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="space-y-3 flex-1">
+                        {/* CABEÇALHO */}
+                        <div className="flex items-center gap-3 flex-wrap">
+                          <span
+                            className={`text-xs px-2 py-1 rounded-full font-medium ${status.color}`}
+                          >
+                            {status.icon} {status.label}
+                          </span>
+                          <span className="text-sm text-gray-500">
+                            #{proposta.id.slice(0, 8)} •{" "}
+                            {new Date(proposta.created_at).toLocaleDateString(
+                              "pt-BR",
+                            )}
+                          </span>
+                        </div>
+
+                        {/* INFORMAÇÕES PRINCIPAIS */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                          <div>
+                            <p className="text-xs text-gray-500">Imóvel</p>
+                            <p className="text-sm font-medium text-gray-900 dark:text-white">
+                              {proposta.imoveis?.codigo} -{" "}
+                              {proposta.imoveis?.bairro}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              {proposta.imoveis?.tipo}
+                            </p>
+                          </div>
+
+                          <div>
+                            <p className="text-xs text-gray-500">
+                              Valor da Proposta
+                            </p>
+                            <p className="text-lg font-semibold text-gray-900 dark:text-white">
+                              {formatarMoeda(proposta.valor)}
+                            </p>
+                          </div>
+
+                          <div>
+                            <p className="text-xs text-gray-500">Cliente</p>
+                            <p className="text-sm font-medium text-gray-900 dark:text-white">
+                              {proposta.leads?.nome || "—"}
+                            </p>
+                            {proposta.leads?.telefone && (
+                              <p className="text-xs text-gray-500">
+                                {proposta.leads.telefone}
+                              </p>
+                            )}
+                          </div>
+
+                          <div>
+                            <p className="text-xs text-gray-500">Corretor</p>
+                            <p className="text-sm font-medium text-gray-900 dark:text-white">
+                              {proposta.corretores?.nome || "—"}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* CONDIÇÕES */}
+                        {proposta.condicoes && (
+                          <div className="mt-2 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                            <p className="text-xs text-gray-500 mb-1">
+                              Condições da proposta:
+                            </p>
+                            <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-line">
+                              {proposta.condicoes}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* AÇÕES */}
+                      <div className="flex gap-2 ml-4">
+                        <button
+                          onClick={() => abrirDetalhes(proposta)}
+                          className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                          title="Ver detalhes"
+                        >
+                          <Icons.eye className="w-5 h-5" />
+                        </button>
+
+                        {proposta.status === "em_andamento" && (
+                          <>
+                            <button
+                              onClick={() => handleAprovarProposta(proposta)}
+                              className="p-2 text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-colors"
+                              title="Aprovar proposta - Finalizar venda"
+                            >
+                              <Icons.checkCircle className="w-5 h-5" />
+                            </button>
+                            <button
+                              onClick={() => handleRecusarProposta(proposta)}
+                              className="p-2 text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                              title="Recusar proposta"
+                            >
+                              <Icons.x className="w-5 h-5" />
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* MODAL DE DETALHES */}
+        {modalAberto && propostaSelecionada && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white dark:bg-gray-900 rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  Detalhes da Proposta
+                </h3>
+                <button
+                  onClick={() => setModalAberto(false)}
+                  className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                >
+                  <Icons.x className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="p-6 space-y-4">
+                {/* Conteúdo do modal (igual aos detalhes acima) */}
+                <p className="text-gray-700 dark:text-gray-300">
+                  {propostaSelecionada.condicoes ||
+                    "Nenhuma condição especificada."}
+                </p>
+              </div>
+
+              <div className="p-6 border-t border-gray-200 dark:border-gray-700 flex justify-end">
+                <button
+                  onClick={() => setModalAberto(false)}
+                  className="px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg transition-colors"
+                >
+                  Fechar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   };
@@ -1935,10 +3839,365 @@ const Dashboard = () => {
           </p>
         </div>
       </div>
+
+      {/* ===== NOVA SEÇÃO: RELATÓRIO DE VENDAS ===== */}
+      <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg shadow-sm overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+          <h2 className="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+            <Icons.document className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+            Relatório de Vendas
+          </h2>
+        </div>
+
+        {/* Filtros */}
+        <div className="p-4 bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-700">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">
+                Data Início
+              </label>
+              <input
+                type="date"
+                value={filtroVendas.dataInicio}
+                onChange={(e) =>
+                  setFiltroVendas({
+                    ...filtroVendas,
+                    dataInicio: e.target.value,
+                  })
+                }
+                className="text-xs bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-md px-3 py-2 w-full"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">
+                Data Fim
+              </label>
+              <input
+                type="date"
+                value={filtroVendas.dataFim}
+                onChange={(e) =>
+                  setFiltroVendas({ ...filtroVendas, dataFim: e.target.value })
+                }
+                className="text-xs bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-md px-3 py-2 w-full"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">
+                Corretor
+              </label>
+              <select
+                value={filtroVendas.corretor}
+                onChange={(e) =>
+                  setFiltroVendas({ ...filtroVendas, corretor: e.target.value })
+                }
+                className="text-xs bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-md px-3 py-2 w-full"
+              >
+                <option value="todos">Todos os corretores</option>
+                {dadosReais.corretores.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.nome}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </div>
+
+        {/* Tabela */}
+        <div className="overflow-x-auto max-h-80 relative">
+          <table className="w-full border-collapse">
+            <thead className="sticky top-0 z-10 bg-gray-100 dark:bg-gray-800">
+              <tr>
+                <th className="text-left py-3 px-4 text-xs font-medium uppercase tracking-wider text-gray-600 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700">
+                  Data
+                </th>
+                <th className="text-left py-3 px-4 text-xs font-medium uppercase tracking-wider text-gray-600 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700">
+                  Imóvel
+                </th>
+                <th className="text-left py-3 px-4 text-xs font-medium uppercase tracking-wider text-gray-600 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700">
+                  Cliente
+                </th>
+                <th className="text-left py-3 px-4 text-xs font-medium uppercase tracking-wider text-gray-600 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700">
+                  Corretor
+                </th>
+                <th className="text-left py-3 px-4 text-xs font-medium uppercase tracking-wider text-gray-600 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700">
+                  Valor
+                </th>
+                <th className="text-left py-3 px-4 text-xs font-medium uppercase tracking-wider text-gray-600 dark:text-gray-300">
+                  Comissão
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {vendasFiltradas.length > 0 ? (
+                vendasFiltradas.map((venda, index) => {
+                  const corretor = dadosReais.corretores.find(
+                    (c) => c.id === venda.corretor_id,
+                  );
+                  return (
+                    <tr
+                      key={venda.id}
+                      className={`
+                        ${index % 2 === 0 ? "bg-white dark:bg-gray-900" : "bg-gray-50/50 dark:bg-gray-800/20"}
+                        hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors
+                      `}
+                    >
+                      <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700">
+                        {formatarData(venda.data_venda)}
+                      </td>
+                      <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700">
+                        {venda.bairro} - {venda.tipo}
+                      </td>
+                      <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700">
+                        Lead #{venda.lead_id}
+                      </td>
+                      <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700">
+                        {corretor?.nome || `Corretor #${venda.corretor_id}`}
+                      </td>
+                      <td className="py-3 px-4 text-sm font-medium text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">
+                        {formatarMoeda(venda.valor)}
+                      </td>
+                      <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300">
+                        {formatarMoeda(venda.comissao)}
+                      </td>
+                    </tr>
+                  );
+                })
+              ) : (
+                <tr>
+                  <td
+                    colSpan="6"
+                    className="py-8 text-center text-gray-500 dark:text-gray-400"
+                  >
+                    Nenhuma venda encontrada no período
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Total */}
+        <div className="px-6 py-3 bg-gray-50 dark:bg-gray-800/50 border-t border-gray-200 dark:border-gray-700">
+          <div className="flex items-center justify-end gap-6">
+            <div className="text-sm">
+              <span className="text-gray-500 dark:text-gray-400">
+                Total de vendas:{" "}
+              </span>
+              <span className="font-semibold text-gray-900 dark:text-white">
+                {vendasFiltradas.length}
+              </span>
+            </div>
+            <div className="text-sm">
+              <span className="text-gray-500 dark:text-gray-400">
+                Valor total:{" "}
+              </span>
+              <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+                {formatarMoeda(
+                  vendasFiltradas.reduce((acc, v) => acc + v.valor, 0),
+                )}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ===== NOVA SEÇÃO: COMISSÕES A PAGAR ===== */}
+      <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg shadow-sm overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+          <h2 className="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+            <Icons.dollar className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+            Comissões a Pagar
+          </h2>
+        </div>
+
+        {/* Filtros */}
+        <div className="p-4 bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-700">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">
+                Status
+              </label>
+              <select
+                value={filtroComissoes.status}
+                onChange={(e) =>
+                  setFiltroComissoes({
+                    ...filtroComissoes,
+                    status: e.target.value,
+                  })
+                }
+                className="text-xs bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-md px-3 py-2 w-full"
+              >
+                <option value="todos">Todos os status</option>
+                <option value="a_pagar">A pagar</option>
+                <option value="pago">Pago</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">
+                Corretor
+              </label>
+              <select
+                value={filtroComissoes.corretor}
+                onChange={(e) =>
+                  setFiltroComissoes({
+                    ...filtroComissoes,
+                    corretor: e.target.value,
+                  })
+                }
+                className="text-xs bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-md px-3 py-2 w-full"
+              >
+                <option value="todos">Todos os corretores</option>
+                {dadosReais.corretores.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.nome}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </div>
+
+        {/* Tabela */}
+        <div className="overflow-x-auto max-h-80 relative">
+          <table className="w-full border-collapse">
+            <thead className="sticky top-0 z-10 bg-gray-100 dark:bg-gray-800">
+              <tr>
+                <th className="text-left py-3 px-4 text-xs font-medium uppercase tracking-wider text-gray-600 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700">
+                  Corretor
+                </th>
+                <th className="text-left py-3 px-4 text-xs font-medium uppercase tracking-wider text-gray-600 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700">
+                  Venda
+                </th>
+                <th className="text-left py-3 px-4 text-xs font-medium uppercase tracking-wider text-gray-600 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700">
+                  Data
+                </th>
+                <th className="text-left py-3 px-4 text-xs font-medium uppercase tracking-wider text-gray-600 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700">
+                  Valor
+                </th>
+                <th className="text-left py-3 px-4 text-xs font-medium uppercase tracking-wider text-gray-600 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700">
+                  Vencimento
+                </th>
+                <th className="text-left py-3 px-4 text-xs font-medium uppercase tracking-wider text-gray-600 dark:text-gray-300">
+                  Status
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {comissoesFiltradas.length > 0 ? (
+                comissoesFiltradas.map((comissao, index) => {
+                  const corretor = dadosReais.corretores.find(
+                    (c) => c.id === comissao.corretor_id,
+                  );
+                  const venda = dadosReais.vendasLista.find(
+                    (v) => v.id === comissao.venda_id,
+                  );
+                  const dataVencimento = new Date(comissao.data_vencimento);
+                  const hoje = new Date();
+                  const diasAtraso = Math.floor(
+                    (hoje - dataVencimento) / (1000 * 60 * 60 * 24),
+                  );
+
+                  return (
+                    <tr
+                      key={comissao.id}
+                      className={`
+                        ${index % 2 === 0 ? "bg-white dark:bg-gray-900" : "bg-gray-50/50 dark:bg-gray-800/20"}
+                        hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors
+                      `}
+                    >
+                      <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700">
+                        {corretor?.nome || `Corretor #${comissao.corretor_id}`}
+                      </td>
+                      <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700">
+                        {venda
+                          ? `${venda.bairro} - ${venda.tipo}`
+                          : `Venda #${comissao.venda_id}`}
+                      </td>
+                      <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700">
+                        {formatarData(comissao.created_at)}
+                      </td>
+                      <td className="py-3 px-4 text-sm font-medium text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">
+                        {formatarMoeda(comissao.valor)}
+                      </td>
+                      <td className="py-3 px-4 text-sm border-r border-gray-200 dark:border-gray-700">
+                        <span
+                          className={
+                            diasAtraso > 0 && comissao.status === "a_pagar"
+                              ? "text-red-600 dark:text-red-400 font-medium"
+                              : "text-gray-700 dark:text-gray-300"
+                          }
+                        >
+                          {formatarData(comissao.data_vencimento)}
+                          {diasAtraso > 0 && comissao.status === "a_pagar" && (
+                            <span className="ml-2 text-xs bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 px-2 py-0.5 rounded-full">
+                              {diasAtraso} dias atrasado
+                            </span>
+                          )}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4 text-sm">
+                        <span
+                          className={`text-xs px-2 py-1 rounded-full ${
+                            comissao.status === "pago"
+                              ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                              : "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
+                          }`}
+                        >
+                          {comissao.status === "pago" ? "Pago" : "A pagar"}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })
+              ) : (
+                <tr>
+                  <td
+                    colSpan="6"
+                    className="py-8 text-center text-gray-500 dark:text-gray-400"
+                  >
+                    Nenhuma comissão encontrada
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Resumo */}
+        <div className="px-6 py-3 bg-gray-50 dark:bg-gray-800/50 border-t border-gray-200 dark:border-gray-700">
+          <div className="flex items-center justify-end gap-6">
+            <div className="text-sm">
+              <span className="text-gray-500 dark:text-gray-400">
+                Total a pagar:{" "}
+              </span>
+              <span className="font-semibold text-red-600 dark:text-red-400">
+                {formatarMoeda(
+                  comissoesFiltradas
+                    .filter((c) => c.status === "a_pagar")
+                    .reduce((acc, c) => acc + c.valor, 0),
+                )}
+              </span>
+            </div>
+            <div className="text-sm">
+              <span className="text-gray-500 dark:text-gray-400">
+                Total pago:{" "}
+              </span>
+              <span className="font-semibold text-green-600 dark:text-green-400">
+                {formatarMoeda(
+                  comissoesFiltradas
+                    .filter((c) => c.status === "pago")
+                    .reduce((acc, c) => acc + c.valor, 0),
+                )}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 
-  // ========== ABA CORRETORES - COM TEMPO EM MINUTOS ==========
+  // ========== ABA CORRETORES ==========
   const AbaCorretores = () => (
     <div className="space-y-8">
       {/* Ranking com indicadores individuais */}
@@ -1951,7 +4210,7 @@ const Dashboard = () => {
           <table className="w-full border-collapse">
             <thead>
               <tr className="bg-gray-50 dark:bg-gray-800/50">
-                <th className="text-center py-3 px-4 text-[11px] font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400 border-r border-gray-200 dark:border-gray-700 align-middle">
+                <th className="text-center py-3 px-3 text-[11px] font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400 border-r border-gray-200 dark:border-gray-700 align-middle">
                   <div>Corretor</div>
                 </th>
                 <th className="text-center py-3 px-2 text-[11px] font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400 border-r border-gray-200 dark:border-gray-700 align-middle">
@@ -1969,95 +4228,94 @@ const Dashboard = () => {
                 <th className="text-center py-3 px-2 text-[11px] font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400 border-r border-gray-200 dark:border-gray-700 align-middle">
                   <div>Leads (Mês)</div>
                 </th>
-                <th className="text-center py-3 px-[5px] text-[11px] font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400 border-r border-gray-200 dark:border-gray-700 align-middle">
-                  <div>
-                    Em
-                    <br />
-                    Negociação
-                  </div>
+                <th className="text-center py-3 px-2 text-[11px] font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400 border-r border-gray-200 dark:border-gray-700 align-middle">
+                  <div>Em Neg.</div>
                 </th>
-                <th className="text-center py-3 px-[5px] text-[11px] font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400 border-r border-gray-200 dark:border-gray-700 align-middle">
+                <th className="text-center py-3 px-2 text-[11px] font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400 border-r border-gray-200 dark:border-gray-700 align-middle">
                   <div>Conversão</div>
                 </th>
-                <th className="text-center py-3 px-2 text-[11px] font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400 align-middle">
-                  <div>
-                    Tempo
-                    <br />
-                    Resposta
-                  </div>
+                <th className="text-center py-3 px-2 text-[11px] font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400 border-r border-gray-200 dark:border-gray-700 align-middle">
+                  <div>Tempo Resp.</div>
+                </th>
+                {/* ===== NOVAS COLUNAS ===== */}
+                <th className="text-center py-3 px-3 text-[11px] font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400 border-r border-gray-200 dark:border-gray-700 align-middle">
+                  <div>Comissão Gerada</div>
+                </th>
+                <th className="text-center py-3 px-3 text-[11px] font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400 align-middle">
+                  <div>Comissão Paga</div>
                 </th>
               </tr>
             </thead>
             <tbody>
-              {indicadores.rankingCorretores.map((corretor, index) => {
-                // Simulando valores grandes para teste
-                const metaTeste = corretor.id === 1 ? 100000000 : corretor.meta;
-                const receitaTeste =
-                  corretor.id === 1 ? 45000000 : corretor.receita;
-
-                return (
-                  <tr
-                    key={corretor.id}
-                    className={`
+              {indicadores.rankingCorretores.map((corretor, index) => (
+                <tr
+                  key={corretor.id}
+                  className={`
                     ${index % 2 === 0 ? "bg-white dark:bg-gray-900" : "bg-gray-50/50 dark:bg-gray-800/20"}
                     ${corretor.alerta ? "bg-amber-50 dark:bg-amber-900/10" : ""}
                     hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors
                   `}
-                  >
-                    <td className="py-3 px-4 text-[13px] font-medium text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">
-                      <div className="flex items-center gap-1">
-                        <span className="truncate max-w-[130px]">
-                          {corretor.nome}
-                        </span>
-                        {corretor.alerta && (
-                          <span
-                            className="text-[10px] font-light text-amber-600 dark:text-amber-400 flex items-center gap-0.5 whitespace-nowrap"
-                            title="Mais de 10 leads e nenhuma venda no mês"
-                          >
-                            <Icons.alertCircle className="w-2.5 h-2.5" />
-                            <span>sem vendas</span>
-                          </span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="py-3 px-2 text-[13px] text-gray-700 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700 text-center">
-                      {corretor.vendas}
-                    </td>
-                    <td className="py-3 px-3 text-[13px] text-gray-700 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700 text-left whitespace-nowrap">
-                      {formatarMoeda(metaTeste)}
-                    </td>
-                    <td className="py-3 px-2 text-[13px] border-r border-gray-200 dark:border-gray-700 text-center">
-                      <span
-                        className={`text-[12px] font-medium ${corretor.percentualMeta >= 100 ? "text-emerald-600 dark:text-emerald-400" : "text-gray-600 dark:text-gray-400"}`}
-                      >
-                        {corretor.percentualMeta.toFixed(0)}%
+                >
+                  <td className="py-3 px-3 text-[13px] font-medium text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">
+                    <div className="flex items-center gap-1">
+                      <span className="truncate max-w-[110px]">
+                        {corretor.nome}
                       </span>
-                    </td>
-                    <td className="py-3 px-3 text-[13px] text-gray-700 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700 text-left whitespace-nowrap">
-                      {formatarMoeda(receitaTeste)}
-                    </td>
-                    <td className="py-3 px-2 text-[13px] text-gray-700 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700 text-center whitespace-nowrap">
-                      {corretor.leads}
-                    </td>
-                    <td className="py-3 px-[5px] text-[13px] text-gray-700 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700 text-center">
-                      {corretor.leadsAtivos}
-                    </td>
-                    <td className="py-3 px-[5px] text-[13px] text-gray-700 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700 text-center">
-                      {corretor.conversao.toFixed(1)}%
-                    </td>
-                    <td className="py-3 px-2 text-[13px] text-gray-700 dark:text-gray-300 flex items-center justify-center gap-1 text-center whitespace-nowrap">
-                      <Icons.clock className="w-3 h-3" />
-                      {formatarTempoResposta(corretor.tempoResposta)}
-                    </td>
-                  </tr>
-                );
-              })}
+                      {corretor.alerta && (
+                        <span
+                          className="text-[10px] font-light text-amber-600 dark:text-amber-400 flex items-center gap-0.5 whitespace-nowrap"
+                          title="Mais de 10 leads e nenhuma venda no mês"
+                        >
+                          <Icons.alertCircle className="w-2.5 h-2.5" />
+                          <span>0</span>
+                        </span>
+                      )}
+                    </div>
+                  </td>
+                  <td className="py-3 px-2 text-[13px] text-gray-700 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700 text-center">
+                    {corretor.vendas}
+                  </td>
+                  <td className="py-3 px-3 text-[13px] text-gray-700 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700 text-left whitespace-nowrap">
+                    {formatarMoeda(corretor.meta)}
+                  </td>
+                  <td className="py-3 px-2 text-[13px] border-r border-gray-200 dark:border-gray-700 text-center">
+                    <span
+                      className={`text-[12px] font-medium ${corretor.percentualMeta >= 100 ? "text-emerald-600 dark:text-emerald-400" : "text-gray-600 dark:text-gray-400"}`}
+                    >
+                      {corretor.percentualMeta.toFixed(0)}%
+                    </span>
+                  </td>
+                  <td className="py-3 px-3 text-[13px] text-gray-700 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700 text-left whitespace-nowrap">
+                    {formatarMoeda(corretor.receita)}
+                  </td>
+                  <td className="py-3 px-2 text-[13px] text-gray-700 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700 text-center">
+                    {corretor.leads}
+                  </td>
+                  <td className="py-3 px-2 text-[13px] text-gray-700 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700 text-center">
+                    {corretor.leadsAtivos}
+                  </td>
+                  <td className="py-3 px-2 text-[13px] text-gray-700 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700 text-center">
+                    {corretor.conversao.toFixed(1)}%
+                  </td>
+                  <td className="py-3 px-2 text-[13px] text-gray-700 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700 flex items-center justify-center gap-1 text-center whitespace-nowrap">
+                    <Icons.clock className="w-3 h-3" />
+                    {formatarTempoResposta(corretor.tempoResposta)}
+                  </td>
+                  {/* ===== NOVAS COLUNAS ===== */}
+                  <td className="py-3 px-3 text-[13px] font-medium text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700 text-left whitespace-nowrap">
+                    {formatarMoeda(corretor.comissaoGerada || 0)}
+                  </td>
+                  <td className="py-3 px-3 text-[13px] text-gray-700 dark:text-gray-300 text-left whitespace-nowrap">
+                    {formatarMoeda(corretor.comissaoPaga || 0)}
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
       </div>
 
-      {/* Médias do time - mantido */}
+      {/* Médias do time */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
         <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg shadow-sm p-6">
           <div className="flex items-center gap-2 mb-2">
@@ -2116,9 +4374,9 @@ const Dashboard = () => {
       </div>
     </div>
   );
+
   // ========== ABA MARKETING ==========
   const AbaMarketing = () => {
-    // Separar canais por categoria
     const canaisSite = indicadores.leadsPorCanal.filter((c) =>
       ["Site", "Portal"].includes(c.canal),
     );
@@ -2129,7 +4387,6 @@ const Dashboard = () => {
       ["Indicação"].includes(c.canal),
     );
 
-    // Componente de tabela reutilizável com grid fixo e alinhamento à esquerda
     const TabelaCanais = ({
       titulo,
       icone: Icon,
@@ -2141,7 +4398,6 @@ const Dashboard = () => {
 
       return (
         <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg shadow-sm overflow-hidden">
-          {/* Cabeçalho do box com ícone */}
           <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center gap-2">
             <Icon className={`w-5 h-5 ${corIcone}`} />
             <h2 className="text-sm font-semibold text-gray-900 dark:text-white">
@@ -2149,7 +4405,6 @@ const Dashboard = () => {
             </h2>
           </div>
 
-          {/* Cabeçalho das colunas - TODOS ALINHADOS À ESQUERDA */}
           <div className="grid grid-cols-12 gap-6 px-6 py-3 bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-700">
             <div className="col-span-4 text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400 text-left">
               Canal
@@ -2168,7 +4423,6 @@ const Dashboard = () => {
             </div>
           </div>
 
-          {/* Linhas de dados - TODOS OS NÚMEROS ALINHADOS À ESQUERDA */}
           <div className="divide-y divide-gray-100 dark:divide-gray-800">
             {canais.map((item, idx) => (
               <div
@@ -2250,7 +4504,6 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Box 1: Site e Portais */}
         <TabelaCanais
           titulo="🌐 Site e Portais"
           icone={Icons.home}
@@ -2259,7 +4512,6 @@ const Dashboard = () => {
           corDestaque="bg-blue-500"
         />
 
-        {/* Box 2: Redes Sociais */}
         <TabelaCanais
           titulo="📱 Redes Sociais"
           icone={Icons.users}
@@ -2268,7 +4520,6 @@ const Dashboard = () => {
           corDestaque="bg-indigo-500"
         />
 
-        {/* Box 3: Indicação */}
         <TabelaCanais
           titulo="🤝 Indicação"
           icone={Icons.star}
@@ -2316,7 +4567,7 @@ const Dashboard = () => {
           </button>
         </header>
 
-        {/* ===== NAVEGAÇÃO ===== */}
+        {/* NAVEGAÇÃO */}
         <div className="border-b border-gray-200 dark:border-gray-800">
           <nav className="flex space-x-1 overflow-x-auto">
             {[
@@ -2326,6 +4577,7 @@ const Dashboard = () => {
                 icon: Icons.dashboard,
               },
               { id: "estoque", label: "Estoque", icon: Icons.building },
+              { id: "propostas", label: "Propostas", icon: Icons.document },
               { id: "financeiro", label: "Financeiro", icon: Icons.dollar },
               { id: "corretores", label: "Corretores", icon: Icons.users },
               { id: "marketing", label: "Marketing", icon: Icons.megaphone },
@@ -2337,7 +4589,7 @@ const Dashboard = () => {
                   onClick={() => setAbaAtiva(aba.id)}
                   className={`
                     flex items-center gap-3 px-6 py-3 text-sm font-medium whitespace-nowrap
-                    border-b-2 transition-all
+                    border-b-2 transition-all outline-none focus:outline-none focus:ring-0
                     ${
                       abaAtiva === aba.id
                         ? "border-[#D4A24D] font-semibold text-gray-900 dark:text-white"
@@ -2353,10 +4605,11 @@ const Dashboard = () => {
           </nav>
         </div>
 
-        {/* ===== CONTEÚDO ===== */}
+        {/* CONTEÚDO */}
         <div className="mt-6 animate-fadeIn">
           {abaAtiva === "visao-geral" && <AbaVisaoGeral />}
           {abaAtiva === "estoque" && <AbaEstoque />}
+          {abaAtiva === "propostas" && <AbaPropostas />} {/* ✅ NOVA LINHA */}
           {abaAtiva === "financeiro" && <AbaFinanceiro />}
           {abaAtiva === "corretores" && <AbaCorretores />}
           {abaAtiva === "marketing" && <AbaMarketing />}

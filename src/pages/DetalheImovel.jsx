@@ -1,5 +1,6 @@
 // ============================================================================
 // DETALHE DO IMÓVEL - VERSÃO FINAL COM CARROSSEL DE FOTOS
+// E PROTEÇÃO CONTRA ENVIOS DUPLICADOS (CORRIGIDO)
 // ============================================================================
 // Arquivo: src/pages/DetalheImovel.jsx
 // ============================================================================
@@ -49,6 +50,13 @@ const DetalheImovel = () => {
   });
   const [enviando, setEnviando] = useState(false);
   const [enviado, setEnviado] = useState(false);
+
+  // ==========================================================================
+  // NOVOS ESTADOS PARA PROTEÇÃO CONTRA DUPLICIDADE
+  // ==========================================================================
+  const [ultimoEnvio, setUltimoEnvio] = useState(null);
+  const [mostrarAvisoDuplicado, setMostrarAvisoDuplicado] = useState(false);
+  const [dadosDuplicados, setDadosDuplicados] = useState(null);
 
   // Estado para controle dos acordeões
   const [acordeoesAbertos, setAcordeoesAbertos] = useState({});
@@ -243,22 +251,20 @@ const DetalheImovel = () => {
     if (!touchStartX.current || !touchEndX.current) return;
 
     const diffX = touchStartX.current - touchEndX.current;
-    const sensibilidade = 50; // Mínimo de 50px para considerar como deslize
+    const sensibilidade = 50;
 
     if (Math.abs(diffX) > sensibilidade) {
       if (diffX > 0) {
-        // Deslizou para esquerda → próxima imagem
         mudarImagem(1);
       } else {
-        // Deslizou para direita → imagem anterior
         mudarImagem(-1);
       }
     }
 
-    // Reset
     touchStartX.current = 0;
     touchEndX.current = 0;
   };
+
   // ==========================================================================
   // FUNÇÃO PARA CARREGAR FOTOS DO IMÓVEL
   // ==========================================================================
@@ -273,15 +279,12 @@ const DetalheImovel = () => {
       if (error) throw error;
 
       if (data && data.length > 0) {
-        // Extrair apenas as URLs e ordenar
         const fotosUrls = data.map((foto) => foto.url);
         setFotos(fotosUrls);
-
         console.log(
           `✅ ${fotosUrls.length} fotos carregadas para o imóvel ${imovelId}`,
         );
       } else {
-        // Fallback para imagem padrão se não houver fotos
         setFotos([
           "https://images.unsplash.com/photo-1568605114967-8130f3a36994?auto=format&fit=crop&w=1200&h=800&q=80",
         ]);
@@ -324,7 +327,6 @@ const DetalheImovel = () => {
     }).format(valorNumerico);
   }, []);
 
-  // 🔥 NOVA FUNÇÃO ADICIONADA AQUI
   const calcularDesconto = (anterior, atual) => {
     if (!anterior || !atual || anterior <= 0 || atual <= 0) return 0;
     const desconto = ((anterior - atual) / anterior) * 100;
@@ -339,7 +341,6 @@ const DetalheImovel = () => {
     return "Venda";
   }, []);
 
-  // FUNÇÃO VENENOSA DE SEO - GERA TÍTULO MATADOR
   const gerarTituloSEO = useCallback((dados) => {
     if (!dados) return "Imóvel em Açailândia – Adventus Imóveis";
 
@@ -584,10 +585,6 @@ const DetalheImovel = () => {
   const getImovelData = useCallback(() => {
     if (!imovel) return null;
 
-    console.log("🔥 imovel cru:", imovel);
-    console.log("🔥 preco_anterior cru:", imovel.preco_anterior);
-    console.log("🔥 etiquetas cruas:", imovel.etiquetas);
-
     const caracteristicas = imovel.caracteristicas || {};
     const dependencias = imovel.dependencias || {};
     const acabamentos = imovel.acabamentos || {};
@@ -601,11 +598,9 @@ const DetalheImovel = () => {
 
     let financiavel = false;
 
-    // Prioridade 1: Verificar imovel.financiado (está como true no log!)
     if (imovel.financiado !== undefined && imovel.financiado !== null) {
       if (typeof imovel.financiado === "boolean") {
         financiavel = imovel.financiado;
-        console.log("✅ Usando imovel.financiado:", financiavel);
       } else if (typeof imovel.financiado === "string") {
         financiavel = ["true", "sim", "1", "on"].includes(
           imovel.financiado.toLowerCase(),
@@ -615,28 +610,17 @@ const DetalheImovel = () => {
       }
     }
 
-    // Prioridade 2: Verificar em etiquetas.financiavel (segunda opção)
     if (!financiavel && imovel.etiquetas?.financiavel !== undefined) {
       if (typeof imovel.etiquetas.financiavel === "boolean") {
         financiavel = imovel.etiquetas.financiavel;
-        console.log("✅ Usando etiquetas.financiavel:", financiavel);
       }
     }
 
-    // Prioridade 3: Verificar em caracteristicas.financiavel (última opção)
     if (!financiavel && caracteristicas.financiavel !== undefined) {
       if (typeof caracteristicas.financiavel === "boolean") {
         financiavel = caracteristicas.financiavel;
-        console.log("✅ Usando caracteristicas.financiavel:", financiavel);
       }
     }
-
-    console.log("🏁 RESULTADO FINAL - Financiável:", financiavel);
-    console.log(`Imóvel ${imovel.codigo}:`, {
-      caracteristicas_financiavel: caracteristicas.financiavel,
-      imovel_financiavel: imovel.financiavel,
-      financiavel_final: financiavel,
-    });
 
     const dados = {
       id: imovel.id,
@@ -645,14 +629,9 @@ const DetalheImovel = () => {
       titulo: imovel.titulo || "Imóvel em Açailândia",
       preco: imovel.preco,
       precoFormatado: formatPrice(imovel.preco),
-
-      // 👇 ADICIONAR ESTA LINHA (as etiquetas!)
       etiquetas: imovel.etiquetas || {},
-
-      // 👇 ADICIONAR ESTAS DUAS LINHAS AQUI (depois do precoFormatado)
       precoAnterior: imovel.preco_anterior,
       precoAnteriorFormatado: formatPrice(imovel.preco_anterior),
-
       precoAluguel: imovel.preco_aluguel,
       precoAluguelFormatado: formatPrice(imovel.preco_aluguel),
       finalidade: formatarFinalidade(imovel),
@@ -681,8 +660,6 @@ const DetalheImovel = () => {
       financiavel: financiavel,
       emCondominio: imovel.em_condominio || false,
       ocultarPreco: imovel.ocultar_preco || false,
-
-      // Objetos completos para os acordeões
       caracteristicas,
       dependencias,
       acabamentos,
@@ -692,8 +669,6 @@ const DetalheImovel = () => {
       armariosArmazenamento,
       servicosUtilidades,
       diferenciais,
-
-      // =============== FOTOS AGORA VÊM DO ESTADO ===============
       imagens:
         fotos.length > 0
           ? fotos
@@ -706,16 +681,10 @@ const DetalheImovel = () => {
     dados.slugSEO = gerarSlugSEO(dados);
     dados.metaDescription = gerarMetaDescription(dados);
 
-    console.log("🎯 dados processados:", {
-      precoAnterior: dados.precoAnterior,
-      precoAnteriorFormatado: dados.precoAnteriorFormatado,
-      baixouPreco: dados.etiquetas?.baixouPreco,
-    });
-
     return dados;
   }, [
     imovel,
-    fotos, // 👈 ADICIONADO FOTOS COMO DEPENDÊNCIA
+    fotos,
     formatPrice,
     formatarFinalidade,
     gerarTituloSEO,
@@ -737,7 +706,6 @@ const DetalheImovel = () => {
       const caracteristicas = dados.caracteristicas || {};
       const dependencias = dados.dependencias || {};
 
-      // Dimensões do terreno
       if (caracteristicas.frenteTerreno) {
         itensCaracteristicas.push(
           `Frente do terreno: ${caracteristicas.frenteTerreno}`,
@@ -756,8 +724,6 @@ const DetalheImovel = () => {
           `Lateral direita: ${caracteristicas.lateralDireita}`,
         );
       }
-
-      // Características construtivas
       if (caracteristicas.peDireito) {
         itensCaracteristicas.push(`Pé direito: ${caracteristicas.peDireito}`);
       }
@@ -777,8 +743,6 @@ const DetalheImovel = () => {
           `Ano de construção: ${caracteristicas.anoConstrucao}`,
         );
       }
-
-      // Flags importantes
       if (caracteristicas.reformadoRecentemente) {
         itensCaracteristicas.push(`Reformado recentemente`);
       }
@@ -788,8 +752,6 @@ const DetalheImovel = () => {
       if (caracteristicas.aceitaPermuta) {
         itensCaracteristicas.push(`Aceita permuta`);
       }
-
-      // Infraestrutura
       if (caracteristicas.tipoIluminacao) {
         itensCaracteristicas.push(
           `Iluminação: ${caracteristicas.tipoIluminacao}`,
@@ -803,9 +765,6 @@ const DetalheImovel = () => {
           `Caixa d'água: ${caracteristicas.caixaDAgua} litros`,
         );
       }
-
-      // 👇 CAMPOS ADICIONADOS
-      // Sistema de esgoto
       if (caracteristicas.sistemaEsgoto) {
         const labelsEsgoto = {
           rede_publica: "Rede Pública",
@@ -819,8 +778,6 @@ const DetalheImovel = () => {
           `Sistema de esgoto: ${labelsEsgoto[caracteristicas.sistemaEsgoto] || caracteristicas.sistemaEsgoto}`,
         );
       }
-
-      // Aquecimento de água
       if (caracteristicas.aquecimentoAgua) {
         const labelsAquecimento = {
           gas: "Gás",
@@ -841,6 +798,7 @@ const DetalheImovel = () => {
           itens: itensCaracteristicas,
         });
       }
+
       // ===== 2. ACABAMENTOS =====
       const itensAcabamentos = [];
       const acabamentos = dados.acabamentos || {};
@@ -1155,16 +1113,13 @@ const DetalheImovel = () => {
 
         if (isMounted) {
           setImovel(imovelData);
-          // 🔥 VERIFICA SE O IMÓVEL FOI VENDIDO
           if (
             imovelData.status === "vendido" ||
             imovelData.status === "alugado"
           ) {
-            // Redireciona para a listagem
             navigate("/comprar");
             return;
           }
-          // =============== CARREGAR FOTOS ===============
           await carregarFotos(imovelData.id);
           await registrarVisualizacao(imovelData.id);
           await buscarVisualizacoes(imovelData.id);
@@ -1182,7 +1137,13 @@ const DetalheImovel = () => {
     return () => {
       isMounted = false;
     };
-  }, [slug, registrarVisualizacao, buscarVisualizacoes, carregarFotos]);
+  }, [
+    slug,
+    registrarVisualizacao,
+    buscarVisualizacoes,
+    carregarFotos,
+    navigate,
+  ]);
 
   // ==========================================================================
   // DADOS PROCESSADOS
@@ -1193,6 +1154,183 @@ const DetalheImovel = () => {
     [dados, gerarDadosAcordeao],
   );
   const imagens = useMemo(() => dados?.imagens || [], [dados]);
+
+  // ==========================================================================
+  // FUNÇÕES PARA PROTEÇÃO CONTRA ENVIOS DUPLICADOS
+  // ==========================================================================
+  // ⚠️ IMPORTANTE: Estas funções devem vir DEPOIS da declaração de 'dados'
+
+  /**
+   * Verifica se o envio atual é duplicado
+   * @param {Object} novosDados - Dados do formulário atual
+   * @returns {boolean} - true se for duplicado, false caso contrário
+   */
+  const isEnvioDuplicado = useCallback(
+    (novosDados) => {
+      // Se não tem dados do imóvel ainda, não pode ser duplicado
+      if (!dados?.id) {
+        return false;
+      }
+
+      try {
+        // Recupera o último envio do localStorage para este imóvel
+        const ultimoEnvioStorage = localStorage.getItem(
+          `ultimo_envio_${dados.id}`,
+        );
+
+        if (!ultimoEnvioStorage) {
+          return false; // Primeiro envio para este imóvel
+        }
+
+        const ultimoEnvio = JSON.parse(ultimoEnvioStorage);
+
+        // Verifica se os dados do lead são os mesmos
+        const mesmoLead =
+          ultimoEnvio.nome?.trim().toLowerCase() ===
+            novosDados.nome?.trim().toLowerCase() &&
+          ultimoEnvio.email?.trim().toLowerCase() ===
+            novosDados.email?.trim().toLowerCase() &&
+          ultimoEnvio.telefone?.trim() === novosDados.telefone?.trim();
+
+        if (!mesmoLead) {
+          return false; // Lead diferente, permite novo envio
+        }
+
+        // Verifica se o envio foi há menos de 24 horas
+        const agora = Date.now();
+        const diferencaHoras =
+          (agora - ultimoEnvio.timestamp) / (1000 * 60 * 60);
+
+        if (diferencaHoras < 24) {
+          // Guarda os dados do envio duplicado para exibir no aviso
+          setDadosDuplicados({
+            ...ultimoEnvio,
+            diferencaHoras: Math.round(diferencaHoras * 10) / 10,
+          });
+          return true; // É duplicado (mesmo lead, mesmo imóvel, menos de 24h)
+        }
+
+        // Se passou mais de 24h, permite novo envio
+        return false;
+      } catch (error) {
+        console.error("❌ Erro ao verificar duplicidade:", error);
+        return false; // Em caso de erro, permite o envio
+      }
+    },
+    [dados?.id],
+  ); // ✅ Agora 'dados' já foi declarado
+
+  /**
+   * Salva os dados do envio no localStorage
+   * @param {Object} dadosEnvio - Dados do envio realizado
+   */
+  const salvarEnvio = useCallback(
+    (dadosEnvio) => {
+      // Se não tem dados do imóvel ainda, não salva
+      if (!dados?.id) {
+        console.warn(
+          "⚠️ Não foi possível salvar envio: dados do imóvel não disponíveis",
+        );
+        return;
+      }
+
+      try {
+        const dadosParaSalvar = {
+          nome: dadosEnvio.nome,
+          email: dadosEnvio.email,
+          telefone: dadosEnvio.telefone,
+          imovelId: dados.id,
+          imovelCodigo: dados.codigo,
+          timestamp: Date.now(),
+        };
+
+        localStorage.setItem(
+          `ultimo_envio_${dados.id}`,
+          JSON.stringify(dadosParaSalvar),
+        );
+
+        setUltimoEnvio(dadosParaSalvar);
+        console.log("✅ Envio salvo no localStorage:", dadosParaSalvar);
+      } catch (error) {
+        console.error("❌ Erro ao salvar envio:", error);
+      }
+    },
+    [dados?.id, dados?.codigo],
+  ); // ✅ Agora 'dados' já foi declarado
+
+  /**
+   * Limpa envios antigos do localStorage (mais de 7 dias)
+   */
+  const limparEnviosAntigos = useCallback(() => {
+    try {
+      const agora = Date.now();
+      const limite = 7 * 24 * 60 * 60 * 1000; // 7 dias em milissegundos
+
+      // Percorre todas as chaves do localStorage
+      for (let i = 0; i < localStorage.length; i++) {
+        const chave = localStorage.key(i);
+
+        // Verifica se é uma chave de envio (começa com "ultimo_envio_")
+        if (chave?.startsWith("ultimo_envio_")) {
+          try {
+            const dados = JSON.parse(localStorage.getItem(chave));
+
+            // Se o envio for mais antigo que o limite, remove
+            if (dados.timestamp && agora - dados.timestamp > limite) {
+              localStorage.removeItem(chave);
+              console.log(`🗑️ Envio antigo removido: ${chave}`);
+            }
+          } catch (e) {
+            // Se não conseguir parsear, remove
+            localStorage.removeItem(chave);
+          }
+        }
+      }
+    } catch (error) {
+      console.error("❌ Erro ao limpar envios antigos:", error);
+    }
+  }, []);
+
+  /**
+   * Verifica se já existe um envio para este imóvel ao abrir o modal
+   */
+  const verificarEnvioExistenteAoAbrirModal = useCallback(() => {
+    // Se não tem dados do imóvel ainda, não faz nada
+    if (!dados?.id) {
+      return;
+    }
+
+    try {
+      const ultimoEnvioStorage = localStorage.getItem(
+        `ultimo_envio_${dados.id}`,
+      );
+
+      if (ultimoEnvioStorage) {
+        const ultimoEnvio = JSON.parse(ultimoEnvioStorage);
+        const agora = Date.now();
+        const diferencaHoras =
+          (agora - ultimoEnvio.timestamp) / (1000 * 60 * 60);
+
+        if (diferencaHoras < 24) {
+          // Pré-preencher o formulário com os dados do último envio
+          setFormData((prev) => ({
+            ...prev,
+            nome: ultimoEnvio.nome || "",
+            email: ultimoEnvio.email || "",
+            telefone: ultimoEnvio.telefone || "",
+          }));
+
+          // Guarda info para mostrar aviso se tentar enviar novamente
+          setDadosDuplicados({
+            ...ultimoEnvio,
+            diferencaHoras: Math.round(diferencaHoras * 10) / 10,
+          });
+        }
+      }
+    } catch (error) {
+      console.error("❌ Erro ao verificar envio existente:", error);
+    }
+  }, [dados?.id]); // ✅ Agora 'dados' já foi declarado
 
   // ==========================================================================
   // APLICAR SEO (UMA ÚNICA VEZ)
@@ -1206,6 +1344,13 @@ const DetalheImovel = () => {
       return () => clearTimeout(timer);
     }
   }, [dados, atualizarTagsSEO]);
+
+  // ==========================================================================
+  // LIMPAR ENVIOS ANTIGOS AO INICIAR
+  // ==========================================================================
+  useEffect(() => {
+    limparEnviosAntigos();
+  }, [limparEnviosAntigos]);
 
   // ==========================================================================
   // ATUALIZAR MENSAGEM DO MODAL
@@ -1265,11 +1410,17 @@ const DetalheImovel = () => {
     [imagens.length],
   );
 
-  const abrirModal = useCallback(() => setModalAberto(true), []);
+  const abrirModal = useCallback(() => {
+    setModalAberto(true);
+    setMostrarAvisoDuplicado(false);
+    verificarEnvioExistenteAoAbrirModal();
+  }, [verificarEnvioExistenteAoAbrirModal]);
 
   const fecharModal = useCallback(() => {
     setModalAberto(false);
     setEnviado(false);
+    setMostrarAvisoDuplicado(false);
+    setDadosDuplicados(null);
     setFormData({
       nome: "",
       telefone: "",
@@ -1325,12 +1476,27 @@ const DetalheImovel = () => {
   }, []);
 
   // ==========================================================================
-  // HANDLE SUBMIT DO MODAL
+  // HANDLE SUBMIT DO MODAL - COM PROTEÇÃO CONTRA DUPLICIDADE
   // ==========================================================================
   const handleSubmit = useCallback(
     async (e) => {
       e.preventDefault();
+
+      // 🚫 BLOQUEIO DESATIVADO TEMPORARIAMENTE
+      // Verifica se é um envio duplicado ANTES de tentar enviar
+      // if (isEnvioDuplicado(formData)) {
+      //   setMostrarAvisoDuplicado(true);
+      //   // Rola o modal para mostrar o aviso
+      //   setTimeout(() => {
+      //     if (modalRef.current) {
+      //       modalRef.current.scrollTop = 0;
+      //     }
+      //   }, 100);
+      //   return; // Interrompe o envio
+      // }
+
       setEnviando(true);
+      setMostrarAvisoDuplicado(false);
 
       try {
         if (
@@ -1370,6 +1536,9 @@ const DetalheImovel = () => {
           );
         }
 
+        // Salva os dados do envio no localStorage
+        salvarEnvio(formData);
+
         incrementarContador("visitas");
         setEnviado(true);
         setEnviando(false);
@@ -1386,6 +1555,8 @@ const DetalheImovel = () => {
       registrarSolicitacaoVisita,
       incrementarContador,
       fecharModal,
+      isEnvioDuplicado,
+      salvarEnvio,
     ],
   );
 
@@ -1431,11 +1602,6 @@ const DetalheImovel = () => {
   // ==========================================================================
   // RENDERIZAÇÃO
   // ==========================================================================
-  console.log("👀 renderizando com:", {
-    temPrecoAnterior: !!dados?.precoAnterior,
-    temBaixouPreco: dados?.etiquetas?.baixouPreco,
-    condicao: dados?.etiquetas?.baixouPreco && dados?.precoAnterior,
-  });
   return (
     <>
       {/* BREADCRUMB */}
@@ -1555,6 +1721,7 @@ const DetalheImovel = () => {
           </div>
         </div>
       </section>
+
       {/* CABEÇALHO DO IMÓVEL */}
       <section className="bg-[#31353E] text-white pt-8 pb-12 md:pt-10 md:pb-14">
         <div className="max-w-7xl mx-auto px-4">
@@ -1600,7 +1767,7 @@ const DetalheImovel = () => {
                 )}
               </div>
 
-              {/* ENDEREÇO - SÓ APARECE NO SITE SE TIVER PERMISSÃO E ENDEREÇO CADASTRADO */}
+              {/* ENDEREÇO */}
               {dados.exibir_endereco_site && dados.endereco && (
                 <div className="flex items-center space-x-2 text-white mb-1">
                   <i className="fas fa-map-marker-alt text-[#D4A24D] text-sm"></i>
@@ -1611,17 +1778,15 @@ const DetalheImovel = () => {
                 </div>
               )}
 
-              {/* LINHA DIVISÓRIA SUTIL - AGORA MAIS PRÓXIMA */}
+              {/* LINHA DIVISÓRIA */}
               <div className="w-full h-px bg-gradient-to-r from-transparent via-[#D4A24D]/30 to-transparent my-2"></div>
 
               {/* PREÇO */}
               <div className="mb-6">
-                {/* VERIFICA SE TEM DESCONTO */}
                 {dados.etiquetas?.baixouPreco &&
                 dados.precoAnterior &&
                 dados.precoAnterior > 0 ? (
                   <div className="flex flex-col">
-                    {/* PREÇO ANTERIOR EM CIMA COM BADGE VERMELHO */}
                     <div className="flex items-center gap-2 mb-1">
                       <span className="text-gray-400 line-through text-lg md:text-xl">
                         {dados.precoAnteriorFormatado}
@@ -1631,13 +1796,9 @@ const DetalheImovel = () => {
                         OFF
                       </span>
                     </div>
-
-                    {/* PREÇO ATUAL EM BAIXO (DESTAQUE) */}
                     <div className="text-3xl md:text-4xl font-black text-white">
                       {dados.precoFormatado}
                     </div>
-
-                    {/* MENSAGEM DE ECONOMIA */}
                     <p className="text-green-400 text-xs md:text-sm mt-2">
                       🎉 Você economiza{" "}
                       {formatPrice(dados.precoAnterior - dados.preco)}!
@@ -1708,8 +1869,6 @@ const DetalheImovel = () => {
                     </div>
                   </div>
                 )}
-
-                {/* ÁREA CONSTRUÍDA COM LABEL */}
                 {dados.areaConstruida > 0 && (
                   <div className="flex flex-col items-center">
                     <div className="w-12 h-12 rounded-full bg-[#D4A24D]/20 flex items-center justify-center mb-2">
@@ -1723,8 +1882,6 @@ const DetalheImovel = () => {
                     </div>
                   </div>
                 )}
-
-                {/* ÁREA TOTAL COM LABEL (se diferente da construída) */}
                 {dados.areaTotal > 0 &&
                   dados.areaTotal !== dados.areaConstruida && (
                     <div className="flex flex-col items-center">
@@ -1748,9 +1905,6 @@ const DetalheImovel = () => {
                 <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/10 to-transparent"></div>
               </div>
               <div className="lg:pl-8 w-full max-w-xs">
-                {" "}
-                {/* 👈 LARGURA CONTROLADA */}
-                {/* BOX DE VISUALIZAÇÕES */}
                 <div className="bg-gradient-to-br from-[#2a2e36]/60 via-[#2a2e36]/50 to-[#D4A24D]/5 backdrop-blur-sm rounded-xl p-5 md:p-6 border border-[#D4A24D]/10 shadow-lg relative overflow-hidden">
                   <div className="text-center">
                     <div className="flex items-center justify-center gap-2 mb-2">
@@ -1767,17 +1921,14 @@ const DetalheImovel = () => {
                     </p>
                   </div>
                 </div>
-                {/* LINHA DIVISÓRIA */}
                 <div className="w-full h-px bg-gradient-to-r from-transparent via-[#D4A24D] to-transparent my-4"></div>
-                {/* BOTÃO AGENDE UMA VISITA */}
                 <button
                   onClick={abrirModal}
                   className="w-full py-3 px-4 bg-gradient-to-r from-[#D4A24D] to-[#E6B85C] hover:from-[#C4933E] hover:to-[#D4A24D] text-white font-semibold rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center gap-2 text-sm md:text-base relative overflow-hidden group"
                 >
-                  {/* EFEITO DE LUZ NO HOVER */}
                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
                   <i className="fas fa-calendar-check relative z-10"></i>
-                  <span className="relative z-10">Agende uma visita</span>
+                  <span className="relative z-10">Solicitar uma visita</span>
                 </button>
               </div>
             </div>
@@ -1799,7 +1950,6 @@ const DetalheImovel = () => {
                   key={index}
                   className="border-b border-gray-200 last:border-b-0"
                 >
-                  {/* CABEÇALHO DO ACORDEÃO */}
                   <button
                     onClick={(e) => toggleAcordeao(index, e)}
                     className={`w-full px-6 py-5 text-left flex justify-between items-center transition-all duration-300 focus:outline-none focus:ring-0 ${
@@ -1807,14 +1957,11 @@ const DetalheImovel = () => {
                     }`}
                   >
                     <div className="flex items-center space-x-4">
-                      {/* ÍCONE */}
                       <div className="w-10 h-10 rounded-xl bg-[#D4A24D]/10 flex items-center justify-center">
                         <i
                           className={`${acordeao.icone} text-lg text-[#D4A24D]`}
                         ></i>
                       </div>
-
-                      {/* TÍTULO */}
                       <span
                         className={`font-medium transition-colors duration-300 ${
                           isAberto ? "text-white" : "text-gray-700"
@@ -1823,8 +1970,6 @@ const DetalheImovel = () => {
                         {acordeao.titulo}
                       </span>
                     </div>
-
-                    {/* SETA */}
                     <div
                       className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 ${
                         isAberto ? "bg-[#D4A24D]" : "bg-[#D4A24D]/10"
@@ -1837,20 +1982,15 @@ const DetalheImovel = () => {
                       ></i>
                     </div>
                   </button>
-
-                  {/* CONTEÚDO DO ACORDEÃO */}
                   {isAberto && (
                     <div className="bg-white px-6 pb-6">
                       <div className="border-t border-gray-200 pt-4"></div>
-
-                      {/* GRADE DE ITENS */}
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mt-4">
                         {acordeao.itens.map((item, itemIndex) => (
                           <div
                             key={itemIndex}
                             className="flex items-center space-x-3 py-3 px-4 rounded-lg bg-gray-50 border border-gray-100 hover:border-[#D4A24D]/30 hover:bg-white transition-all duration-200 group"
                           >
-                            {/* CHECK PREMIUM */}
                             <div className="w-5 h-5 rounded-full bg-gradient-to-br from-[#D4A24D] to-green-500 flex items-center justify-center shadow-lg shadow-[#D4A24D]/20 relative overflow-hidden group-hover:shadow-xl group-hover:scale-110 transition-all duration-200">
                               <div className="absolute inset-0 bg-gradient-to-t from-white/30 to-transparent"></div>
                               <svg
@@ -1867,8 +2007,6 @@ const DetalheImovel = () => {
                                 />
                               </svg>
                             </div>
-
-                            {/* TEXTO */}
                             <span className="text-gray-700 text-sm group-hover:text-[#D4A24D] transition-colors">
                               {item}
                             </span>
@@ -1901,53 +2039,49 @@ const DetalheImovel = () => {
           <div className="absolute inset-0 bg-gradient-to-br from-transparent via-[#D4A24D]/5 to-transparent"></div>
           <div className="relative z-10">
             <div className="p-10 md:p-14">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 lg:gap-8">
-                {/* WHATSAPP */}
-                <div className="pb-10 lg:pb-0 lg:pr-8 flex flex-col justify-center border-b lg:border-b-0 lg:border-r border-gray-600">
-                  <div className="flex flex-col items-center text-center">
-                    <h2 className="text-2xl md:text-3xl font-bold mb-4 text-[#D4A24D]">
-                      Dúvida rápida?
-                    </h2>
-                    <p className="text-gray-300 mb-6 text-sm md:text-base font-light leading-relaxed max-w-md">
-                      Resolva suas dúvidas em poucos minutos!
-                    </p>
-                    <div className="relative mb-8">
-                      <a
-                        href={`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(
-                          `Olá! Tenho interesse no imóvel ${dados.codigo} - ${dados.tituloSEO} e gostaria de mais informações.`,
-                        )}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={() => registrarCliqueWhatsApp(dados.id)}
-                        className="btn-whatsapp-premium inline-flex items-center justify-center px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white text-sm md:text-base font-semibold rounded-lg hover:from-green-600 hover:to-green-700 hover:shadow-lg transition-all duration-300 space-x-2 shadow-md relative overflow-hidden group whitespace-nowrap"
-                      >
-                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
-                        <i className="fab fa-whatsapp text-base"></i>
-                        <span>Falar agora no WhatsApp</span>
-                      </a>
-                    </div>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-y-0 lg:gap-x-12">
+                {/* COLUNA ESQUERDA - WHATSAPP */}
+                <div className="flex flex-col items-center text-center pb-12 lg:pb-0 border-b border-gray-500/60 lg:border-b-0 lg:border-r lg:border-gray-600/50 lg:pr-12">
+                  <h2 className="text-2xl md:text-3xl font-bold mb-1 text-[#D4A24D]">
+                    Dúvida rápida?
+                  </h2>
+                  <p className="text-gray-300 mb-8 text-sm md:text-base font-light opacity-90 max-w-xs">
+                    Resolva suas dúvidas em poucos minutos!
+                  </p>
+                  <div className="mt-auto">
+                    <a
+                      href={`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(
+                        `Olá! Tenho interesse no imóvel ${dados.codigo} - ${dados.tituloSEO} e gostaria de mais informações.`,
+                      )}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={() => registrarCliqueWhatsApp(dados.id)}
+                      className="btn-whatsapp-premium inline-flex items-center justify-center px-7 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white text-sm md:text-base font-semibold rounded-lg hover:from-green-600 hover:to-green-700 hover:shadow-lg transition-all duration-300 space-x-2 shadow-md relative overflow-hidden group whitespace-nowrap"
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
+                      <i className="fab fa-whatsapp text-base"></i>
+                      <span>Chamar no WhatsApp</span>
+                    </a>
                   </div>
                 </div>
 
-                {/* VISITA */}
-                <div className="pt-10 lg:pt-0 lg:pl-8 flex flex-col justify-center">
-                  <div className="flex flex-col items-center text-center">
-                    <h2 className="text-2xl md:text-3xl font-bold mb-4 text-white">
-                      Atendimento personalizado
-                    </h2>
-                    <p className="text-gray-300 mb-6 text-sm md:text-base font-light leading-relaxed max-w-md">
-                      Conheça todos os detalhes do imóvel pessoalmente
-                    </p>
-                    <div className="relative">
-                      <button
-                        onClick={abrirModal}
-                        className="btn-visita-premium inline-flex items-center justify-center px-6 py-3 bg-gradient-to-r from-[#D4A24D] to-[#E6B85C] text-white text-sm md:text-base font-semibold rounded-lg hover:from-[#C4933E] hover:to-[#D4A24D] hover:shadow-lg transition-all duration-300 space-x-2 shadow-md relative overflow-hidden group whitespace-nowrap"
-                      >
-                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/25 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
-                        <i className="fas fa-calendar-alt text-base"></i>
-                        <span>Solicitar visita ao imóvel</span>
-                      </button>
-                    </div>
+                {/* COLUNA DIREITA - VISITA */}
+                <div className="flex flex-col items-center text-center pt-12 lg:pt-0">
+                  <h2 className="text-2xl md:text-3xl font-bold mb-1 text-white">
+                    Atendimento personalizado
+                  </h2>
+                  <p className="text-gray-300 mb-8 text-sm md:text-base font-light opacity-90 max-w-xs">
+                    Conheça todos os detalhes do imóvel pessoalmente
+                  </p>
+                  <div className="mt-auto">
+                    <button
+                      onClick={abrirModal}
+                      className="btn-visita-premium inline-flex items-center justify-center px-7 py-3 bg-gradient-to-r from-[#D4A24D] to-[#E6B85C] text-white text-sm md:text-base font-semibold rounded-lg hover:from-[#C4933E] hover:to-[#D4A24D] hover:shadow-lg transition-all duration-300 space-x-2 shadow-md relative overflow-hidden group whitespace-nowrap"
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/25 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
+                      <i className="fas fa-calendar-alt text-base"></i>
+                      <span>Solicitar uma visita</span>
+                    </button>
                   </div>
                 </div>
               </div>
@@ -1969,7 +2103,7 @@ const DetalheImovel = () => {
 
       <div className="py-6 md:py-8"></div>
 
-      {/* MODAL DE VISITA */}
+      {/* MODAL DE VISITA - COM PROTEÇÃO CONTRA DUPLICIDADE */}
       {modalAberto && (
         <>
           <div
@@ -2014,6 +2148,40 @@ const DetalheImovel = () => {
                     </div>
                   ) : (
                     <form onSubmit={handleSubmit} className="space-y-4">
+                      {/* AVISO DE ENVIO DUPLICADO */}
+                      {mostrarAvisoDuplicado && dadosDuplicados && (
+                        <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-lg mb-4">
+                          <div className="flex">
+                            <div className="flex-shrink-0">
+                              <i className="fas fa-exclamation-triangle text-yellow-400"></i>
+                            </div>
+                            <div className="ml-3">
+                              <p className="text-sm text-yellow-700 font-medium">
+                                Você já solicitou uma visita para este imóvel
+                              </p>
+                              <p className="text-xs text-yellow-600 mt-1">
+                                Enviado em{" "}
+                                {new Date(
+                                  dadosDuplicados.timestamp,
+                                ).toLocaleDateString("pt-BR")}{" "}
+                                às{" "}
+                                {new Date(
+                                  dadosDuplicados.timestamp,
+                                ).toLocaleTimeString("pt-BR", {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })}
+                              </p>
+                              <p className="text-xs text-yellow-600 mt-2">
+                                Sua solicitação de visita foi recebida! Um
+                                corretor entrará em contato em breve para
+                                confirmar o melhor horário.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
                       <input
                         type="text"
                         name="nome"
@@ -2119,7 +2287,6 @@ const DetalheImovel = () => {
           color: #333;
         }
 
-        /* ===== SCROLLBAR PERSONALIZADA ===== */
         ::-webkit-scrollbar {
           width: 8px;
           height: 8px;
@@ -2140,7 +2307,6 @@ const DetalheImovel = () => {
           background: #b38f3a;
         }
 
-        /* Para Firefox */
         * {
           scrollbar-width: thin;
           scrollbar-color: #d4a24d #f1f1f1;
@@ -2236,7 +2402,6 @@ const DetalheImovel = () => {
           }
         }
 
-        /* ===== REMOVER BORDAS DE FOCO ===== */
         button:focus {
           outline: none !important;
           box-shadow: none !important;
@@ -2249,7 +2414,6 @@ const DetalheImovel = () => {
           border-color: transparent !important;
         }
 
-        /* Para as setas do carrossel e pontinhos */
         .carousel-arrow:focus,
         .carousel-dot:focus {
           outline: none !important;
@@ -2257,7 +2421,6 @@ const DetalheImovel = () => {
           border-color: transparent !important;
         }
 
-        /* Remove qualquer ring que apareça */
         .focus\:ring-0:focus,
         .focus\:ring:focus {
           --tw-ring-color: transparent !important;
