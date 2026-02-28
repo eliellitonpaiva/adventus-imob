@@ -2,11 +2,34 @@ import React, { useState, useEffect } from "react";
 import { useTheme } from "../../contexts/ThemeContext";
 import { Link } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
+window.supabase = supabase;
 
 // ============================================
-// IMPORTAÇÕES DE ÍCONES (APENAS O QUE É USADO)
+// IMPORTAÇÕES DE ÍCONES
 // ============================================
-import { StarIcon as StarIconSolid } from "@heroicons/react/24/solid";
+import {
+  StarIcon as StarIconSolid,
+  DocumentIcon,
+  EyeIcon,
+  CheckCircleIcon,
+  XCircleIcon,
+  FunnelIcon,
+  PlusIcon,
+  CalendarIcon,
+  ClockIcon,
+  UserIcon,
+  HomeIcon,
+  MapPinIcon,
+  EnvelopeIcon,
+  ChartBarIcon,
+  ArrowPathIcon,
+  CheckBadgeIcon,
+  ExclamationCircleIcon,
+  ChatBubbleLeftRightIcon,
+  MagnifyingGlassIcon,
+  BuildingOfficeIcon,
+  CalendarDaysIcon,
+} from "@heroicons/react/24/outline";
 
 // ============================================
 // MOCK DATA (MANTIDO PARA FALLBACK)
@@ -854,13 +877,13 @@ const Icons = {
 // ============================================
 const formatarMoeda = (valor) => {
   if (!valor || isNaN(valor) || typeof valor !== "number") {
-    return "R$ 0";
+    return "R$ 0,00";
   }
   return new Intl.NumberFormat("pt-BR", {
     style: "currency",
     currency: "BRL",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
     useGrouping: true,
   }).format(valor);
 };
@@ -1187,15 +1210,29 @@ const Dashboard = () => {
         const { data: visitas, error: errorVisitas } = await supabase
           .from("visitas")
           .select("*")
-          .gte("data_visita", inicioMes.toISOString())
-          .lte("data_visita", fimMes.toISOString());
+          .gte("created_at", inicioMes.toISOString())
+          .lte("created_at", fimMes.toISOString());
 
         console.log("📊 visitas DO BANCO:", visitas?.length || 0);
 
+        // AGENDAMENTO: TODAS as visitas que já foram agendadas (inclui confirmadas e realizadas)
         const visitasAgendadas =
-          visitas?.filter((v) => v.status === "agendada") || [];
+          visitas?.filter(
+            (v) =>
+              v.status === "agendada" ||
+              v.status === "confirmada" ||
+              v.status === "realizada",
+          ) || [];
+
+        // VISITAS REALIZADAS: apenas as realizadas
         const visitasRealizadas =
           visitas?.filter((v) => v.status === "realizada") || [];
+
+        console.log(
+          "📊 visitas agendadas (total histórico):",
+          visitasAgendadas.length,
+        );
+        console.log("📊 visitas realizadas:", visitasRealizadas.length);
 
         // ===== PROPOSTAS =====
         const { data: propostas, error: errorPropostas } = await supabase
@@ -1205,14 +1242,20 @@ const Dashboard = () => {
           .lte("created_at", fimMes.toISOString());
 
         console.log("📊 propostas DO BANCO:", propostas?.length || 0);
+        console.log("📊 PERÍODO:", {
+          inicio: inicioMes.toISOString(),
+          fim: fimMes.toISOString(),
+        });
 
-        // FILTRO CORRIGIDO - "em_andamento" em vez de "negociacao"
+        // 👇 FILTRO CORRIGIDO
         const propostasNegociacao =
           propostas?.filter((p) => p.status === "em_andamento") || [];
         const vendas = propostas?.filter((p) => p.status === "aprovada") || [];
 
-        console.log("📊 propostas em_andamento:", propostasNegociacao.length);
-        console.log("📊 propostas aprovadas (vendas):", vendas.length);
+        console.log("📊 TODAS PROPOSTAS:", propostas);
+        console.log("📊 propostas em_andamento:", propostasNegociacao);
+        console.log("📊 propostas aprovadas (vendas):", vendas);
+        console.log("📊 QUANTIDADE VENDAS:", vendas.length);
 
         // ===== RECEITA DO MÊS =====
         const receitaMes =
@@ -1767,6 +1810,9 @@ const Dashboard = () => {
   });
 
   const vendasFiltradas = dadosReais.vendasLista.filter((venda) => {
+    // Proteção contra data inválida
+    if (!venda.data_venda) return false;
+
     const dataVenda = new Date(venda.data_venda).toISOString().split("T")[0];
     if (dataVenda < filtroVendas.dataInicio || dataVenda > filtroVendas.dataFim)
       return false;
@@ -1794,6 +1840,11 @@ const Dashboard = () => {
 
   // ========== ABA VISÃO GERAL ==========
   const AbaVisaoGeral = () => {
+    // 👇 ADICIONE ESTES LOGS AQUI, NO INÍCIO DA FUNÇÃO
+    console.log("📊 ABA VISAO GERAL - dadosReais:", dadosReais);
+    console.log("📊 ABA VISAO GERAL - vendas:", dadosReais?.vendas);
+    console.log("📊 ABA VISAO GERAL - receita:", dadosReais?.receitaMes);
+
     const alertasCriticos = indicadores.alertasEstrategicos.filter(
       (a) => a.impacto === "alto",
     );
@@ -1873,7 +1924,7 @@ const Dashboard = () => {
 
           <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg shadow-sm p-6">
             <div className="flex items-center gap-2 mb-2">
-              <Icons.chartBar className="w-5 h-5 text-gray-500" />
+              <ChartBarIcon className="w-5 h-5 text-gray-500" />
               <p className="text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
                 Conversão Geral
               </p>
@@ -1961,7 +2012,8 @@ const Dashboard = () => {
                       Proposta
                     </span>
                     <span className="font-bold">
-                      {dadosReais.propostasNegociacao}
+                      {dadosReais.propostasNegociacao + dadosReais.vendas}{" "}
+                      {/* ← ÚNICA MUDANÇA! */}
                     </span>
                   </div>
                 </div>
@@ -2104,12 +2156,14 @@ const Dashboard = () => {
                         </span>
                       </td>
                       <td className="text-center py-3 px-2 font-medium text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">
-                        {dadosReais.propostasNegociacao}
+                        {dadosReais.propostasNegociacao + dadosReais.vendas}{" "}
+                        {/* ← SOMA! */}
                       </td>
                       <td className="text-center py-3 px-2 text-gray-600 dark:text-gray-400 border-r border-gray-200 dark:border-gray-700">
                         {dadosReais.leadsSite > 0
                           ? Math.round(
-                              (dadosReais.propostasNegociacao /
+                              ((dadosReais.propostasNegociacao +
+                                dadosReais.vendas) /
                                 dadosReais.leadsSite) *
                                 100,
                             )
@@ -2954,7 +3008,7 @@ const Dashboard = () => {
                             </span>
                             {vendas > 0 && (
                               <span className="inline-flex items-center gap-1 text-xs bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 px-2 py-1 rounded-full font-medium">
-                                <Icons.checkCircle className="w-3 h-3" />
+                                <CheckCircleIcon className="w-3 h-3" />
                                 <span>Vendido</span>
                               </span>
                             )}
@@ -3267,6 +3321,27 @@ const Dashboard = () => {
     const [propostaSelecionada, setPropostaSelecionada] = useState(null);
     const [modalAberto, setModalAberto] = useState(false);
 
+    // 👇 ESTADO PARA CORRETORES
+    const [mapaCorretores, setMapaCorretores] = useState({});
+
+    // 👇 useEffect PARA CARREGAR CORRETORES
+    useEffect(() => {
+      const carregarCorretores = async () => {
+        const { data } = await supabase.from("corretores").select("id, nome");
+
+        console.log("🔍 CORRETORES CARREGADOS:", data);
+
+        const mapa = {};
+        data?.forEach((c) => (mapa[c.id] = c.nome));
+        setMapaCorretores(mapa);
+
+        console.log("🗺️ MAPA DE CORRETORES:", mapa);
+      };
+
+      carregarCorretores();
+    }, []);
+
+    // 👇 useEffect PARA PROPOSTAS
     useEffect(() => {
       buscarPropostas();
     }, []);
@@ -3279,9 +3354,26 @@ const Dashboard = () => {
         .select(
           `
         *,
-        leads (id, nome, telefone, email),
-        imoveis (id, codigo, titulo, bairro, tipo, preco),
-        corretores (id, nome)
+        visitas (
+          id,
+          lead_id,
+          imovel_id,
+          corretor_id,
+          leads (
+            id,
+            nome,
+            telefone,
+            email
+          ),
+          imoveis (
+            id,
+            codigo,
+            titulo,
+            bairro,
+            tipo,
+            preco
+          )
+        )
       `,
         )
         .order("created_at", { ascending: false });
@@ -3290,13 +3382,24 @@ const Dashboard = () => {
         console.error("Erro ao buscar propostas:", error);
       } else {
         setPropostas(data || []);
+
+        // Logs para debug
+        console.log("📊 MAPA CORRETORES:", mapaCorretores);
+        console.log("📊 PROPOSTAS CARREGADAS:", data);
+        if (data && data.length > 0) {
+          console.log("📊 PRIMEIRA PROPOSTA:", data[0]);
+          console.log("📊 CORRETOR_ID:", data[0]?.visitas?.corretor_id);
+          console.log(
+            "📊 NOME CORRETOR:",
+            mapaCorretores[data[0]?.visitas?.corretor_id],
+          );
+        }
       }
       setLoading(false);
     };
 
     const handleAprovarProposta = async (proposta) => {
       try {
-        // 1. Atualiza proposta para aprovada
         await supabase
           .from("propostas")
           .update({
@@ -3305,17 +3408,15 @@ const Dashboard = () => {
           })
           .eq("id", proposta.id);
 
-        // 2. Atualiza imóvel para vendido
         await supabase
           .from("imoveis")
           .update({ status: "vendido" })
-          .eq("id", proposta.imovel_id);
+          .eq("id", proposta.visitas?.imovel_id);
 
-        // 3. Cria registro na tabela de comissões
-        const comissao = proposta.valor * 0.06; // 6%
+        const comissao = proposta.valor * 0.06;
         await supabase.from("comissoes").insert({
           proposta_id: proposta.id,
-          corretor_id: proposta.corretor_id,
+          corretor_id: proposta.visitas?.corretor_id,
           valor: comissao,
           status: "a_pagar",
           data_vencimento: new Date(
@@ -3323,11 +3424,11 @@ const Dashboard = () => {
           ).toISOString(),
         });
 
-        alert("✅ Proposta aprovada! Venda concluída com sucesso.");
-        buscarPropostas(); // Recarrega a lista
+        alert("✅ Proposta aprovada! Venda concluída.");
+        buscarPropostas();
       } catch (error) {
         console.error("Erro ao aprovar proposta:", error);
-        alert("Erro ao aprovar proposta. Tente novamente.");
+        alert("Erro ao aprovar proposta.");
       }
     };
 
@@ -3424,105 +3525,220 @@ const Dashboard = () => {
 
     return (
       <div className="space-y-6">
-        {/* HEADER COM MÉTRICAS */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-          <div className="bg-white dark:bg-gray-900 rounded-lg p-5 border-l-4 border-purple-500 shadow-sm">
-            <p className="text-xs text-gray-500 uppercase tracking-wider">
-              Total de Propostas
-            </p>
-            <p className="text-2xl font-bold text-gray-900 dark:text-white">
-              {resumo.total}
-            </p>
-          </div>
+        {/* BARRA UNIFICADA - FILTROS + MÉTRICAS ESTRATÉGICAS */}
+        <div className="bg-white/70 dark:bg-gray-900/70 backdrop-blur-xl rounded-2xl shadow-lg shadow-purple-500/5 p-3">
+          <div className="flex flex-wrap items-center justify-between gap-2 pl-1">
+            {/* FILTROS */}
+            <div className="flex flex-wrap gap-2 flex-1">
+              {/* Todas */}
+              <button
+                onClick={() => setFiltroStatus("todas")}
+                className={`
+          relative overflow-hidden rounded-xl px-5 py-4 transition-all duration-300 ml-1
+          ${
+            filtroStatus === "todas"
+              ? "bg-gradient-to-r from-gray-800 to-gray-900 text-white shadow-lg shadow-gray-500/30 scale-105"
+              : "bg-gray-100/50 dark:bg-gray-800/30 text-gray-600 dark:text-gray-400 hover:bg-gray-200/50 dark:hover:bg-gray-700/50 hover:scale-105"
+          }
+          outline-none ring-0 focus:outline-none focus:ring-0 active:outline-none active:ring-0
+        `}
+                style={{ outline: "none", boxShadow: "none" }}
+              >
+                <span className="relative z-10 flex items-center gap-2 text-base font-medium whitespace-nowrap">
+                  <svg
+                    className="w-5 h-5"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <rect x="3" y="3" width="7" height="7" rx="1" />
+                    <rect x="14" y="3" width="7" height="7" rx="1" />
+                    <rect x="14" y="14" width="7" height="7" rx="1" />
+                    <rect x="3" y="14" width="7" height="7" rx="1" />
+                  </svg>
+                  <span>Todas</span>
+                  <span
+                    className={`ml-1.5 px-2 py-0.5 rounded-full text-sm font-bold ${
+                      filtroStatus === "todas"
+                        ? "bg-white/20 text-white"
+                        : "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
+                    }`}
+                  >
+                    {resumo.total}
+                  </span>
+                </span>
+              </button>
 
-          <div className="bg-white dark:bg-gray-900 rounded-lg p-5 border-l-4 border-yellow-500 shadow-sm">
-            <p className="text-xs text-gray-500 uppercase tracking-wider">
-              Em Negociação
-            </p>
-            <p className="text-2xl font-bold text-yellow-600">
-              {resumo.emAndamento}
-            </p>
-          </div>
+              {/* Em Negociação */}
+              <button
+                onClick={() => setFiltroStatus("em_andamento")}
+                className={`
+          relative overflow-hidden rounded-xl px-5 py-4 transition-all duration-300
+          ${
+            filtroStatus === "em_andamento"
+              ? "bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg shadow-orange-500/30 scale-105"
+              : "bg-amber-50/50 dark:bg-amber-900/10 text-amber-700 dark:text-amber-400 hover:bg-amber-100/50 dark:hover:bg-amber-800/30 hover:scale-105"
+          }
+          outline-none ring-0 focus:outline-none focus:ring-0 active:outline-none active:ring-0
+        `}
+                style={{ outline: "none", boxShadow: "none" }}
+              >
+                <span className="relative z-10 flex items-center gap-2 text-base font-medium whitespace-nowrap">
+                  <svg
+                    className="w-5 h-5"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+                  </svg>
+                  <span>Negociação</span>
+                  <span
+                    className={`ml-1.5 px-2 py-0.5 rounded-full text-sm font-bold ${
+                      filtroStatus === "em_andamento"
+                        ? "bg-white/20 text-white"
+                        : "bg-amber-200 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300"
+                    }`}
+                  >
+                    {resumo.emAndamento}
+                  </span>
+                </span>
+              </button>
 
-          <div className="bg-white dark:bg-gray-900 rounded-lg p-5 border-l-4 border-green-500 shadow-sm">
-            <p className="text-xs text-gray-500 uppercase tracking-wider">
-              Aprovadas
-            </p>
-            <p className="text-2xl font-bold text-green-600">
-              {resumo.aprovadas}
-            </p>
-          </div>
+              {/* Aprovadas */}
+              <button
+                onClick={() => setFiltroStatus("aprovada")}
+                className={`
+          relative overflow-hidden rounded-xl px-5 py-4 transition-all duration-300
+          ${
+            filtroStatus === "aprovada"
+              ? "bg-gradient-to-r from-emerald-500 to-green-500 text-white shadow-lg shadow-green-500/30 scale-105"
+              : "bg-emerald-50/50 dark:bg-emerald-900/10 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100/50 dark:hover:bg-emerald-800/30 hover:scale-105"
+          }
+          outline-none ring-0 focus:outline-none focus:ring-0 active:outline-none active:ring-0
+        `}
+                style={{ outline: "none", boxShadow: "none" }}
+              >
+                <span className="relative z-10 flex items-center gap-2 text-base font-medium whitespace-nowrap">
+                  <svg
+                    className="w-5 h-5"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                  >
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                    <polyline points="22 4 12 14.01 9 11.01" />
+                  </svg>
+                  <span>Aprovadas</span>
+                  <span
+                    className={`ml-1.5 px-2 py-0.5 rounded-full text-sm font-bold ${
+                      filtroStatus === "aprovada"
+                        ? "bg-white/20 text-white"
+                        : "bg-emerald-200 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-300"
+                    }`}
+                  >
+                    {resumo.aprovadas}
+                  </span>
+                </span>
+              </button>
 
-          <div className="bg-white dark:bg-gray-900 rounded-lg p-5 border-l-4 border-blue-500 shadow-sm">
-            <p className="text-xs text-gray-500 uppercase tracking-wider">
-              Valor em Jogo
-            </p>
-            <p className="text-2xl font-bold text-blue-600">
-              {formatarMoeda(resumo.valorEmAndamento)}
-            </p>
-          </div>
+              {/* Recusadas */}
+              <button
+                onClick={() => setFiltroStatus("recusada")}
+                className={`
+          relative overflow-hidden rounded-xl px-5 py-4 transition-all duration-300
+          ${
+            filtroStatus === "recusada"
+              ? "bg-gradient-to-r from-rose-400 to-rose-500 text-white shadow-lg shadow-rose-500/30 scale-105"
+              : "bg-rose-50/50 dark:bg-rose-900/10 text-rose-700 dark:text-rose-400 hover:bg-rose-100/50 dark:hover:bg-rose-800/30 hover:scale-105"
+          }
+          outline-none ring-0 focus:outline-none focus:ring-0 active:outline-none active:ring-0
+        `}
+                style={{ outline: "none", boxShadow: "none" }}
+              >
+                <span className="relative z-10 flex items-center gap-2 text-base font-medium whitespace-nowrap">
+                  <svg
+                    className="w-5 h-5"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
+                  <span>Recusadas</span>
+                  <span
+                    className={`ml-1.5 px-2 py-0.5 rounded-full text-sm font-bold ${
+                      filtroStatus === "recusada"
+                        ? "bg-white/20 text-white"
+                        : "bg-rose-200 dark:bg-rose-900/30 text-rose-800 dark:text-rose-300"
+                    }`}
+                  >
+                    {resumo.recusadas}
+                  </span>
+                </span>
+              </button>
+            </div>
 
-          <div className="bg-white dark:bg-gray-900 rounded-lg p-5 border-l-4 border-purple-500 shadow-sm">
-            <p className="text-xs text-gray-500 uppercase tracking-wider">
-              Taxa Conversão
-            </p>
-            <p className="text-2xl font-bold text-purple-600">
-              {resumo.conversao}%
-            </p>
+            {/* MÉTRICAS ESTRATÉGICAS */}
+            <div className="flex items-center gap-3 border-l border-gray-200 dark:border-gray-700 pl-4 mr-1">
+              {/* Valor em Jogo */}
+              <div className="flex items-center gap-3 px-4 py-4 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/30 dark:to-purple-950/30 rounded-xl">
+                <svg
+                  className="w-6 h-6 text-indigo-600 dark:text-indigo-400"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <path d="M12 1v22M17 5H9.5M17 5C18.5 5 19 6.5 19 8.5s-1.5 3.5-3.5 3.5h-5C8.5 12 7 13.5 7 15.5S8.5 19 10.5 19H17" />
+                  <path d="M17 5v14" />
+                </svg>
+                <div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    Valor em Jogo
+                  </p>
+                  <p className="text-base font-bold text-indigo-600 dark:text-indigo-400">
+                    {formatarMoeda(resumo.valorEmAndamento)}
+                  </p>
+                </div>
+              </div>
+
+              {/* Taxa de Conversão */}
+              <div className="flex items-center gap-3 px-4 py-4 bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-950/30 dark:to-cyan-950/30 rounded-xl">
+                <svg
+                  className="w-6 h-6 text-blue-600 dark:text-blue-400"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <path d="M21 12v-2a5 5 0 0 0-5-5H8a5 5 0 0 0-5 5v2" />
+                  <circle cx="12" cy="16" r="5" />
+                  <path d="M12 11v5" />
+                </svg>
+                <div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    Conversão
+                  </p>
+                  <p className="text-base font-bold text-blue-600 dark:text-blue-400">
+                    {resumo.conversao}%
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
-
-        {/* FILTROS RÁPIDOS */}
-        <div className="bg-white dark:bg-gray-900 rounded-lg shadow-sm p-4">
-          <div className="flex flex-wrap gap-2">
-            <button
-              onClick={() => setFiltroStatus("todas")}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                filtroStatus === "todas"
-                  ? "bg-gray-900 text-white dark:bg-white dark:text-gray-900"
-                  : "text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800"
-              }`}
-            >
-              Todas ({resumo.total})
-            </button>
-            <button
-              onClick={() => setFiltroStatus("em_andamento")}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                filtroStatus === "em_andamento"
-                  ? "bg-yellow-500 text-white"
-                  : "text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800"
-              }`}
-            >
-              ⚡ Em Negociação ({resumo.emAndamento})
-            </button>
-            <button
-              onClick={() => setFiltroStatus("aprovada")}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                filtroStatus === "aprovada"
-                  ? "bg-green-500 text-white"
-                  : "text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800"
-              }`}
-            >
-              ✅ Aprovadas ({resumo.aprovadas})
-            </button>
-            <button
-              onClick={() => setFiltroStatus("recusada")}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                filtroStatus === "recusada"
-                  ? "bg-red-500 text-white"
-                  : "text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800"
-              }`}
-            >
-              ❌ Recusadas ({resumo.recusadas})
-            </button>
-          </div>
-        </div>
-
         {/* LISTA DE PROPOSTAS */}
         <div className="bg-white dark:bg-gray-900 rounded-lg shadow-sm overflow-hidden">
           <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
             <h2 className="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-              <Icons.document className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+              <DocumentIcon className="w-5 h-5 text-purple-600 dark:text-purple-400" />
               Lista de Propostas
             </h2>
           </div>
@@ -3530,7 +3746,7 @@ const Dashboard = () => {
           {propostasFiltradas.length === 0 ? (
             <div className="p-12 text-center">
               <div className="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Icons.document className="w-8 h-8 text-gray-400" />
+                <DocumentIcon className="w-8 h-8 text-gray-400" />
               </div>
               <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
                 Nenhuma proposta encontrada
@@ -3544,8 +3760,20 @@ const Dashboard = () => {
           ) : (
             <div className="divide-y divide-gray-100 dark:divide-gray-800">
               {propostasFiltradas.map((proposta) => {
-                const status = getStatusInfo(proposta.status);
+                // 👇 ADICIONE ESTES LOGS AQUI
+                console.log("🔍 PROPOSTA COMPLETA:", proposta);
+                console.log("🔍 VISITAS:", proposta.visitas);
+                console.log(
+                  "🔍 LEADS DENTRO DE VISITAS:",
+                  proposta.visitas?.leads,
+                );
+                console.log(
+                  "🔍 CORRETOR_ID na visita:",
+                  proposta.visitas?.corretor_id,
+                );
+                console.log("🔍 MAPA CORRETORES:", mapaCorretores);
 
+                const status = getStatusInfo(proposta.status);
                 return (
                   <div
                     key={proposta.id}
@@ -3561,10 +3789,14 @@ const Dashboard = () => {
                             {status.icon} {status.label}
                           </span>
                           <span className="text-sm text-gray-500">
-                            #{proposta.id.slice(0, 8)} •{" "}
-                            {new Date(proposta.created_at).toLocaleDateString(
-                              "pt-BR",
-                            )}
+                            #
+                            {proposta.id?.toString().slice(0, 8) || proposta.id}{" "}
+                            •{" "}
+                            {proposta.created_at
+                              ? new Date(
+                                  proposta.created_at,
+                                ).toLocaleDateString("pt-BR")
+                              : "—"}
                           </span>
                         </div>
 
@@ -3573,11 +3805,11 @@ const Dashboard = () => {
                           <div>
                             <p className="text-xs text-gray-500">Imóvel</p>
                             <p className="text-sm font-medium text-gray-900 dark:text-white">
-                              {proposta.imoveis?.codigo} -{" "}
-                              {proposta.imoveis?.bairro}
+                              {proposta.visitas?.imoveis?.codigo || "—"} -{" "}
+                              {proposta.visitas?.imoveis?.bairro || "—"}
                             </p>
                             <p className="text-xs text-gray-500">
-                              {proposta.imoveis?.tipo}
+                              {proposta.visitas?.imoveis?.tipo || "—"}
                             </p>
                           </div>
 
@@ -3593,19 +3825,23 @@ const Dashboard = () => {
                           <div>
                             <p className="text-xs text-gray-500">Cliente</p>
                             <p className="text-sm font-medium text-gray-900 dark:text-white">
-                              {proposta.leads?.nome || "—"}
+                              {proposta.visitas?.leads?.nome || "—"}
                             </p>
-                            {proposta.leads?.telefone && (
+                            {proposta.visitas?.leads?.telefone && (
                               <p className="text-xs text-gray-500">
-                                {proposta.leads.telefone}
+                                {proposta.visitas?.leads?.telefone}
                               </p>
                             )}
                           </div>
 
+                          {/* ✅ ÚNICO CAMPO DE CORRETOR - MANTENHA ESTE */}
                           <div>
                             <p className="text-xs text-gray-500">Corretor</p>
                             <p className="text-sm font-medium text-gray-900 dark:text-white">
-                              {proposta.corretores?.nome || "—"}
+                              {mapaCorretores[proposta.visitas?.corretor_id] ||
+                                proposta.visitas?.corretor_nome ||
+                                proposta.corretor_nome ||
+                                "—"}
                             </p>
                           </div>
                         </div>
@@ -3630,7 +3866,7 @@ const Dashboard = () => {
                           className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
                           title="Ver detalhes"
                         >
-                          <Icons.eye className="w-5 h-5" />
+                          <EyeIcon className="w-5 h-5" />
                         </button>
 
                         {proposta.status === "em_andamento" && (
@@ -3638,16 +3874,16 @@ const Dashboard = () => {
                             <button
                               onClick={() => handleAprovarProposta(proposta)}
                               className="p-2 text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-colors"
-                              title="Aprovar proposta - Finalizar venda"
+                              title="Aprovar proposta"
                             >
-                              <Icons.checkCircle className="w-5 h-5" />
+                              <CheckCircleIcon className="w-5 h-5" />
                             </button>
                             <button
                               onClick={() => handleRecusarProposta(proposta)}
                               className="p-2 text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
                               title="Recusar proposta"
                             >
-                              <Icons.x className="w-5 h-5" />
+                              <XCircleIcon className="w-5 h-5" />
                             </button>
                           </>
                         )}
@@ -3672,12 +3908,11 @@ const Dashboard = () => {
                   onClick={() => setModalAberto(false)}
                   className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
                 >
-                  <Icons.x className="w-5 h-5" />
+                  <XCircleIcon className="w-5 h-5" />
                 </button>
               </div>
 
               <div className="p-6 space-y-4">
-                {/* Conteúdo do modal (igual aos detalhes acima) */}
                 <p className="text-gray-700 dark:text-gray-300">
                   {propostaSelecionada.condicoes ||
                     "Nenhuma condição especificada."}
@@ -3844,7 +4079,7 @@ const Dashboard = () => {
       <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg shadow-sm overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
           <h2 className="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-            <Icons.document className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+            <DocumentIcon className="w-5 h-5 text-blue-600 dark:text-blue-400" />
             Relatório de Vendas
           </h2>
         </div>
@@ -4298,7 +4533,7 @@ const Dashboard = () => {
                     {corretor.conversao.toFixed(1)}%
                   </td>
                   <td className="py-3 px-2 text-[13px] text-gray-700 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700 flex items-center justify-center gap-1 text-center whitespace-nowrap">
-                    <Icons.clock className="w-3 h-3" />
+                    <ClockIcon className="w-3 h-3" />
                     {formatarTempoResposta(corretor.tempoResposta)}
                   </td>
                   {/* ===== NOVAS COLUNAS ===== */}
@@ -4331,7 +4566,7 @@ const Dashboard = () => {
 
         <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg shadow-sm p-6">
           <div className="flex items-center gap-2 mb-2">
-            <Icons.user className="w-4 h-4 text-gray-500" />
+            <UserIcon className="w-4 h-4 text-gray-500" />
             <p className="text-[11px] font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
               Total Leads do Mês
             </p>

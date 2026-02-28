@@ -1512,14 +1512,40 @@ const DetalheImovel = () => {
         const dataVisita = new Date();
         dataVisita.setDate(dataVisita.getDate() + 7);
 
+        // ==========================================================================
+        // 1️⃣ PRIMEIRO: CRIAR O LEAD
+        // ==========================================================================
+        const { data: leadData, error: leadError } = await supabase
+          .from("leads")
+          .insert({
+            nome: formData.nome,
+            telefone: formData.telefone,
+            email: formData.email,
+            origem: "site",
+            status: "novo",
+            imovel_codigo: dados.codigo,
+            melhor_dia: formData.diaSemana,
+            melhor_horario: formData.horarioPreferencia,
+            created_at: new Date().toISOString(),
+          })
+          .select()
+          .single();
+
+        if (leadError) throw leadError;
+
+        // ==========================================================================
+        // 2️⃣ DEPOIS: CRIAR A VISITA (VINCULADA AO LEAD)
+        // ==========================================================================
         const { data, error } = await visitasService.criarVisita({
           imovel_id: dados.id,
+          lead_id: leadData.id,
           nome_cliente: formData.nome,
           telefone: formData.telefone,
           email: formData.email,
-          data_visita: dataVisita.toISOString(),
           dia_preferencia: formData.diaSemana,
           horario_preferencia: formData.horarioPreferencia,
+          status: "solicitada", // ← Status inicial
+          created_at: new Date().toISOString(), // ← Data da solicitação
         });
 
         if (error) throw error;

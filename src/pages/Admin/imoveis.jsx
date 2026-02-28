@@ -19,6 +19,9 @@ import {
   ChartBarIcon,
   InformationCircleIcon,
   EyeIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  ArrowsPointingOutIcon,
 } from "@heroicons/react/24/outline";
 import Button from "../../componentes/ui/Button";
 import { useTheme } from "../../contexts/ThemeContext";
@@ -27,7 +30,7 @@ import { TrophyIcon } from "@heroicons/react/24/outline";
 import { supabase } from "../../lib/supabase";
 import { useNotifications } from "../../contexts/NotificationContext";
 
-// ============ COMPONENTE MODAL PERFORMANCE (CORRIGIDO E FUNCIONAL) ============
+// ============ COMPONENTE MODAL PERFORMANCE ============
 const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
   const { isDark } = useTheme();
   const [showTooltipInfo, setShowTooltipInfo] = useState(false);
@@ -93,7 +96,6 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
     fetchPerformanceData();
   }, [imovel.id, imovel.desempenho, imovel.status, localMarcadoComoVendido]);
 
-  // Efeito para atualizar os dados quando marcado como vendido localmente
   useEffect(() => {
     if (localMarcadoComoVendido) {
       setMetricsData((prev) => ({
@@ -110,20 +112,15 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
     }
   }, [localMarcadoComoVendido]);
 
-  // Verificar se o imóvel já está vendido ou alugado
   const isVendidoOuAlugado =
     imovel.status === "Vendido" ||
     imovel.status === "Alugado" ||
     localMarcadoComoVendido ||
     metricsData.status === "Vendido";
 
-  // ==========================================================================
-  // CALCULAR ENGAJAMENTO COM NOVOS PESOS (CLIQUE=1, VISITA=20)
-  // ==========================================================================
   const calcularEngajamentoReal = () => {
     if (metricsData.visualizacoes === 0) return 0;
 
-    // Peso 1 para WhatsApp, Peso 20 para Visitas
     const pontos =
       metricsData.cliquesWhatsApp * 1 + metricsData.solicitacoesVisita * 20;
     const engajamento = (pontos / metricsData.visualizacoes) * 100;
@@ -134,7 +131,6 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
   const engajamento = calcularEngajamentoReal();
 
   const getClassificacaoDesempenho = () => {
-    // Caso especial: imóvel vendido
     if (isVendidoOuAlugado) {
       return {
         label: "Destaque",
@@ -148,7 +144,6 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
       };
     }
 
-    // Sem visualizações ainda
     if (metricsData.visualizacoes === 0) {
       return {
         label: "Sem dados",
@@ -162,7 +157,6 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
       };
     }
 
-    // Classificação baseada no engajamento real
     if (engajamento >= 150) {
       return {
         label: "Destaque",
@@ -393,7 +387,6 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
 
       if (error) throw error;
 
-      // ATUALIZA O STATUS DIRETAMENTE NO metricsData
       setMetricsData((prev) => ({
         ...prev,
         status: "Vendido",
@@ -402,7 +395,6 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
 
       setLocalMarcadoComoVendido(true);
 
-      // Chama o callback onAction para notificar o componente pai
       if (onAction) {
         onAction("marcarVendido", imovel.id);
       }
@@ -423,7 +415,6 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
       >
         {/* HEADER COM IMAGEM */}
         <div className="relative">
-          {/* Imagem de fundo */}
           <div className="h-56 bg-gradient-to-r from-gray-800 to-gray-900 overflow-hidden">
             <img
               src={imovelCompleto.imagemUrl}
@@ -433,9 +424,7 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/30 to-transparent" />
           </div>
 
-          {/* Conteúdo sobreposto */}
           <div className="absolute inset-0 p-5 flex flex-col justify-between">
-            {/* Linha superior */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className="text-white font-mono text-sm bg-black/30 backdrop-blur-sm px-3 py-1 rounded-full border border-white/20">
@@ -457,7 +446,6 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
               </button>
             </div>
 
-            {/* Linha inferior corrigida */}
             <div>
               <div className="flex flex-wrap items-center gap-2 text-sm text-gray-200">
                 <span>{imovelCompleto.endereco}</span>
@@ -554,17 +542,14 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
             </div>
           </div>
 
-          {/* Card de Status e Classificação */}
           <div className="mb-6">
             <div
               className={`rounded-xl p-5 ${palette.amareloDourado.bgLight} border ${palette.amareloDourado.border} ${isDark ? "dark:bg-amber-900/20 dark:border-amber-800" : ""}`}
             >
               <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-                {/* Status */}
                 <div className="flex-1 text-center md:text-left md:pr-6 md:border-r border-amber-300">
                   <div className="flex flex-col items-center md:items-start h-[110px] relative">
                     <div className="flex flex-col items-center md:items-start justify-center h-full w-full">
-                      {/* Status */}
                       <div className="mb-1">
                         <div
                           className={`px-3 py-1 ${
@@ -579,7 +564,6 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
                         </div>
                       </div>
 
-                      {/* SÓ MOSTRA O TEMPO SE FOR "Em Negociação" OU "Vendido/Alugado" */}
                       {metricsData.status === "Em Negociação" && (
                         <div className="flex items-center gap-2">
                           <ClockIcon
@@ -596,7 +580,6 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
                         </div>
                       )}
 
-                      {/* Quando vendido ou alugado, mostra "Concluído" */}
                       {isVendidoOuAlugado && (
                         <div className="flex items-center gap-2">
                           <ClockIcon
@@ -612,7 +595,6 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
                       )}
                     </div>
 
-                    {/* Alerta para negociação prolongada */}
                     {!isVendidoOuAlugado &&
                       metricsData.status === "Em Negociação" && (
                         <>
@@ -653,7 +635,6 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
                   </div>
                 </div>
 
-                {/* Índice de Interesse */}
                 <div className="flex-1 text-center md:px-6 md:border-r border-amber-300">
                   <div className="mb-2">
                     <div
@@ -691,7 +672,6 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
                   </div>
                 </div>
 
-                {/* Classificação */}
                 <div className="flex-1 text-center md:pl-6">
                   <div className="flex flex-col items-center">
                     <div className="relative top-[1px] mb-1">
@@ -717,7 +697,6 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
             </div>
           </div>
 
-          {/* Insights Rápidos */}
           <div className="mb-6">
             <h4
               className={`text-sm font-semibold ${isDark ? "text-gray-300" : "text-gray-700"} mb-3`}
@@ -813,11 +792,9 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
           </div>
         </div>
 
-        {/* Footer com ações */}
         <div
           className={`border-t ${isDark ? "border-gray-700 bg-gray-800" : "border-gray-300 bg-gradient-to-r from-gray-50 to-gray-100/50"} p-4 relative`}
         >
-          {/* Tooltip informativo */}
           {showTooltipInfo && (
             <div
               className={`absolute bottom-full left-4 mb-2 w-80 ${isDark ? "bg-gray-800 border-gray-700" : "bg-white border-gray-300"} rounded-lg shadow-xl z-50 p-4 border`}
@@ -875,7 +852,6 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
           )}
 
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            {/* Botão de informação */}
             <div
               className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border ${
                 isDark
@@ -905,9 +881,7 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
               </span>
             </div>
 
-            {/* Botões de ação */}
             <div className="flex items-center gap-3">
-              {/* BOTÃO FECHAR */}
               <button
                 onClick={onClose}
                 className={`px-4 py-2.5 rounded-lg transition-all duration-200 font-medium shadow-sm hover:shadow flex items-center gap-2 ${
@@ -920,7 +894,6 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
                 Fechar
               </button>
 
-              {/* BOTÃO MARCAR COMO VENDIDO */}
               {!isVendidoOuAlugado && (
                 <button
                   onClick={handleMarcarComoVendido}
@@ -935,7 +908,6 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
                 </button>
               )}
 
-              {/* BOTÃO VENDIDO/ALUGADO */}
               {isVendidoOuAlugado && (
                 <div
                   className={`px-4 py-2.5 rounded-lg font-medium shadow-sm flex items-center gap-2 ${
@@ -956,13 +928,12 @@ const ModalPerformanceImovel = ({ imovel, onClose, onAction }) => {
   );
 };
 
-// ============ COMPONENTE BOTÃO DESEMPENHO (CORRIGIDO E FUNCIONAL) ============
+// ============ COMPONENTE BOTÃO DESEMPENHO ============
 const BotaoDesempenho = ({ imovel }) => {
   const [modalAberto, setModalAberto] = useState(false);
 
   const handleAcaoModal = (acao, imovelId) => {
     console.log(`Ação: ${acao} no imóvel ID: ${imovelId}`);
-    // Aqui você pode adicionar lógica adicional se necessário
   };
 
   return (
@@ -992,6 +963,676 @@ const BotaoDesempenho = ({ imovel }) => {
   );
 };
 
+// ============ COMPONENTE MODAL TABELA EXPANDIDA ============
+const ModalTabelaExpandida = ({
+  isOpen,
+  onClose,
+  imoveisFiltrados,
+  currentItems,
+  isDark,
+  handleDelete,
+  navigate,
+  totalImoveis,
+  imoveisEncontrados,
+  // Novos props para filtros
+  searchTerm,
+  setSearchTerm,
+  selectedTipo,
+  setSelectedTipo,
+  selectedFinalidade,
+  setSelectedFinalidade,
+  selectedStatus,
+  setSelectedStatus,
+  selectedCidade,
+  setSelectedCidade,
+  limparFiltros,
+  tipos,
+  finalidades,
+  statusList,
+  cidades,
+}) => {
+  if (!isOpen) return null;
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-2.5 bg-black/80 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <div
+        className={`${isDark ? "bg-gray-900 border-gray-700" : "bg-white border-gray-300"} rounded-xl shadow-2xl w-full h-full overflow-hidden border flex flex-col`}
+        style={{ width: "calc(100vw - 20px)", height: "calc(100vh - 20px)" }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header do Modal */}
+        <div
+          className={`flex items-center justify-between p-4 border-b ${
+            isDark ? "border-gray-700" : "border-gray-200"
+          }`}
+        >
+          <div>
+            <h2
+              className={`text-xl font-bold ${
+                isDark ? "text-gray-100" : "text-gray-900"
+              }`}
+            >
+              Visualização Expandida
+            </h2>
+            <p
+              className={`text-sm ${
+                isDark ? "text-gray-400" : "text-gray-600"
+              }`}
+            >
+              Mostrando {currentItems.length} de {imoveisEncontrados} imóveis
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className={`p-2 rounded-lg transition-all duration-200 border-2 ${
+              isDark
+                ? "border-amber-500 bg-amber-900/30 text-amber-400 hover:bg-amber-900/50"
+                : "border-amber-500 bg-amber-50 text-amber-700 hover:bg-amber-100"
+            }`}
+            title="Fechar"
+          >
+            <XMarkIcon className="w-6 h-6" />
+          </button>
+        </div>
+
+        {/* Filtros no Modal Expandido */}
+        <div className="p-4 border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div className="flex-1 max-w-xl">
+              <div className="relative">
+                <MagnifyingGlassIcon
+                  className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 ${
+                    isDark ? "text-gray-500" : "text-gray-400"
+                  }`}
+                />
+                <input
+                  type="text"
+                  placeholder="Buscar por código, endereço, bairro, cidade, tipo..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className={`w-full pl-10 pr-4 py-2.5 ${
+                    isDark
+                      ? "bg-gray-800 border-gray-700 text-gray-200 placeholder-gray-500"
+                      : "bg-white border-gray-300 text-gray-900 placeholder-gray-500"
+                  } border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] shadow-sm transition-colors duration-200`}
+                />
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3">
+              <select
+                value={selectedTipo}
+                onChange={(e) => setSelectedTipo(e.target.value)}
+                className={`h-[42px] px-3 ${
+                  isDark
+                    ? "bg-gray-800 border-gray-700 text-gray-200"
+                    : "bg-white border-gray-300 text-gray-900"
+                } border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] shadow-sm text-sm w-full sm:w-auto transition-colors duration-200`}
+              >
+                <option value="">Todos os Tipos</option>
+                {tipos.map((tipo) => (
+                  <option key={tipo} value={tipo.toLowerCase()}>
+                    {tipo}
+                  </option>
+                ))}
+              </select>
+
+              <select
+                value={selectedFinalidade}
+                onChange={(e) => setSelectedFinalidade(e.target.value)}
+                className={`h-[42px] px-3 ${
+                  isDark
+                    ? "bg-gray-800 border-gray-700 text-gray-200"
+                    : "bg-white border-gray-300 text-gray-900"
+                } border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] shadow-sm text-sm w-full sm:w-auto transition-colors duration-200`}
+              >
+                <option value="">Todas Finalidades</option>
+                {finalidades.map((finalidade) => (
+                  <option key={finalidade} value={finalidade.toLowerCase()}>
+                    {finalidade}
+                  </option>
+                ))}
+              </select>
+
+              <select
+                value={selectedStatus}
+                onChange={(e) => setSelectedStatus(e.target.value)}
+                className={`h-[42px] px-3 ${
+                  isDark
+                    ? "bg-gray-800 border-gray-700 text-gray-200"
+                    : "bg-white border-gray-300 text-gray-900"
+                } border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] shadow-sm text-sm w-full sm:w-auto transition-colors duration-200`}
+              >
+                <option value="">Todos Status</option>
+                {statusList.map((status) => (
+                  <option key={status} value={status.toLowerCase()}>
+                    {status}
+                  </option>
+                ))}
+              </select>
+
+              <select
+                value={selectedCidade}
+                onChange={(e) => setSelectedCidade(e.target.value)}
+                className={`h-[42px] px-3 ${
+                  isDark
+                    ? "bg-gray-800 border-gray-700 text-gray-200"
+                    : "bg-white border-gray-300 text-gray-900"
+                } border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] shadow-sm text-sm w-full sm:w-auto transition-colors duration-200`}
+              >
+                <option value="">Todas Cidades</option>
+                {cidades.map((cidade) => (
+                  <option key={cidade} value={cidade.toLowerCase()}>
+                    {cidade}
+                  </option>
+                ))}
+              </select>
+
+              {(searchTerm ||
+                selectedTipo ||
+                selectedFinalidade ||
+                selectedStatus ||
+                selectedCidade) && (
+                <button
+                  onClick={limparFiltros}
+                  className={`h-[42px] px-3 ${
+                    isDark
+                      ? "bg-gray-700 text-gray-300 border-gray-600 hover:bg-gray-600"
+                      : "bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200"
+                  } border rounded-lg transition-colors duration-200 text-sm font-medium`}
+                >
+                  Limpar Filtros
+                </button>
+              )}
+            </div>
+          </div>
+
+          <div className="mt-4 flex items-center justify-between">
+            <div
+              className={`text-sm ${isDark ? "text-gray-400" : "text-gray-600"}`}
+            >
+              Mostrando{" "}
+              <span
+                className={`font-semibold ${
+                  isDark ? "text-gray-300" : "text-gray-900"
+                }`}
+              >
+                {currentItems.length}
+              </span>{" "}
+              de{" "}
+              <span
+                className={`font-semibold ${
+                  isDark ? "text-gray-300" : "text-gray-900"
+                }`}
+              >
+                {imoveisEncontrados}
+              </span>{" "}
+              imóveis
+            </div>
+          </div>
+        </div>
+
+        {/* Container da Tabela */}
+        <div className="flex-1 overflow-auto min-h-0">
+          <div className="min-w-[1400px] p-4">
+            <table className="w-full table-fixed border-collapse">
+              <thead
+                className={`${isDark ? "bg-gray-900" : "bg-gray-50"} sticky top-0 z-30`}
+              >
+                <tr>
+                  <th
+                    className={`w-[70px] p-3 text-center text-xs font-semibold ${
+                      isDark ? "text-gray-300" : "text-gray-800"
+                    } uppercase tracking-wider border ${
+                      isDark ? "border-gray-700" : "border-gray-200"
+                    } sticky left-0 ${isDark ? "bg-gray-900" : "bg-gray-50"} z-40`}
+                    style={{
+                      boxShadow: isDark
+                        ? "2px 0 5px -2px rgba(0,0,0,0.5)"
+                        : "2px 0 5px -2px rgba(0,0,0,0.1)",
+                    }}
+                  >
+                    ID
+                  </th>
+                  <th
+                    className={`w-[100px] p-3 text-center text-xs font-semibold ${
+                      isDark ? "text-gray-300" : "text-gray-800"
+                    } uppercase tracking-wider border ${
+                      isDark ? "border-gray-700" : "border-gray-200"
+                    } sticky left-[70px] ${isDark ? "bg-gray-900" : "bg-gray-50"} z-40`}
+                    style={{
+                      boxShadow: isDark
+                        ? "2px 0 5px -2px rgba(0,0,0,0.5)"
+                        : "2px 0 5px -2px rgba(0,0,0,0.1)",
+                    }}
+                  >
+                    Código
+                  </th>
+                  <th
+                    className={`w-[100px] p-3 text-center text-xs font-semibold ${
+                      isDark ? "text-gray-300" : "text-gray-800"
+                    } uppercase tracking-wider border ${
+                      isDark ? "border-gray-700" : "border-gray-200"
+                    }`}
+                  >
+                    Finalidade
+                  </th>
+                  <th
+                    className={`w-[110px] p-3 text-center text-xs font-semibold ${
+                      isDark ? "text-gray-300" : "text-gray-800"
+                    } uppercase tracking-wider border ${
+                      isDark ? "border-gray-700" : "border-gray-200"
+                    }`}
+                  >
+                    Tipo
+                  </th>
+                  <th
+                    className={`w-[160px] p-3 text-center text-xs font-semibold ${
+                      isDark ? "text-gray-300" : "text-gray-800"
+                    } uppercase tracking-wider border ${
+                      isDark ? "border-gray-700" : "border-gray-200"
+                    }`}
+                  >
+                    Endereço
+                  </th>
+                  <th
+                    className={`w-[150px] p-3 text-center text-xs font-semibold ${
+                      isDark ? "text-gray-300" : "text-gray-800"
+                    } uppercase tracking-wider border ${
+                      isDark ? "border-gray-700" : "border-gray-200"
+                    }`}
+                  >
+                    Bairro
+                  </th>
+                  <th
+                    className={`w-[90px] p-3 text-center text-xs font-semibold ${
+                      isDark ? "text-gray-300" : "text-gray-800"
+                    } uppercase tracking-wider border ${
+                      isDark ? "border-gray-700" : "border-gray-200"
+                    }`}
+                  >
+                    Cidade
+                  </th>
+                  <th
+                    className={`w-[60px] p-3 text-center text-xs font-semibold ${
+                      isDark ? "text-gray-300" : "text-gray-800"
+                    } uppercase tracking-wider border ${
+                      isDark ? "border-gray-700" : "border-gray-200"
+                    }`}
+                  >
+                    UF
+                  </th>
+                  <th
+                    className={`w-[130px] p-3 text-center text-xs font-semibold ${
+                      isDark ? "text-gray-300" : "text-gray-800"
+                    } uppercase tracking-wider border ${
+                      isDark ? "border-gray-700" : "border-gray-200"
+                    }`}
+                  >
+                    Status
+                  </th>
+                  <th
+                    className={`w-[130px] p-3 text-center text-xs font-semibold ${
+                      isDark ? "text-gray-300" : "text-gray-800"
+                    } uppercase tracking-wider border ${
+                      isDark ? "border-gray-700" : "border-gray-200"
+                    }`}
+                  >
+                    Preço
+                  </th>
+                  <th
+                    className={`w-[100px] p-3 text-center text-xs font-semibold ${
+                      isDark ? "text-gray-300" : "text-gray-800"
+                    } uppercase tracking-wider border ${
+                      isDark ? "border-gray-700" : "border-gray-200"
+                    }`}
+                  >
+                    Ações
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {currentItems.map((imovel) => {
+                  let tipoClasses = "";
+                  if (!isDark) {
+                    if (imovel.tipo === "Apartamento")
+                      tipoClasses = "bg-blue-100 text-blue-800 border-blue-200";
+                    else if (imovel.tipo === "Casa")
+                      tipoClasses =
+                        "bg-green-100 text-green-800 border-green-200";
+                    else if (imovel.tipo === "Terreno")
+                      tipoClasses =
+                        "bg-amber-100 text-amber-800 border-amber-200";
+                    else if (imovel.tipo === "Comercial")
+                      tipoClasses =
+                        "bg-purple-100 text-purple-800 border-purple-200";
+                    else
+                      tipoClasses = "bg-gray-100 text-gray-800 border-gray-300";
+                  } else {
+                    if (imovel.tipo === "Apartamento")
+                      tipoClasses =
+                        "bg-blue-900/30 text-blue-300 border-blue-800";
+                    else if (imovel.tipo === "Casa")
+                      tipoClasses =
+                        "bg-green-900/30 text-green-300 border-green-800";
+                    else if (imovel.tipo === "Terreno")
+                      tipoClasses =
+                        "bg-amber-900/30 text-amber-300 border-amber-800";
+                    else if (imovel.tipo === "Comercial")
+                      tipoClasses =
+                        "bg-purple-900/30 text-purple-300 border-purple-800";
+                    else
+                      tipoClasses = "bg-gray-700 text-gray-300 border-gray-600";
+                  }
+
+                  let finalidadeClasses = "";
+                  if (!isDark) {
+                    if (imovel.finalidade === "Venda")
+                      finalidadeClasses =
+                        "bg-purple-100 text-purple-800 border-purple-200";
+                    else if (imovel.finalidade === "Aluguel")
+                      finalidadeClasses =
+                        "bg-cyan-100 text-cyan-800 border-cyan-200";
+                    else if (imovel.finalidade === "Venda e Aluguel")
+                      finalidadeClasses =
+                        "bg-indigo-100 text-indigo-800 border-indigo-200";
+                    else
+                      finalidadeClasses =
+                        "bg-purple-100 text-purple-800 border-purple-200";
+                  } else {
+                    if (imovel.finalidade === "Venda")
+                      finalidadeClasses =
+                        "bg-purple-900/30 text-purple-300 border-purple-800";
+                    else if (imovel.finalidade === "Aluguel")
+                      finalidadeClasses =
+                        "bg-cyan-900/30 text-cyan-300 border-cyan-800";
+                    else if (imovel.finalidade === "Venda e Aluguel")
+                      finalidadeClasses =
+                        "bg-indigo-900/30 text-indigo-300 border-indigo-800";
+                    else
+                      finalidadeClasses =
+                        "bg-purple-900/30 text-purple-300 border-purple-800";
+                  }
+
+                  let statusClasses = "";
+                  if (!isDark) {
+                    if (imovel.status === "Disponível")
+                      statusClasses =
+                        "bg-green-100 text-green-800 border-green-200";
+                    else if (imovel.status === "Vendido")
+                      statusClasses = "bg-red-100 text-red-800 border-red-200";
+                    else if (imovel.status === "Alugado")
+                      statusClasses =
+                        "bg-yellow-100 text-yellow-800 border-yellow-200";
+                    else if (imovel.status === "Reservado")
+                      statusClasses =
+                        "bg-blue-100 text-blue-800 border-blue-200";
+                    else if (imovel.status === "Em Negociação")
+                      statusClasses =
+                        "bg-purple-100 text-purple-800 border-purple-200";
+                    else
+                      statusClasses =
+                        "bg-green-100 text-green-800 border-green-200";
+                  } else {
+                    if (imovel.status === "Disponível")
+                      statusClasses =
+                        "bg-green-900/30 text-green-300 border-green-800";
+                    else if (imovel.status === "Vendido")
+                      statusClasses =
+                        "bg-red-900/30 text-red-300 border-red-800";
+                    else if (imovel.status === "Alugado")
+                      statusClasses =
+                        "bg-yellow-900/30 text-yellow-300 border-yellow-800";
+                    else if (imovel.status === "Reservado")
+                      statusClasses =
+                        "bg-blue-900/30 text-blue-300 border-blue-800";
+                    else if (imovel.status === "Em Negociação")
+                      statusClasses =
+                        "bg-purple-900/30 text-purple-300 border-purple-800";
+                    else
+                      statusClasses =
+                        "bg-green-900/30 text-green-300 border-green-800";
+                  }
+
+                  return (
+                    <tr
+                      key={imovel.id}
+                      className={
+                        isDark ? "hover:bg-gray-700/50" : "hover:bg-gray-50"
+                      }
+                    >
+                      {/* ID - AUMENTADO */}
+                      <td
+                        className={`w-[70px] p-3 text-center border ${
+                          isDark ? "border-gray-700" : "border-gray-200"
+                        } sticky left-0 ${
+                          isDark ? "bg-gray-800" : "bg-white"
+                        } z-20 font-medium`}
+                        style={{
+                          boxShadow: isDark
+                            ? "2px 0 5px -2px rgba(0,0,0,0.5)"
+                            : "2px 0 5px -2px rgba(0,0,0,0.1)",
+                        }}
+                      >
+                        <span
+                          className={`${
+                            isDark ? "text-gray-200" : "text-gray-900"
+                          } text-sm block`}
+                        >
+                          {imovel.id}
+                        </span>
+                      </td>
+
+                      {/* CÓDIGO - AUMENTADO */}
+                      <td
+                        className={`w-[100px] p-3 text-center border ${
+                          isDark ? "border-gray-700" : "border-gray-200"
+                        } sticky left-[70px] ${
+                          isDark ? "bg-gray-800" : "bg-white"
+                        } z-20 font-mono`}
+                        style={{
+                          boxShadow: isDark
+                            ? "2px 0 5px -2px rgba(0,0,0,0.5)"
+                            : "2px 0 5px -2px rgba(0,0,0,0.1)",
+                        }}
+                      >
+                        <span
+                          className={`${
+                            isDark ? "text-gray-200" : "text-gray-900"
+                          } text-sm block`}
+                        >
+                          {imovel.codigo}
+                        </span>
+                      </td>
+
+                      {/* FINALIDADE */}
+                      <td
+                        className={`w-[100px] p-3 text-center border ${
+                          isDark
+                            ? "border-gray-700 bg-gray-800"
+                            : "border-gray-200 bg-white"
+                        }`}
+                      >
+                        <span
+                          className={`px-2 py-1 rounded-full text-xs font-medium ${finalidadeClasses} inline-block`}
+                        >
+                          {imovel.finalidade}
+                        </span>
+                      </td>
+
+                      {/* TIPO - REDUZIDO */}
+                      <td
+                        className={`w-[110px] p-3 text-center border ${
+                          isDark
+                            ? "border-gray-700 bg-gray-800"
+                            : "border-gray-200 bg-white"
+                        }`}
+                      >
+                        <span
+                          className={`px-2 py-1 rounded-full text-xs font-medium ${tipoClasses} inline-block`}
+                        >
+                          {imovel.tipo}
+                        </span>
+                      </td>
+
+                      {/* ENDEREÇO */}
+                      <td
+                        className={`w-[160px] p-3 text-center border ${
+                          isDark
+                            ? "border-gray-700 bg-gray-800"
+                            : "border-gray-200 bg-white"
+                        }`}
+                      >
+                        <span
+                          className={`${
+                            isDark ? "text-gray-300" : "text-gray-900"
+                          } text-sm block truncate`}
+                          title={imovel.endereco}
+                        >
+                          {imovel.endereco || "-"}
+                        </span>
+                      </td>
+
+                      {/* BAIRRO */}
+                      <td
+                        className={`w-[150px] p-3 text-center border ${
+                          isDark
+                            ? "border-gray-700 bg-gray-800"
+                            : "border-gray-200 bg-white"
+                        }`}
+                      >
+                        <span
+                          className={`${
+                            isDark ? "text-gray-300" : "text-gray-900"
+                          } text-sm block truncate`}
+                          title={imovel.bairro}
+                        >
+                          {imovel.bairro || "-"}
+                        </span>
+                      </td>
+
+                      {/* CIDADE - REDUZIDA */}
+                      <td
+                        className={`w-[90px] p-3 text-center border ${
+                          isDark
+                            ? "border-gray-700 bg-gray-800"
+                            : "border-gray-200 bg-white"
+                        }`}
+                      >
+                        <span
+                          className={`${
+                            isDark ? "text-gray-300" : "text-gray-900"
+                          } text-sm block truncate`}
+                          title={imovel.cidade}
+                        >
+                          {imovel.cidade || "-"}
+                        </span>
+                      </td>
+
+                      {/* UF */}
+                      <td
+                        className={`w-[60px] p-3 text-center border ${
+                          isDark
+                            ? "border-gray-700 bg-gray-800"
+                            : "border-gray-200 bg-white"
+                        }`}
+                      >
+                        <span
+                          className={`${
+                            isDark ? "text-gray-300" : "text-gray-900"
+                          } text-sm block`}
+                        >
+                          {imovel.estado || "-"}
+                        </span>
+                      </td>
+
+                      {/* STATUS */}
+                      <td
+                        className={`w-[130px] p-3 text-center border ${
+                          isDark
+                            ? "border-gray-700 bg-gray-800"
+                            : "border-gray-200 bg-white"
+                        }`}
+                      >
+                        <span
+                          className={`px-2 py-1 rounded-full text-xs font-medium ${statusClasses} inline-block`}
+                        >
+                          {imovel.status}
+                        </span>
+                      </td>
+
+                      {/* PREÇO */}
+                      <td
+                        className={`w-[130px] p-3 text-center border ${
+                          isDark
+                            ? "border-gray-700 bg-gray-800"
+                            : "border-gray-200 bg-white"
+                        }`}
+                      >
+                        <span
+                          className={`${
+                            isDark ? "text-gray-300" : "text-gray-900"
+                          } text-sm block font-semibold`}
+                        >
+                          {imovel.preco_formatado}
+                        </span>
+                      </td>
+
+                      {/* AÇÕES - REDUZIDO */}
+                      <td
+                        className={`w-[100px] p-3 text-center border ${
+                          isDark
+                            ? "border-gray-700 bg-gray-800"
+                            : "border-gray-200 bg-white"
+                        }`}
+                      >
+                        <div className="flex items-center justify-center gap-1">
+                          <BotaoDesempenho imovel={imovel} />
+                          <div className="relative group">
+                            <button
+                              onClick={() =>
+                                navigate(`/admin/imoveis/editar/${imovel.id}`)
+                              }
+                              className="p-1.5 bg-gradient-to-r from-[#D4A24D] to-[#C19137] text-white rounded-lg hover:from-[#C19137] hover:to-[#A87822] transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#D4A24D] focus:ring-offset-2 shadow-sm"
+                              title="Editar"
+                            >
+                              <PencilIcon className="w-4 h-4" />
+                            </button>
+                            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none whitespace-nowrap z-30">
+                              Editar
+                              <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
+                            </div>
+                          </div>
+                          <div className="relative group">
+                            <button
+                              onClick={() => handleDelete(imovel.id)}
+                              className="p-1.5 bg-gradient-to-r from-red-600 to-red-500 text-white rounded-lg hover:from-red-700 hover:to-red-600 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 shadow-sm"
+                              title="Excluir"
+                            >
+                              <TrashIcon className="w-4 h-4" />
+                            </button>
+                            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none whitespace-nowrap z-30">
+                              Excluir
+                              <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // ============ COMPONENTE KPI CARD ============
 const KPICard = ({ icon: Icon, title, value, colorScheme }) => {
   const { isDark } = useTheme();
@@ -1014,10 +1655,15 @@ const KPICard = ({ icon: Icon, title, value, colorScheme }) => {
       iconBg = isDark ? "bg-amber-900/20" : "bg-amber-100/50";
       borderColor = isDark ? "border-l-amber-800/50" : "border-l-amber-200";
       break;
-    case "indigo":
-      iconText = isDark ? "text-indigo-400" : "text-indigo-600";
-      iconBg = isDark ? "bg-indigo-900/20" : "bg-indigo-100/50";
-      borderColor = isDark ? "border-l-indigo-800/50" : "border-l-indigo-200";
+    case "red":
+      iconText = isDark ? "text-red-400" : "text-red-600";
+      iconBg = isDark ? "bg-red-900/20" : "bg-red-100/50";
+      borderColor = isDark ? "border-l-red-800/50" : "border-l-red-200";
+      break;
+    case "purple":
+      iconText = isDark ? "text-purple-400" : "text-purple-600";
+      iconBg = isDark ? "bg-purple-900/20" : "bg-purple-100/50";
+      borderColor = isDark ? "border-l-purple-800/50" : "border-l-purple-200";
       break;
     default:
       iconText = isDark ? "text-gray-400" : "text-gray-600";
@@ -1034,16 +1680,18 @@ const KPICard = ({ icon: Icon, title, value, colorScheme }) => {
       <div className={`p-3 rounded-full ${iconBg}`}>
         <Icon className={`w-6 h-6 ${iconText}`} />
       </div>
-      <div>
+      <div className="min-w-0 flex-1">
         <div
-          className={`text-2xl font-bold ${
+          className={`text-2xl font-bold truncate ${
             isDark ? "text-gray-100" : "text-gray-900"
           }`}
         >
           {value}
         </div>
         <div
-          className={`text-sm ${isDark ? "text-gray-400" : "text-gray-600"}`}
+          className={`text-sm truncate ${
+            isDark ? "text-gray-400" : "text-gray-600"
+          }`}
         >
           {title}
         </div>
@@ -1073,6 +1721,13 @@ const Imoveis = () => {
   const [tipos, setTipos] = useState([]);
   const [finalidades, setFinalidades] = useState([]);
   const [statusList, setStatusList] = useState([]);
+
+  // Estado para o modal expandido
+  const [modalExpandidoAberto, setModalExpandidoAberto] = useState(false);
+
+  // Estados para paginação
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(20);
 
   const fetchImoveis = async () => {
     try {
@@ -1175,7 +1830,6 @@ const Imoveis = () => {
     }
   };
 
-  // ===== MARCAR IMÓVEIS COMO VISUALIZADOS (UMA ÚNICA VEZ) =====
   useEffect(() => {
     const marcarImoveisComoVisualizados = async () => {
       if (marcouVisualizados.current) return;
@@ -1209,17 +1863,29 @@ const Imoveis = () => {
     fetchImoveis();
   }, []);
 
+  // Resetar para primeira página quando os filtros mudarem
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [
+    searchTerm,
+    selectedTipo,
+    selectedFinalidade,
+    selectedStatus,
+    selectedCidade,
+  ]);
+
+  // Cálculos dos KPIs
   const totalImoveis = imoveisData.length;
   const disponiveis = imoveisData.filter(
     (i) => i.status === "Disponível",
   ).length;
-  const emNegociacaoReservados = imoveisData.filter(
-    (i) => i.status === "Reservado" || i.status === "Em Negociação",
+  const emNegociacao = imoveisData.filter(
+    (i) => i.status === "Em Negociação",
   ).length;
-  const vendidos = imoveisData.filter(
-    (i) => i.status === "Vendido" || i.status === "Alugado",
-  ).length;
+  const vendidos = imoveisData.filter((i) => i.status === "Vendido").length;
+  const alugados = imoveisData.filter((i) => i.status === "Alugado").length;
 
+  // Filtragem dos imóveis
   const imoveisFiltrados = useMemo(() => {
     return imoveisData.filter((imovel) => {
       const buscaMatch =
@@ -1268,6 +1934,24 @@ const Imoveis = () => {
     imoveisData,
   ]);
 
+  // Paginação
+  const totalPages = Math.ceil(imoveisFiltrados.length / itemsPerPage);
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = imoveisFiltrados.slice(
+    indexOfFirstItem,
+    indexOfLastItem,
+  );
+
+  const handlePageChange = (pageNumber) => {
+    setCurrentPage(pageNumber);
+    // Rolar para o topo da tabela
+    const tableContainer = document.getElementById("tabela-container");
+    if (tableContainer) {
+      tableContainer.scrollTop = 0;
+    }
+  };
+
   const limparFiltros = () => {
     setSearchTerm("");
     setSelectedTipo("");
@@ -1310,13 +1994,19 @@ const Imoveis = () => {
     return (
       <div className="p-6">
         <div
-          className={`${isDark ? "bg-red-900/20 border-red-800" : "bg-red-50 border-red-200"} border rounded-lg p-6 text-center`}
+          className={`${
+            isDark ? "bg-red-900/20 border-red-800" : "bg-red-50 border-red-200"
+          } border rounded-lg p-6 text-center`}
         >
           <ExclamationCircleIcon
-            className={`w-12 h-12 ${isDark ? "text-red-400" : "text-red-500"} mx-auto mb-4`}
+            className={`w-12 h-12 ${
+              isDark ? "text-red-400" : "text-red-500"
+            } mx-auto mb-4`}
           />
           <h3
-            className={`text-lg font-medium ${isDark ? "text-red-300" : "text-red-800"} mb-2`}
+            className={`text-lg font-medium ${
+              isDark ? "text-red-300" : "text-red-800"
+            } mb-2`}
           >
             Erro ao carregar imóveis
           </h3>
@@ -1338,7 +2028,9 @@ const Imoveis = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6">
         <div>
           <h1
-            className={`text-3xl font-bold ${isDark ? "text-gray-100" : "text-gray-900"}`}
+            className={`text-3xl font-bold ${
+              isDark ? "text-gray-100" : "text-gray-900"
+            }`}
           >
             Imóveis
           </h1>
@@ -1357,9 +2049,9 @@ const Imoveis = () => {
         </div>
       </div>
 
-      {/* KPIs */}
+      {/* KPIs - 5 CARDS NA MESMA LINHA */}
       <div className="mb-6">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
           <KPICard
             icon={ChartBarIcon}
             title="Total de Imóveis"
@@ -1374,15 +2066,21 @@ const Imoveis = () => {
           />
           <KPICard
             icon={ClockIcon}
-            title="Em Negociação / Reservados"
-            value={emNegociacaoReservados}
+            title="Em Negociação"
+            value={emNegociacao}
             colorScheme="amber"
           />
           <KPICard
             icon={CheckBadgeIcon}
-            title="Vendidos / Alugados"
+            title="Vendidos"
             value={vendidos}
-            colorScheme="indigo"
+            colorScheme="red"
+          />
+          <KPICard
+            icon={CheckBadgeIcon}
+            title="Alugados"
+            value={alugados}
+            colorScheme="purple"
           />
         </div>
       </div>
@@ -1393,14 +2091,20 @@ const Imoveis = () => {
           <div className="flex-1 max-w-xl">
             <div className="relative">
               <MagnifyingGlassIcon
-                className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 ${isDark ? "text-gray-500" : "text-gray-400"}`}
+                className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 ${
+                  isDark ? "text-gray-500" : "text-gray-400"
+                }`}
               />
               <input
                 type="text"
                 placeholder="Buscar por código, endereço, bairro, cidade, tipo..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className={`w-full pl-10 pr-4 py-2.5 ${isDark ? "bg-gray-800 border-gray-700 text-gray-200 placeholder-gray-500" : "bg-white border-gray-300 text-gray-900 placeholder-gray-500"} border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] shadow-sm transition-colors duration-200`}
+                className={`w-full pl-10 pr-4 py-2.5 ${
+                  isDark
+                    ? "bg-gray-800 border-gray-700 text-gray-200 placeholder-gray-500"
+                    : "bg-white border-gray-300 text-gray-900 placeholder-gray-500"
+                } border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] shadow-sm transition-colors duration-200`}
               />
             </div>
           </div>
@@ -1409,7 +2113,11 @@ const Imoveis = () => {
             <select
               value={selectedTipo}
               onChange={(e) => setSelectedTipo(e.target.value)}
-              className={`h-[42px] px-3 ${isDark ? "bg-gray-800 border-gray-700 text-gray-200" : "bg-white border-gray-300 text-gray-900"} border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] shadow-sm text-sm w-full sm:w-auto transition-colors duration-200`}
+              className={`h-[42px] px-3 ${
+                isDark
+                  ? "bg-gray-800 border-gray-700 text-gray-200"
+                  : "bg-white border-gray-300 text-gray-900"
+              } border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] shadow-sm text-sm w-full sm:w-auto transition-colors duration-200`}
             >
               <option value="">Todos os Tipos</option>
               {tipos.map((tipo) => (
@@ -1422,7 +2130,11 @@ const Imoveis = () => {
             <select
               value={selectedFinalidade}
               onChange={(e) => setSelectedFinalidade(e.target.value)}
-              className={`h-[42px] px-3 ${isDark ? "bg-gray-800 border-gray-700 text-gray-200" : "bg-white border-gray-300 text-gray-900"} border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] shadow-sm text-sm w-full sm:w-auto transition-colors duration-200`}
+              className={`h-[42px] px-3 ${
+                isDark
+                  ? "bg-gray-800 border-gray-700 text-gray-200"
+                  : "bg-white border-gray-300 text-gray-900"
+              } border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] shadow-sm text-sm w-full sm:w-auto transition-colors duration-200`}
             >
               <option value="">Todas Finalidades</option>
               {finalidades.map((finalidade) => (
@@ -1435,7 +2147,11 @@ const Imoveis = () => {
             <select
               value={selectedStatus}
               onChange={(e) => setSelectedStatus(e.target.value)}
-              className={`h-[42px] px-3 ${isDark ? "bg-gray-800 border-gray-700 text-gray-200" : "bg-white border-gray-300 text-gray-900"} border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] shadow-sm text-sm w-full sm:w-auto transition-colors duration-200`}
+              className={`h-[42px] px-3 ${
+                isDark
+                  ? "bg-gray-800 border-gray-700 text-gray-200"
+                  : "bg-white border-gray-300 text-gray-900"
+              } border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] shadow-sm text-sm w-full sm:w-auto transition-colors duration-200`}
             >
               <option value="">Todos Status</option>
               {statusList.map((status) => (
@@ -1448,7 +2164,11 @@ const Imoveis = () => {
             <select
               value={selectedCidade}
               onChange={(e) => setSelectedCidade(e.target.value)}
-              className={`h-[42px] px-3 ${isDark ? "bg-gray-800 border-gray-700 text-gray-200" : "bg-white border-gray-300 text-gray-900"} border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] shadow-sm text-sm w-full sm:w-auto transition-colors duration-200`}
+              className={`h-[42px] px-3 ${
+                isDark
+                  ? "bg-gray-800 border-gray-700 text-gray-200"
+                  : "bg-white border-gray-300 text-gray-900"
+              } border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] shadow-sm text-sm w-full sm:w-auto transition-colors duration-200`}
             >
               <option value="">Todas Cidades</option>
               {cidades.map((cidade) => (
@@ -1465,7 +2185,11 @@ const Imoveis = () => {
               selectedCidade) && (
               <button
                 onClick={limparFiltros}
-                className={`h-[42px] px-3 ${isDark ? "bg-gray-700 text-gray-300 border-gray-600 hover:bg-gray-600" : "bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200"} border rounded-lg transition-colors duration-200 text-sm font-medium`}
+                className={`h-[42px] px-3 ${
+                  isDark
+                    ? "bg-gray-700 text-gray-300 border-gray-600 hover:bg-gray-600"
+                    : "bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200"
+                } border rounded-lg transition-colors duration-200 text-sm font-medium`}
               >
                 Limpar Filtros
               </button>
@@ -1479,24 +2203,43 @@ const Imoveis = () => {
           >
             Mostrando{" "}
             <span
-              className={`font-semibold ${isDark ? "text-gray-300" : "text-gray-900"}`}
+              className={`font-semibold ${
+                isDark ? "text-gray-300" : "text-gray-900"
+              }`}
             >
-              {imoveisEncontrados}
+              {currentItems.length}
             </span>{" "}
             de{" "}
             <span
-              className={`font-semibold ${isDark ? "text-gray-300" : "text-gray-900"}`}
+              className={`font-semibold ${
+                isDark ? "text-gray-300" : "text-gray-900"
+              }`}
             >
-              {totalImoveis}
+              {imoveisEncontrados}
             </span>{" "}
             imóveis
           </div>
+
+          {/* Botão expandir */}
+          <button
+            onClick={() => setModalExpandidoAberto(true)}
+            className={`p-2 rounded-lg transition-colors ${
+              isDark
+                ? "bg-gray-800 text-gray-300 hover:bg-gray-700"
+                : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+            }`}
+            title="Expandir tabela"
+          >
+            <ArrowsPointingOutIcon className="w-5 h-5" />
+          </button>
         </div>
       </div>
 
-      {/* Tabela */}
+      {/* Tabela NORMAL - MANTIDA IGUAL */}
       <div
-        className={`${isDark ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"} rounded-xl shadow-sm border overflow-hidden transition-colors duration-200`}
+        className={`${
+          isDark ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"
+        } rounded-xl shadow-sm border overflow-hidden transition-colors duration-200`}
       >
         <div className="overflow-x-auto">
           {imoveisFiltrados.length === 0 ? (
@@ -1507,7 +2250,9 @@ const Imoveis = () => {
                 <MagnifyingGlassIcon className="w-12 h-12 mx-auto" />
               </div>
               <h3
-                className={`text-lg font-medium ${isDark ? "text-gray-200" : "text-gray-900"} mb-2`}
+                className={`text-lg font-medium ${
+                  isDark ? "text-gray-200" : "text-gray-900"
+                } mb-2`}
               >
                 Nenhum imóvel encontrado
               </h3>
@@ -1602,7 +2347,7 @@ const Imoveis = () => {
                     : "divide-y divide-gray-200"
                 }
               >
-                {imoveisFiltrados.map((imovel) => {
+                {currentItems.map((imovel) => {
                   let tipoClasses = "";
                   if (!isDark) {
                     if (imovel.tipo === "Apartamento")
@@ -1808,7 +2553,7 @@ const Imoveis = () => {
                         className={`w-[150px] p-3 text-center border ${isDark ? "border-gray-700" : "border-gray-200"}`}
                       >
                         <div className="flex items-center justify-center gap-1.5">
-                          {/* Botão Desempenho - AGORA FUNCIONAL */}
+                          {/* Botão Desempenho */}
                           <BotaoDesempenho imovel={imovel} />
 
                           <div className="relative group">
@@ -1850,6 +2595,108 @@ const Imoveis = () => {
           )}
         </div>
       </div>
+
+      {/* Paginação */}
+      {imoveisFiltrados.length > 0 && (
+        <div className="mt-6 flex items-center justify-between">
+          <div
+            className={`text-sm ${isDark ? "text-gray-400" : "text-gray-600"}`}
+          >
+            Página {currentPage} de {totalPages}
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+              className={`p-2 rounded-lg transition-colors duration-200 ${
+                currentPage === 1
+                  ? isDark
+                    ? "bg-gray-800 text-gray-600 cursor-not-allowed"
+                    : "bg-gray-100 text-gray-400 cursor-not-allowed"
+                  : isDark
+                    ? "bg-gray-700 text-gray-300 hover:bg-gray-600"
+                    : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+              }`}
+            >
+              <ChevronLeftIcon className="w-5 h-5" />
+            </button>
+
+            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+              let pageNumber;
+              if (totalPages <= 5) {
+                pageNumber = i + 1;
+              } else if (currentPage <= 3) {
+                pageNumber = i + 1;
+              } else if (currentPage >= totalPages - 2) {
+                pageNumber = totalPages - 4 + i;
+              } else {
+                pageNumber = currentPage - 2 + i;
+              }
+
+              return (
+                <button
+                  key={pageNumber}
+                  onClick={() => handlePageChange(pageNumber)}
+                  className={`w-10 h-10 rounded-lg transition-colors duration-200 font-medium ${
+                    currentPage === pageNumber
+                      ? "bg-[#D4A24D] text-white"
+                      : isDark
+                        ? "bg-gray-800 text-gray-300 hover:bg-gray-700"
+                        : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                  }`}
+                >
+                  {pageNumber}
+                </button>
+              );
+            })}
+
+            <button
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage === totalPages}
+              className={`p-2 rounded-lg transition-colors duration-200 ${
+                currentPage === totalPages
+                  ? isDark
+                    ? "bg-gray-800 text-gray-600 cursor-not-allowed"
+                    : "bg-gray-100 text-gray-400 cursor-not-allowed"
+                  : isDark
+                    ? "bg-gray-700 text-gray-300 hover:bg-gray-600"
+                    : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+              }`}
+            >
+              <ChevronRightIcon className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Expandido - COM FILTROS */}
+      <ModalTabelaExpandida
+        isOpen={modalExpandidoAberto}
+        onClose={() => setModalExpandidoAberto(false)}
+        imoveisFiltrados={imoveisFiltrados}
+        currentItems={currentItems}
+        isDark={isDark}
+        handleDelete={handleDelete}
+        navigate={navigate}
+        totalImoveis={totalImoveis}
+        imoveisEncontrados={imoveisEncontrados}
+        // NOVOS PROPS PARA FILTROS
+        searchTerm={searchTerm}
+        setSearchTerm={setSearchTerm}
+        selectedTipo={selectedTipo}
+        setSelectedTipo={setSelectedTipo}
+        selectedFinalidade={selectedFinalidade}
+        setSelectedFinalidade={setSelectedFinalidade}
+        selectedStatus={selectedStatus}
+        setSelectedStatus={setSelectedStatus}
+        selectedCidade={selectedCidade}
+        setSelectedCidade={setSelectedCidade}
+        limparFiltros={limparFiltros}
+        tipos={tipos}
+        finalidades={finalidades}
+        statusList={statusList}
+        cidades={cidades}
+      />
     </div>
   );
 };

@@ -31,6 +31,23 @@ import { useAuth } from "../../contexts/AuthContext";
 import { visitasService } from "../../lib/visitasService";
 import { supabase } from "../../lib/supabase";
 
+// ============================================
+// FUNÇÕES DE FORMATAÇÃO
+// ============================================
+
+// Função para formatar moeda no padrão brasileiro
+const formatarMoeda = (valor) => {
+  if (!valor || isNaN(valor) || typeof valor !== "number") {
+    return "R$ 0,00";
+  }
+  return new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(valor);
+};
+
 // Função para formatar telefone para link do WhatsApp
 const formatarTelefoneParaWhatsApp = (telefone) => {
   const numeros = telefone.replace(/\D/g, "");
@@ -647,9 +664,39 @@ const WhatsAppIcon = ({ className }) => (
 // ============================================
 const ModalProposta = ({ isOpen, onClose, visita, onConfirm, isDark }) => {
   console.log("📦 MODAL PROPOSTA - renderizou", { isOpen, visita });
-  const [valor, setValor] = useState("");
+  console.log("🏠 Imóvel na visita:", visita?.imoveis);
+  console.log("💰 Valor do imóvel:", visita?.imoveis?.preco);
+
+  // Guarda o valor em centavos (ex: 100000 = R$ 1.000,00)
+  const [valor, setValor] = useState(visita?.imoveis?.preco?.toString() || "");
   const [condicoes, setCondicoes] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // Função para formatar o valor para exibição (R$ 100.000,00)
+  const formatarValorExibicao = (valorReais) => {
+    if (!valorReais) return "";
+
+    // Converte string para número (remove formatação se houver)
+    const valorNumerico =
+      typeof valorReais === "string"
+        ? parseFloat(valorReais.replace(/\./g, "").replace(",", "."))
+        : valorReais;
+
+    if (isNaN(valorNumerico)) return "";
+
+    return valorNumerico.toLocaleString("pt-BR", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+  };
+
+  // Função para lidar com a mudança no input
+  const handleValorChange = (e) => {
+    // Pega o valor digitado e remove tudo que não é número
+    const valorDigitado = e.target.value;
+    const apenasNumeros = valorDigitado.replace(/\D/g, "");
+    setValor(apenasNumeros);
+  };
 
   const handleConfirm = async () => {
     if (!valor) {
@@ -659,7 +706,9 @@ const ModalProposta = ({ isOpen, onClose, visita, onConfirm, isDark }) => {
 
     setLoading(true);
     try {
-      await onConfirm(visita.id, valor, condicoes);
+      // Converte de centavos para número real (100000 → 1000.00)
+      const valorNumerico = parseFloat(valor);
+      await onConfirm(visita.id, valorNumerico, condicoes);
       onClose();
     } catch (error) {
       console.error("Erro ao criar proposta:", error);
@@ -684,7 +733,7 @@ const ModalProposta = ({ isOpen, onClose, visita, onConfirm, isDark }) => {
         <p
           className={`text-sm mb-4 ${isDark ? "text-gray-300" : "text-gray-600"}`}
         >
-          {visita?.nome_cliente} - {visita?.imovel?.codigo}
+          {visita?.nome_cliente} - {visita?.imoveis?.codigo}
         </p>
 
         <div className="space-y-4 mb-4">
@@ -696,15 +745,21 @@ const ModalProposta = ({ isOpen, onClose, visita, onConfirm, isDark }) => {
             </label>
             <input
               type="text"
-              value={valor}
-              onChange={(e) => setValor(e.target.value)}
-              placeholder="R$ 0,00"
+              value={formatarValorExibicao(valor)}
+              onChange={handleValorChange}
               className={`w-full p-3 rounded-lg border ${
                 isDark
                   ? "bg-gray-700 border-gray-600 text-white"
                   : "bg-white border-gray-300 text-gray-900"
               }`}
+              placeholder="R$ 0,00"
             />
+            <p className="text-xs text-gray-500 mt-1">
+              Valor do imóvel:{" "}
+              {visita?.imoveis?.preco
+                ? formatarMoeda(visita.imoveis.preco)
+                : "Não disponível"}
+            </p>
           </div>
 
           <div>
@@ -716,13 +771,13 @@ const ModalProposta = ({ isOpen, onClose, visita, onConfirm, isDark }) => {
             <textarea
               value={condicoes}
               onChange={(e) => setCondicoes(e.target.value)}
-              placeholder="Ex: entrada de 50%, financiamento..."
               rows="3"
               className={`w-full p-3 rounded-lg border ${
                 isDark
                   ? "bg-gray-700 border-gray-600 text-white"
                   : "bg-white border-gray-300 text-gray-900"
               }`}
+              placeholder="Ex: entrada de 50%, financiamento..."
             />
           </div>
         </div>
@@ -731,13 +786,13 @@ const ModalProposta = ({ isOpen, onClose, visita, onConfirm, isDark }) => {
           <button
             onClick={handleConfirm}
             disabled={!valor || loading}
-            className="flex-1 bg-[#D4A24D] text-white py-3 rounded-lg hover:bg-[#C19137] disabled:opacity-50"
+            className="flex-1 bg-[#D4A24D] text-white py-3 rounded-lg hover:bg-[#C19137] disabled:opacity-50 transition-colors"
           >
             {loading ? "Salvando..." : "Salvar proposta"}
           </button>
           <button
             onClick={onClose}
-            className="flex-1 bg-gray-300 text-gray-700 py-3 rounded-lg hover:bg-gray-400"
+            className="flex-1 bg-gray-300 text-gray-700 py-3 rounded-lg hover:bg-gray-400 transition-colors"
           >
             Cancelar
           </button>
@@ -1679,10 +1734,35 @@ const Visitas = () => {
             return;
           }
 
-          setModalProposta({
-            aberto: true,
-            visita: payload.visita,
-          });
+          // Busca a visita com os dados do imóvel
+          try {
+            const { data: visitaCompleta, error } = await supabase
+              .from("visitas")
+              .select(
+                `
+        *,
+        imoveis (*)
+      `,
+              )
+              .eq("id", payload.visita.id)
+              .single();
+
+            if (error) {
+              console.error("❌ Erro ao buscar dados do imóvel:", error);
+              alert("Erro ao carregar dados do imóvel");
+              return;
+            }
+
+            console.log("🏠 Visita completa com imóvel:", visitaCompleta);
+
+            setModalProposta({
+              aberto: true,
+              visita: visitaCompleta,
+            });
+          } catch (error) {
+            console.error("❌ Erro inesperado:", error);
+            alert("Erro ao preparar proposta");
+          }
           return;
 
         case "atualizar_resultado":
@@ -1791,11 +1871,11 @@ const Visitas = () => {
           motivo_cancelamento: motivo,
         })
         .eq("id", visitaId)
-        .select(); // 👈 ADICIONADO
+        .select();
 
       if (error) throw error;
 
-      console.log("✅ Dados retornados após cancelamento:", data); // 👈 LOG DO RETORNO
+      console.log("✅ Dados retornados após cancelamento:", data);
 
       await carregarDados();
       alert("Visita cancelada com sucesso!");
@@ -1804,13 +1884,13 @@ const Visitas = () => {
       alert("Erro ao cancelar visita");
     }
   };
+
   const handlePropostaConfirm = async (visitaId, valor, condicoes) => {
     try {
       console.log("💰 Criando proposta:", { visitaId, valor, condicoes });
 
-      const valorNumerico = parseFloat(
-        valor.replace(/[^\d,.-]/g, "").replace(",", "."),
-      );
+      // VALOR JÁ É NÚMERO! Não precisa de replace
+      const valorNumerico = valor; // ← AGORA É SÓ ASSIM!
 
       // Primeiro, pegar o imovel_id da visita
       const { data: visita, error: erroVisita } = await supabase
@@ -1872,6 +1952,7 @@ const Visitas = () => {
       alert("Erro ao criar proposta. Tente novamente.");
     }
   };
+
   if (loading) {
     return (
       <div
@@ -1941,13 +2022,13 @@ const Visitas = () => {
           <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
             <button
               className={`
-              px-3 py-2 rounded-lg transition-colors duration-300 flex items-center gap-2 border whitespace-nowrap text-sm
-              ${
-                isDark
-                  ? "bg-gray-800 border-gray-600 text-gray-300 hover:bg-gray-700 hover:border-gray-500"
-                  : "bg-white border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400"
-              }
-            `}
+          px-3 py-2 rounded-lg transition-colors duration-300 flex items-center gap-2 border whitespace-nowrap text-sm
+          ${
+            isDark
+              ? "bg-gray-800 border-gray-600 text-gray-300 hover:bg-gray-700 hover:border-gray-500"
+              : "bg-white border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400"
+          }
+        `}
             >
               <FunnelIcon className="w-4 h-4" />
               <span className="font-medium">Filtrar</span>
@@ -1955,13 +2036,13 @@ const Visitas = () => {
 
             <button
               className={`
-              px-3 py-2 rounded-lg transition-colors duration-300 flex items-center gap-2 shadow-sm whitespace-nowrap text-sm
-              ${
-                isDark
-                  ? "bg-[#31353E] text-white hover:bg-[#3a3f4a]"
-                  : "bg-[#D4A24D] text-white hover:bg-[#C19137]"
-              }
-            `}
+          px-3 py-2 rounded-lg transition-colors duration-300 flex items-center gap-2 shadow-sm whitespace-nowrap text-sm
+          ${
+            isDark
+              ? "bg-[#31353E] text-white hover:bg-[#3a3f4a]"
+              : "bg-[#D4A24D] text-white hover:bg-[#C19137]"
+          }
+        `}
             >
               <PlusIcon className="w-4 h-4" />
               <span className="font-medium">Nova Visita</span>
@@ -1986,12 +2067,12 @@ const Visitas = () => {
                   type="text"
                   placeholder="Buscar visitas..."
                   className={`w-full pl-9 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#D4A24D] focus:border-transparent transition-all duration-300 text-sm
-                    ${
-                      isDark
-                        ? "bg-gray-700 border-gray-600 text-gray-200 placeholder-gray-500"
-                        : "bg-white border-gray-300 text-gray-900 placeholder-gray-400"
-                    }
-                  `}
+                ${
+                  isDark
+                    ? "bg-gray-700 border-gray-600 text-gray-200 placeholder-gray-500"
+                    : "bg-white border-gray-300 text-gray-900 placeholder-gray-400"
+                }
+              `}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
@@ -2000,13 +2081,13 @@ const Visitas = () => {
             <div className="flex items-center gap-2 flex-shrink-0">
               <select
                 className={`
-                px-3 py-2 border rounded-lg text-xs focus:ring-2 focus:ring-[#D4A24D] focus:border-transparent transition-all duration-300 truncate min-w-[120px]
-                ${
-                  isDark
-                    ? "bg-gray-700 border-gray-600 text-gray-200"
-                    : "bg-white border-gray-300 text-gray-700"
-                }
-              `}
+            px-3 py-2 border rounded-lg text-xs focus:ring-2 focus:ring-[#D4A24D] focus:border-transparent transition-all duration-300 truncate min-w-[120px]
+            ${
+              isDark
+                ? "bg-gray-700 border-gray-600 text-gray-200"
+                : "bg-white border-gray-300 text-gray-700"
+            }
+          `}
               >
                 <option>Todos corretores</option>
                 <option>Carlos Santos</option>
@@ -2014,13 +2095,13 @@ const Visitas = () => {
               </select>
               <select
                 className={`
-                px-3 py-2 border rounded-lg text-xs focus:ring-2 focus:ring-[#D4A24D] focus:border-transparent transition-all duration-300 truncate min-w-[120px]
-                ${
-                  isDark
-                    ? "bg-gray-700 border-gray-600 text-gray-200"
-                    : "bg-white border-gray-300 text-gray-700"
-                }
-              `}
+            px-3 py-2 border rounded-lg text-xs focus:ring-2 focus:ring-[#D4A24D] focus:border-transparent transition-all duration-300 truncate min-w-[120px]
+            ${
+              isDark
+                ? "bg-gray-700 border-gray-600 text-gray-200"
+                : "bg-white border-gray-300 text-gray-700"
+            }
+          `}
               >
                 <option>Todas as datas</option>
                 <option>Hoje</option>
@@ -2090,13 +2171,13 @@ const Visitas = () => {
               <button
                 onClick={() => setSearchTerm("")}
                 className={`
-                  px-3 py-2 rounded-lg transition-colors duration-300 border text-sm
-                  ${
-                    isDark
-                      ? "border-gray-600 text-gray-300 hover:bg-gray-700 hover:border-gray-500"
-                      : "border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400"
-                  }
-                `}
+              px-3 py-2 rounded-lg transition-colors duration-300 border text-sm
+              ${
+                isDark
+                  ? "border-gray-600 text-gray-300 hover:bg-gray-700 hover:border-gray-500"
+                  : "border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400"
+              }
+            `}
               >
                 Limpar busca
               </button>
@@ -2149,7 +2230,7 @@ const Visitas = () => {
         />
       )}
 
-      {/* 👇 ADICIONE AQUI - Modal de proposta */}
+      {/* Modal de proposta */}
       {modalProposta.aberto && (
         <ModalProposta
           isOpen={modalProposta.aberto}
@@ -2161,22 +2242,22 @@ const Visitas = () => {
       )}
 
       <style>{`
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(10px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        .animate-fadeIn { animation: fadeIn 0.3s ease-out; }
-        .line-clamp-2 {
-          display: -webkit-box;
-          -webkit-line-clamp: 2;
-          -webkit-box-orient: vertical;
-          overflow: hidden;
-        }
-        .min-w-0 { min-width: 0; }
-        @media (min-width: 475px) {
-          .xs\\:flex-row { flex-direction: row; }
-        }
-      `}</style>
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fadeIn { animation: fadeIn 0.3s ease-out; }
+    .line-clamp-2 {
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .min-w-0 { min-width: 0; }
+    @media (min-width: 475px) {
+      .xs\\:flex-row { flex-direction: row; }
+    }
+  `}</style>
     </div>
   );
 };

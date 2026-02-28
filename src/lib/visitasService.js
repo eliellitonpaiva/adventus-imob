@@ -7,19 +7,17 @@ export const visitasService = {
     try {
       console.log("🔍 Buscando visitas...");
 
-      // 1. Buscar as visitas com TODOS os campos (incluindo created_at)
+      // Buscar as visitas com TODOS os campos
       const { data: visitas, error } = await supabase
         .from("visitas")
-        .select("*") // Isso garante que todos os campos, incluindo created_at, sejam retornados
-        .order("created_at", { ascending: false }); // Ordena pela data de criação
+        .select("*")
+        .order("created_at", { ascending: false });
 
       if (error) throw error;
-      console.log("📦 Dados brutos do banco:", visitas); // 👈 ADICIONA AQUI
-      console.log(`📊 Encontradas ${visitas.length} visitas`); // 👈 ADICIONA AQUI
-
+      console.log("📦 Dados brutos do banco:", visitas);
       console.log(`📊 Encontradas ${visitas.length} visitas`);
 
-      // 2. Para cada visita, buscar os dados do imóvel
+      // Para cada visita, buscar os dados do imóvel
       const visitasFormatadas = await Promise.all(
         visitas.map(async (visita) => {
           let imovel = null;
@@ -68,8 +66,9 @@ export const visitasService = {
             email: visita.email || "",
             data_visita: visita.data_visita,
             created_at: visita.created_at,
-            dia_preferencia: visita.dia_preferencia, // 👈 ADICIONAR AQUI
-            horario_preferencia: visita.horario_preferencia, // 👈 ADICIONAR AQUI
+            dia_preferencia: visita.dia_preferencia,
+            horario_preferencia: visita.horario_preferencia,
+            lead_id: visita.lead_id,
             corretor_id: visita.corretor_id,
             corretor_nome: corretor_nome,
             motivo_cancelamento: visita.motivo_cancelamento,
@@ -99,16 +98,17 @@ export const visitasService = {
       console.error("❌ Erro ao listar visitas:", error);
       return { data: null, error };
     }
-  },
+  }, // ← VÍRGULA ADICIONADA!
 
   // Criar nova visita
   async criarVisita(visitaData) {
     try {
       console.log("➕ Criando nova visita:", visitaData);
 
-      // Prepara os dados SEM data_visita (só adiciona se existir)
+      // Prepara os dados - AGORA COM lead_id!
       const insertData = {
         imovel_id: visitaData.imovel_id,
+        lead_id: visitaData.lead_id,
         nome_cliente: visitaData.nome_cliente,
         telefone: visitaData.telefone,
         email: visitaData.email || null,
@@ -118,10 +118,12 @@ export const visitasService = {
         corretor_id: null,
       };
 
-      // Só adiciona data_visita se foi enviada (ex: quando corretor agenda)
+      // Só adiciona data_visita se foi enviada
       if (visitaData.data_visita) {
         insertData.data_visita = visitaData.data_visita;
       }
+
+      console.log("📦 Dados para insert:", insertData);
 
       const { data, error } = await supabase
         .from("visitas")
@@ -136,7 +138,7 @@ export const visitasService = {
       console.error("❌ Erro ao criar visita:", error);
       return { data: null, error };
     }
-  },
+  }, // ← VÍRGULA ADICIONADA!
 
   // Buscar estatísticas
   async buscarEstatisticas() {
@@ -196,18 +198,15 @@ export const visitasService = {
       console.error("❌ Erro ao buscar estatísticas:", error);
       return { data: null, error };
     }
-  },
+  }, // ← VÍRGULA ADICIONADA!
 
   // Assumir visita
   async assumirVisita(visitaId, corretorId) {
     try {
       console.log("🟡 Service - Assumir visita:", { visitaId, corretorId });
 
-      // Verificar se os parâmetros são válidos
       if (!visitaId) throw new Error("visitaId é obrigatório");
       if (!corretorId) throw new Error("corretorId é obrigatório");
-
-      console.log("📦 Enviando update para Supabase...");
 
       const { data, error } = await supabase
         .from("visitas")
@@ -234,7 +233,7 @@ export const visitasService = {
       console.error("❌ Service - Erro ao assumir visita:", error);
       return { data: null, error };
     }
-  },
+  }, // ← VÍRGULA ADICIONADA!
 
   // Atualizar status
   async atualizarStatus(visitaId, novoStatus, dadosAdicionais = {}) {
@@ -256,7 +255,7 @@ export const visitasService = {
       console.error("❌ Erro ao atualizar status:", error);
       return { data: null, error };
     }
-  },
+  }, // ← VÍRGULA ADICIONADA!
 
   // Atualizar resultado
   async atualizarResultado(visitaId, resultado) {
@@ -273,7 +272,7 @@ export const visitasService = {
       console.error("❌ Erro ao atualizar resultado:", error);
       return { data: null, error };
     }
-  },
+  }, // ← VÍRGULA ADICIONADA!
 
   // Atualizar motivo de cancelamento
   async atualizarMotivoCancelamento(visitaId, motivo) {
@@ -290,5 +289,5 @@ export const visitasService = {
       console.error("❌ Erro ao atualizar motivo:", error);
       return { data: null, error };
     }
-  },
+  }, // ← ÚLTIMO MÉTODO - NÃO TEM VÍRGULA!
 };
