@@ -675,6 +675,7 @@ const ModalPerfilCorretor = ({
   corretor,
   isDark,
   onAtivar,
+  calcularDiasParaVencimento,
 }) => {
   if (!isOpen || !corretor) return null;
 
@@ -7771,10 +7772,10 @@ const Corretores = () => {
           onClose={handleFecharModal}
           corretor={corretorSelecionado}
           isDark={isDark}
-          onAtivar={handleAtivarDuranteExperiencia} // ← ESSA USA DATA DO MODAL (22/02)!
+          onAtivar={handleAtivarDuranteExperiencia}
+          calcularDiasParaVencimento={calcularDiasParaVencimento} // ✅ ADICIONA AQUI
         />
       )}
-
       {modalReprovacaoAberto && (
         <ModalReprovacao
           isOpen={modalReprovacaoAberto}

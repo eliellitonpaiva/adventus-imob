@@ -3,16 +3,35 @@ import { Outlet, useLocation } from "react-router-dom";
 import Sidebar from "./Sidebar";
 import Header from "./Header";
 import { useTheme } from "../../contexts/ThemeContext";
-import { useAuth } from "../../contexts/AuthContext"; // ✅ IMPORTANTE
+import { useAuth } from "../../contexts/AuthContext";
 
 const AdminLayout = () => {
   const location = useLocation();
   const { toggleTheme, isDark } = useTheme();
-  const { logout } = useAuth(); // ✅ LOGOUT REAL DO SUPABASE
+  const { logout, user } = useAuth(); // ✅ PEGA O USUÁRIO LOGADO
 
   const hasWideContent =
     location.pathname.includes("/admin/leads") ||
     location.pathname.includes("/admin/imoveis");
+
+  // Define nome e função baseado no usuário logado
+  const userName = user?.name || "Adventus Imobiliária";
+
+  // Formata a função baseado no perfil
+  const getUserRole = () => {
+    if (!user) return "Administrador";
+
+    const roles = {
+      master: "Administrador Master",
+      gerente: "Gerente",
+      rh: "RH",
+      marketing: "Marketing",
+      financeiro: "Financeiro",
+      corretor: "Corretor",
+    };
+
+    return roles[user.role] || user.role || "Administrador";
+  };
 
   return (
     <div
@@ -21,15 +40,15 @@ const AdminLayout = () => {
           isDark ? "bg-gray-900 text-gray-100" : "bg-gray-50 text-gray-900"
         } transition-colors duration-200`}
     >
-      {/* ✅ AGORA USA O LOGOUT REAL */}
-      <Sidebar onLogout={logout} userName="Adventus Imobiliária" />
+      <Sidebar onLogout={logout} userName={userName} />
 
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header
-          userName="Adventus Imobiliária"
-          userRole="Administrador"
+          userName={userName}
+          userRole={getUserRole()}
           onToggleTheme={toggleTheme}
           isDarkMode={isDark}
+          onLogout={logout}
         />
 
         <main className="flex-1 overflow-hidden">

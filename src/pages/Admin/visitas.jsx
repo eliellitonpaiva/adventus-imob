@@ -1890,12 +1890,12 @@ const Visitas = () => {
       console.log("💰 Criando proposta:", { visitaId, valor, condicoes });
 
       // VALOR JÁ É NÚMERO! Não precisa de replace
-      const valorNumerico = valor; // ← AGORA É SÓ ASSIM!
+      const valorNumerico = valor;
 
-      // Primeiro, pegar o imovel_id da visita
+      // Primeiro, pegar o imovel_id E O LEAD_ID da visita
       const { data: visita, error: erroVisita } = await supabase
         .from("visitas")
-        .select("imovel_id")
+        .select("imovel_id, lead_id") // ← ADICIONAMOS lead_id AQUI!
         .eq("id", visitaId)
         .single();
 
@@ -1923,7 +1923,23 @@ const Visitas = () => {
 
       if (erroImovel) throw erroImovel;
 
-      // 3. Registrar data/hora do início da negociação nas estatísticas
+      // 3. 👇 NOVO: Atualizar status do lead para "proposta"
+      const { error: erroLead } = await supabase
+        .from("leads")
+        .update({
+          status: "proposta",
+          updated_at: new Date(),
+        })
+        .eq("id", visita.lead_id);
+
+      if (erroLead) {
+        console.error("⚠️ Erro ao atualizar lead:", erroLead);
+        // Não vamos dar throw aqui para não interromper o fluxo
+      } else {
+        console.log("✅ Lead atualizado para 'proposta'");
+      }
+
+      // 4. Registrar data/hora do início da negociação nas estatísticas
       const { error: erroStats } = await supabase
         .from("imovel_estatisticas")
         .upsert(
@@ -1941,6 +1957,8 @@ const Visitas = () => {
       if (erroStats) throw erroStats;
 
       console.log("✅ Proposta criada e negociação iniciada!");
+      console.log("✅ Status do lead atualizado para 'proposta'");
+
       alert(
         "Proposta criada com sucesso! Imóvel atualizado para 'Em Negociação'.",
       );
@@ -1952,7 +1970,6 @@ const Visitas = () => {
       alert("Erro ao criar proposta. Tente novamente.");
     }
   };
-
   if (loading) {
     return (
       <div

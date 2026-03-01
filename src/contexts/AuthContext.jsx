@@ -7,6 +7,7 @@ import React, {
   useRef,
 } from "react";
 import { supabase } from "../lib/supabase";
+import bcrypt from "bcryptjs";
 
 // Criar o contexto
 const AuthContext = createContext({});
@@ -71,15 +72,135 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Monta objeto do usuário combinando sessão + perfil (quando disponível)
+  // ============================================
+  // LOGIN - Verifica corretores E usuarios
+  // ============================================
+  const login = async (email, password) => {
+    try {
+      // 1️⃣ Tenta na tabela CORRETORES primeiro
+      const { data: corretor, error: erroCorretor } = await supabase
+        .from("corretores")
+        .select("*")
+        .eq("email", email)
+        .single();
+
+      if (!erroCorretor && corretor) {
+        // Verifica senha do corretor
+        if (!corretor.senha) {
+          return { success: false, error: "Usuário sem senha cadastrada" };
+        }
+
+        const senhaValida = await bcrypt.compare(password, corretor.senha);
+        if (!senhaValida) {
+          return { success: false, error: "Email ou senha inválidos" };
+        }
+
+        // Dados do corretor logado
+        const userData = {
+          id: corretor.id,
+          email: corretor.email,
+          nome: corretor.nome,
+          perfil: corretor.perfil || "corretor",
+          tipo: "corretor",
+          creci: corretor.creci,
+        };
+
+        localStorage.setItem("user", JSON.stringify(userData));
+        setSessionUser(userData);
+        setProfile({
+          nome: corretor.nome,
+          cargo: corretor.perfil || "corretor",
+          avatar_url: null,
+        });
+
+        return { success: true };
+      }
+
+      // 2️⃣ Se não achou, tenta na tabela USUARIOS
+      const { data: usuario, error: erroUsuario } = await supabase
+        .from("usuarios")
+        .select("*")
+        .eq("email", email)
+        .single();
+
+      if (!erroUsuario && usuario) {
+        // Verifica senha do usuario
+        if (!usuario.senha) {
+          return { success: false, error: "Usuário sem senha cadastrada" };
+        }
+
+        const senhaValida = await bcrypt.compare(password, usuario.senha);
+        if (!senhaValida) {
+          return { success: false, error: "Email ou senha inválidos" };
+        }
+
+        // Dados do usuário logado (não corretor)
+        const userData = {
+          id: usuario.id,
+          email: usuario.email,
+          nome: usuario.nome,
+          perfil: usuario.perfil,
+          tipo: "usuario",
+          cargo: usuario.cargo,
+        };
+
+        localStorage.setItem("user", JSON.stringify(userData));
+        setSessionUser(userData);
+        setProfile({
+          nome: usuario.nome,
+          cargo: usuario.perfil,
+          avatar_url: usuario.avatar_url || null,
+        });
+
+        return { success: true };
+      }
+
+      // 3️⃣ Não encontrou em nenhuma tabela
+      return { success: false, error: "Email ou senha inválidos" };
+    } catch (error) {
+      console.error("Erro no login:", error);
+      return { success: false, error: "Erro ao fazer login" };
+    }
+  };
+
+  // ============================================
+  // LOGOUT ATUALIZADO
+  // ============================================
+  const logout = async () => {
+    try {
+      // Remove do localStorage
+      localStorage.removeItem("user");
+
+      // Limpa os estados
+      setSessionUser(null);
+      setProfile(null);
+
+      // Redireciona para login
+      window.location.replace("/login");
+    } catch (error) {
+      console.error("Erro ao fazer logout:", error);
+    }
+  };
+
+  // ============================================
+  // MONTA OBJETO DO USUÁRIO
+  // ============================================
   const user = sessionUser
     ? {
         id: sessionUser.id,
         email: sessionUser.email,
-        name: profile?.nome || sessionUser.email?.split("@")[0] || "Usuário",
-        role: profile?.cargo || "corretor",
+        name:
+          profile?.nome ||
+          sessionUser.nome ||
+          sessionUser.email?.split("@")[0] ||
+          "Usuário",
+        role: profile?.cargo || sessionUser.perfil || "corretor",
+        tipo: sessionUser.tipo || "usuario",
         avatar: profile?.avatar_url || null,
-        // Expõe metadados para debug ou uso interno
+        // Dados extras dependendo do tipo
+        ...(sessionUser.tipo === "corretor" && { creci: sessionUser.creci }),
+        ...(sessionUser.cargo && { cargo: sessionUser.cargo }),
+        // Expõe metadados para debug
         _metadata: {
           profileLoaded: !!profile,
           profileLoading: loadingProfile,
@@ -87,111 +208,36 @@ export const AuthProvider = ({ children }) => {
       }
     : null;
 
-  // Efeito principal: verificar sessão inicial
+  // ============================================
+  // EFEITO PRINCIPAL - VERIFICA LOCALSTORAGE
+  // ============================================
   useEffect(() => {
-    let isMounted = true;
-
-    const initializeAuth = async () => {
-      try {
-        // 1. Verificar sessão atual (rápido, síncrono)
-        const {
-          data: { session },
-          error,
-        } = await supabase.auth.getSession();
-
-        if (error) throw error;
-
-        if (isMounted) {
-          // 2. Se tiver sessão, define usuário básico IMEDIATAMENTE
-          if (session?.user) {
-            setSessionUser(session.user);
-
-            // 3. Buscar perfil em background (não bloqueia)
-            fetchProfileInBackground(session.user.id);
-          } else {
-            setSessionUser(null);
-            setProfile(null);
-          }
-
-          // 4. Sempre finaliza loading da sessão
-          setLoadingSession(false);
-        }
-      } catch (error) {
-        console.error("Erro ao inicializar autenticação:", error);
-        if (isMounted) {
-          setSessionUser(null);
-          setProfile(null);
-          setLoadingSession(false);
-        }
-      }
-    };
-
-    initializeAuth();
-
-    // Listener para mudanças de autenticação
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      if (!isMounted) return;
-
-      // Atualiza sessão IMEDIATAMENTE
-      if (session?.user) {
-        setSessionUser(session.user);
-        // Busca perfil em background
-        fetchProfileInBackground(session.user.id);
-      } else {
-        setSessionUser(null);
-        setProfile(null);
-      }
-    });
-
-    return () => {
-      isMounted = false;
-      subscription.unsubscribe();
-    };
+    // Verifica se tem usuário no localStorage
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) {
+      const userData = JSON.parse(storedUser);
+      setSessionUser(userData);
+      setProfile({
+        nome: userData.nome,
+        cargo: userData.perfil,
+        avatar_url: null,
+      });
+    }
+    setLoadingSession(false);
   }, []);
 
-  const login = async (email, password) => {
-    try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (error) throw error;
-      return { success: true };
-    } catch (error) {
-      console.error("Erro no login:", error);
-      return {
-        success: false,
-        error: error.message || "Erro ao fazer login",
-      };
-    }
-  };
-
-  const logout = async () => {
-    try {
-      const { error } = await supabase.auth.signOut({ scope: "global" });
-
-      const { data } = await supabase.auth.getSession();
-      console.log("Sessão após logout:", data.session);
-
-      window.location.replace("/login");
-    } catch (error) {
-      console.error("Erro ao fazer logout:", error);
-    }
-  };
-
-  // Valor do contexto
+  // ============================================
+  // VALOR DO CONTEXTO
+  // ============================================
   const contextValue = {
-    user, // usuário completo (sessão + perfil quando disponível)
-    sessionUser, // apenas dados da sessão (raw)
-    profile, // apenas dados do perfil
-    loading: loadingSession, // loading apenas para a sessão (rápido)
-    loadingProfile, // loading específico do perfil
+    user,
+    sessionUser,
+    profile,
+    loading: loadingSession,
+    loadingProfile,
     login,
     logout,
-    isAuthenticated, // baseado APENAS na sessão
+    isAuthenticated,
   };
 
   return (

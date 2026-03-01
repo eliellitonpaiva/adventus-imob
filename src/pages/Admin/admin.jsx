@@ -1179,7 +1179,14 @@ const Dashboard = () => {
 
         const hoje = new Date();
         const inicioMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
-        const fimMes = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0);
+        const fimMes = new Date(
+          hoje.getFullYear(),
+          hoje.getMonth() + 1,
+          0,
+          23,
+          59,
+          59,
+        );
 
         // ===== LEADS DO SITE =====
         const { data: leadsSite, error: errorLeads } = await supabase
@@ -1189,18 +1196,26 @@ const Dashboard = () => {
           .gte("created_at", inicioMes.toISOString())
           .lte("created_at", fimMes.toISOString());
 
-        console.log(
-          "📊 leadsSite DO BANCO:",
-          leadsSite?.length || 0,
-          "registros",
-        );
+        console.log("🔍 TODOS OS LEADS DO PERÍODO (origem=site):", leadsSite);
+        console.log("🔍 LEADS COM ORIGEM=site:", leadsSite);
+        console.log("🔍 PERÍODO BUSCADO:", {
+          inicio: inicioMes.toISOString(),
+          fim: fimMes.toISOString(),
+        });
         if (errorLeads) console.error("❌ Erro leads:", errorLeads);
 
-        // ===== QUALIFICADOS =====
+        // ===== QUALIFICADOS (ATENDIMENTO) =====
+        // Busca todos os leads que já foram qualificados em algum momento
         const { data: qualificados, error: errorQualificados } = await supabase
           .from("leads")
           .select("*")
-          .eq("status", "qualificado")
+          .in("status", [
+            "qualificado",
+            "proposta",
+            "negociacao",
+            "fechado",
+            "perdido",
+          ])
           .gte("created_at", inicioMes.toISOString())
           .lte("created_at", fimMes.toISOString());
 
@@ -1251,6 +1266,8 @@ const Dashboard = () => {
         const propostasNegociacao =
           propostas?.filter((p) => p.status === "em_andamento") || [];
         const vendas = propostas?.filter((p) => p.status === "aprovada") || [];
+        const propostasRecusadas =
+          propostas?.filter((p) => p.status === "recusada") || [];
 
         console.log("📊 TODAS PROPOSTAS:", propostas);
         console.log("📊 propostas em_andamento:", propostasNegociacao);
@@ -1308,7 +1325,6 @@ const Dashboard = () => {
           vendas: Math.round((vendasUltimos3Meses?.length || 0) / 3),
         };
 
-        // ===== ATUALIZAR ESTADO COM DADOS REAIS =====
         setDadosReais({
           leadsSite: leadsSite?.length || 0,
           qualificados: qualificados?.length || 0,
@@ -1316,6 +1332,8 @@ const Dashboard = () => {
           visitasRealizadas: visitasRealizadas.length,
           propostasNegociacao: propostasNegociacao.length,
           vendas: vendas.length,
+          // 👇 ADICIONAR ESTA LINHA
+          totalPropostas: propostas?.length || 0,
           receitaMes,
           comissoesAPagar: comissoesAPagar.reduce(
             (acc, c) => acc + (c.valor || 0),
@@ -1331,7 +1349,6 @@ const Dashboard = () => {
           corretores: corretores || [],
           medias,
         });
-
         // ===== ATUALIZAR DATA (SEM MOCK PARA LEADS) =====
         setData({
           imoveis: MOCK_DATA.imoveis,
@@ -1957,7 +1974,7 @@ const Dashboard = () => {
                   <div className="relative h-12 bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl flex items-center justify-between px-4 text-white font-medium shadow-lg shadow-blue-500/30 border border-blue-400/50 backdrop-blur-sm">
                     <span className="flex items-center gap-2">
                       <span className="w-2 h-2 bg-white rounded-full animate-pulse"></span>
-                      Lead
+                      Leads
                     </span>
                     <span className="font-bold">{dadosReais.leadsSite}</span>
                   </div>
@@ -2012,8 +2029,7 @@ const Dashboard = () => {
                       Proposta
                     </span>
                     <span className="font-bold">
-                      {dadosReais.propostasNegociacao + dadosReais.vendas}{" "}
-                      {/* ← ÚNICA MUDANÇA! */}
+                      {dadosReais.totalPropostas}
                     </span>
                   </div>
                 </div>
@@ -2056,7 +2072,7 @@ const Dashboard = () => {
                       <td className="py-3 pl-3 flex items-center gap-2 border-r border-gray-200 dark:border-gray-700">
                         <span className="w-2.5 h-2.5 rounded-full bg-blue-500"></span>
                         <span className="text-gray-700 dark:text-gray-300">
-                          Lead
+                          Leads
                         </span>
                       </td>
                       <td className="text-center py-3 px-2 font-medium text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">
@@ -2147,7 +2163,7 @@ const Dashboard = () => {
                       </td>
                     </tr>
 
-                    {/* Proposta */}
+                    {/* Proposta - CORRIGIDA */}
                     <tr>
                       <td className="py-3 pl-3 flex items-center gap-2 border-r border-gray-200 dark:border-gray-700">
                         <span className="w-2.5 h-2.5 rounded-full bg-purple-500"></span>
@@ -2156,14 +2172,12 @@ const Dashboard = () => {
                         </span>
                       </td>
                       <td className="text-center py-3 px-2 font-medium text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">
-                        {dadosReais.propostasNegociacao + dadosReais.vendas}{" "}
-                        {/* ← SOMA! */}
+                        {dadosReais.totalPropostas}
                       </td>
                       <td className="text-center py-3 px-2 text-gray-600 dark:text-gray-400 border-r border-gray-200 dark:border-gray-700">
                         {dadosReais.leadsSite > 0
                           ? Math.round(
-                              ((dadosReais.propostasNegociacao +
-                                dadosReais.vendas) /
+                              (dadosReais.totalPropostas /
                                 dadosReais.leadsSite) *
                                 100,
                             )
@@ -3400,19 +3414,25 @@ const Dashboard = () => {
 
     const handleAprovarProposta = async (proposta) => {
       try {
+        // 1. Atualiza proposta para aprovada
         await supabase
           .from("propostas")
-          .update({
-            status: "aprovada",
-            data_aprovacao: new Date().toISOString(),
-          })
+          .update({ status: "aprovada" })
           .eq("id", proposta.id);
 
+        // 2. Atualiza imóvel para vendido
         await supabase
           .from("imoveis")
           .update({ status: "vendido" })
           .eq("id", proposta.visitas?.imovel_id);
 
+        // 3. 👇 NOVO: Atualiza lead para 'fechado'
+        await supabase
+          .from("leads")
+          .update({ status: "fechado" })
+          .eq("id", proposta.visitas?.lead_id);
+
+        // 4. Cria comissão
         const comissao = proposta.valor * 0.06;
         await supabase.from("comissoes").insert({
           proposta_id: proposta.id,
@@ -3431,20 +3451,33 @@ const Dashboard = () => {
         alert("Erro ao aprovar proposta.");
       }
     };
-
     const handleRecusarProposta = async (proposta) => {
       if (!confirm("Tem certeza que deseja recusar esta proposta?")) return;
 
       try {
+        // 1. Atualiza proposta para recusada
         await supabase
           .from("propostas")
           .update({ status: "recusada" })
           .eq("id", proposta.id);
 
-        alert("❌ Proposta recusada");
+        // 2. 👇 NOVO: Imóvel volta para 'disponivel'
+        await supabase
+          .from("imoveis")
+          .update({ status: "disponivel" })
+          .eq("id", proposta.visitas?.imovel_id);
+
+        // 3. Atualiza lead para 'perdido'
+        await supabase
+          .from("leads")
+          .update({ status: "perdido" })
+          .eq("id", proposta.visitas?.lead_id);
+
+        alert("❌ Proposta recusada. Imóvel voltou para o site.");
         buscarPropostas();
       } catch (error) {
         console.error("Erro ao recusar proposta:", error);
+        alert("Erro ao recusar proposta.");
       }
     };
 

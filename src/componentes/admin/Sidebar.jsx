@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useLocation, NavLink } from "react-router-dom";
 import { useTheme } from "../../contexts/ThemeContext";
 import { useNotifications } from "../../contexts/NotificationContext";
+import { useAuth } from "../../contexts/AuthContext";
 
 // Componente MenuItem embutido para evitar problemas de importação
 const MenuItem = ({
@@ -66,7 +67,8 @@ const Sidebar = ({ onLogout, userName = "Adventus Imobiliária" }) => {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
   const { isDark } = useTheme();
-  const { notificacoes, loading } = useNotifications();
+  const { notificacoes } = useNotifications();
+  const { user } = useAuth();
 
   useEffect(() => {
     console.log(
@@ -113,7 +115,6 @@ const Sidebar = ({ onLogout, userName = "Adventus Imobiliária" }) => {
     </svg>
   );
 
-  // 🏢 Ícone para Empreendimentos
   const BuildingLibraryIcon = ({ className }) => (
     <svg
       className={className}
@@ -334,51 +335,108 @@ const Sidebar = ({ onLogout, userName = "Adventus Imobiliária" }) => {
     </svg>
   );
 
-  // MENU ITEMS COM NOTIFICAÇÕES REAIS DO BANCO DE DADOS
+  // MENU ITEMS COM PERMISSÕES DEFINIDAS
   const menuItems = [
-    { icon: HomeIcon, label: "Dashboard", to: "/admin", exact: true },
+    {
+      icon: HomeIcon,
+      label: "Dashboard",
+      to: "/admin",
+      exact: true,
+      permission: [
+        "master",
+        "gerente",
+        "rh",
+        "marketing",
+        "financeiro",
+        "corretor",
+      ],
+    },
     {
       icon: BuildingOfficeIcon,
       label: "Imóveis",
       to: "/admin/imoveis",
       badge: notificacoes.imoveis,
+      permission: ["master", "gerente", "corretor"],
     },
     {
       icon: BuildingLibraryIcon,
       label: "Empreendimentos",
       to: "/admin/empreendimentos",
       badge: notificacoes.empreendimentos,
+      permission: ["master", "gerente"],
     },
     {
       icon: UserGroupIcon,
       label: "Corretores",
       to: "/admin/corretores",
       badge: notificacoes.corretores,
+      permission: ["master", "gerente"],
     },
     {
       icon: EnvelopeIcon,
       label: "Leads",
       to: "/admin/leads",
       badge: notificacoes.leads,
+      permission: ["master", "gerente", "marketing"],
     },
     {
       icon: CalendarIcon,
       label: "Visitas",
       to: "/admin/visitas",
       badge: notificacoes.visitas,
+      permission: ["master", "gerente", "corretor"],
     },
-    { icon: MapIcon, label: "Estados", to: "/admin/estados" },
-    { icon: LocationMarkerIcon, label: "Cidades", to: "/admin/cidades" },
-    { icon: HomeModernIcon, label: "Bairros", to: "/admin/bairros" },
-    { icon: ChartBarIcon, label: "Relatórios", to: "/admin/relatorios" },
+    {
+      icon: MapIcon,
+      label: "Estados",
+      to: "/admin/estados",
+      permission: ["master"],
+    },
+    {
+      icon: LocationMarkerIcon,
+      label: "Cidades",
+      to: "/admin/cidades",
+      permission: ["master"],
+    },
+    {
+      icon: HomeModernIcon,
+      label: "Bairros",
+      to: "/admin/bairros",
+      permission: ["master"],
+    },
+    {
+      icon: ChartBarIcon,
+      label: "Relatórios",
+      to: "/admin/relatorios",
+      permission: ["master", "gerente"],
+    },
     {
       icon: DocumentTextIcon,
       label: "Contratos",
       to: "/admin/contratos",
       badge: notificacoes.contratos,
+      permission: ["master", "gerente"],
     },
-    { icon: Cog6ToothIcon, label: "Configurações", to: "/admin/configuracoes" },
+    // USUÁRIOS - SÓ MASTER VÊ
+    {
+      icon: UserGroupIcon,
+      label: "Usuários",
+      to: "/admin/usuarios",
+      permission: ["master"],
+    },
+    // CONFIGURAÇÕES - SÓ MASTER VÊ
+    {
+      icon: Cog6ToothIcon,
+      label: "Configurações",
+      to: "/admin/configuracoes",
+      permission: ["master"],
+    },
   ];
+
+  // FILTRA MENU BASEADO NO PERFIL DO USUÁRIO
+  const filteredMenuItems = menuItems.filter((item) =>
+    item.permission.includes(user?.role),
+  );
 
   const isItemActive = (item) => {
     if (item.exact) {
@@ -525,7 +583,8 @@ const Sidebar = ({ onLogout, userName = "Adventus Imobiliária" }) => {
           `}
         </style>
 
-        {menuItems.map((item) => (
+        {/* RENDERIZA APENAS OS ITENS QUE O USUÁRIO TEM PERMISSÃO */}
+        {filteredMenuItems.map((item) => (
           <MenuItem
             key={item.label}
             icon={item.icon}
@@ -538,31 +597,7 @@ const Sidebar = ({ onLogout, userName = "Adventus Imobiliária" }) => {
         ))}
       </nav>
 
-      <div
-        className={`p-3 border-t ${isDark ? "border-gray-700" : "border-gray-700"}`}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onLogout();
-          }}
-          className={`
-            w-full flex items-center 
-            ${collapsed ? "justify-center" : "space-x-2 px-3"} 
-            py-2 rounded-lg transition-all duration-200 
-            bg-[#D4A24D] text-white
-            hover:bg-[#e6b64e] hover:shadow-md
-            text-sm
-          `}
-          title={collapsed ? "Sair" : ""}
-        >
-          <ArrowRightOnRectangleIcon className="w-4 h-4" />
-          {!collapsed && (
-            <span className="font-medium flex-grow text-left">Sair</span>
-          )}
-        </button>
-      </div>
+      {/* BOTÃO SAIR REMOVIDO - Agora só no Header */}
     </aside>
   );
 };

@@ -50,6 +50,18 @@ const ListaEmpreendimentos = lazy(
   () => import("./pages/Admin/ListaEmpreendimentos.jsx"),
 );
 
+// ========== PÁGINAS DE CORRETORES ==========
+const NovoCorretor = lazy(() => import("./pages/Admin/NovoCorretor"));
+const EditarCorretor = lazy(() => import("./pages/Admin/EditarCorretor"));
+
+// ========== PÁGINAS DE USUÁRIOS DO SISTEMA ==========
+const AdminUsuarios = lazy(() => import("./pages/Admin/usuarios"));
+const NovoUsuario = lazy(() => import("./pages/Admin/NovoUsuario"));
+const EditarUsuario = lazy(() => import("./pages/Admin/EditarUsuario"));
+
+// ========== 🆕 PÁGINA DE PERFIL DO USUÁRIO ==========
+const Perfil = lazy(() => import("./pages/Admin/Perfil"));
+
 // ========== Páginas simples ==========
 function Institucional() {
   return (
@@ -178,7 +190,7 @@ function AppRoutes() {
               <Route path="imoveis/novo" element={<CadastrarImovel />} />
               <Route path="imoveis/editar/:id" element={<EditarImovel />} />
 
-              {/* 🔥 NOVA ROTA: Editar imóvel por código (CS-0001, APT-0002, etc.) */}
+              {/* 🔥 NOVA ROTA: Editar imóvel por código */}
               <Route
                 path="imoveis/codigo/:codigo"
                 element={<EditarImovelPorCodigo />}
@@ -198,8 +210,44 @@ function AppRoutes() {
               <Route path="leads" element={<AdminLeads />} />
               <Route path="leads/novo" element={<NovoLead />} />
 
-              {/* ========== OUTRAS ROTAS ADMIN ========== */}
+              {/* ========== ROTAS DE CORRETORES ========== */}
               <Route path="corretores" element={<AdminCorretores />} />
+              <Route path="corretores/novo" element={<NovoCorretor />} />
+              <Route
+                path="corretores/editar/:id"
+                element={<EditarCorretor />}
+              />
+
+              {/* ========== ROTAS DE USUÁRIOS DO SISTEMA ========== */}
+              <Route
+                path="usuarios"
+                element={
+                  <ProtectedRoute allowedPerfis={["master"]}>
+                    <AdminUsuarios />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="usuarios/novo"
+                element={
+                  <ProtectedRoute allowedPerfis={["master"]}>
+                    <NovoUsuario />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="usuarios/editar/:id"
+                element={
+                  <ProtectedRoute allowedPerfis={["master"]}>
+                    <EditarUsuario />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* ========== 🆕 ROTA DE PERFIL ========== */}
+              <Route path="perfil" element={<Perfil />} />
+
+              {/* ========== OUTRAS ROTAS ADMIN ========== */}
               <Route path="candidatos" element={<AdminCandidatos />} />
               <Route path="estados" element={<AdminEstados />} />
               <Route path="cidades" element={<AdminCidades />} />

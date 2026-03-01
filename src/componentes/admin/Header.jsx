@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom"; // ✅ IMPORTANTE
 import {
   BellIcon,
   MagnifyingGlassIcon,
@@ -6,6 +7,8 @@ import {
   ChevronDownIcon,
   SunIcon,
   MoonIcon,
+  UserIcon,
+  ArrowRightOnRectangleIcon,
 } from "@heroicons/react/24/outline";
 
 const Header = ({
@@ -13,10 +16,12 @@ const Header = ({
   userRole = "Administrador",
   onToggleTheme,
   isDarkMode = false,
+  onLogout, // ✅ RECEBE A FUNÇÃO DE LOGOUT
 }) => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const navigate = useNavigate(); // ✅ PARA NAVEGAÇÃO
 
   return (
     <header
@@ -55,7 +60,7 @@ const Header = ({
 
         {/* Right Section */}
         <div className="flex items-center space-x-4">
-          {/* Theme Toggle - CORRIGIDO */}
+          {/* Theme Toggle */}
           <button
             onClick={onToggleTheme}
             className={`
@@ -75,7 +80,7 @@ const Header = ({
             )}
           </button>
 
-          {/* Notifications - CORRIGIDO */}
+          {/* Notifications */}
           <div className="relative">
             <button
               onClick={() => setShowNotifications(!showNotifications)}
@@ -93,7 +98,7 @@ const Header = ({
             </button>
           </div>
 
-          {/* User Profile - CORRIGIDO */}
+          {/* User Profile com DROPDOWN */}
           <div className="relative">
             <button
               onClick={() => setShowProfile(!showProfile)}
@@ -132,11 +137,80 @@ const Header = ({
               </div>
               <ChevronDownIcon
                 className={`
-                w-5 h-5 hidden md:block
+                w-5 h-5 hidden md:block transition-transform duration-200
                 ${isDarkMode ? "text-gray-400" : "text-gray-500"}
+                ${showProfile ? "rotate-180" : ""}
               `}
               />
             </button>
+
+            {/* DROPDOWN MENU */}
+            {showProfile && (
+              <>
+                {/* Overlay para fechar ao clicar fora */}
+                <div
+                  className="fixed inset-0 z-10"
+                  onClick={() => setShowProfile(false)}
+                />
+
+                {/* Menu dropdown */}
+                <div
+                  className={`
+                    absolute right-0 mt-2 w-56 rounded-lg shadow-lg border z-20
+                    ${
+                      isDarkMode
+                        ? "bg-gray-800 border-gray-700"
+                        : "bg-white border-gray-200"
+                    }
+                  `}
+                >
+                  {/* Cabeçalho do dropdown (visível só em mobile) */}
+                  <div className="md:hidden px-4 py-3 border-b dark:border-gray-700">
+                    <p className="font-medium">{userName}</p>
+                    <p
+                      className={`text-sm ${isDarkMode ? "text-gray-400" : "text-gray-600"}`}
+                    >
+                      {userRole}
+                    </p>
+                  </div>
+
+                  {/* Meu Perfil */}
+                  <button
+                    onClick={() => {
+                      setShowProfile(false);
+                      navigate("/admin/perfil");
+                    }}
+                    className={`
+                      w-full flex items-center px-4 py-3 text-sm
+                      hover:bg-gray-100 dark:hover:bg-gray-700
+                      transition-colors duration-200
+                      ${isDarkMode ? "text-gray-200" : "text-gray-700"}
+                    `}
+                  >
+                    <UserIcon className="w-5 h-5 mr-3" />
+                    Meu Perfil
+                  </button>
+
+                  {/* Sair */}
+                  <button
+                    onClick={() => {
+                      setShowProfile(false);
+                      if (onLogout) onLogout();
+                    }}
+                    className={`
+                      w-full flex items-center px-4 py-3 text-sm
+                      hover:bg-gray-100 dark:hover:bg-gray-700
+                      transition-colors duration-200
+                      border-t dark:border-gray-700
+                      ${isDarkMode ? "text-red-400" : "text-red-600"}
+                    `}
+                  >
+                    <ArrowRightOnRectangleIcon className="w-5 h-5 mr-3" />
+                    Sair
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>
