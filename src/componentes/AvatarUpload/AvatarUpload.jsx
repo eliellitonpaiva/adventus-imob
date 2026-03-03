@@ -82,6 +82,49 @@ const AvatarUpload = ({
         return;
       }
 
+      // 🔍 LOGS PARA DEBUG - COLOQUE AQUI
+      console.log("📁 Arquivo selecionado:", {
+        nome: file.name,
+        tipo: file.type,
+        tamanho: file.size,
+      });
+
+      console.log("👤 Usuário:", {
+        id: userId,
+        tipo: tipo,
+      });
+
+      const { data: userData } = await supabase.auth.getUser();
+      console.log("👤 Usuário autenticado:", userData);
+
+      // Verifica se o usuário está autenticado no Supabase Auth
+      const { data: sessionData } = await supabase.auth.getSession();
+      console.log("🔑 Sessão Supabase:", sessionData);
+
+      // Se não estiver autenticado, tenta usar a sessão do seu sistema
+      if (!sessionData.session) {
+        const storedUser = localStorage.getItem("user");
+        if (storedUser) {
+          const user = JSON.parse(storedUser);
+          console.log("📦 Usuário do sistema:", user);
+
+          // Tenta fazer login no Supabase Auth com as credenciais
+          // Nota: Isso requer que o usuário exista no auth do Supabase
+          const { error: signInError } = await supabase.auth.signInWithPassword(
+            {
+              email: user.email,
+              password: "senha_do_usuario", // ⚠️ PRECISAMOS DA SENHA
+            },
+          );
+
+          if (signInError) {
+            console.warn(
+              "Não foi possível autenticar no Supabase:",
+              signInError,
+            );
+          }
+        }
+      }
       // Remove avatar antigo se existir
       if (avatarUrl) {
         await removerAvatarAntigo(avatarUrl);
@@ -90,15 +133,19 @@ const AvatarUpload = ({
       // Gera nome único para o arquivo
       const fileExt = file.name.split(".").pop();
       const fileName = `${userId}-${Date.now()}.${fileExt}`;
-      const filePath = `avatars/${fileName}`; // Organiza em pasta
+      const filePath = fileName; // Organiza em pasta
+
+      console.log("📤 Tentando upload para:", filePath);
 
       // Faz upload para o Storage
-      const { error: uploadError } = await supabase.storage
+      const { error: uploadError, data } = await supabase.storage
         .from("avatars")
         .upload(filePath, file, {
           cacheControl: "3600",
-          upsert: false,
+          upsert: true,
         });
+
+      console.log("📥 Resposta do upload:", { uploadError, data });
 
       if (uploadError) throw uploadError;
 

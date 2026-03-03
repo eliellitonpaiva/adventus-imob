@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "../../contexts/ThemeContext";
 import { supabase } from "../../lib/supabase";
-import bcrypt from "bcryptjs";
 import Button from "../../componentes/ui/Button";
 
 // Ícones
@@ -46,6 +45,7 @@ const NovoCorretor = () => {
     nivel_experiencia: "pleno",
     especialidades: [],
     comissao_base: "",
+    data_ativacao: "", // 🆕 NOVO CAMPO!
 
     // Perfil de acesso
     perfil: "corretor",
@@ -102,6 +102,10 @@ const NovoCorretor = () => {
       if (formData.experiencia_anos && formData.experiencia_anos < 0) {
         novosErros.experiencia_anos = "Anos de experiência inválidos";
       }
+      // 🆕 VALIDAÇÃO: Data de ativação é obrigatória para corretor direto
+      if (!formData.data_ativacao) {
+        novosErros.data_ativacao = "Data de ativação é obrigatória";
+      }
     }
 
     setErros(novosErros);
@@ -109,76 +113,109 @@ const NovoCorretor = () => {
   };
 
   const handleSubmit = async (e) => {
+    console.log("🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴");
+    console.log("🚀 HANDLE SUBMIT EXECUTOU!");
+    console.log("🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴");
+
     e.preventDefault();
-    if (!validarFormulario()) return;
+    console.log("1️⃣ handleSubmit iniciou");
 
+    const valido = validarFormulario();
+    console.log("2️⃣ validação:", valido);
+
+    if (!valido) return;
+
+    console.log("3️⃣ passou validação");
     setLoading(true);
+    console.log("4️⃣ loading true");
+
     try {
-      // Criptografa a senha
-      const senhaHash = await bcrypt.hash(formData.senha, 10);
+      console.log("5️⃣ dentro do try, formData:", formData);
 
-      const dadosParaSalvar = {
-        ...formData,
-        senha: senhaHash,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        telefone: formData.telefone.replace(/\D/g, ""),
-
-        // Configuração específica por tipo
-        ...(tipoCadastro === "candidato"
-          ? {
-              etapa: "pendentes",
-              status_candidato: "aguardando_entrevista",
-              treinamento_necessario: true,
-              checkpoints_treinamento: {
-                modulo1: false,
-                modulo2: false,
-                modulo3: false,
-                modulo4: false,
-                modulo5: false,
-              },
-              progresso_treinamento: 0,
-              atributos_treinamento: {
-                demonstrouInteresse: false,
-                temProposito: false,
-                conheceMercado: false,
-                disponibilidadeHorario: false,
-                veiculoProprio: false,
-                experienciaVendas: false,
-                comunicacao: false,
-                eticaProfissional: false,
-                trabalhoEquipe: false,
-                metasAmbiciosas: false,
-              },
-              // Métricas iniciais zeradas
-              imoveis: 0,
-              leads: 0,
-              vendas_mes: 0,
-            }
-          : {
-              etapa: "ativos",
-              periodoExperiencia: false,
-              data_ativacao: new Date().toISOString().split("T")[0],
-              // Métricas iniciais baseadas no nível
-              imoveis: 0,
-              leads: 0,
-              vendas_mes: 0,
-              pontuacao:
-                formData.nivel_experiencia === "senior"
-                  ? 1000
-                  : formData.nivel_experiencia === "pleno"
-                    ? 800
-                    : 600,
-              meta: 1000,
-              rating: 4.8,
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: formData.email,
+        password: formData.senha,
+        options: {
+          data: {
+            nome: formData.nome,
+            perfil: formData.perfil,
+            telefone: formData.telefone,
+            creci: formData.creci,
+            tipo_cadastro: tipoCadastro,
+            ...(tipoCadastro === "direto" && {
+              nivel_experiencia: formData.nivel_experiencia,
+              especialidades: formData.especialidades,
+              comissao_base: formData.comissao_base,
             }),
-      };
+          },
+        },
+      });
 
-      const { error } = await supabase
-        .from("corretores")
-        .insert([dadosParaSalvar]);
+      console.log("6️⃣ resposta signUp:", { authData, authError });
 
-      if (error) throw error;
+      if (authError) throw authError;
+      console.log("7️⃣ sem erro, usuário criado:", authData.user?.id);
+
+      // Se for corretor direto, atualiza etapa
+      if (tipoCadastro === "direto" && authData.user) {
+        console.log("8️⃣ atualizando etapa para corretor direto");
+
+        // 🆕 USA A DATA DO FORMULÁRIO OU HOJE COMO FALLBACK
+        const dataAtivacao =
+          formData.data_ativacao || new Date().toISOString().split("T")[0];
+        console.log("📅 Data de ativação:", dataAtivacao);
+
+        const { error: updateError } = await supabase
+          .from("corretores")
+          .update({
+            etapa: "ativos",
+            periodoExperiencia: false, // Já ativo direto
+            data_ativacao: dataAtivacao, // 👈 SALVA A DATA INFORMADA
+            imoveis: 0,
+            leads: 0,
+            vendas_mes: 0,
+            pontuacao:
+              formData.nivel_experiencia === "senior"
+                ? 1000
+                : formData.nivel_experiencia === "pleno"
+                  ? 800
+                  : 600,
+            meta: 1000,
+            rating: 4.8,
+            // Campos profissionais
+            creci_desde: formData.creci_desde || null,
+            experiencia_anos: formData.experiencia_anos || null,
+            formacao: formData.formacao || null,
+          })
+          .eq("id", authData.user.id);
+
+        if (updateError) {
+          console.warn(
+            "9️⃣ erro ao atualizar etapa (não crítico):",
+            updateError,
+          );
+        } else {
+          console.log("🔟 etapa atualizada com sucesso");
+        }
+      }
+
+      // Se for candidato, salva os dados profissionais também
+      if (tipoCadastro === "candidato" && authData.user) {
+        const { error: updateError } = await supabase
+          .from("corretores")
+          .update({
+            creci_desde: formData.creci_desde || null,
+            experiencia_anos: formData.experiencia_anos || null,
+            formacao: formData.formacao || null,
+            origem: formData.origem,
+            observacoes: formData.observacoes,
+          })
+          .eq("id", authData.user.id);
+
+        if (updateError) {
+          console.warn("Erro ao salvar dados do candidato:", updateError);
+        }
+      }
 
       alert(
         tipoCadastro === "direto"
@@ -188,9 +225,10 @@ const NovoCorretor = () => {
 
       navigate("/admin/corretores");
     } catch (error) {
-      console.error("Erro ao cadastrar:", error);
-      alert("Erro ao cadastrar. Tente novamente.");
+      console.error("❌ erro capturado:", error);
+      alert("Erro ao cadastrar: " + error.message);
     } finally {
+      console.log("🔚 finally");
       setLoading(false);
     }
   };
@@ -720,6 +758,38 @@ const NovoCorretor = () => {
                       focus:outline-none focus:ring-2 focus:ring-amber-500/30
                     `}
                   />
+                </div>
+
+                {/* 🆕 NOVO CAMPO: Data de Ativação */}
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    Data de Ativação <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="date"
+                    name="data_ativacao"
+                    value={formData.data_ativacao}
+                    onChange={handleChange}
+                    max={new Date().toISOString().split("T")[0]}
+                    className={`
+                      w-full px-3 py-2 rounded-lg border
+                      ${
+                        isDark
+                          ? "bg-gray-700 border-gray-600 text-gray-200"
+                          : "bg-white border-gray-300 text-gray-900"
+                      }
+                      ${erros.data_ativacao ? "border-red-500" : ""}
+                      focus:outline-none focus:ring-2 focus:ring-amber-500/30
+                    `}
+                  />
+                  {erros.data_ativacao && (
+                    <p className="mt-1 text-xs text-red-500">
+                      {erros.data_ativacao}
+                    </p>
+                  )}
+                  <p className="text-xs mt-1 opacity-60">
+                    Data que o corretor começou na imobiliária
+                  </p>
                 </div>
 
                 <div className="lg:col-span-3">

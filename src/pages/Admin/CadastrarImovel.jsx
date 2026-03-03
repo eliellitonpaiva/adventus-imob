@@ -320,6 +320,32 @@ const CadastrarImovel = () => {
     fetchEmpreendimentos();
   }, []);
 
+  // =============== BUSCAR CORRETORES REAIS ===============
+  const [corretoresReais, setCorretoresReais] = useState([]);
+  const [loadingCorretores, setLoadingCorretores] = useState(false);
+
+  useEffect(() => {
+    const fetchCorretores = async () => {
+      setLoadingCorretores(true);
+      try {
+        const { data, error } = await supabase
+          .from("corretores")
+          .select("id, nome, creci, email, ativo")
+          .eq("ativo", true) // Pega apenas corretores ativos
+          .order("nome");
+
+        if (error) throw error;
+        setCorretoresReais(data || []);
+      } catch (error) {
+        console.error("Erro ao buscar corretores:", error);
+      } finally {
+        setLoadingCorretores(false);
+      }
+    };
+
+    fetchCorretores();
+  }, []);
+
   // =============== FUNÇÃO PARA GERAR CÓDIGO AUTOMÁTICO ===============
   const gerarCodigoAutomatico = async (tipoSelecionado) => {
     if (!tipoSelecionado) return "";
@@ -1004,12 +1030,6 @@ const CadastrarImovel = () => {
     { id: "1", nome: "Maria Silva" },
     { id: "2", nome: "João Santos" },
     { id: "3", nome: "Ana Oliveira" },
-  ];
-
-  const corretores = [
-    { id: "101", nome: "Carlos Souza" },
-    { id: "102", nome: "Ana Pereira" },
-    { id: "103", nome: "Roberto Lima" },
   ];
 
   const buscarCep = async (cep) => {
@@ -1729,18 +1749,29 @@ const CadastrarImovel = () => {
                   className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors duration-200 ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()}`}
                 >
                   <option value="" className={getOptionBgClass()}>
-                    Selecionar corretor
+                    {loadingCorretores
+                      ? "Carregando corretores..."
+                      : "Selecionar corretor"}
                   </option>
-                  {corretores.map((corretor) => (
+                  {corretoresReais.map((corretor) => (
                     <option
                       key={corretor.id}
                       value={corretor.id}
                       className={getOptionBgClass()}
                     >
-                      {corretor.nome}
+                      {corretor.nome}{" "}
+                      {corretor.creci ? `(CRECI: ${corretor.creci})` : ""}
                     </option>
                   ))}
                 </select>
+                {corretoresReais.length === 0 && !loadingCorretores && (
+                  <p
+                    className={`text-xs mt-1 ${isDark ? "text-yellow-400" : "text-yellow-600"}`}
+                  >
+                    ⚠️ Nenhum corretor ativo encontrado. Cadastre um corretor
+                    primeiro.
+                  </p>
+                )}
               </div>
 
               <div>

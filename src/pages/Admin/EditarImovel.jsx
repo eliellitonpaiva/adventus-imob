@@ -160,6 +160,32 @@ const EditarImovel = () => {
   const [loadingDados, setLoadingDados] = useState(true);
   const [submitMessage, setSubmitMessage] = useState({ type: "", text: "" });
 
+  // =============== BUSCAR CORRETORES REAIS ===============
+  const [corretoresReais, setCorretoresReais] = useState([]);
+  const [loadingCorretores, setLoadingCorretores] = useState(false);
+
+  useEffect(() => {
+    const fetchCorretores = async () => {
+      setLoadingCorretores(true);
+      try {
+        const { data, error } = await supabase
+          .from("corretores")
+          .select("id, nome, creci, email, ativo")
+          .eq("ativo", true)
+          .order("nome");
+
+        if (error) throw error;
+        setCorretoresReais(data || []);
+      } catch (error) {
+        console.error("Erro ao buscar corretores:", error);
+      } finally {
+        setLoadingCorretores(false);
+      }
+    };
+
+    fetchCorretores();
+  }, []);
+
   // =============== ESTADO DAS FOTOS ===============
   const [fotos, setFotos] = useState([]);
   const [uploadingFotos, setUploadingFotos] = useState(false);
@@ -1042,12 +1068,6 @@ const EditarImovel = () => {
     { id: "3", nome: "Ana Oliveira" },
   ];
 
-  const corretores = [
-    { id: "101", nome: "Carlos Souza" },
-    { id: "102", nome: "Ana Pereira" },
-    { id: "103", nome: "Roberto Lima" },
-  ];
-
   const getStatusColor = (status) => {
     const baseColors = {
       disponivel: {
@@ -1160,7 +1180,7 @@ const EditarImovel = () => {
                 </button>
                 <button
                   type="submit"
-                  form="form-editar-imovel" // 👈 LINHA IMPORTANTE!
+                  form="form-editar-imovel"
                   disabled={loading}
                   className="px-3 md:px-4 py-1.5 md:py-2 bg-[#D4A24D] hover:bg-[#C4933E] text-white font-medium rounded-lg border border-transparent transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-[#D4A24D] focus:ring-offset-2 text-xs md:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                 >
@@ -1342,18 +1362,29 @@ const EditarImovel = () => {
                   className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors duration-200 ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()}`}
                 >
                   <option value="" className={getOptionBgClass()}>
-                    Selecionar corretor
+                    {loadingCorretores
+                      ? "Carregando corretores..."
+                      : "Selecionar corretor"}
                   </option>
-                  {corretores.map((corretor) => (
+                  {corretoresReais.map((corretor) => (
                     <option
                       key={corretor.id}
                       value={corretor.id}
                       className={getOptionBgClass()}
                     >
-                      {corretor.nome}
+                      {corretor.nome}{" "}
+                      {corretor.creci ? `(CRECI: ${corretor.creci})` : ""}
                     </option>
                   ))}
                 </select>
+                {corretoresReais.length === 0 && !loadingCorretores && (
+                  <p
+                    className={`text-xs mt-1 ${isDark ? "text-yellow-400" : "text-yellow-600"}`}
+                  >
+                    ⚠️ Nenhum corretor ativo encontrado. Cadastre um corretor
+                    primeiro.
+                  </p>
+                )}
               </div>
               {/* Preço */}
               <div>

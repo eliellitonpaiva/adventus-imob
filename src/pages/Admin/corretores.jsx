@@ -7212,9 +7212,25 @@ const Corretores = () => {
                             {formatarData(corretor.creci_desde) || "09/09/2014"}
                           </div>
                           <div>
-                            Na imobiliária desde:{" "}
-                            {formatarData(corretor.treinamento_conclusao) ||
-                              "19/02/2026"}
+                            {corretor.periodoExperiencia ? (
+                              <>
+                                Em experiência desde:{" "}
+                                {formatarData(corretor.treinamento_conclusao) ||
+                                  "19/02/2026"}
+                              </>
+                            ) : corretor.data_ativacao ? (
+                              <>
+                                Na imobiliária desde:{" "}
+                                {formatarData(corretor.data_ativacao)}
+                              </>
+                            ) : corretor.treinamento_conclusao ? (
+                              <>
+                                Treinamento concluído em:{" "}
+                                {formatarData(corretor.treinamento_conclusao)}
+                              </>
+                            ) : (
+                              <>Na imobiliária desde: Não informado</>
+                            )}
                           </div>
                         </div>
                       </div>

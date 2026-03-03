@@ -4,7 +4,6 @@ import { useNavigate } from "react-router-dom";
 import { useTheme } from "../../contexts/ThemeContext";
 import { useAuth } from "../../contexts/AuthContext";
 import { supabase } from "../../lib/supabase";
-import bcrypt from "bcryptjs";
 import Button from "../../componentes/ui/Button";
 import AvatarUpload from "../../componentes/AvatarUpload/AvatarUpload";
 
@@ -73,44 +72,26 @@ const Perfil = () => {
     setLoading(true);
 
     try {
-      // Busca o usuário no banco (corretores ou usuarios)
-      let tabela = user?.tipo === "corretor" ? "corretores" : "usuarios";
+      // ✅ 1. PRIMEIRO: verifica a senha atual (sem usar bcrypt, pois o Auth já faz isso)
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: user.email,
+        password: formData.senha_atual,
+      });
 
-      const { data: usuario, error: buscaError } = await supabase
-        .from(tabela)
-        .select("*")
-        .eq("id", user.id)
-        .single();
-
-      if (buscaError || !usuario) {
-        throw new Error("Usuário não encontrado");
-      }
-
-      // Verifica se a senha atual está correta
-      const senhaValida = await bcrypt.compare(
-        formData.senha_atual,
-        usuario.senha,
-      );
-
-      if (!senhaValida) {
+      if (signInError) {
         setMensagem({ tipo: "erro", texto: "Senha atual incorreta" });
         setLoading(false);
         return;
       }
 
-      // Criptografa a nova senha
-      const novaSenhaHash = await bcrypt.hash(formData.nova_senha, 10);
-
-      // Atualiza no banco
-      const { error: updateError } = await supabase
-        .from(tabela)
-        .update({
-          senha: novaSenhaHash,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", user.id);
+      // ✅ 2. DEPOIS: atualiza a senha no Auth (jeito correto)
+      const { error: updateError } = await supabase.auth.updateUser({
+        password: formData.nova_senha,
+      });
 
       if (updateError) throw updateError;
+
+      // ✅ 3. NÃO PRECISA mais atualizar nas tabelas (a senha fica no Auth)
 
       setMensagem({
         tipo: "sucesso",

@@ -77,89 +77,51 @@ export const AuthProvider = ({ children }) => {
   // ============================================
   const login = async (email, password) => {
     try {
-      // 1️⃣ Tenta na tabela CORRETORES primeiro
-      const { data: corretor, error: erroCorretor } = await supabase
+      // 1️⃣ Login no Supabase Auth
+      const { data: authData, error: authError } =
+        await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+
+      if (authError) throw authError;
+
+      if (!authData.user) {
+        return { success: false, error: "Usuário não encontrado" };
+      }
+
+      // 2️⃣ Busca dados complementares na tabela corretores
+      const { data: corretor, error: perfilError } = await supabase
         .from("corretores")
         .select("*")
-        .eq("email", email)
+        .eq("id", authData.user.id)
         .single();
 
-      if (!erroCorretor && corretor) {
-        // Verifica senha do corretor
-        if (!corretor.senha) {
-          return { success: false, error: "Usuário sem senha cadastrada" };
-        }
+      // Dados do usuário para o frontend
+      const userData = {
+        id: authData.user.id,
+        email: authData.user.email,
+        nome:
+          authData.user.user_metadata?.nome ||
+          corretor?.nome ||
+          email.split("@")[0],
+        perfil:
+          authData.user.user_metadata?.perfil || corretor?.perfil || "corretor",
+        tipo: "corretor",
+        avatar: corretor?.avatar_url || null,
+        metadata: authData.user.user_metadata,
+      };
 
-        const senhaValida = await bcrypt.compare(password, corretor.senha);
-        if (!senhaValida) {
-          return { success: false, error: "Email ou senha inválidos" };
-        }
+      localStorage.setItem("user", JSON.stringify(userData));
+      setSessionUser(userData);
 
-        // Dados do corretor logado
-        const userData = {
-          id: corretor.id,
-          email: corretor.email,
-          nome: corretor.nome,
-          perfil: corretor.perfil || "corretor",
-          tipo: "corretor",
-          creci: corretor.creci,
-        };
-
-        localStorage.setItem("user", JSON.stringify(userData));
-        setSessionUser(userData);
-        setProfile({
-          nome: corretor.nome,
-          cargo: corretor.perfil || "corretor",
-          avatar_url: null,
-        });
-
-        return { success: true };
-      }
-
-      // 2️⃣ Se não achou, tenta na tabela USUARIOS
-      const { data: usuario, error: erroUsuario } = await supabase
-        .from("usuarios")
-        .select("*")
-        .eq("email", email)
-        .single();
-
-      if (!erroUsuario && usuario) {
-        // Verifica senha do usuario
-        if (!usuario.senha) {
-          return { success: false, error: "Usuário sem senha cadastrada" };
-        }
-
-        const senhaValida = await bcrypt.compare(password, usuario.senha);
-        if (!senhaValida) {
-          return { success: false, error: "Email ou senha inválidos" };
-        }
-
-        // Dados do usuário logado (não corretor)
-        const userData = {
-          id: usuario.id,
-          email: usuario.email,
-          nome: usuario.nome,
-          perfil: usuario.perfil,
-          tipo: "usuario",
-          cargo: usuario.cargo,
-        };
-
-        localStorage.setItem("user", JSON.stringify(userData));
-        setSessionUser(userData);
-        setProfile({
-          nome: usuario.nome,
-          cargo: usuario.perfil,
-          avatar_url: usuario.avatar_url || null,
-        });
-
-        return { success: true };
-      }
-
-      // 3️⃣ Não encontrou em nenhuma tabela
-      return { success: false, error: "Email ou senha inválidos" };
+      return { success: true };
     } catch (error) {
       console.error("Erro no login:", error);
-      return { success: false, error: "Erro ao fazer login" };
+      return {
+        success: false,
+        error: error.message || "Erro ao fazer login",
+      };
     }
   };
 

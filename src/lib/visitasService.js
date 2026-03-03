@@ -42,21 +42,28 @@ export const visitasService = {
             }
           }
 
-          // Buscar dados do corretor se houver corretor_id
+          // Buscar na tabela CORRETORES
           let corretor_nome = null;
           if (visita.corretor_id) {
-            const { data: perfilData } = await supabase
-              .from("perfis")
+            const { data: corretorData } = await supabase
+              .from("corretores")
               .select("nome")
               .eq("id", visita.corretor_id)
               .maybeSingle();
 
-            corretor_nome = perfilData?.nome || null;
+            corretor_nome = corretorData?.nome || null;
             console.log(
               `👤 Corretor encontrado para visita ${visita.id}:`,
               corretor_nome,
             );
           }
+
+          // 🔴 CORREÇÃO DAS DATAS: Adicionar 'Z' no final se não tiver
+          const formatarDataBanco = (dataStr) => {
+            if (!dataStr) return null;
+            // Se já tem Z, mantém, se não, adiciona
+            return dataStr.includes("Z") ? dataStr : dataStr + "Z";
+          };
 
           return {
             id: visita.id,
@@ -64,8 +71,9 @@ export const visitasService = {
             nome_cliente: visita.nome_cliente || "Cliente",
             telefone: visita.telefone || "",
             email: visita.email || "",
-            data_visita: visita.data_visita,
-            created_at: visita.created_at,
+            // ✅ DATAS CORRIGIDAS COM 'Z'
+            data_visita: formatarDataBanco(visita.data_visita),
+            created_at: formatarDataBanco(visita.created_at),
             dia_preferencia: visita.dia_preferencia,
             horario_preferencia: visita.horario_preferencia,
             lead_id: visita.lead_id,
@@ -89,6 +97,15 @@ export const visitasService = {
       );
 
       console.log(`✅ ${visitasFormatadas.length} visitas formatadas`);
+
+      // Log para verificar as datas corrigidas
+      console.log("📅 DATAS CORRIGIDAS - Primeira visita:", {
+        created_at_original: visitas[0]?.created_at,
+        created_at_corrigido: visitasFormatadas[0]?.created_at,
+        data_visita_original: visitas[0]?.data_visita,
+        data_visita_corrigido: visitasFormatadas[0]?.data_visita,
+      });
+
       return {
         data: visitasFormatadas,
         error: null,
@@ -98,7 +115,7 @@ export const visitasService = {
       console.error("❌ Erro ao listar visitas:", error);
       return { data: null, error };
     }
-  }, // ← VÍRGULA ADICIONADA!
+  },
 
   // Criar nova visita
   async criarVisita(visitaData) {
@@ -138,7 +155,7 @@ export const visitasService = {
       console.error("❌ Erro ao criar visita:", error);
       return { data: null, error };
     }
-  }, // ← VÍRGULA ADICIONADA!
+  },
 
   // Buscar estatísticas
   async buscarEstatisticas() {
@@ -198,7 +215,7 @@ export const visitasService = {
       console.error("❌ Erro ao buscar estatísticas:", error);
       return { data: null, error };
     }
-  }, // ← VÍRGULA ADICIONADA!
+  },
 
   // Assumir visita
   async assumirVisita(visitaId, corretorId) {
@@ -233,7 +250,7 @@ export const visitasService = {
       console.error("❌ Service - Erro ao assumir visita:", error);
       return { data: null, error };
     }
-  }, // ← VÍRGULA ADICIONADA!
+  },
 
   // Atualizar status
   async atualizarStatus(visitaId, novoStatus, dadosAdicionais = {}) {
@@ -255,7 +272,7 @@ export const visitasService = {
       console.error("❌ Erro ao atualizar status:", error);
       return { data: null, error };
     }
-  }, // ← VÍRGULA ADICIONADA!
+  },
 
   // Atualizar resultado
   async atualizarResultado(visitaId, resultado) {
@@ -272,7 +289,7 @@ export const visitasService = {
       console.error("❌ Erro ao atualizar resultado:", error);
       return { data: null, error };
     }
-  }, // ← VÍRGULA ADICIONADA!
+  },
 
   // Atualizar motivo de cancelamento
   async atualizarMotivoCancelamento(visitaId, motivo) {
@@ -289,5 +306,5 @@ export const visitasService = {
       console.error("❌ Erro ao atualizar motivo:", error);
       return { data: null, error };
     }
-  }, // ← ÚLTIMO MÉTODO - NÃO TEM VÍRGULA!
+  },
 };

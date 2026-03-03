@@ -32,7 +32,7 @@ import { visitasService } from "../../lib/visitasService";
 import { supabase } from "../../lib/supabase";
 
 // ============================================
-// FUNÇÕES DE FORMATAÇÃO
+// FUNÇÕES DE FORMATAÇÃO (TODAS AQUI - FORA DO COMPONENTE)
 // ============================================
 
 // Função para formatar moeda no padrão brasileiro
@@ -82,27 +82,54 @@ const formatarPreco = (preco) => {
   }).format(valor);
 };
 
-// Função segura para formatar data
+// Função para formatar data (apenas data)
 const formatarData = (dataString) => {
   if (!dataString) return "Data não disponível";
   try {
     const data = new Date(dataString);
     if (isNaN(data.getTime())) return "Data inválida";
-    return data.toLocaleDateString("pt-BR");
+    return data.toLocaleDateString("pt-BR", {
+      timeZone: "America/Sao_Paulo",
+    });
   } catch {
     return "Data inválida";
   }
 };
 
-// Função para formatar hora LOCAL (converte UTC para Brasília)
+// ✅ NOVA FUNÇÃO: Formatar data COMPLETA com hora
+const formatarDataCompleta = (dataString) => {
+  if (!dataString) return "Data não disponível";
+
+  try {
+    // Garantir que a string tem Z no final
+    const dataStr = dataString.includes("Z") ? dataString : dataString + "Z";
+    const data = new Date(dataStr);
+
+    if (isNaN(data.getTime())) return "Data inválida";
+
+    return data
+      .toLocaleString("pt-BR", {
+        timeZone: "America/Sao_Paulo",
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+      })
+      .replace(", ", " às ");
+  } catch {
+    return "Data inválida";
+  }
+};
+
+// Função para formatar hora LOCAL
 const formatarHora = (dataString) => {
   if (!dataString) return "";
   try {
-    // Cria a data considerando que a string está em UTC
-    const data = new Date(dataString + "Z");
+    const dataStr = dataString.includes("Z") ? dataString : dataString + "Z";
+    const data = new Date(dataStr);
     if (isNaN(data.getTime())) return "";
-
-    // Converte para o horário de Brasília
     return data.toLocaleTimeString("pt-BR", {
       hour: "2-digit",
       minute: "2-digit",
@@ -115,10 +142,18 @@ const formatarHora = (dataString) => {
 };
 
 // ============================================
+// ÍCONE DE WHATSAPP
+// ============================================
+const WhatsAppIcon = ({ className }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.76.982.998-3.675-.236-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.9 6.994c-.004 5.45-4.438 9.88-9.888 9.88m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.333.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.333 11.893-11.893 0-3.18-1.24-6.162-3.495-8.411" />
+  </svg>
+);
+
+// ============================================
 // COMPONENTE STATUS ETIQUETA
 // ============================================
 const StatusEtiqueta = ({ status, reagendado, isDark }) => {
-  // Se for reagendado, muda a etiqueta
   if (reagendado && (status === "agendada" || status === "confirmada")) {
     return (
       <span
@@ -134,7 +169,6 @@ const StatusEtiqueta = ({ status, reagendado, isDark }) => {
     );
   }
 
-  // Etiquetas por status
   const config = {
     solicitada: {
       label: "NOVA",
@@ -184,61 +218,7 @@ const StatusEtiqueta = ({ status, reagendado, isDark }) => {
     </span>
   );
 };
-// Componente de input para motivo de cancelamento
-const MotivoCancelamentoInput = ({ value, onChange, isDark }) => {
-  return (
-    <input
-      type="text"
-      value={value || ""}
-      onChange={(e) => onChange(e.target.value)}
-      placeholder="Motivo do cancelamento..."
-      className={`
-        w-full px-3 py-2 rounded-lg text-sm border
-        focus:ring-2 focus:ring-[#D4A24D] focus:border-transparent transition-all duration-300
-        ${
-          isDark
-            ? "bg-gray-700 border-gray-600 text-gray-200 placeholder-gray-500"
-            : "bg-white border-gray-300 text-gray-900 placeholder-gray-400"
-        }
-      `}
-    />
-  );
-};
 
-// Componente de select para resultado
-const ResultadoSelect = ({ value, onChange, isDark }) => {
-  const opcoes = [
-    { valor: "virou_proposta", label: "Virou proposta" },
-    { valor: "interessado", label: "Interessado" },
-    { valor: "nao_interessado", label: "Não interessado" },
-    { valor: "nao_compareceu", label: "Não compareceu" },
-    { valor: "reagendar", label: "Reagendar" },
-    { valor: "sem_retorno", label: "Sem retorno" },
-  ];
-
-  return (
-    <select
-      value={value || ""}
-      onChange={(e) => onChange(e.target.value)}
-      className={`
-        w-full px-3 py-2 rounded-lg text-sm border
-        focus:ring-2 focus:ring-[#D4A24D] focus:border-transparent transition-all duration-300
-        ${
-          isDark
-            ? "bg-gray-700 border-gray-600 text-gray-200"
-            : "bg-white border-gray-300 text-gray-700"
-        }
-      `}
-    >
-      <option value="">Selecionar resultado</option>
-      {opcoes.map((op) => (
-        <option key={op.valor} value={op.valor}>
-          {op.label}
-        </option>
-      ))}
-    </select>
-  );
-};
 // ============================================
 // COMPONENTE MODAL DE AGENDAMENTO
 // ============================================
@@ -287,7 +267,7 @@ const ModalAgendar = ({ isOpen, onClose, visita, onConfirm, isDark }) => {
           <p
             className={`text-xs ${isDark ? "text-gray-400" : "text-gray-500"}`}
           >
-            {visita?.imovel?.codigo} - {visita?.imovel?.endereco}
+            {visita?.imovel?.codigo} - {visita?.imovel?.bairro}
           </p>
         </div>
 
@@ -297,8 +277,7 @@ const ModalAgendar = ({ isOpen, onClose, visita, onConfirm, isDark }) => {
           <p
             className={`text-xs ${isDark ? "text-gray-400" : "text-gray-500"}`}
           >
-            Solicitada: {formatarData(visita?.created_at)} às{" "}
-            {formatarHora(visita?.created_at)}
+            Solicitada: {formatarDataCompleta(visita?.created_at)}
           </p>
           <p
             className={`text-xs ${isDark ? "text-gray-400" : "text-gray-500"}`}
@@ -448,6 +427,7 @@ const ModalTransferir = ({ isOpen, onClose, visita, onConfirm, isDark }) => {
   const [corretores, setCorretores] = useState([]);
   const [selectedCorretor, setSelectedCorretor] = useState("");
   const [loading, setLoading] = useState(false);
+  const [transferindo, setTransferindo] = useState(false);
 
   useEffect(() => {
     if (isOpen && visita) {
@@ -459,9 +439,10 @@ const ModalTransferir = ({ isOpen, onClose, visita, onConfirm, isDark }) => {
     setLoading(true);
     try {
       const { data, error } = await supabase
-        .from("perfis")
-        .select("id, nome, email, cargo")
+        .from("corretores")
+        .select("id, nome, email, status")
         .neq("id", visita?.corretor_id)
+        .in("status", ["Ativo", "Período de Experiência"])
         .order("nome");
 
       if (error) throw error;
@@ -474,8 +455,23 @@ const ModalTransferir = ({ isOpen, onClose, visita, onConfirm, isDark }) => {
   };
 
   const handleConfirm = () => {
-    if (selectedCorretor && visita) {
+    if (!selectedCorretor) {
+      alert("Selecione um corretor para transferir");
+      return;
+    }
+
+    const corretorDestino = corretores.find((c) => c.id === selectedCorretor);
+    const confirmacao = window.confirm(
+      `Tem certeza que deseja transferir a visita de ${visita?.nome_cliente}?\n\n` +
+        `De: ${visita?.corretor_nome || "Corretor atual"}\n` +
+        `Para: ${corretorDestino?.nome || "Novo corretor"}\n\n` +
+        `Esta ação não pode ser desfeita.`,
+    );
+
+    if (confirmacao) {
+      setTransferindo(true);
       onConfirm(visita.id, selectedCorretor);
+      setTransferindo(false);
       onClose();
     }
   };
@@ -499,9 +495,36 @@ const ModalTransferir = ({ isOpen, onClose, visita, onConfirm, isDark }) => {
           {visita?.imovel?.codigo}
         </p>
 
+        {visita?.corretor_nome && (
+          <div
+            className={`mb-4 p-3 rounded-lg border ${
+              isDark
+                ? "bg-gray-700/50 border-gray-600"
+                : "bg-gray-50 border-gray-200"
+            }`}
+          >
+            <p
+              className={`text-xs ${isDark ? "text-gray-400" : "text-gray-500"}`}
+            >
+              Corretor atual
+            </p>
+            <p
+              className={`text-sm font-medium ${isDark ? "text-gray-200" : "text-gray-800"}`}
+            >
+              {visita.corretor_nome}
+            </p>
+          </div>
+        )}
+
         {loading ? (
           <div className="text-center py-4 text-gray-500">
             Carregando corretores...
+          </div>
+        ) : corretores.length === 0 ? (
+          <div
+            className={`text-center py-4 ${isDark ? "text-gray-400" : "text-gray-600"}`}
+          >
+            Nenhum outro corretor ativo disponível
           </div>
         ) : (
           <select
@@ -516,8 +539,10 @@ const ModalTransferir = ({ isOpen, onClose, visita, onConfirm, isDark }) => {
             <option value="">Selecione o novo corretor</option>
             {corretores.map((corretor) => (
               <option key={corretor.id} value={corretor.id}>
-                {corretor.nome || corretor.email}{" "}
-                {corretor.cargo ? `(${corretor.cargo})` : ""}
+                {corretor.nome}{" "}
+                {corretor.status === "Período de Experiência"
+                  ? "(em experiência)"
+                  : ""}
               </option>
             ))}
           </select>
@@ -526,10 +551,10 @@ const ModalTransferir = ({ isOpen, onClose, visita, onConfirm, isDark }) => {
         <div className="flex gap-2">
           <button
             onClick={handleConfirm}
-            disabled={!selectedCorretor || loading}
+            disabled={!selectedCorretor || loading || transferindo}
             className="flex-1 bg-purple-600 text-white py-3 rounded-lg hover:bg-purple-700 disabled:opacity-50 transition-colors"
           >
-            Transferir
+            {transferindo ? "Transferindo..." : "Transferir"}
           </button>
           <button
             onClick={onClose}
@@ -552,7 +577,7 @@ const ModalReagendar = ({ isOpen, onClose, visita, onConfirm, isDark }) => {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (visita) {
+    if (visita && visita.data_visita) {
       const dataAtual = new Date(visita.data_visita);
       setData(dataAtual.toISOString().split("T")[0]);
       setHorario(dataAtual.toTimeString().slice(0, 5));
@@ -650,41 +675,49 @@ const ModalReagendar = ({ isOpen, onClose, visita, onConfirm, isDark }) => {
     </div>
   );
 };
-// ============================================
-// ÍCONE DE WHATSAPP - COLOQUE AQUI! 👇
-// ============================================
-const WhatsAppIcon = ({ className }) => (
-  <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.76.982.998-3.675-.236-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.9 6.994c-.004 5.45-4.438 9.88-9.888 9.88m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.333.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.333 11.893-11.893 0-3.18-1.24-6.162-3.495-8.411" />
-  </svg>
-);
 
 // ============================================
-// COMPONENTE MODAL DE PROPOSTA
+// COMPONENTE MODAL DE PROPOSTA (VERSÃO CORRIGIDA)
 // ============================================
 const ModalProposta = ({ isOpen, onClose, visita, onConfirm, isDark }) => {
-  console.log("📦 MODAL PROPOSTA - renderizou", { isOpen, visita });
-  console.log("🏠 Imóvel na visita:", visita?.imoveis);
-  console.log("💰 Valor do imóvel:", visita?.imoveis?.preco);
+  // LOG PARA VER O QUE ESTÁ CHEGANDO
+  console.log("📦 MODAL PROPOSTA - visita recebida:", visita);
+  console.log("🏠 imovel dentro da visita:", visita?.imovel);
+  console.log("💰 preco do imovel:", visita?.imovel?.preco);
 
-  // Guarda o valor em centavos (ex: 100000 = R$ 1.000,00)
-  const [valor, setValor] = useState(visita?.imoveis?.preco?.toString() || "");
+  // 🔥 PEGA O VALOR DO IMÓVEL AUTOMATICAMENTE
+  const [valor, setValor] = useState("");
   const [condicoes, setCondicoes] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // QUANDO O MODAL ABRIR, ATUALIZA O VALOR COM O PREÇO DO IMÓVEL
+  useEffect(() => {
+    if (isOpen && visita) {
+      // Pega o preço do imóvel (pode estar em imovel ou imoveis)
+      const precoImovel = visita?.imovel?.preco || visita?.imoveis?.preco;
+
+      if (precoImovel) {
+        console.log("🎯 Atualizando valor para:", precoImovel);
+        // Converte para centavos (350000.00 → 35000000)
+        const valorEmCentavos = Math.round(precoImovel * 100);
+        setValor(valorEmCentavos.toString());
+      } else {
+        console.log("⚠️ Preço do imóvel não encontrado");
+        setValor("");
+      }
+    }
+  }, [isOpen, visita]);
+
   // Função para formatar o valor para exibição (R$ 100.000,00)
-  const formatarValorExibicao = (valorReais) => {
-    if (!valorReais) return "";
+  const formatarValorExibicao = (valorCentavos) => {
+    if (!valorCentavos) return "";
 
-    // Converte string para número (remove formatação se houver)
-    const valorNumerico =
-      typeof valorReais === "string"
-        ? parseFloat(valorReais.replace(/\./g, "").replace(",", "."))
-        : valorReais;
+    // Converte centavos para reais (35000000 → 350000.00)
+    const valorReais = parseFloat(valorCentavos) / 100;
 
-    if (isNaN(valorNumerico)) return "";
+    if (isNaN(valorReais)) return "";
 
-    return valorNumerico.toLocaleString("pt-BR", {
+    return valorReais.toLocaleString("pt-BR", {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     });
@@ -693,9 +726,8 @@ const ModalProposta = ({ isOpen, onClose, visita, onConfirm, isDark }) => {
   // Função para lidar com a mudança no input
   const handleValorChange = (e) => {
     // Pega o valor digitado e remove tudo que não é número
-    const valorDigitado = e.target.value;
-    const apenasNumeros = valorDigitado.replace(/\D/g, "");
-    setValor(apenasNumeros);
+    const valorDigitado = e.target.value.replace(/\D/g, "");
+    setValor(valorDigitado);
   };
 
   const handleConfirm = async () => {
@@ -706,8 +738,9 @@ const ModalProposta = ({ isOpen, onClose, visita, onConfirm, isDark }) => {
 
     setLoading(true);
     try {
-      // Converte de centavos para número real (100000 → 1000.00)
-      const valorNumerico = parseFloat(valor);
+      // Converte de centavos para número real (35000000 → 350000.00)
+      const valorNumerico = parseFloat(valor) / 100;
+      console.log("💰 Enviando valor:", valorNumerico);
       await onConfirm(visita.id, valorNumerico, condicoes);
       onClose();
     } catch (error) {
@@ -730,10 +763,12 @@ const ModalProposta = ({ isOpen, onClose, visita, onConfirm, isDark }) => {
           Nova Proposta
         </h3>
 
+        {/* ✅ CORRIGIDO: Mostra o código do imóvel junto com o nome do lead */}
         <p
           className={`text-sm mb-4 ${isDark ? "text-gray-300" : "text-gray-600"}`}
         >
-          {visita?.nome_cliente} - {visita?.imoveis?.codigo}
+          {visita?.nome_cliente} -{" "}
+          {visita?.imovel?.codigo || visita?.imoveis?.codigo || "SEM CÓDIGO"}
         </p>
 
         <div className="space-y-4 mb-4">
@@ -756,8 +791,8 @@ const ModalProposta = ({ isOpen, onClose, visita, onConfirm, isDark }) => {
             />
             <p className="text-xs text-gray-500 mt-1">
               Valor do imóvel:{" "}
-              {visita?.imoveis?.preco
-                ? formatarMoeda(visita.imoveis.preco)
+              {visita?.imovel?.preco || visita?.imoveis?.preco
+                ? formatarMoeda(visita?.imovel?.preco || visita?.imoveis?.preco)
                 : "Não disponível"}
             </p>
           </div>
@@ -801,8 +836,203 @@ const ModalProposta = ({ isOpen, onClose, visita, onConfirm, isDark }) => {
     </div>
   );
 };
+
 // ============================================
-// Card de Visita
+// COMPONENTE STATUS TAB
+// ============================================
+const StatusTab = ({ status, label, count, isActive, onClick, isDark }) => {
+  const colorConfig = {
+    solicitada: {
+      bg: isDark ? "bg-[#D4A24D]" : "bg-[#D4A24D]",
+      hover: isDark ? "hover:bg-[#E0B157]" : "hover:bg-[#C19137]",
+      light: isDark ? "bg-amber-900/20" : "bg-amber-50",
+      border: isDark ? "border-amber-800" : "border-amber-200",
+      text: isDark ? "text-amber-300" : "text-amber-700",
+    },
+    agendada: {
+      bg: isDark ? "bg-amber-500" : "bg-amber-500",
+      hover: isDark ? "hover:bg-amber-600" : "hover:bg-amber-600",
+      light: isDark ? "bg-amber-900/20" : "bg-amber-50",
+      border: isDark ? "border-amber-800" : "border-amber-200",
+      text: isDark ? "text-amber-300" : "text-amber-700",
+    },
+    confirmada: {
+      bg: isDark ? "bg-emerald-500" : "bg-emerald-500",
+      hover: isDark ? "hover:bg-emerald-600" : "hover:bg-emerald-600",
+      light: isDark ? "bg-emerald-900/20" : "bg-emerald-50",
+      border: isDark ? "border-emerald-800" : "border-emerald-200",
+      text: isDark ? "text-emerald-300" : "text-emerald-700",
+    },
+    realizada: {
+      bg: isDark ? "bg-purple-500" : "bg-purple-500",
+      hover: isDark ? "hover:bg-purple-600" : "hover:bg-purple-600",
+      light: isDark ? "bg-purple-900/20" : "bg-purple-50",
+      border: isDark ? "border-purple-800" : "border-purple-200",
+      text: isDark ? "text-purple-300" : "text-purple-700",
+    },
+    cancelada: {
+      bg: isDark ? "bg-rose-500" : "bg-rose-500",
+      hover: isDark ? "hover:bg-rose-600" : "hover:bg-rose-600",
+      light: isDark ? "bg-rose-900/20" : "bg-rose-50",
+      border: isDark ? "border-rose-800" : "border-rose-200",
+      text: isDark ? "text-rose-300" : "text-rose-700",
+    },
+  };
+
+  const config = colorConfig[status] || colorConfig.solicitada;
+
+  return (
+    <button
+      onClick={() => onClick(status)}
+      className={`
+        flex items-center gap-2 px-3 py-2 sm:px-4 sm:py-3 rounded-lg transition-all duration-300 whitespace-nowrap
+        ${
+          isActive
+            ? `${config.light} ${isDark ? "text-gray-100" : config.text} border ${config.border} shadow-sm`
+            : `${
+                isDark
+                  ? "text-gray-400 hover:bg-gray-700 hover:text-gray-200"
+                  : "bg-gray-50 text-gray-700 hover:bg-amber-50/50 hover:text-amber-800"
+              }`
+        }
+        font-medium text-sm flex-shrink-0
+      `}
+    >
+      <div
+        className={`w-2 h-2 rounded-full flex-shrink-0 ${isActive ? config.bg : isDark ? "bg-gray-600" : "bg-gray-400"}`}
+      />
+      <span>{label}</span>
+      {count > 0 && (
+        <span
+          className={`
+          px-2 py-0.5 rounded-full text-xs font-bold flex-shrink-0
+          ${isActive ? config.bg + " text-white" : isDark ? "bg-gray-700 text-gray-300" : "bg-gray-200 text-gray-600"}
+        `}
+        >
+          {count}
+        </span>
+      )}
+    </button>
+  );
+};
+
+// ============================================
+// COMPONENTE MÉTRICAS CARD
+// ============================================
+const MetricasCard = ({ stats, isDark }) => {
+  if (!stats) return null;
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div
+        className={`rounded-xl p-4 border ${isDark ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"}`}
+      >
+        <div className="flex items-center justify-between">
+          <div>
+            <p
+              className={`text-sm ${isDark ? "text-gray-400" : "text-gray-600"}`}
+            >
+              Realizadas
+            </p>
+            <p
+              className={`text-2xl font-bold ${isDark ? "text-purple-400" : "text-purple-600"}`}
+            >
+              {stats.porStatus?.realizada || 0}
+            </p>
+          </div>
+          <div
+            className={`p-3 rounded-lg ${isDark ? "bg-purple-900/20" : "bg-purple-50"}`}
+          >
+            <CheckCircleIcon
+              className={`w-6 h-6 ${isDark ? "text-purple-400" : "text-purple-600"}`}
+            />
+          </div>
+        </div>
+      </div>
+
+      <div
+        className={`rounded-xl p-4 border ${isDark ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"}`}
+      >
+        <div className="flex items-center justify-between">
+          <div>
+            <p
+              className={`text-sm ${isDark ? "text-gray-400" : "text-gray-600"}`}
+            >
+              Canceladas
+            </p>
+            <p
+              className={`text-2xl font-bold ${isDark ? "text-rose-400" : "text-rose-600"}`}
+            >
+              {stats.porStatus?.cancelada || 0}
+            </p>
+          </div>
+          <div
+            className={`p-3 rounded-lg ${isDark ? "bg-rose-900/20" : "bg-rose-50"}`}
+          >
+            <XCircleIcon
+              className={`w-6 h-6 ${isDark ? "text-rose-400" : "text-rose-600"}`}
+            />
+          </div>
+        </div>
+      </div>
+
+      <div
+        className={`rounded-xl p-4 border ${isDark ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"}`}
+      >
+        <div className="flex items-center justify-between">
+          <div>
+            <p
+              className={`text-sm ${isDark ? "text-gray-400" : "text-gray-600"}`}
+            >
+              Conversão
+            </p>
+            <p
+              className={`text-2xl font-bold ${isDark ? "text-emerald-400" : "text-emerald-600"}`}
+            >
+              {stats.taxas?.conversao || 0}%
+            </p>
+          </div>
+          <div
+            className={`p-3 rounded-lg ${isDark ? "bg-emerald-900/20" : "bg-emerald-50"}`}
+          >
+            <ChartBarIcon
+              className={`w-6 h-6 ${isDark ? "text-emerald-400" : "text-emerald-600"}`}
+            />
+          </div>
+        </div>
+      </div>
+
+      <div
+        className={`rounded-xl p-4 border ${isDark ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"}`}
+      >
+        <div className="flex items-center justify-between">
+          <div>
+            <p
+              className={`text-sm ${isDark ? "text-gray-400" : "text-gray-600"}`}
+            >
+              No-show
+            </p>
+            <p
+              className={`text-2xl font-bold ${isDark ? "text-amber-400" : "text-amber-600"}`}
+            >
+              {stats.taxas?.noShow || 0}%
+            </p>
+          </div>
+          <div
+            className={`p-3 rounded-lg ${isDark ? "bg-amber-900/20" : "bg-amber-50"}`}
+          >
+            <UserIcon
+              className={`w-6 h-6 ${isDark ? "text-amber-400" : "text-amber-600"}`}
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ============================================
+// COMPONENTE CARD DE VISITA (O MAIS IMPORTANTE!)
 // ============================================
 const VisitaCard = ({ visita, onAction, isDark, usuarioLogado }) => {
   const [isHovering, setIsHovering] = useState(false);
@@ -811,15 +1041,6 @@ const VisitaCard = ({ visita, onAction, isDark, usuarioLogado }) => {
     visita.motivo_cancelamento || "",
   );
   const [updating, setUpdating] = useState(false);
-  console.log("👤 Usuário logado no card:", usuarioLogado);
-
-  console.log("📋 Dados completos da visita:", {
-    id: visita.id,
-    dia_preferencia: visita.dia_preferencia,
-    horario_preferencia: visita.horario_preferencia,
-    status: visita.status,
-    reagendado: visita.reagendado,
-  });
 
   const whatsappLink = criarLinkWhatsApp(
     visita.telefone,
@@ -828,9 +1049,10 @@ const VisitaCard = ({ visita, onAction, isDark, usuarioLogado }) => {
   );
 
   const isCorretorDaVisita = usuarioLogado?.id === visita.corretor_id;
+  const podeTransferir =
+    usuarioLogado?.role === "admin" || usuarioLogado?.role === "master";
 
   const handleActionWithLoading = async (action, payload = {}) => {
-    console.log("2️⃣ handleActionWithLoading chamado", { action, payload });
     setUpdating(true);
     await onAction(visita.id, action, payload);
     setUpdating(false);
@@ -848,9 +1070,6 @@ const VisitaCard = ({ visita, onAction, isDark, usuarioLogado }) => {
     const outlineBtnClass = `${baseBtnClass} flex-1 ${isDark ? "border border-amber-600 text-amber-300 hover:bg-amber-900/20 hover:border-amber-500" : "border border-amber-300 text-amber-700 hover:bg-amber-50 hover:border-amber-400"}`;
     const assumirBtnClass = `${baseBtnClass} flex-1 ${isDark ? "bg-blue-700 text-white hover:bg-blue-800" : "bg-blue-600 text-white hover:bg-blue-700 shadow-sm hover:shadow"}`;
 
-    // ============================================
-    // BLOCO 1 - ASSUMIR VISITA (para solicitações sem corretor)
-    // ============================================
     if (visita.status === "solicitada" && !visita.corretor_id) {
       return (
         <div className="flex flex-col gap-2 mt-4">
@@ -873,16 +1092,8 @@ const VisitaCard = ({ visita, onAction, isDark, usuarioLogado }) => {
         </div>
       );
     }
-    console.log("🔍 Verificando bloco transferir:", {
-      role: usuarioLogado?.role,
-      temCorretor: !!visita.corretor_id,
-      visitaId: visita.id,
-    });
 
-    // ============================================
-    // BLOCO 2 - ADMIN TRANSFERIR VISITA (aparece para admin)
-    // ============================================
-    if (usuarioLogado?.role === "admin" && visita.corretor_id) {
+    if (podeTransferir && visita.corretor_id) {
       return (
         <div className="flex flex-col gap-2 mt-4">
           <button
@@ -895,15 +1106,11 @@ const VisitaCard = ({ visita, onAction, isDark, usuarioLogado }) => {
         </div>
       );
     }
-    // ============================================
-    // BLOCO 3 - VERIFICAÇÃO DE PERMISSÃO (só o corretor responsável pode agir)
-    // ============================================
+
     if (!isCorretorDaVisita && visita.status !== "solicitada") {
       return null;
     }
-    // ============================================
-    // BLOCO 4 - AÇÕES POR STATUS
-    // ============================================
+
     switch (visita.status) {
       case "solicitada":
         return (
@@ -994,24 +1201,34 @@ const VisitaCard = ({ visita, onAction, isDark, usuarioLogado }) => {
       case "realizada":
         return (
           <div className="flex flex-col gap-2 mt-4">
-            <ResultadoSelect
+            <select
               value={resultadoTemp}
               onChange={(valor) => {
-                setResultadoTemp(valor);
+                setResultadoTemp(valor.target.value);
                 handleActionWithLoading("atualizar_resultado", {
-                  resultado: valor,
+                  resultado: valor.target.value,
                 });
               }}
-              isDark={isDark}
-            />
+              className={`w-full p-2 rounded-lg border ${
+                isDark
+                  ? "bg-gray-700 border-gray-600 text-gray-200"
+                  : "bg-white border-gray-300 text-gray-700"
+              }`}
+            >
+              <option value="">Selecionar resultado</option>
+              <option value="virou_proposta">Virou proposta</option>
+              <option value="interessado">Interessado</option>
+              <option value="nao_interessado">Não interessado</option>
+              <option value="nao_compareceu">Não compareceu</option>
+              <option value="reagendar">Reagendar</option>
+              <option value="sem_retorno">Sem retorno</option>
+            </select>
             <div className="flex gap-2">
-              {/* Botão de negociação - só para resultados positivos */}
               {(visita.resultado === "virou_proposta" ||
                 visita.resultado === "interessado" ||
                 visita.resultado === "reagendar") && (
                 <button
                   onClick={() => {
-                    console.log("1️⃣ Botão clicado", visita);
                     handleActionWithLoading("negociar", { visita });
                   }}
                   disabled={updating}
@@ -1145,12 +1362,19 @@ const VisitaCard = ({ visita, onAction, isDark, usuarioLogado }) => {
           </span>
         </div>
 
+        {/* ✅ ENDEREÇO CORRIGIDO - USA BAIRRO COMO FALLBACK */}
         <div className="mb-2">
           <p
             className={`text-sm line-clamp-2 min-h-[2.5rem] ${isDark ? "text-gray-300" : "text-gray-700"}`}
-            title={visita.imovel?.endereco || "Endereço não disponível"}
+            title={
+              visita.imovel?.endereco ||
+              visita.imovel?.bairro ||
+              "Endereço não disponível"
+            }
           >
-            {visita.imovel?.endereco || "Endereço não disponível"}
+            {visita.imovel?.endereco ||
+              visita.imovel?.bairro ||
+              "Endereço não disponível"}
           </p>
         </div>
 
@@ -1205,10 +1429,10 @@ const VisitaCard = ({ visita, onAction, isDark, usuarioLogado }) => {
       />
 
       {/* ============================================
-    SEÇÃO DA VISITA - CLASSIFICAÇÃO PROFISSIONAL
-    ============================================ */}
+          SEÇÃO DA VISITA - TODAS AS DATAS CORRIGIDAS
+      ============================================ */}
       <div className="space-y-2 mb-4">
-        {/* Data Agendada/Reagendada - NÃO mostrar em canceladas */}
+        {/* Data Agendada/Reagendada */}
         {visita.status !== "solicitada" &&
           visita.status !== "cancelada" &&
           visita.data_visita && (
@@ -1226,13 +1450,12 @@ const VisitaCard = ({ visita, onAction, isDark, usuarioLogado }) => {
                 <span className="font-semibold">
                   {visita.reagendado ? "Reagendada:" : "Agendada:"}
                 </span>{" "}
-                {formatarData(visita.data_visita)} •{" "}
-                {formatarHora(visita.data_visita)}
+                {formatarDataCompleta(visita.data_visita)}
               </span>
             </div>
           )}
 
-        {/* Data da Solicitação */}
+        {/* ✅ DATA DA SOLICITAÇÃO CORRIGIDA - USA formatarDataCompleta */}
         <div className="flex items-center gap-2">
           <div
             className={`p-1 rounded-lg flex-shrink-0 ${isDark ? "bg-amber-900/10" : "bg-amber-50/80"}`}
@@ -1244,8 +1467,7 @@ const VisitaCard = ({ visita, onAction, isDark, usuarioLogado }) => {
           <span
             className={`text-xs ${isDark ? "text-gray-400" : "text-gray-500"}`}
           >
-            Solicitada: {formatarData(visita.created_at)} às{" "}
-            {formatarHora(visita.created_at)}
+            Solicitada: {formatarDataCompleta(visita.created_at)}
           </span>
         </div>
 
@@ -1286,7 +1508,7 @@ const VisitaCard = ({ visita, onAction, isDark, usuarioLogado }) => {
           </div>
         )}
 
-        {/* Resultado (se houver) - NÃO mostrar em canceladas */}
+        {/* Resultado */}
         {visita.resultado && visita.status !== "cancelada" && (
           <div className="flex items-center gap-2">
             <div
@@ -1310,7 +1532,7 @@ const VisitaCard = ({ visita, onAction, isDark, usuarioLogado }) => {
           </div>
         )}
 
-        {/* 👇 MOTIVO DO CANCELAMENTO - ADICIONAR AQUI */}
+        {/* Motivo do cancelamento */}
         {visita.status === "cancelada" && (
           <div
             className={`p-3 rounded-lg border ${isDark ? "bg-rose-900/20 border-rose-800" : "bg-rose-50 border-rose-200"}`}
@@ -1328,9 +1550,7 @@ const VisitaCard = ({ visita, onAction, isDark, usuarioLogado }) => {
         )}
       </div>
 
-      {/* ============================================
-          LINHA DIVISÓRIA ENTRE INFOS E BOTÕES
-          ============================================ */}
+      {/* Linha divisória */}
       <div
         className={`h-px w-full ${isDark ? "bg-gray-700" : "bg-gray-200"} mb-4`}
       />
@@ -1340,197 +1560,9 @@ const VisitaCard = ({ visita, onAction, isDark, usuarioLogado }) => {
   );
 };
 
-// Componente de Aba
-const StatusTab = ({ status, label, count, isActive, onClick, isDark }) => {
-  const colorConfig = {
-    solicitada: {
-      bg: isDark ? "bg-[#D4A24D]" : "bg-[#D4A24D]",
-      hover: isDark ? "hover:bg-[#E0B157]" : "hover:bg-[#C19137]",
-      light: isDark ? "bg-amber-900/20" : "bg-amber-50",
-      border: isDark ? "border-amber-800" : "border-amber-200",
-      text: isDark ? "text-amber-300" : "text-amber-700",
-    },
-    agendada: {
-      bg: isDark ? "bg-amber-500" : "bg-amber-500",
-      hover: isDark ? "hover:bg-amber-600" : "hover:bg-amber-600",
-      light: isDark ? "bg-amber-900/20" : "bg-amber-50",
-      border: isDark ? "border-amber-800" : "border-amber-200",
-      text: isDark ? "text-amber-300" : "text-amber-700",
-    },
-    confirmada: {
-      bg: isDark ? "bg-emerald-500" : "bg-emerald-500",
-      hover: isDark ? "hover:bg-emerald-600" : "hover:bg-emerald-600",
-      light: isDark ? "bg-emerald-900/20" : "bg-emerald-50",
-      border: isDark ? "border-emerald-800" : "border-emerald-200",
-      text: isDark ? "text-emerald-300" : "text-emerald-700",
-    },
-    realizada: {
-      bg: isDark ? "bg-purple-500" : "bg-purple-500",
-      hover: isDark ? "hover:bg-purple-600" : "hover:bg-purple-600",
-      light: isDark ? "bg-purple-900/20" : "bg-purple-50",
-      border: isDark ? "border-purple-800" : "border-purple-200",
-      text: isDark ? "text-purple-300" : "text-purple-700",
-    },
-    cancelada: {
-      bg: isDark ? "bg-rose-500" : "bg-rose-500",
-      hover: isDark ? "hover:bg-rose-600" : "hover:bg-rose-600",
-      light: isDark ? "bg-rose-900/20" : "bg-rose-50",
-      border: isDark ? "border-rose-800" : "border-rose-200",
-      text: isDark ? "text-rose-300" : "text-rose-700",
-    },
-  };
-
-  const config = colorConfig[status] || colorConfig.solicitada;
-
-  return (
-    <button
-      onClick={() => onClick(status)}
-      className={`
-        flex items-center gap-2 px-3 py-2 sm:px-4 sm:py-3 rounded-lg transition-all duration-300 whitespace-nowrap
-        ${
-          isActive
-            ? `${config.light} ${isDark ? "text-gray-100" : config.text} border ${config.border} shadow-sm`
-            : `${
-                isDark
-                  ? "text-gray-400 hover:bg-gray-700 hover:text-gray-200"
-                  : "bg-gray-50 text-gray-700 hover:bg-amber-50/50 hover:text-amber-800"
-              }`
-        }
-        font-medium text-sm flex-shrink-0
-      `}
-    >
-      <div
-        className={`w-2 h-2 rounded-full flex-shrink-0 ${isActive ? config.bg : isDark ? "bg-gray-600" : "bg-gray-400"}`}
-      />
-      <span>{label}</span>
-      {count > 0 && (
-        <span
-          className={`
-          px-2 py-0.5 rounded-full text-xs font-bold flex-shrink-0
-          ${isActive ? config.bg + " text-white" : isDark ? "bg-gray-700 text-gray-300" : "bg-gray-200 text-gray-600"}
-        `}
-        >
-          {count}
-        </span>
-      )}
-    </button>
-  );
-};
-
-// Componente de Métricas
-const MetricasCard = ({ stats, isDark }) => {
-  if (!stats) return null;
-
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-      <div
-        className={`rounded-xl p-4 border ${isDark ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"}`}
-      >
-        <div className="flex items-center justify-between">
-          <div>
-            <p
-              className={`text-sm ${isDark ? "text-gray-400" : "text-gray-600"}`}
-            >
-              Realizadas
-            </p>
-            <p
-              className={`text-2xl font-bold ${isDark ? "text-purple-400" : "text-purple-600"}`}
-            >
-              {stats.porStatus?.realizada || 0}
-            </p>
-          </div>
-          <div
-            className={`p-3 rounded-lg ${isDark ? "bg-purple-900/20" : "bg-purple-50"}`}
-          >
-            <CheckCircleIcon
-              className={`w-6 h-6 ${isDark ? "text-purple-400" : "text-purple-600"}`}
-            />
-          </div>
-        </div>
-      </div>
-
-      <div
-        className={`rounded-xl p-4 border ${isDark ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"}`}
-      >
-        <div className="flex items-center justify-between">
-          <div>
-            <p
-              className={`text-sm ${isDark ? "text-gray-400" : "text-gray-600"}`}
-            >
-              Canceladas
-            </p>
-            <p
-              className={`text-2xl font-bold ${isDark ? "text-rose-400" : "text-rose-600"}`}
-            >
-              {stats.porStatus?.cancelada || 0}
-            </p>
-          </div>
-          <div
-            className={`p-3 rounded-lg ${isDark ? "bg-rose-900/20" : "bg-rose-50"}`}
-          >
-            <XCircleIcon
-              className={`w-6 h-6 ${isDark ? "text-rose-400" : "text-rose-600"}`}
-            />
-          </div>
-        </div>
-      </div>
-
-      <div
-        className={`rounded-xl p-4 border ${isDark ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"}`}
-      >
-        <div className="flex items-center justify-between">
-          <div>
-            <p
-              className={`text-sm ${isDark ? "text-gray-400" : "text-gray-600"}`}
-            >
-              Conversão
-            </p>
-            <p
-              className={`text-2xl font-bold ${isDark ? "text-emerald-400" : "text-emerald-600"}`}
-            >
-              {stats.taxas?.conversao || 0}%
-            </p>
-          </div>
-          <div
-            className={`p-3 rounded-lg ${isDark ? "bg-emerald-900/20" : "bg-emerald-50"}`}
-          >
-            <ChartBarIcon
-              className={`w-6 h-6 ${isDark ? "text-emerald-400" : "text-emerald-600"}`}
-            />
-          </div>
-        </div>
-      </div>
-
-      <div
-        className={`rounded-xl p-4 border ${isDark ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"}`}
-      >
-        <div className="flex items-center justify-between">
-          <div>
-            <p
-              className={`text-sm ${isDark ? "text-gray-400" : "text-gray-600"}`}
-            >
-              No-show
-            </p>
-            <p
-              className={`text-2xl font-bold ${isDark ? "text-amber-400" : "text-amber-600"}`}
-            >
-              {stats.taxas?.noShow || 0}%
-            </p>
-          </div>
-          <div
-            className={`p-3 rounded-lg ${isDark ? "bg-amber-900/20" : "bg-amber-50"}`}
-          >
-            <UserIcon
-              className={`w-6 h-6 ${isDark ? "text-amber-400" : "text-amber-600"}`}
-            />
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// Página Principal
+// ============================================
+// COMPONENTE PRINCIPAL VISITAS
+// ============================================
 const Visitas = () => {
   const [abaAtiva, setAbaAtiva] = useState("solicitada");
   const [visitas, setVisitas] = useState([]);
@@ -1565,9 +1597,6 @@ const Visitas = () => {
   useEffect(() => {
     if (user?.id) {
       carregarDados();
-      console.log("📡 Tentando carregar visitas para:", user.email);
-    } else {
-      console.log("⏳ Aguardando usuário...");
     }
   }, [user?.id]);
 
@@ -1576,21 +1605,10 @@ const Visitas = () => {
     setError(null);
 
     try {
-      console.log("📡 CARREGANDO DADOS...");
-
       const [visitasRes, statsRes] = await Promise.all([
         visitasService.listarVisitas(),
         visitasService.buscarEstatisticas(),
       ]);
-
-      console.log("📦 Dados recebidos:", visitasRes.data);
-      console.log(
-        "📦 Data das visitas:",
-        visitasRes.data?.map((v) => ({
-          id: v.id,
-          data_visita: v.data_visita,
-        })),
-      );
 
       if (visitasRes.error) throw new Error(visitasRes.error.message);
       if (statsRes.error) throw new Error(statsRes.error.message);
@@ -1599,10 +1617,8 @@ const Visitas = () => {
       setStats(statsRes.data);
     } catch (err) {
       if (err.message?.includes("AbortError") || err.name === "AbortError") {
-        console.log("🔄 Requisição abortada - ignorando");
         return;
       }
-
       console.error("❌ Erro ao carregar dados:", err);
       setError("Erro ao carregar visitas. Tente novamente.");
     } finally {
@@ -1646,21 +1662,12 @@ const Visitas = () => {
         v.telefone?.includes(searchTerm)),
   );
 
-  console.log("📊 TODAS as visitas:", visitas);
-  console.log(
-    "📊 Visitas canceladas:",
-    visitas.filter((v) => v.status === "cancelada"),
-  );
-  console.log("📊 Aba ativa:", abaAtiva);
-  console.log("📊 visitasFiltradas:", visitasFiltradas);
-
   const handleAction = async (visitaId, action, payload = {}) => {
     try {
       let result;
 
       switch (action) {
         case "assumir":
-          console.log("🎯 Abrindo modal de agendamento", payload.visita);
           setModalAgendar({
             aberto: true,
             visita: payload.visita,
@@ -1688,9 +1695,7 @@ const Visitas = () => {
           break;
 
         case "cancelar":
-          // Se NÃO tem visita no payload (solicitada), cancela direto
           if (!payload.visita) {
-            console.log("🔄 Cancelando visita solicitada sem modal", visitaId);
             result = await visitasService.atualizarStatus(
               visitaId,
               "cancelada",
@@ -1700,9 +1705,6 @@ const Visitas = () => {
             );
             break;
           }
-
-          // Para outros status (com payload.visita), abre modal
-          console.log("🔄 Abrindo modal de cancelamento", payload.visita);
           setModalCancelar({
             aberto: true,
             visita: payload.visita,
@@ -1710,7 +1712,6 @@ const Visitas = () => {
           return;
 
         case "reagendar":
-          console.log("🔄 Abrindo modal de reagendamento", payload.visita);
           setModalReagendar({
             aberto: true,
             visita: payload.visita,
@@ -1718,32 +1719,25 @@ const Visitas = () => {
           return;
 
         case "transferir":
-          console.log("🎯 Abrindo modal de transferência", payload.visita);
+          const podeTransferir =
+            user?.role === "admin" || user?.role === "master";
+          if (!podeTransferir) {
+            alert("Apenas administradores podem transferir visitas");
+            return;
+          }
           setModalTransferir({ aberto: true, visita: payload.visita });
           return;
 
         case "negociar":
-          console.log("🔥 ACTION NEGOCIAR DISPARADA!", {
-            actionRecebida: action,
-            visitaDoPayload: payload?.visita,
-            idDaVisita: payload?.visita?.id,
-          });
-
           if (!payload?.visita) {
             alert("Erro: dados da visita não encontrados");
             return;
           }
 
-          // Busca a visita com os dados do imóvel
           try {
             const { data: visitaCompleta, error } = await supabase
               .from("visitas")
-              .select(
-                `
-        *,
-        imoveis (*)
-      `,
-              )
+              .select(`*, imoveis (*)`)
               .eq("id", payload.visita.id)
               .single();
 
@@ -1752,8 +1746,6 @@ const Visitas = () => {
               alert("Erro ao carregar dados do imóvel");
               return;
             }
-
-            console.log("🏠 Visita completa com imóvel:", visitaCompleta);
 
             setModalProposta({
               aberto: true,
@@ -1798,8 +1790,6 @@ const Visitas = () => {
 
   const handleAgendarConfirm = async (visitaId, dataISO) => {
     try {
-      console.log("🔄 Agendando visita:", { visitaId, dataISO });
-
       const { error } = await supabase
         .from("visitas")
         .update({
@@ -1821,8 +1811,6 @@ const Visitas = () => {
 
   const handleTransferirConfirm = async (visitaId, novoCorretorId) => {
     try {
-      console.log("🔄 Transferindo visita:", { visitaId, novoCorretorId });
-
       const { error } = await supabase
         .from("visitas")
         .update({ corretor_id: novoCorretorId })
@@ -1840,8 +1828,6 @@ const Visitas = () => {
 
   const handleReagendarConfirm = async (visitaId, novaDataISO) => {
     try {
-      console.log("🔄 Reagendando visita:", { visitaId, novaDataISO });
-
       const { error } = await supabase
         .from("visitas")
         .update({
@@ -1862,20 +1848,15 @@ const Visitas = () => {
 
   const handleCancelarConfirm = async (visitaId, motivo) => {
     try {
-      console.log("🔄 Cancelando visita:", { visitaId, motivo });
-
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from("visitas")
         .update({
           status: "cancelada",
           motivo_cancelamento: motivo,
         })
-        .eq("id", visitaId)
-        .select();
+        .eq("id", visitaId);
 
       if (error) throw error;
-
-      console.log("✅ Dados retornados após cancelamento:", data);
 
       await carregarDados();
       alert("Visita cancelada com sucesso!");
@@ -1887,89 +1868,66 @@ const Visitas = () => {
 
   const handlePropostaConfirm = async (visitaId, valor, condicoes) => {
     try {
-      console.log("💰 Criando proposta:", { visitaId, valor, condicoes });
-
-      // VALOR JÁ É NÚMERO! Não precisa de replace
       const valorNumerico = valor;
 
-      // Primeiro, pegar o imovel_id E O LEAD_ID da visita
       const { data: visita, error: erroVisita } = await supabase
         .from("visitas")
-        .select("imovel_id, lead_id") // ← ADICIONAMOS lead_id AQUI!
+        .select("imovel_id, lead_id")
         .eq("id", visitaId)
         .single();
 
       if (erroVisita) throw erroVisita;
 
-      // 1. Criar a proposta
+      // Data atual no formato UTC para o banco
+      const agora = new Date();
+      const dataUTC = new Date(
+        agora.getTime() + agora.getTimezoneOffset() * 60000,
+      ).toISOString();
+
       const { error: erroProposta } = await supabase.from("propostas").insert([
         {
           visita_id: visitaId,
           valor: valorNumerico,
           condicoes: condicoes || null,
+          created_at: dataUTC,
         },
       ]);
 
       if (erroProposta) throw erroProposta;
 
-      // 2. Atualizar status do imóvel para "Em Negociação"
       const { error: erroImovel } = await supabase
         .from("imoveis")
         .update({
           status: "Em Negociação",
-          updated_at: new Date(),
+          updated_at: dataUTC,
         })
         .eq("id", visita.imovel_id);
 
       if (erroImovel) throw erroImovel;
 
-      // 3. 👇 NOVO: Atualizar status do lead para "proposta"
       const { error: erroLead } = await supabase
         .from("leads")
         .update({
           status: "proposta",
-          updated_at: new Date(),
+          updated_at: dataUTC,
         })
         .eq("id", visita.lead_id);
 
       if (erroLead) {
         console.error("⚠️ Erro ao atualizar lead:", erroLead);
-        // Não vamos dar throw aqui para não interromper o fluxo
-      } else {
-        console.log("✅ Lead atualizado para 'proposta'");
       }
-
-      // 4. Registrar data/hora do início da negociação nas estatísticas
-      const { error: erroStats } = await supabase
-        .from("imovel_estatisticas")
-        .upsert(
-          {
-            imovel_id: visita.imovel_id,
-            data_inicio_negociacao: new Date(),
-            tempo_negociacao: "0 dias",
-            updated_at: new Date(),
-          },
-          {
-            onConflict: "imovel_id",
-          },
-        );
-
-      if (erroStats) throw erroStats;
-
-      console.log("✅ Proposta criada e negociação iniciada!");
-      console.log("✅ Status do lead atualizado para 'proposta'");
 
       alert(
         "Proposta criada com sucesso! Imóvel atualizado para 'Em Negociação'.",
       );
 
-      // Recarregar os dados para atualizar a interface
       await carregarDados();
     } catch (error) {
       console.error("❌ Erro ao criar proposta:", error);
       alert("Erro ao criar proposta. Tente novamente.");
     }
   };
+
   if (loading) {
     return (
       <div
@@ -2203,7 +2161,7 @@ const Visitas = () => {
         )}
       </div>
 
-      {/* Modal de agendamento */}
+      {/* Modais */}
       {modalAgendar.aberto && (
         <ModalAgendar
           isOpen={modalAgendar.aberto}
@@ -2214,7 +2172,6 @@ const Visitas = () => {
         />
       )}
 
-      {/* Modal de cancelamento */}
       {modalCancelar.aberto && (
         <ModalCancelar
           isOpen={modalCancelar.aberto}
@@ -2225,7 +2182,6 @@ const Visitas = () => {
         />
       )}
 
-      {/* Modal de transferência */}
       {modalTransferir.aberto && (
         <ModalTransferir
           isOpen={modalTransferir.aberto}
@@ -2236,7 +2192,6 @@ const Visitas = () => {
         />
       )}
 
-      {/* Modal de reagendamento */}
       {modalReagendar.aberto && (
         <ModalReagendar
           isOpen={modalReagendar.aberto}
@@ -2247,7 +2202,6 @@ const Visitas = () => {
         />
       )}
 
-      {/* Modal de proposta */}
       {modalProposta.aberto && (
         <ModalProposta
           isOpen={modalProposta.aberto}
@@ -2259,22 +2213,22 @@ const Visitas = () => {
       )}
 
       <style>{`
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    .animate-fadeIn { animation: fadeIn 0.3s ease-out; }
-    .line-clamp-2 {
-      display: -webkit-box;
-      -webkit-line-clamp: 2;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
-    }
-    .min-w-0 { min-width: 0; }
-    @media (min-width: 475px) {
-      .xs\\:flex-row { flex-direction: row; }
-    }
-  `}</style>
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fadeIn { animation: fadeIn 0.3s ease-out; }
+        .line-clamp-2 {
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+        }
+        .min-w-0 { min-width: 0; }
+        @media (min-width: 475px) {
+          .xs\\:flex-row { flex-direction: row; }
+        }
+      `}</style>
     </div>
   );
 };

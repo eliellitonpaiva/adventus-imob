@@ -1,6 +1,6 @@
 // ============================================================================
-// DETALHE DO IMÓVEL - VERSÃO FINAL COM CARROSSEL DE FOTOS
-// E PROTEÇÃO CONTRA ENVIOS DUPLICADOS (CORRIGIDO)
+// DETALHE DO IMÓVEL - VERSÃO FINAL COM CARROSSEL EM TELA CHEIA
+// E PROTEÇÃO CONTRA ENVIOS DUPLICADOS
 // ============================================================================
 // Arquivo: src/pages/DetalheImovel.jsx
 // ============================================================================
@@ -1626,130 +1626,125 @@ const DetalheImovel = () => {
   }
 
   // ==========================================================================
-  // RENDERIZAÇÃO
+  // RENDERIZAÇÃO - SOMENTE A PARTE DO CARROSSEL FOI ALTERADA
   // ==========================================================================
   return (
     <>
-      {/* BREADCRUMB */}
-      <div className="bg-gray-100 border-b border-gray-200 py-3">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="flex items-center text-xs md:text-sm text-gray-600">
-            <a href="/" className="hover:text-[#D4A24D]">
-              Home
-            </a>
-            <span className="mx-2">/</span>
-            <a
-              href={dados.finalidade_venda ? "/comprar" : "/alugar"}
-              className="hover:text-[#D4A24D]"
-            >
-              {dados.finalidade_venda ? "Comprar" : "Alugar"}
-            </a>
-            <span className="mx-2">/</span>
-            <span className="font-semibold text-[#D4A24D]">{dados.codigo}</span>
-          </div>
-        </div>
-      </div>
+      {/* BREADCRUMB - REMOVIDO PARA NÃO INTERFERIR */}
 
-      {/* =============== CARROSSEL DE FOTOS =============== */}
-      <section className="mb-0">
-        <div className="relative w-full">
-          <div
-            className="relative h-[380px] md:h-[540px] lg:h-[560px] w-full overflow-hidden bg-gray-900"
-            onTouchStart={handleTouchStart}
-            onTouchMove={handleTouchMove}
-            onTouchEnd={handleTouchEnd}
-          >
-            {imagens.map((img, index) => (
-              <img
+      {/* =============== CARROSSEL DE FOTOS EM TELA CHEIA =============== */}
+      <section className="relative w-full pt-[65px] md:pt-20">
+        {/* Container do carrossel com altura responsiva */}
+        <div className="relative w-full h-[50vh] md:h-[calc(100vh-80px)] overflow-hidden bg-gray-900">
+          {imagens.map((img, index) => (
+            <img
+              key={index}
+              src={img}
+              alt={gerarAltImagem(dados, index)}
+              className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ${
+                index === imagemAtual ? "opacity-100" : "opacity-0"
+              }`}
+            />
+          ))}
+
+          {/* Overlay escuro sutil para melhor contraste */}
+          <div className="absolute inset-0 bg-black/10"></div>
+
+          {/* CONTADOR - ajustado para mobile */}
+          <div className="absolute top-4 left-4 md:top-28 md:left-8 z-20 backdrop-blur-md rounded-full bg-black/40">
+            <div className="flex items-center justify-center px-2 py-1 md:px-4 md:py-2 space-x-1 md:space-x-2">
+              <i className="fas fa-camera text-[#D4A24D] text-[10px] md:text-xs"></i>
+              <span className="text-white font-medium text-xs md:text-sm">
+                {imagemAtual + 1}/{imagens.length}
+              </span>
+            </div>
+          </div>
+
+          {/* PONTINHOS - ajustado para mobile */}
+          <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-1.5 md:space-x-2 z-20">
+            {imagens.map((_, index) => (
+              <button
                 key={index}
-                src={img}
-                alt={gerarAltImagem(dados, index)}
-                className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ${
-                  index === imagemAtual ? "opacity-100" : "opacity-0"
-                }`}
+                onClick={() => setImagemAtual(index)}
+                className="rounded-full transition-all duration-300 focus:outline-none focus:ring-0"
+                style={{
+                  width: imagemAtual === index ? "8px" : "6px",
+                  height: imagemAtual === index ? "8px" : "6px",
+                  backgroundColor:
+                    imagemAtual === index ? "#D4A24D" : "rgba(255,255,255,0.6)",
+                  boxShadow:
+                    imagemAtual === index
+                      ? "0 0 8px rgba(212,162,77,0.8)"
+                      : "none",
+                  border: "none",
+                  padding: 0,
+                  cursor: "pointer",
+                  outline: "none",
+                }}
+                aria-label={`Ir para imagem ${index + 1}`}
               />
             ))}
+          </div>
 
-            {/* CONTADOR */}
-            <div
-              className="absolute top-3 left-3 md:top-5 md:left-5 z-20 backdrop-blur-md rounded-full"
-              style={{
-                backgroundColor: "rgba(0, 0, 0, 0.4)",
-              }}
-            >
-              <div className="flex items-center justify-center px-2 py-1 md:px-3 md:py-1.5 space-x-1">
-                <i
-                  className="fas fa-camera text-[#D4A24D]"
-                  style={{ fontSize: "10px" }}
-                ></i>
-                <span
-                  className="text-white font-medium"
-                  style={{ fontSize: "11px", letterSpacing: "0.3px" }}
-                >
-                  {imagemAtual + 1}/{imagens.length}
+          {/* SETAS (APENAS DESKTOP) */}
+          {imagens.length > 1 && (
+            <>
+              <button
+                onClick={() => mudarImagem(-1)}
+                className="hidden md:flex absolute left-6 top-1/2 transform -translate-y-1/2 bg-black/40 hover:bg-black/60 text-white rounded-full items-center justify-center shadow-lg transition-all hover:scale-110 z-20 backdrop-blur-sm border border-white/20 focus:outline-none focus:ring-0"
+                style={{
+                  width: "44px",
+                  height: "44px",
+                }}
+              >
+                <i className="fas fa-chevron-left text-lg"></i>
+              </button>
+              <button
+                onClick={() => mudarImagem(1)}
+                className="hidden md:flex absolute right-6 top-1/2 transform -translate-y-1/2 bg-black/40 hover:bg-black/60 text-white rounded-full items-center justify-center shadow-lg transition-all hover:scale-110 z-20 backdrop-blur-sm border border-white/20 focus:outline-none focus:ring-0"
+                style={{
+                  width: "44px",
+                  height: "44px",
+                }}
+              >
+                <i className="fas fa-chevron-right text-lg"></i>
+              </button>
+            </>
+          )}
+
+          {/* SCROLL INDICATOR PREMIUM - TEXTO COM GRADIENTE E BORDA ANIMADA */}
+          <div className="absolute bottom-12 md:bottom-8 left-1/2 transform -translate-x-1/2 z-30">
+            <div className="relative group cursor-pointer">
+              {/* Borda animada com glow - escondida no mobile */}
+              <div className="hidden md:block absolute -inset-4 bg-gradient-to-r from-[#D4A24D]/0 via-[#D4A24D]/50 to-[#D4A24D]/0 rounded-full blur-md opacity-0 group-hover:opacity-100 transition-opacity duration-1000 animate-pulse"></div>
+
+              {/* Círculo externo animado - reduzido no mobile */}
+              <div className="relative flex items-center justify-center">
+                <div className="absolute w-8 h-8 md:w-12 md:h-12 border border-white/20 rounded-full animate-ping"></div>
+                <div className="absolute w-7 h-7 md:w-10 md:h-10 border border-white/30 rounded-full animate-pulse"></div>
+
+                {/* Círculo interno com ícone - reduzido no mobile */}
+                <div className="relative w-10 h-10 md:w-14 md:h-14 bg-white/10 backdrop-blur-md rounded-full flex items-center justify-center border border-white/30 hover:border-[#D4A24D] transition-colors duration-500 group">
+                  <div className="flex flex-col items-center">
+                    <i className="fas fa-chevron-down text-white text-sm md:text-lg animate-bounce"></i>
+                  </div>
+                </div>
+              </div>
+
+              {/* Texto com gradiente - APENAS NO DESKTOP */}
+              <div className="absolute -bottom-8 md:-bottom-8 left-1/2 transform -translate-x-1/2 whitespace-nowrap">
+                <span className="text-white md:text-transparent md:bg-clip-text md:bg-gradient-to-r md:from-white md:via-[#D4A24D] md:to-white text-[10px] md:text-[10px] font-medium md:font-light tracking-[0.2em] md:tracking-[0.3em] uppercase drop-shadow-lg">
+                  Role para ver detalhes
                 </span>
+                <div className="absolute -bottom-1 left-0 w-full h-px bg-gradient-to-r from-transparent via-[#D4A24D] to-transparent"></div>
               </div>
             </div>
-
-            {/* PONTINHOS */}
-            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-1.5 z-20">
-              {imagens.map((_, index) => (
-                <button
-                  key={index}
-                  onClick={() => setImagemAtual(index)}
-                  className="rounded-full transition-all duration-300 focus:outline-none focus:ring-0"
-                  style={{
-                    width: imagemAtual === index ? "8px" : "6px",
-                    height: imagemAtual === index ? "8px" : "6px",
-                    backgroundColor:
-                      imagemAtual === index
-                        ? "#D4A24D"
-                        : "rgba(255,255,255,0.6)",
-                    boxShadow:
-                      imagemAtual === index
-                        ? "0 0 8px rgba(212,162,77,0.8)"
-                        : "none",
-                    border: "none",
-                    padding: 0,
-                    cursor: "pointer",
-                    outline: "none",
-                  }}
-                  aria-label={`Ir para imagem ${index + 1}`}
-                />
-              ))}
-            </div>
-
-            {/* SETAS (APENAS DESKTOP) */}
-            {imagens.length > 1 && (
-              <>
-                <button
-                  onClick={() => mudarImagem(-1)}
-                  className="hidden md:flex absolute left-4 top-1/2 transform -translate-y-1/2 bg-black/30 hover:bg-black/50 text-white rounded-full items-center justify-center shadow-lg transition-all hover:scale-110 z-20 backdrop-blur-sm border border-white/10 focus:outline-none focus:ring-0"
-                  style={{
-                    width: "36px",
-                    height: "36px",
-                  }}
-                >
-                  <i className="fas fa-chevron-left text-sm"></i>
-                </button>
-                <button
-                  onClick={() => mudarImagem(1)}
-                  className="hidden md:flex absolute right-4 top-1/2 transform -translate-y-1/2 bg-black/30 hover:bg-black/50 text-white rounded-full items-center justify-center shadow-lg transition-all hover:scale-110 z-20 backdrop-blur-sm border border-white/10 focus:outline-none focus:ring-0"
-                  style={{
-                    width: "36px",
-                    height: "36px",
-                  }}
-                >
-                  <i className="fas fa-chevron-right text-sm"></i>
-                </button>
-              </>
-            )}
           </div>
         </div>
       </section>
 
-      {/* CABEÇALHO DO IMÓVEL */}
-      <section className="bg-[#31353E] text-white pt-8 pb-12 md:pt-10 md:pb-14">
+      {/* CABEÇALHO DO IMÓVEL - AJUSTADO NO MOBILE */}
+      <section className="bg-[#31353E] text-white pt-5 md:pt-10 md:pb-14 pb-8">
         <div className="max-w-7xl mx-auto px-4">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
             <div className="flex flex-col justify-center">
@@ -1948,12 +1943,14 @@ const DetalheImovel = () => {
                   </div>
                 </div>
                 <div className="w-full h-px bg-gradient-to-r from-transparent via-[#D4A24D] to-transparent my-4"></div>
+
+                {/* BOTÃO SOLICITAR VISITA - AUMENTADO NO MOBILE */}
                 <button
                   onClick={abrirModal}
-                  className="w-full py-3 px-4 bg-gradient-to-r from-[#D4A24D] to-[#E6B85C] hover:from-[#C4933E] hover:to-[#D4A24D] text-white font-semibold rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center gap-2 text-sm md:text-base relative overflow-hidden group"
+                  className="w-full py-4 px-5 md:py-3 md:px-4 bg-gradient-to-r from-[#D4A24D] to-[#E6B85C] hover:from-[#C4933E] hover:to-[#D4A24D] text-white font-semibold rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center gap-2 text-base md:text-sm relative overflow-hidden group"
                 >
                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
-                  <i className="fas fa-calendar-check relative z-10"></i>
+                  <i className="fas fa-calendar-check relative z-10 text-lg md:text-base"></i>
                   <span className="relative z-10">Solicitar uma visita</span>
                 </button>
               </div>
@@ -1962,7 +1959,8 @@ const DetalheImovel = () => {
         </div>
       </section>
 
-      <div className="py-6 md:py-8"></div>
+      {/* ESPAÇAMENTO ENTRE CABEÇALHO E ACORDEÕES - AJUSTADO +3px */}
+      <div className="py-5 md:py-8"></div>
 
       {/* ACORDEÕES */}
       <section className="max-w-7xl mx-auto px-4">
@@ -2057,7 +2055,8 @@ const DetalheImovel = () => {
         </div>
       </section>
 
-      <div className="py-6 md:py-8"></div>
+      {/* ESPAÇAMENTO ENTRE ACORDEÕES E CTA - AJUSTADO +3px */}
+      <div className="py-5 md:py-8"></div>
 
       {/* CALL-TO-ACTION */}
       <section className="max-w-7xl mx-auto px-4">
@@ -2127,7 +2126,8 @@ const DetalheImovel = () => {
         </div>
       </section>
 
-      <div className="py-6 md:py-8"></div>
+      {/* ESPAÇAMENTO FINAL - AJUSTADO +3px */}
+      <div className="py-5 md:py-8"></div>
 
       {/* MODAL DE VISITA - COM PROTEÇÃO CONTRA DUPLICIDADE */}
       {modalAberto && (
@@ -2426,6 +2426,64 @@ const DetalheImovel = () => {
             transform: scale(1.5);
             opacity: 0;
           }
+        }
+
+        /* ===== ANIMAÇÕES PREMIUM DO SCROLL INDICATOR ===== */
+        @keyframes gradientFlow {
+          0%,
+          100% {
+            background-position: 0% 50%;
+          }
+          50% {
+            background-position: 100% 50%;
+          }
+        }
+
+        .animate-gradientFlow {
+          background-size: 200% auto;
+          animation: gradientFlow 3s linear infinite;
+        }
+
+        @keyframes ping {
+          75%,
+          100% {
+            transform: scale(2);
+            opacity: 0;
+          }
+        }
+
+        .animate-ping {
+          animation: ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+        }
+
+        @keyframes pulse {
+          0%,
+          100% {
+            opacity: 1;
+          }
+          50% {
+            opacity: 0.5;
+          }
+        }
+
+        .animate-pulse {
+          animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        @keyframes bounce {
+          0%,
+          100% {
+            transform: translateY(0);
+            animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
+          }
+          50% {
+            transform: translateY(-5px);
+            animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
+          }
+        }
+
+        .animate-bounce {
+          animation: bounce 1.5s infinite;
         }
 
         button:focus {

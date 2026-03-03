@@ -39,11 +39,19 @@ const EditarCorretor = () => {
     observacoes: "",
     nivel_experiencia: "pleno",
     especialidades: [],
-    imoveis_iniciais: 0,
-    leads_iniciais: 0,
+    imoveis: 0,
+    leads: 0,
+    vendas_mes: 0,
+    pontuacao: 0,
+    meta: 1000,
+    rating: 4.8,
     comissao_base: "",
     perfil: "corretor",
     senha: "",
+    periodoExperiencia: false,
+    treinamento_conclusao: "",
+    data_ativacao: "", // 🆕 CAMPO ADICIONADO
+    data_experiencia_fim: "",
   });
 
   // Carrega dados do corretor
@@ -59,7 +67,14 @@ const EditarCorretor = () => {
         if (error) throw error;
         if (data) {
           setFormData(data);
-          setTipoCadastro(data.treinamento_necessario ? "candidato" : "direto");
+          // Define o tipo baseado nos dados
+          if (data.periodoExperiencia) {
+            setTipoCadastro("candidato");
+          } else if (data.treinamento_conclusao && !data.periodoExperiencia) {
+            setTipoCadastro("candidato");
+          } else {
+            setTipoCadastro("direto");
+          }
         }
       } catch (error) {
         console.error("Erro ao carregar corretor:", error);
@@ -74,8 +89,11 @@ const EditarCorretor = () => {
   }, [id, navigate]);
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    const { name, value, type, checked } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value,
+    }));
     if (erros[name]) setErros((prev) => ({ ...prev, [name]: null }));
   };
 
@@ -110,16 +128,31 @@ const EditarCorretor = () => {
 
     setSaving(true);
     try {
+      // Prepara os dados para atualização
+      const dadosAtualizacao = {
+        ...formData,
+        updated_at: new Date().toISOString(),
+        telefone: formData.telefone.replace(/\D/g, ""),
+      };
+
+      // Remove campos que não devem ser atualizados
+      delete dadosAtualizacao.senha; // Não atualiza senha aqui
+
       const { error } = await supabase
         .from("corretores")
-        .update({
-          ...formData,
-          updated_at: new Date().toISOString(),
-          telefone: formData.telefone.replace(/\D/g, ""),
-        })
+        .update(dadosAtualizacao)
         .eq("id", id);
 
       if (error) throw error;
+
+      // Se uma nova senha foi fornecida, atualiza no Auth
+      if (formData.senha) {
+        const { error: authError } = await supabase.auth.admin.updateUserById(
+          id,
+          { password: formData.senha },
+        );
+        if (authError) console.warn("Erro ao atualizar senha:", authError);
+      }
 
       alert("✅ Corretor atualizado com sucesso!");
       navigate("/admin/corretores");
@@ -664,6 +697,31 @@ const EditarCorretor = () => {
                       focus:outline-none focus:ring-2 focus:ring-amber-500/30
                     `}
                   />
+                </div>
+
+                {/* 🆕 NOVO CAMPO: Data de Ativação */}
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    Data de Ativação
+                  </label>
+                  <input
+                    type="date"
+                    name="data_ativacao"
+                    value={formData.data_ativacao || ""}
+                    onChange={handleChange}
+                    className={`
+                      w-full px-3 py-2 rounded-lg border
+                      ${
+                        isDark
+                          ? "bg-gray-700 border-gray-600 text-gray-200"
+                          : "bg-white border-gray-300 text-gray-900"
+                      }
+                      focus:outline-none focus:ring-2 focus:ring-amber-500/30
+                    `}
+                  />
+                  <p className="text-xs mt-1 opacity-60">
+                    Data que o corretor entrou na imobiliária
+                  </p>
                 </div>
 
                 <div className="lg:col-span-3">

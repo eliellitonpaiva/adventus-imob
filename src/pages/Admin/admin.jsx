@@ -29,6 +29,11 @@ import {
   MagnifyingGlassIcon,
   BuildingOfficeIcon,
   CalendarDaysIcon,
+  // 👇 ADICIONE ESTES
+  ChartPieIcon,
+  CurrencyDollarIcon,
+  ExclamationTriangleIcon,
+  ArrowTrendingUpIcon,
 } from "@heroicons/react/24/outline";
 
 // ============================================
@@ -907,7 +912,49 @@ const formatarTempoResposta = (minutos) => {
 
 const formatarData = (data) => {
   if (!data) return "-";
-  return new Date(data).toLocaleDateString("pt-BR");
+
+  try {
+    const dataObj = new Date(data);
+    if (isNaN(dataObj.getTime())) return "-";
+
+    return dataObj.toLocaleDateString("pt-BR", {
+      timeZone: "America/Sao_Paulo",
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+  } catch (error) {
+    console.error("Erro ao formatar data:", error);
+    return "-";
+  }
+};
+
+const formatarDataCompleta = (data) => {
+  if (!data) return "-";
+
+  try {
+    // Se não tiver Z no final, adiciona (igual já fazemos)
+    const dataStr = data.includes("Z") ? data : data + "Z";
+    const dataObj = new Date(dataStr);
+
+    if (isNaN(dataObj.getTime())) return "-";
+
+    // Formato: 02/03/2026 às 23:30
+    return dataObj
+      .toLocaleString("pt-BR", {
+        timeZone: "America/Sao_Paulo",
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false, // Formato 24h
+      })
+      .replace(", ", " às "); // Troca a vírgula e espaço por " às "
+  } catch (error) {
+    console.error("Erro ao formatar data completa:", error);
+    return "-";
+  }
 };
 
 // ============================================
@@ -1098,7 +1145,12 @@ const Dashboard = () => {
   const [abaAtiva, setAbaAtiva] = useState("visao-geral");
 
   // ============================================
-  // NOVO ESTADO PARA DADOS REAIS
+  // NOVO ESTADO PARA CONTROLE DE ORIGEM
+  // ============================================
+  const [origemSelecionada, setOrigemSelecionada] = useState("todas"); // 'todas', 'site', 'whatsapp', 'indicacao', 'facebook', 'instagram', 'portal'
+
+  // ============================================
+  // NOVO ESTADO PARA DADOS REAIS (ATUALIZADO COM leadsPorOrigem)
   // ============================================
   const [dadosReais, setDadosReais] = useState({
     leadsSite: 0,
@@ -1115,6 +1167,7 @@ const Dashboard = () => {
     comissoesLista: [],
     corretores: [],
     medias: { leads: 0, vendas: 0 },
+    leadsPorOrigem: {}, // NOVO: para armazenar contagem por origem
   });
 
   const [data, setData] = useState(MOCK_DATA);
@@ -1163,178 +1216,211 @@ const Dashboard = () => {
     melhorCanal: null,
     piorCanal: null,
   });
-
   const [loading, setLoading] = useState(true);
   const [dataAtualizacao, setDataAtualizacao] = useState(new Date());
 
   // ============================================
-  // useEffect PARA BUSCAR DADOS REAIS (COMPLETO)
+  // useEffect PARA BUSCAR DADOS REAIS COM FILTRO POR ORIGEM
   // ============================================
   useEffect(() => {
     const buscarDadosReais = async () => {
       try {
         setLoading(true);
 
-        console.log("🔍 BUSCANDO DADOS REAIS DO BANCO...");
+        console.log("=".repeat(50));
+        console.log(`🔍 BUSCANDO DADOS PARA ORIGEM: ${origemSelecionada}`);
+        console.log("=".repeat(50));
 
         const hoje = new Date();
-        const inicioMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
-        const fimMes = new Date(
-          hoje.getFullYear(),
-          hoje.getMonth() + 1,
-          0,
-          23,
-          59,
-          59,
-        );
 
-        // ===== LEADS DO SITE =====
-        const { data: leadsSite, error: errorLeads } = await supabase
+        // Formato correto de data
+        const inicioMes = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, "0")}-01`;
+        const fimMes = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, "0")}-${new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0).getDate()}`;
+
+        console.log("📅 PERÍODO:", { inicioMes, fimMes });
+
+        // ===== 1. BUSCAR LEADS =====
+        const { data: todosLeads, error: errorLeads } = await supabase
           .from("leads")
           .select("*")
-          .eq("origem", "site")
-          .gte("created_at", inicioMes.toISOString())
-          .lte("created_at", fimMes.toISOString());
+          .gte("created_at", `${inicioMes}T00:00:00`)
+          .lte("created_at", `${fimMes}T23:59:59`);
 
-        console.log("🔍 TODOS OS LEADS DO PERÍODO (origem=site):", leadsSite);
-        console.log("🔍 LEADS COM ORIGEM=site:", leadsSite);
-        console.log("🔍 PERÍODO BUSCADO:", {
-          inicio: inicioMes.toISOString(),
-          fim: fimMes.toISOString(),
-        });
         if (errorLeads) console.error("❌ Erro leads:", errorLeads);
 
-        // ===== QUALIFICADOS (ATENDIMENTO) =====
-        // Busca todos os leads que já foram qualificados em algum momento
-        const { data: qualificados, error: errorQualificados } = await supabase
-          .from("leads")
-          .select("*")
-          .in("status", [
+        console.log("📊 TOTAL LEADS NO MÊS:", todosLeads?.length || 0);
+
+        // Contagem por origem
+        const leadsPorOrigem = {};
+        todosLeads?.forEach((lead) => {
+          const origem = lead.origem || lead.canal || "outros";
+          leadsPorOrigem[origem] = (leadsPorOrigem[origem] || 0) + 1;
+        });
+
+        // Filtrar pela origem selecionada
+        const leadsFiltrados =
+          origemSelecionada === "todas"
+            ? todosLeads || []
+            : todosLeads?.filter(
+                (l) =>
+                  l.origem === origemSelecionada ||
+                  l.canal === origemSelecionada,
+              ) || [];
+
+        console.log(`📊 LEADS FILTRADOS:`, leadsFiltrados.length);
+
+        // IDs dos leads filtrados
+        const leadsFiltradosIds = leadsFiltrados.map((l) => l.id);
+
+        // Leads qualificados
+        const qualificados = leadsFiltrados.filter((lead) =>
+          [
             "qualificado",
             "proposta",
             "negociacao",
             "fechado",
             "perdido",
-          ])
-          .gte("created_at", inicioMes.toISOString())
-          .lte("created_at", fimMes.toISOString());
+          ].includes(lead.status),
+        );
 
-        console.log("📊 qualificados DO BANCO:", qualificados?.length || 0);
+        console.log("📊 QUALIFICADOS:", qualificados.length);
 
-        // ===== VISITAS =====
-        const { data: visitas, error: errorVisitas } = await supabase
-          .from("visitas")
-          .select("*")
-          .gte("created_at", inicioMes.toISOString())
-          .lte("created_at", fimMes.toISOString());
+        // IDs dos leads qualificados
+        const leadsQualificadosIds = qualificados.map((q) => q.id);
 
-        console.log("📊 visitas DO BANCO:", visitas?.length || 0);
+        // ===== 2. BUSCAR VISITAS =====
+        let visitasFiltradas = [];
+        let visitasAgendadas = [];
+        let visitasRealizadas = [];
 
-        // AGENDAMENTO: TODAS as visitas que já foram agendadas (inclui confirmadas e realizadas)
-        const visitasAgendadas =
-          visitas?.filter(
-            (v) =>
-              v.status === "agendada" ||
-              v.status === "confirmada" ||
-              v.status === "realizada",
-          ) || [];
+        if (leadsFiltradosIds.length > 0) {
+          const { data: visitas, error: errorVisitas } = await supabase
+            .from("visitas")
+            .select("*")
+            .in("lead_id", leadsFiltradosIds)
+            .gte("created_at", `${inicioMes}T00:00:00`)
+            .lte("created_at", `${fimMes}T23:59:59`);
 
-        // VISITAS REALIZADAS: apenas as realizadas
-        const visitasRealizadas =
-          visitas?.filter((v) => v.status === "realizada") || [];
+          if (errorVisitas) {
+            console.error("❌ Erro visitas:", errorVisitas);
+          } else {
+            console.log("📊 TOTAL VISITAS:", visitas?.length || 0);
+
+            visitasFiltradas = visitas || [];
+
+            // 🔴 FILTRO CORRETO: Agendamento só de leads qualificados
+            if (leadsQualificadosIds.length > 0) {
+              visitasAgendadas =
+                visitasFiltradas.filter(
+                  (v) =>
+                    (v.status === "agendada" ||
+                      v.status === "confirmada" ||
+                      v.status === "realizada") &&
+                    leadsQualificadosIds.includes(v.lead_id),
+                ) || [];
+
+              visitasRealizadas =
+                visitasFiltradas.filter(
+                  (v) =>
+                    v.status === "realizada" &&
+                    leadsQualificadosIds.includes(v.lead_id),
+                ) || [];
+            } else {
+              // Se não tem qualificados, mostra todas (para teste)
+              visitasAgendadas =
+                visitasFiltradas.filter(
+                  (v) =>
+                    v.status === "agendada" ||
+                    v.status === "confirmada" ||
+                    v.status === "realizada",
+                ) || [];
+              visitasRealizadas =
+                visitasFiltradas.filter((v) => v.status === "realizada") || [];
+            }
+          }
+        }
 
         console.log(
-          "📊 visitas agendadas (total histórico):",
+          "📊 VISITAS AGENDADAS (só qualificados):",
           visitasAgendadas.length,
         );
-        console.log("📊 visitas realizadas:", visitasRealizadas.length);
+        console.log(
+          "📊 VISITAS REALIZADAS (só qualificados):",
+          visitasRealizadas.length,
+        );
 
-        // ===== PROPOSTAS =====
-        const { data: propostas, error: errorPropostas } = await supabase
-          .from("propostas")
-          .select("*")
-          .gte("created_at", inicioMes.toISOString())
-          .lte("created_at", fimMes.toISOString());
+        // ===== 3. BUSCAR PROPOSTAS (CORRIGIDO para sua estrutura) =====
+        let propostasFiltradas = [];
+        let propostasNegociacao = [];
+        let vendas = [];
+        let receitaMes = 0;
 
-        console.log("📊 propostas DO BANCO:", propostas?.length || 0);
-        console.log("📊 PERÍODO:", {
-          inicio: inicioMes.toISOString(),
-          fim: fimMes.toISOString(),
-        });
+        if (visitasFiltradas.length > 0) {
+          // Pegar IDs das visitas
+          const visitasIds = visitasFiltradas.map((v) => v.id);
 
-        // 👇 FILTRO CORRIGIDO
-        const propostasNegociacao =
-          propostas?.filter((p) => p.status === "em_andamento") || [];
-        const vendas = propostas?.filter((p) => p.status === "aprovada") || [];
-        const propostasRecusadas =
-          propostas?.filter((p) => p.status === "recusada") || [];
+          console.log("🔍 Buscando propostas para visitas:", visitasIds);
 
-        console.log("📊 TODAS PROPOSTAS:", propostas);
-        console.log("📊 propostas em_andamento:", propostasNegociacao);
-        console.log("📊 propostas aprovadas (vendas):", vendas);
-        console.log("📊 QUANTIDADE VENDAS:", vendas.length);
+          const { data: propostas, error: errorPropostas } = await supabase
+            .from("propostas")
+            .select("*")
+            .in("visita_id", visitasIds) // ← usando visita_id, não lead_id
+            .gte("created_at", `${inicioMes}T00:00:00`)
+            .lte("created_at", `${fimMes}T23:59:59`);
 
-        // ===== RECEITA DO MÊS =====
-        const receitaMes =
-          vendas?.reduce((acc, v) => acc + (v.valor || 0), 0) || 0;
-        console.log("💰 receitaMes DO BANCO:", receitaMes);
+          if (errorPropostas) {
+            console.error("❌ Erro propostas:", errorPropostas);
+          } else {
+            console.log("📊 TOTAL PROPOSTAS:", propostas?.length || 0);
+            console.log("📊 DETALHES PROPOSTAS:", propostas);
 
-        // ===== COMISSÕES =====
-        const { data: comissoes, error: errorComissoes } = await supabase
-          .from("comissoes")
-          .select("*")
-          .gte("created_at", inicioMes.toISOString())
-          .lte("created_at", fimMes.toISOString());
+            propostasFiltradas = propostas || [];
+            propostasNegociacao = propostasFiltradas.filter(
+              (p) => p.status === "em_andamento" || p.status === "negociacao",
+            );
+            vendas = propostasFiltradas.filter((p) => p.status === "aprovada");
+            receitaMes = vendas.reduce((acc, v) => acc + (v.valor || 0), 0);
+          }
+        }
 
-        console.log("📊 comissoes DO BANCO:", comissoes?.length || 0);
+        // ===== 4. COMISSÕES (se precisar) =====
+        let comissoesFiltradas = [];
+        let comissoesAPagar = [];
+        let comissoesPagas = [];
 
-        const comissoesAPagar =
-          comissoes?.filter((c) => c.status === "a_pagar") || [];
-        const comissoesPagas =
-          comissoes?.filter((c) => c.status === "pago") || [];
+        if (vendas.length > 0) {
+          const vendasIds = vendas.map((v) => v.id);
 
-        // ===== CORRETORES (SEM FILTRO) =====
+          const { data: comissoes, error: errorComissoes } = await supabase
+            .from("comissoes")
+            .select("*")
+            .in("proposta_id", vendasIds);
+
+          if (!errorComissoes && comissoes) {
+            comissoesFiltradas = comissoes;
+            comissoesAPagar = comissoesFiltradas.filter(
+              (c) => c.status === "a_pagar",
+            );
+            comissoesPagas = comissoesFiltradas.filter(
+              (c) => c.status === "pago",
+            );
+          }
+        }
+
+        // ===== 5. CORRETORES =====
         const { data: corretores, error: errorCorretores } = await supabase
           .from("corretores")
           .select("*");
 
-        console.log("📊 corretores DO BANCO:", corretores?.length || 0);
-        if (errorCorretores)
-          console.error("❌ Erro corretores:", errorCorretores);
-
-        // ===== MÉDIAS DOS ÚLTIMOS 3 MESES =====
-        const tresMesesAtras = new Date(
-          hoje.getFullYear(),
-          hoje.getMonth() - 3,
-          1,
-        );
-
-        const { data: leadsUltimos3Meses } = await supabase
-          .from("leads")
-          .select("count")
-          .gte("created_at", tresMesesAtras.toISOString());
-
-        const { data: vendasUltimos3Meses } = await supabase
-          .from("propostas")
-          .select("count")
-          .eq("status", "aprovada")
-          .gte("created_at", tresMesesAtras.toISOString());
-
-        const medias = {
-          leads: Math.round((leadsUltimos3Meses?.length || 0) / 3),
-          vendas: Math.round((vendasUltimos3Meses?.length || 0) / 3),
-        };
-
+        // ===== 6. ATUALIZAR ESTADO =====
         setDadosReais({
-          leadsSite: leadsSite?.length || 0,
-          qualificados: qualificados?.length || 0,
+          leadsSite: leadsFiltrados.length,
+          qualificados: qualificados.length,
           visitasAgendadas: visitasAgendadas.length,
           visitasRealizadas: visitasRealizadas.length,
           propostasNegociacao: propostasNegociacao.length,
           vendas: vendas.length,
-          // 👇 ADICIONAR ESTA LINHA
-          totalPropostas: propostas?.length || 0,
-          receitaMes,
+          receitaMes: receitaMes,
           comissoesAPagar: comissoesAPagar.reduce(
             (acc, c) => acc + (c.valor || 0),
             0,
@@ -1344,38 +1430,29 @@ const Dashboard = () => {
             0,
           ),
           ticketMedio: vendas.length > 0 ? receitaMes / vendas.length : 0,
-          vendasLista: vendas || [],
-          comissoesLista: comissoes || [],
+          vendasLista: vendas,
+          comissoesLista: comissoesFiltradas,
           corretores: corretores || [],
-          medias,
-        });
-        // ===== ATUALIZAR DATA (SEM MOCK PARA LEADS) =====
-        setData({
-          imoveis: MOCK_DATA.imoveis,
-          corretores: corretores || [],
-          leads: leadsSite || [], // SEM MOCK!
-          visitas: visitas || [],
-          propostas: propostas || [],
-          vendas: vendas || [],
-          comissoes: comissoes || [],
+          medias: { leads: 0, vendas: 0 },
+          leadsPorOrigem: leadsPorOrigem,
+          totalPropostas: propostasFiltradas.length,
         });
 
-        setDataAtualizacao(new Date());
-
+        console.log("=".repeat(50));
+        console.log("✅ FUNIL ATUALIZADO:");
         console.log(
-          "✅ RESUMO FINAL - leadsSite no estado:",
-          leadsSite?.length || 0,
+          `Leads: ${leadsFiltrados.length} → Qualificados: ${qualificados.length} → Agendadas: ${visitasAgendadas.length} → Realizadas: ${visitasRealizadas.length} → Propostas: ${propostasFiltradas.length} → Vendas: ${vendas.length}`,
         );
+        console.log("=".repeat(50));
       } catch (error) {
-        console.error("❌ Erro ao buscar dados reais:", error);
+        console.error("❌ Erro geral:", error);
       } finally {
         setLoading(false);
       }
     };
 
     buscarDadosReais();
-  }, []);
-
+  }, [origemSelecionada]);
   useEffect(() => {
     setLoading(true);
 
@@ -1857,10 +1934,11 @@ const Dashboard = () => {
 
   // ========== ABA VISÃO GERAL ==========
   const AbaVisaoGeral = () => {
-    // 👇 ADICIONE ESTES LOGS AQUI, NO INÍCIO DA FUNÇÃO
+    // Logs para debug
     console.log("📊 ABA VISAO GERAL - dadosReais:", dadosReais);
     console.log("📊 ABA VISAO GERAL - vendas:", dadosReais?.vendas);
     console.log("📊 ABA VISAO GERAL - receita:", dadosReais?.receitaMes);
+    console.log("📊 ORIGEM SELECIONADA:", origemSelecionada);
 
     const alertasCriticos = indicadores.alertasEstrategicos.filter(
       (a) => a.impacto === "alto",
@@ -1890,8 +1968,125 @@ const Dashboard = () => {
       }
     };
 
+    // Função para obter o rótulo da origem
+    const getOrigemLabel = () => {
+      if (origemSelecionada === "todas") return "Todos os Leads";
+      const labels = {
+        site: "Leads do Site",
+        whatsapp: "Leads WhatsApp",
+        indicacao: "Leads Indicação",
+        instagram: "Leads Instagram",
+        facebook: "Leads Facebook",
+        portal: "Leads Portal",
+      };
+      return labels[origemSelecionada] || `Leads ${origemSelecionada}`;
+    };
+
     return (
       <div className="space-y-8">
+        {/* ===== FILTRO POR ORIGEM ===== */}
+        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-4">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap">
+              Filtrar por origem:
+            </span>
+            <div className="flex flex-wrap gap-2">
+              {[
+                { id: "todas", label: "Todas", icon: "🌐", color: "gray" },
+                { id: "site", label: "Site", icon: "💻", color: "blue" },
+                {
+                  id: "whatsapp",
+                  label: "WhatsApp",
+                  icon: "📱",
+                  color: "green",
+                },
+                {
+                  id: "indicacao",
+                  label: "Indicação",
+                  icon: "🤝",
+                  color: "purple",
+                },
+                {
+                  id: "instagram",
+                  label: "Instagram",
+                  icon: "📸",
+                  color: "pink",
+                },
+                {
+                  id: "facebook",
+                  label: "Facebook",
+                  icon: "👤",
+                  color: "indigo",
+                },
+                { id: "portal", label: "Portal", icon: "🏢", color: "orange" },
+              ].map((origem) => {
+                const quantidade =
+                  origem.id === "todas"
+                    ? Object.values(dadosReais.leadsPorOrigem || {}).reduce(
+                        (a, b) => a + b,
+                        0,
+                      )
+                    : dadosReais.leadsPorOrigem?.[origem.id] || 0;
+
+                const cores = {
+                  gray: "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700",
+                  blue: "bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30",
+                  green:
+                    "bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/30",
+                  purple:
+                    "bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-900/30",
+                  pink: "bg-pink-50 dark:bg-pink-900/20 text-pink-600 dark:text-pink-400 hover:bg-pink-100 dark:hover:bg-pink-900/30",
+                  indigo:
+                    "bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/30",
+                  orange:
+                    "bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 hover:bg-orange-100 dark:hover:bg-orange-900/30",
+                };
+
+                return (
+                  <button
+                    key={origem.id}
+                    onClick={() => setOrigemSelecionada(origem.id)}
+                    className={`
+                      px-4 py-2 rounded-lg text-sm font-medium transition-all
+                      flex items-center gap-2
+                      ${
+                        origemSelecionada === origem.id
+                          ? "bg-[#D4A24D] text-white shadow-md"
+                          : cores[origem.color]
+                      }
+                    `}
+                  >
+                    <span>{origem.icon}</span>
+                    <span>{origem.label}</span>
+                    {quantidade > 0 && (
+                      <span
+                        className={`
+                        ml-1 px-2 py-0.5 rounded-full text-xs
+                        ${
+                          origemSelecionada === origem.id
+                            ? "bg-white/20 text-white"
+                            : "bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400"
+                        }
+                      `}
+                      >
+                        {quantidade}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Indicador da origem atual */}
+          <div className="mt-3 text-xs text-gray-500 dark:text-gray-400 border-t border-gray-100 dark:border-gray-800 pt-3">
+            Mostrando dados de:{" "}
+            <span className="font-medium text-[#D4A24D]">
+              {getOrigemLabel()}
+            </span>
+          </div>
+        </div>
+
         {/* KPIs principais */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
           <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg shadow-sm p-6">
@@ -1960,7 +2155,7 @@ const Dashboard = () => {
           <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
             <h2 className="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
               <Icons.chartBar className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-              Funil de Vendas
+              Funil de Vendas - {getOrigemLabel()}
             </h2>
           </div>
 
@@ -1974,7 +2169,7 @@ const Dashboard = () => {
                   <div className="relative h-12 bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl flex items-center justify-between px-4 text-white font-medium shadow-lg shadow-blue-500/30 border border-blue-400/50 backdrop-blur-sm">
                     <span className="flex items-center gap-2">
                       <span className="w-2 h-2 bg-white rounded-full animate-pulse"></span>
-                      Leads
+                      {getOrigemLabel()}
                     </span>
                     <span className="font-bold">{dadosReais.leadsSite}</span>
                   </div>
@@ -2072,7 +2267,7 @@ const Dashboard = () => {
                       <td className="py-3 pl-3 flex items-center gap-2 border-r border-gray-200 dark:border-gray-700">
                         <span className="w-2.5 h-2.5 rounded-full bg-blue-500"></span>
                         <span className="text-gray-700 dark:text-gray-300">
-                          Leads
+                          {getOrigemLabel()}
                         </span>
                       </td>
                       <td className="text-center py-3 px-2 font-medium text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">
@@ -2163,7 +2358,7 @@ const Dashboard = () => {
                       </td>
                     </tr>
 
-                    {/* Proposta - CORRIGIDA */}
+                    {/* Proposta */}
                     <tr>
                       <td className="py-3 pl-3 flex items-center gap-2 border-r border-gray-200 dark:border-gray-700">
                         <span className="w-2.5 h-2.5 rounded-full bg-purple-500"></span>
@@ -2233,7 +2428,9 @@ const Dashboard = () => {
                   <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
                     De lead a venda •{" "}
                     {dadosReais.leadsSite > 0 && dadosReais.vendas > 0
-                      ? `1 a cada ${Math.round(dadosReais.leadsSite / dadosReais.vendas)}`
+                      ? `1 a cada ${Math.round(
+                          dadosReais.leadsSite / dadosReais.vendas,
+                        )}`
                       : "0"}{" "}
                     leads
                   </p>
@@ -2409,7 +2606,11 @@ const Dashboard = () => {
               </p>
             </div>
             <p
-              className={`text-2xl font-semibold ${indicadores.domMedio > 75 ? "text-red-600 dark:text-red-400" : "text-gray-900 dark:text-white"}`}
+              className={`text-2xl font-semibold ${
+                indicadores.domMedio > 75
+                  ? "text-red-600 dark:text-red-400"
+                  : "text-gray-900 dark:text-white"
+              }`}
             >
               {indicadores.domMedio.toFixed(0)} dias
             </p>
@@ -3968,502 +4169,779 @@ const Dashboard = () => {
   };
 
   // ========== ABA FINANCEIRO ==========
-  const AbaFinanceiro = () => (
-    <div className="space-y-8">
-      {/* KPIs Financeiros */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg shadow-sm p-6">
-          <div className="flex items-center gap-2 mb-2">
-            <Icons.dollar className="w-5 h-5 text-emerald-500" />
-            <p className="text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
-              Receita Realizada
-            </p>
-          </div>
-          <p className="text-3xl font-semibold text-gray-900 dark:text-white">
-            {formatarMoeda(indicadores.receitaMes)}
-          </p>
-          <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-2 flex items-center gap-1">
-            <Icons.trendingUp className="w-3 h-3" />
-            Mês atual
-          </p>
-        </div>
+  const AbaFinanceiro = () => {
+    const [periodoFiltro, setPeriodoFiltro] = useState("mes"); // 'mes', '3M', '6M', '12M'
+    const [dadosFiltrados, setDadosFiltrados] = useState({
+      receitaPrevista: 0,
+      receitaRealizada: 0,
+      totalPropostas: 0,
+      valorTotalVendas: 0,
+      comissoesAPagar: 0,
+      comissoesPagas: 0,
+      vendasFiltradas: [],
+      comissoesFiltradas: [],
+    });
 
-        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg shadow-sm p-6">
-          <div className="flex items-center gap-2 mb-2">
-            <Icons.chartBar className="w-5 h-5 text-blue-500" />
-            <p className="text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
-              Receita Prevista
-            </p>
-          </div>
-          <p className="text-3xl font-semibold text-gray-900 dark:text-white">
-            {formatarMoeda(indicadores.metaMensal)}
-          </p>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-            Meta do mês
-          </p>
-        </div>
+    const [filtroVendas, setFiltroVendas] = useState({
+      dataInicio: "",
+      dataFim: "",
+      corretor: "todos",
+    });
 
-        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg shadow-sm p-6">
-          <div className="flex items-center gap-2 mb-2">
-            <Icons.alertCircle className="w-5 h-5 text-red-500" />
-            <p className="text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
-              Capital Imobilizado
-            </p>
-          </div>
-          <p className="text-3xl font-semibold text-red-600 dark:text-red-400">
-            {formatarMoeda(indicadores.capitalImobilizado)}
-          </p>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-            Estoque +90 dias
-          </p>
-        </div>
+    const [filtroComissoes, setFiltroComissoes] = useState({
+      status: "todos",
+      corretor: "todos",
+    });
 
-        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg shadow-sm p-6">
-          <div className="flex items-center gap-2 mb-2">
-            <Icons.trendingUp className="w-5 h-5 text-violet-500" />
-            <p className="text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
-              Comissão Projetada
-            </p>
-          </div>
-          <p className="text-3xl font-semibold text-gray-900 dark:text-white">
-            {formatarMoeda(indicadores.comissaoProjetada)}
-          </p>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-            6% sobre receita
-          </p>
-        </div>
-      </div>
+    // Função para formatar moeda
+    const formatarMoeda = (valor) => {
+      if (!valor || isNaN(valor) || typeof valor !== "number") {
+        return "R$ 0";
+      }
+      return new Intl.NumberFormat("pt-BR", {
+        style: "currency",
+        currency: "BRL",
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+        useGrouping: true,
+      }).format(valor);
+    };
 
-      {/* Indicador de risco financeiro */}
-      <div
-        className={`bg-white dark:bg-gray-900 border rounded-lg shadow-sm p-6 ${
-          indicadores.riscoFinanceiro === "alto"
-            ? "border-red-200 dark:border-red-900/30"
-            : indicadores.riscoFinanceiro === "médio"
-              ? "border-amber-200 dark:border-amber-900/30"
-              : "border-green-200 dark:border-green-900/30"
-        }`}
-      >
-        <div className="flex items-center gap-2 mb-2">
-          <Icons.alertTriangle
-            className={`w-5 h-5 ${
-              indicadores.riscoFinanceiro === "alto"
-                ? "text-red-500"
-                : indicadores.riscoFinanceiro === "médio"
-                  ? "text-amber-500"
-                  : "text-green-500"
-            }`}
-          />
-          <p className="text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
-            Risco Financeiro
-          </p>
-        </div>
-        <div className="flex items-end justify-between">
+    // Função para formatar data
+    const formatarData = (dataString) => {
+      if (!dataString) return "-";
+      try {
+        const data = new Date(dataString);
+        if (isNaN(data.getTime())) return "-";
+        return data.toLocaleDateString("pt-BR");
+      } catch {
+        return "-";
+      }
+    };
+
+    // Função para calcular data de início baseada no período
+    const getDataInicio = () => {
+      const hoje = new Date();
+      switch (periodoFiltro) {
+        case "mes":
+          return new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+        case "3M":
+          return new Date(hoje.getFullYear(), hoje.getMonth() - 3, 1);
+        case "6M":
+          return new Date(hoje.getFullYear(), hoje.getMonth() - 6, 1);
+        case "12M":
+          return new Date(hoje.getFullYear() - 1, hoje.getMonth(), 1);
+        default:
+          return new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+      }
+    };
+
+    // Efeito para recalcular quando período ou dados mudam
+    useEffect(() => {
+      calcularMetricasPorPeriodo();
+    }, [periodoFiltro, dadosReais]);
+
+    const calcularMetricasPorPeriodo = () => {
+      const dataInicio = getDataInicio();
+      const dataFim = new Date();
+
+      // Filtrar propostas do período
+      const propostasPeriodo = dadosReais.vendasLista.filter((p) => {
+        const dataCriacao = new Date(p.created_at);
+        return dataCriacao >= dataInicio && dataCriacao <= dataFim;
+      });
+
+      // Calcular métricas
+      const receitaPrevista = propostasPeriodo
+        .filter((p) => p.status === "em_andamento")
+        .reduce((acc, p) => acc + (p.valor || 0), 0);
+
+      const receitaRealizada = propostasPeriodo
+        .filter((p) => p.status === "aprovada")
+        .reduce((acc, p) => acc + (p.valor || 0), 0);
+
+      // Filtrar vendas (propostas aprovadas) do período
+      const vendasPeriodo = dadosReais.vendasLista.filter((v) => {
+        const dataVenda = new Date(v.data_venda || v.created_at);
+        return (
+          dataVenda >= dataInicio &&
+          dataVenda <= dataFim &&
+          v.status === "aprovada"
+        );
+      });
+
+      // Filtrar comissões do período
+      const comissoesPeriodo = dadosReais.comissoesLista.filter((c) => {
+        const dataCriacao = new Date(c.created_at);
+        return dataCriacao >= dataInicio && dataCriacao <= dataFim;
+      });
+
+      setDadosFiltrados({
+        receitaPrevista,
+        receitaRealizada,
+        totalPropostas: propostasPeriodo.length,
+        valorTotalVendas: vendasPeriodo.reduce((acc, v) => acc + v.valor, 0),
+        comissoesAPagar: comissoesPeriodo
+          .filter((c) => c.status === "a_pagar")
+          .reduce((acc, c) => acc + c.valor, 0),
+        comissoesPagas: comissoesPeriodo
+          .filter((c) => c.status === "pago")
+          .reduce((acc, c) => acc + c.valor, 0),
+        vendasFiltradas: vendasPeriodo,
+        comissoesFiltradas: comissoesPeriodo,
+      });
+
+      // Atualizar filtros de data para as tabelas
+      setFiltroVendas((prev) => ({
+        ...prev,
+        dataInicio: dataInicio.toISOString().split("T")[0],
+        dataFim: dataFim.toISOString().split("T")[0],
+      }));
+    };
+
+    // Calcular métricas de risco financeiro
+    const getRiscoInfo = () => {
+      const { realizadoPercentual, diasParaMeta } = indicadores;
+
+      if (realizadoPercentual >= 100) {
+        return {
+          nivel: "baixo",
+          texto: "Baixo",
+          cor: "text-green-600 dark:text-green-400",
+          bgCor: "border-green-200 dark:border-green-900/30",
+          mensagem: "🎉 Meta já atingida!",
+          icone: <CheckCircleIcon className="w-5 h-5 text-green-500" />,
+        };
+      } else if (diasParaMeta > 20) {
+        return {
+          nivel: "alto",
+          texto: "Alto",
+          cor: "text-red-600 dark:text-red-400",
+          bgCor: "border-red-200 dark:border-red-900/30",
+          mensagem: `⚠️ Ritmo atual insuficiente! Faltam ${diasParaMeta.toFixed(0)} dias para atingir a meta.`,
+          icone: <ExclamationTriangleIcon className="w-5 h-5 text-red-500" />,
+        };
+      } else if (diasParaMeta > 10) {
+        return {
+          nivel: "médio",
+          texto: "Médio",
+          cor: "text-amber-600 dark:text-amber-400",
+          bgCor: "border-amber-200 dark:border-amber-900/30",
+          mensagem: `⚡ Acelerar! Faltam ${diasParaMeta.toFixed(0)} dias para bater a meta.`,
+          icone: <ExclamationCircleIcon className="w-5 h-5 text-amber-500" />,
+        };
+      } else {
+        return {
+          nivel: "baixo",
+          texto: "Baixo",
+          cor: "text-green-600 dark:text-green-400",
+          bgCor: "border-green-200 dark:border-green-900/30",
+          mensagem:
+            diasParaMeta > 0
+              ? `📈 No ritmo certo! Meta será atingida em ${diasParaMeta.toFixed(0)} dias.`
+              : "🎯 No caminho certo!",
+          icone: <ArrowTrendingUpIcon className="w-5 h-5 text-green-500" />,
+        };
+      }
+    };
+
+    const riscoInfo = getRiscoInfo();
+
+    // Filtrar vendas (para a tabela)
+    const vendasTabela = dadosFiltrados.vendasFiltradas.filter((venda) => {
+      if (!venda.data_venda) return false;
+      const dataVenda = new Date(venda.data_venda).toISOString().split("T")[0];
+      if (
+        dataVenda < filtroVendas.dataInicio ||
+        dataVenda > filtroVendas.dataFim
+      )
+        return false;
+      if (filtroVendas.corretor !== "todos") {
+        if (venda.corretor_id !== filtroVendas.corretor) return false;
+      }
+      return true;
+    });
+
+    // Filtrar comissões (para a tabela)
+    const comissoesTabela = dadosFiltrados.comissoesFiltradas.filter(
+      (comissao) => {
+        if (
+          filtroComissoes.status !== "todos" &&
+          comissao.status !== filtroComissoes.status
+        )
+          return false;
+        if (filtroComissoes.corretor !== "todos") {
+          if (comissao.corretor_id !== filtroComissoes.corretor) return false;
+        }
+        return true;
+      },
+    );
+
+    const totalVendasTabela = vendasTabela.reduce((acc, v) => acc + v.valor, 0);
+    const totalComissoesAPagarTabela = comissoesTabela
+      .filter((c) => c.status === "a_pagar")
+      .reduce((acc, c) => acc + c.valor, 0);
+    const totalComissoesPagasTabela = comissoesTabela
+      .filter((c) => c.status === "pago")
+      .reduce((acc, c) => acc + c.valor, 0);
+
+    return (
+      <div className="space-y-8">
+        {/* HEADER COM FILTRO DROPDOWN SUTIL */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <p className="text-2xl font-semibold text-gray-900 dark:text-white">
-              {indicadores.riscoFinanceiro === "alto"
-                ? "Alto"
-                : indicadores.riscoFinanceiro === "médio"
-                  ? "Médio"
-                  : "Baixo"}
-            </p>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 flex items-center gap-1">
-              <Icons.clock className="w-4 h-4" />
-              {indicadores.diasParaMeta > 0
-                ? `Se mantiver ritmo atual, meta será atingida em ${indicadores.diasParaMeta.toFixed(0)} dias`
-                : "Meta já atingida"}
+            <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">
+              Financeiro
+            </h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              Análise de receitas, comissões e performance
             </p>
           </div>
-          <div className="text-right">
-            <p className="text-sm font-medium text-gray-900 dark:text-white">
-              {indicadores.realizadoPercentual.toFixed(0)}%
+
+          {/* FILTRO DROPDOWN SUTIL - ÂMBAR COM ÍCONES MODERNOS */}
+          <div className="relative">
+            <select
+              value={periodoFiltro}
+              onChange={(e) => setPeriodoFiltro(e.target.value)}
+              className={`
+      appearance-none pl-10 pr-10 py-2.5 text-sm font-medium
+      bg-transparent
+      border border-amber-200/50 dark:border-amber-800/30
+      rounded-xl
+      text-gray-700 dark:text-gray-300
+      hover:border-amber-300 dark:hover:border-amber-700
+      focus:outline-none focus:ring-1 focus:ring-amber-500/30
+      transition-all duration-300
+      cursor-pointer
+      w-[200px]
+    `}
+              style={{
+                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20' stroke='%23D4A24D'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3E%3C/svg%3E")`,
+                backgroundRepeat: "no-repeat",
+                backgroundPosition: "right 0.75rem center",
+                backgroundSize: "1.25rem",
+              }}
+            >
+              <option value="mes" className="bg-white dark:bg-gray-800">
+                Mês atual
+              </option>
+              <option value="3M" className="bg-white dark:bg-gray-800">
+                Últimos 3 meses
+              </option>
+              <option value="6M" className="bg-white dark:bg-gray-800">
+                Últimos 6 meses
+              </option>
+              <option value="12M" className="bg-white dark:bg-gray-800">
+                Últimos 12 meses
+              </option>
+            </select>
+
+            {/* Ícones separados do select */}
+            <div className="absolute left-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
+              {periodoFiltro === "mes" && (
+                <CalendarIcon className="w-4 h-4 text-amber-500" />
+              )}
+              {periodoFiltro === "3M" && (
+                <CalendarDaysIcon className="w-4 h-4 text-amber-500" />
+              )}
+              {periodoFiltro === "6M" && (
+                <ChartBarIcon className="w-4 h-4 text-amber-500" />
+              )}
+              {periodoFiltro === "12M" && (
+                <ChartPieIcon className="w-4 h-4 text-amber-500" />
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* KPIs Financeiros */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg shadow-sm p-6">
+            <div className="flex items-center gap-2 mb-2">
+              <CurrencyDollarIcon className="w-5 h-5 text-emerald-500" />
+              <p className="text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                Receita Realizada
+              </p>
+            </div>
+            <p className="text-3xl font-semibold text-gray-900 dark:text-white">
+              {formatarMoeda(dadosFiltrados.receitaRealizada)}
+            </p>
+            <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-2 flex items-center gap-1">
+              <ArrowTrendingUpIcon className="w-3 h-3" />
+              {periodoFiltro === "mes"
+                ? "Mês atual"
+                : periodoFiltro === "3M"
+                  ? "Últimos 3 meses"
+                  : periodoFiltro === "6M"
+                    ? "Últimos 6 meses"
+                    : "Últimos 12 meses"}
+            </p>
+          </div>
+
+          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg shadow-sm p-6">
+            <div className="flex items-center gap-2 mb-2">
+              <ChartBarIcon className="w-5 h-5 text-blue-500" />
+              <p className="text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                Receita Prevista
+              </p>
+            </div>
+            <p className="text-3xl font-semibold text-gray-900 dark:text-white">
+              {formatarMoeda(dadosFiltrados.receitaPrevista)}
+            </p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+              {dadosFiltrados.totalPropostas} propostas em análise
+            </p>
+          </div>
+
+          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg shadow-sm p-6">
+            <div className="flex items-center gap-2 mb-2">
+              <BuildingOfficeIcon className="w-5 h-5 text-red-500" />
+              <p className="text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                Capital Imobilizado (+90d)
+              </p>
+            </div>
+            <p className="text-3xl font-semibold text-red-600 dark:text-red-400">
+              {formatarMoeda(0)} {/* FORÇADO A ZERO PARA TESTES */}
+            </p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+              0% do estoque
+            </p>
+          </div>
+
+          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg shadow-sm p-6">
+            <div className="flex items-center gap-2 mb-2">
+              <ArrowTrendingUpIcon className="w-5 h-5 text-violet-500" />
+              <p className="text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                Comissão Projetada (5%)
+              </p>
+            </div>
+            <p className="text-3xl font-semibold text-gray-900 dark:text-white">
+              {formatarMoeda(dadosFiltrados.receitaPrevista * 0.05)}
+            </p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+              {formatarMoeda(dadosFiltrados.receitaPrevista * 0.05)} a pagar
+            </p>
+          </div>
+        </div>
+
+        {/* Indicador de risco financeiro */}
+        <div
+          className={`bg-white dark:bg-gray-900 border rounded-lg shadow-sm p-6 ${riscoInfo.bgCor}`}
+        >
+          <div className="flex items-center gap-2 mb-2">
+            {riscoInfo.icone}
+            <p className="text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
+              Risco Financeiro
+            </p>
+          </div>
+          <div className="flex items-end justify-between">
+            <div>
+              <p className={`text-2xl font-semibold ${riscoInfo.cor}`}>
+                {riscoInfo.texto}
+              </p>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 flex items-center gap-1">
+                <ClockIcon className="w-4 h-4" />
+                {riscoInfo.mensagem}
+              </p>
+            </div>
+            <div className="text-right">
+              <p className="text-sm font-medium text-gray-900 dark:text-white">
+                {indicadores.realizadoPercentual.toFixed(0)}%
+              </p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                da meta realizada
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Meta vs Realizado */}
+        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg shadow-sm p-6">
+          <h2 className="text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-4">
+            Progresso da Meta
+          </h2>
+          <div className="h-4 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+            <div
+              className="h-4 bg-blue-600 dark:bg-blue-500 rounded-full transition-all duration-500"
+              style={{
+                width: `${Math.min(indicadores.realizadoPercentual, 100)}%`,
+              }}
+            />
+          </div>
+          <div className="flex justify-between mt-2">
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              Realizado: {formatarMoeda(dadosFiltrados.receitaRealizada)}
             </p>
             <p className="text-xs text-gray-500 dark:text-gray-400">
-              da meta realizada
+              Meta: {formatarMoeda(indicadores.metaMensal)}
             </p>
           </div>
         </div>
-      </div>
 
-      {/* Meta vs Realizado */}
-      <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg shadow-sm p-6">
-        <h2 className="text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-4">
-          Progresso da Meta
-        </h2>
-        <div className="h-4 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
-          <div
-            className="h-4 bg-blue-600 dark:bg-blue-500 rounded-full transition-all duration-500"
-            style={{
-              width: `${Math.min(indicadores.realizadoPercentual, 100)}%`,
-            }}
-          />
-        </div>
-        <div className="flex justify-between mt-2">
-          <p className="text-xs text-gray-500 dark:text-gray-400">
-            Realizado: {formatarMoeda(indicadores.receitaMes)}
-          </p>
-          <p className="text-xs text-gray-500 dark:text-gray-400">
-            Meta: {formatarMoeda(indicadores.metaMensal)}
-          </p>
-        </div>
-      </div>
+        {/* RELATÓRIO DE VENDAS */}
+        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg shadow-sm overflow-hidden">
+          <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+            <h2 className="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+              <DocumentIcon className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+              Relatório de Vendas
+            </h2>
+          </div>
 
-      {/* ===== NOVA SEÇÃO: RELATÓRIO DE VENDAS ===== */}
-      <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg shadow-sm overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-          <h2 className="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-            <DocumentIcon className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-            Relatório de Vendas
-          </h2>
-        </div>
-
-        {/* Filtros */}
-        <div className="p-4 bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-700">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">
-                Data Início
-              </label>
-              <input
-                type="date"
-                value={filtroVendas.dataInicio}
-                onChange={(e) =>
-                  setFiltroVendas({
-                    ...filtroVendas,
-                    dataInicio: e.target.value,
-                  })
-                }
-                className="text-xs bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-md px-3 py-2 w-full"
-              />
-            </div>
-            <div>
-              <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">
-                Data Fim
-              </label>
-              <input
-                type="date"
-                value={filtroVendas.dataFim}
-                onChange={(e) =>
-                  setFiltroVendas({ ...filtroVendas, dataFim: e.target.value })
-                }
-                className="text-xs bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-md px-3 py-2 w-full"
-              />
-            </div>
-            <div>
-              <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">
-                Corretor
-              </label>
-              <select
-                value={filtroVendas.corretor}
-                onChange={(e) =>
-                  setFiltroVendas({ ...filtroVendas, corretor: e.target.value })
-                }
-                className="text-xs bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-md px-3 py-2 w-full"
-              >
-                <option value="todos">Todos os corretores</option>
-                {dadosReais.corretores.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.nome}
-                  </option>
-                ))}
-              </select>
+          {/* Filtros */}
+          <div className="p-4 bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-700">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">
+                  Data Início
+                </label>
+                <input
+                  type="date"
+                  value={filtroVendas.dataInicio}
+                  onChange={(e) =>
+                    setFiltroVendas({
+                      ...filtroVendas,
+                      dataInicio: e.target.value,
+                    })
+                  }
+                  className="text-xs bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-md px-3 py-2 w-full"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">
+                  Data Fim
+                </label>
+                <input
+                  type="date"
+                  value={filtroVendas.dataFim}
+                  onChange={(e) =>
+                    setFiltroVendas({
+                      ...filtroVendas,
+                      dataFim: e.target.value,
+                    })
+                  }
+                  className="text-xs bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-md px-3 py-2 w-full"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">
+                  Corretor
+                </label>
+                <select
+                  value={filtroVendas.corretor}
+                  onChange={(e) =>
+                    setFiltroVendas({
+                      ...filtroVendas,
+                      corretor: e.target.value,
+                    })
+                  }
+                  className="text-xs bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-md px-3 py-2 w-full"
+                >
+                  <option value="todos">Todos os corretores</option>
+                  {dadosReais.corretores.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.nome}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Tabela */}
-        <div className="overflow-x-auto max-h-80 relative">
-          <table className="w-full border-collapse">
-            <thead className="sticky top-0 z-10 bg-gray-100 dark:bg-gray-800">
-              <tr>
-                <th className="text-left py-3 px-4 text-xs font-medium uppercase tracking-wider text-gray-600 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700">
-                  Data
-                </th>
-                <th className="text-left py-3 px-4 text-xs font-medium uppercase tracking-wider text-gray-600 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700">
-                  Imóvel
-                </th>
-                <th className="text-left py-3 px-4 text-xs font-medium uppercase tracking-wider text-gray-600 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700">
-                  Cliente
-                </th>
-                <th className="text-left py-3 px-4 text-xs font-medium uppercase tracking-wider text-gray-600 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700">
-                  Corretor
-                </th>
-                <th className="text-left py-3 px-4 text-xs font-medium uppercase tracking-wider text-gray-600 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700">
-                  Valor
-                </th>
-                <th className="text-left py-3 px-4 text-xs font-medium uppercase tracking-wider text-gray-600 dark:text-gray-300">
-                  Comissão
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {vendasFiltradas.length > 0 ? (
-                vendasFiltradas.map((venda, index) => {
-                  const corretor = dadosReais.corretores.find(
-                    (c) => c.id === venda.corretor_id,
-                  );
-                  return (
-                    <tr
-                      key={venda.id}
-                      className={`
+          {/* Tabela */}
+          <div className="overflow-x-auto max-h-80 relative">
+            <table className="w-full border-collapse">
+              <thead className="sticky top-0 z-10 bg-gray-100 dark:bg-gray-800">
+                <tr>
+                  <th className="text-left py-3 px-4 text-xs font-medium uppercase tracking-wider text-gray-600 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700">
+                    Data
+                  </th>
+                  <th className="text-left py-3 px-4 text-xs font-medium uppercase tracking-wider text-gray-600 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700">
+                    Imóvel
+                  </th>
+                  <th className="text-left py-3 px-4 text-xs font-medium uppercase tracking-wider text-gray-600 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700">
+                    Cliente
+                  </th>
+                  <th className="text-left py-3 px-4 text-xs font-medium uppercase tracking-wider text-gray-600 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700">
+                    Corretor
+                  </th>
+                  <th className="text-left py-3 px-4 text-xs font-medium uppercase tracking-wider text-gray-600 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700">
+                    Valor
+                  </th>
+                  <th className="text-left py-3 px-4 text-xs font-medium uppercase tracking-wider text-gray-600 dark:text-gray-300">
+                    Comissão (5%)
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {vendasTabela.length > 0 ? (
+                  vendasTabela.map((venda, index) => {
+                    const corretor = dadosReais.corretores.find(
+                      (c) => c.id === venda.corretor_id,
+                    );
+                    return (
+                      <tr
+                        key={venda.id}
+                        className={`
                         ${index % 2 === 0 ? "bg-white dark:bg-gray-900" : "bg-gray-50/50 dark:bg-gray-800/20"}
                         hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors
                       `}
+                      >
+                        <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700">
+                          {formatarData(venda.data_venda)}
+                        </td>
+                        <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700">
+                          {venda.bairro} - {venda.tipo}
+                        </td>
+                        <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700">
+                          Lead #{venda.lead_id}
+                        </td>
+                        <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700">
+                          {corretor?.nome || `Corretor #${venda.corretor_id}`}
+                        </td>
+                        <td className="py-3 px-4 text-sm font-medium text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">
+                          {formatarMoeda(venda.valor)}
+                        </td>
+                        <td className="py-3 px-4 text-sm text-emerald-600 dark:text-emerald-400 font-medium">
+                          {formatarMoeda(venda.valor * 0.05)}
+                        </td>
+                      </tr>
+                    );
+                  })
+                ) : (
+                  <tr>
+                    <td
+                      colSpan="6"
+                      className="py-8 text-center text-gray-500 dark:text-gray-400"
                     >
-                      <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700">
-                        {formatarData(venda.data_venda)}
-                      </td>
-                      <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700">
-                        {venda.bairro} - {venda.tipo}
-                      </td>
-                      <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700">
-                        Lead #{venda.lead_id}
-                      </td>
-                      <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700">
-                        {corretor?.nome || `Corretor #${venda.corretor_id}`}
-                      </td>
-                      <td className="py-3 px-4 text-sm font-medium text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">
-                        {formatarMoeda(venda.valor)}
-                      </td>
-                      <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300">
-                        {formatarMoeda(venda.comissao)}
-                      </td>
-                    </tr>
-                  );
-                })
-              ) : (
-                <tr>
-                  <td
-                    colSpan="6"
-                    className="py-8 text-center text-gray-500 dark:text-gray-400"
-                  >
-                    Nenhuma venda encontrada no período
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Total */}
-        <div className="px-6 py-3 bg-gray-50 dark:bg-gray-800/50 border-t border-gray-200 dark:border-gray-700">
-          <div className="flex items-center justify-end gap-6">
-            <div className="text-sm">
-              <span className="text-gray-500 dark:text-gray-400">
-                Total de vendas:{" "}
-              </span>
-              <span className="font-semibold text-gray-900 dark:text-white">
-                {vendasFiltradas.length}
-              </span>
-            </div>
-            <div className="text-sm">
-              <span className="text-gray-500 dark:text-gray-400">
-                Valor total:{" "}
-              </span>
-              <span className="font-semibold text-emerald-600 dark:text-emerald-400">
-                {formatarMoeda(
-                  vendasFiltradas.reduce((acc, v) => acc + v.valor, 0),
+                      Nenhuma venda encontrada no período
+                    </td>
+                  </tr>
                 )}
-              </span>
-            </div>
+              </tbody>
+            </table>
           </div>
-        </div>
-      </div>
 
-      {/* ===== NOVA SEÇÃO: COMISSÕES A PAGAR ===== */}
-      <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg shadow-sm overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-          <h2 className="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-            <Icons.dollar className="w-5 h-5 text-amber-600 dark:text-amber-400" />
-            Comissões a Pagar
-          </h2>
-        </div>
-
-        {/* Filtros */}
-        <div className="p-4 bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-700">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">
-                Status
-              </label>
-              <select
-                value={filtroComissoes.status}
-                onChange={(e) =>
-                  setFiltroComissoes({
-                    ...filtroComissoes,
-                    status: e.target.value,
-                  })
-                }
-                className="text-xs bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-md px-3 py-2 w-full"
-              >
-                <option value="todos">Todos os status</option>
-                <option value="a_pagar">A pagar</option>
-                <option value="pago">Pago</option>
-              </select>
-            </div>
-            <div>
-              <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">
-                Corretor
-              </label>
-              <select
-                value={filtroComissoes.corretor}
-                onChange={(e) =>
-                  setFiltroComissoes({
-                    ...filtroComissoes,
-                    corretor: e.target.value,
-                  })
-                }
-                className="text-xs bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-md px-3 py-2 w-full"
-              >
-                <option value="todos">Todos os corretores</option>
-                {dadosReais.corretores.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.nome}
-                  </option>
-                ))}
-              </select>
+          {/* Total */}
+          <div className="px-6 py-3 bg-gray-50 dark:bg-gray-800/50 border-t border-gray-200 dark:border-gray-700">
+            <div className="flex items-center justify-end gap-6">
+              <div className="text-sm">
+                <span className="text-gray-500 dark:text-gray-400">
+                  Total de vendas:{" "}
+                </span>
+                <span className="font-semibold text-gray-900 dark:text-white">
+                  {vendasTabela.length}
+                </span>
+              </div>
+              <div className="text-sm">
+                <span className="text-gray-500 dark:text-gray-400">
+                  Valor total:{" "}
+                </span>
+                <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+                  {formatarMoeda(totalVendasTabela)}
+                </span>
+              </div>
+              <div className="text-sm">
+                <span className="text-gray-500 dark:text-gray-400">
+                  Comissão total:{" "}
+                </span>
+                <span className="font-semibold text-purple-600 dark:text-purple-400">
+                  {formatarMoeda(totalVendasTabela * 0.05)}
+                </span>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Tabela */}
-        <div className="overflow-x-auto max-h-80 relative">
-          <table className="w-full border-collapse">
-            <thead className="sticky top-0 z-10 bg-gray-100 dark:bg-gray-800">
-              <tr>
-                <th className="text-left py-3 px-4 text-xs font-medium uppercase tracking-wider text-gray-600 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700">
-                  Corretor
-                </th>
-                <th className="text-left py-3 px-4 text-xs font-medium uppercase tracking-wider text-gray-600 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700">
-                  Venda
-                </th>
-                <th className="text-left py-3 px-4 text-xs font-medium uppercase tracking-wider text-gray-600 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700">
-                  Data
-                </th>
-                <th className="text-left py-3 px-4 text-xs font-medium uppercase tracking-wider text-gray-600 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700">
-                  Valor
-                </th>
-                <th className="text-left py-3 px-4 text-xs font-medium uppercase tracking-wider text-gray-600 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700">
-                  Vencimento
-                </th>
-                <th className="text-left py-3 px-4 text-xs font-medium uppercase tracking-wider text-gray-600 dark:text-gray-300">
+        {/* COMISSÕES */}
+        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg shadow-sm overflow-hidden">
+          <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+            <h2 className="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+              <CurrencyDollarIcon className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+              Comissões
+            </h2>
+          </div>
+
+          {/* Filtros */}
+          <div className="p-4 bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-700">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">
                   Status
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {comissoesFiltradas.length > 0 ? (
-                comissoesFiltradas.map((comissao, index) => {
-                  const corretor = dadosReais.corretores.find(
-                    (c) => c.id === comissao.corretor_id,
-                  );
-                  const venda = dadosReais.vendasLista.find(
-                    (v) => v.id === comissao.venda_id,
-                  );
-                  const dataVencimento = new Date(comissao.data_vencimento);
-                  const hoje = new Date();
-                  const diasAtraso = Math.floor(
-                    (hoje - dataVencimento) / (1000 * 60 * 60 * 24),
-                  );
+                </label>
+                <select
+                  value={filtroComissoes.status}
+                  onChange={(e) =>
+                    setFiltroComissoes({
+                      ...filtroComissoes,
+                      status: e.target.value,
+                    })
+                  }
+                  className="text-xs bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-md px-3 py-2 w-full"
+                >
+                  <option value="todos">Todos os status</option>
+                  <option value="a_pagar">A pagar</option>
+                  <option value="pago">Pago</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">
+                  Corretor
+                </label>
+                <select
+                  value={filtroComissoes.corretor}
+                  onChange={(e) =>
+                    setFiltroComissoes({
+                      ...filtroComissoes,
+                      corretor: e.target.value,
+                    })
+                  }
+                  className="text-xs bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-md px-3 py-2 w-full"
+                >
+                  <option value="todos">Todos os corretores</option>
+                  {dadosReais.corretores.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.nome}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
 
-                  return (
-                    <tr
-                      key={comissao.id}
-                      className={`
+          {/* Tabela */}
+          <div className="overflow-x-auto max-h-80 relative">
+            <table className="w-full border-collapse">
+              <thead className="sticky top-0 z-10 bg-gray-100 dark:bg-gray-800">
+                <tr>
+                  <th className="text-left py-3 px-4 text-xs font-medium uppercase tracking-wider text-gray-600 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700">
+                    Corretor
+                  </th>
+                  <th className="text-left py-3 px-4 text-xs font-medium uppercase tracking-wider text-gray-600 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700">
+                    Venda
+                  </th>
+                  <th className="text-left py-3 px-4 text-xs font-medium uppercase tracking-wider text-gray-600 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700">
+                    Data
+                  </th>
+                  <th className="text-left py-3 px-4 text-xs font-medium uppercase tracking-wider text-gray-600 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700">
+                    Valor
+                  </th>
+                  <th className="text-left py-3 px-4 text-xs font-medium uppercase tracking-wider text-gray-600 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700">
+                    Vencimento
+                  </th>
+                  <th className="text-left py-3 px-4 text-xs font-medium uppercase tracking-wider text-gray-600 dark:text-gray-300">
+                    Status
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {comissoesTabela.length > 0 ? (
+                  comissoesTabela.map((comissao, index) => {
+                    const corretor = dadosReais.corretores.find(
+                      (c) => c.id === comissao.corretor_id,
+                    );
+                    const venda = dadosReais.vendasLista.find(
+                      (v) => v.id === comissao.venda_id,
+                    );
+                    const dataVencimento = new Date(comissao.data_vencimento);
+                    const hoje = new Date();
+                    const diasAtraso = Math.floor(
+                      (hoje - dataVencimento) / (1000 * 60 * 60 * 24),
+                    );
+
+                    return (
+                      <tr
+                        key={comissao.id}
+                        className={`
                         ${index % 2 === 0 ? "bg-white dark:bg-gray-900" : "bg-gray-50/50 dark:bg-gray-800/20"}
                         hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors
+                        ${diasAtraso > 0 && comissao.status === "a_pagar" ? "bg-red-50 dark:bg-red-900/10" : ""}
                       `}
+                      >
+                        <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700">
+                          {corretor?.nome ||
+                            `Corretor #${comissao.corretor_id}`}
+                        </td>
+                        <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700">
+                          {venda
+                            ? `${venda.bairro} - ${venda.tipo}`
+                            : `Venda #${comissao.venda_id}`}
+                        </td>
+                        <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700">
+                          {formatarData(comissao.created_at)}
+                        </td>
+                        <td className="py-3 px-4 text-sm font-medium text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">
+                          {formatarMoeda(comissao.valor)}
+                        </td>
+                        <td className="py-3 px-4 text-sm border-r border-gray-200 dark:border-gray-700">
+                          <span
+                            className={
+                              diasAtraso > 0 && comissao.status === "a_pagar"
+                                ? "text-red-600 dark:text-red-400 font-medium"
+                                : "text-gray-700 dark:text-gray-300"
+                            }
+                          >
+                            {formatarData(comissao.data_vencimento)}
+                            {diasAtraso > 0 &&
+                              comissao.status === "a_pagar" && (
+                                <span className="ml-2 text-xs bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 px-2 py-0.5 rounded-full">
+                                  {diasAtraso} dias atrasado
+                                </span>
+                              )}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 text-sm">
+                          <span
+                            className={`text-xs px-2 py-1 rounded-full ${
+                              comissao.status === "pago"
+                                ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                                : "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
+                            }`}
+                          >
+                            {comissao.status === "pago" ? "Pago" : "A pagar"}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })
+                ) : (
+                  <tr>
+                    <td
+                      colSpan="6"
+                      className="py-8 text-center text-gray-500 dark:text-gray-400"
                     >
-                      <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700">
-                        {corretor?.nome || `Corretor #${comissao.corretor_id}`}
-                      </td>
-                      <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700">
-                        {venda
-                          ? `${venda.bairro} - ${venda.tipo}`
-                          : `Venda #${comissao.venda_id}`}
-                      </td>
-                      <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700">
-                        {formatarData(comissao.created_at)}
-                      </td>
-                      <td className="py-3 px-4 text-sm font-medium text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">
-                        {formatarMoeda(comissao.valor)}
-                      </td>
-                      <td className="py-3 px-4 text-sm border-r border-gray-200 dark:border-gray-700">
-                        <span
-                          className={
-                            diasAtraso > 0 && comissao.status === "a_pagar"
-                              ? "text-red-600 dark:text-red-400 font-medium"
-                              : "text-gray-700 dark:text-gray-300"
-                          }
-                        >
-                          {formatarData(comissao.data_vencimento)}
-                          {diasAtraso > 0 && comissao.status === "a_pagar" && (
-                            <span className="ml-2 text-xs bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 px-2 py-0.5 rounded-full">
-                              {diasAtraso} dias atrasado
-                            </span>
-                          )}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4 text-sm">
-                        <span
-                          className={`text-xs px-2 py-1 rounded-full ${
-                            comissao.status === "pago"
-                              ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                              : "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
-                          }`}
-                        >
-                          {comissao.status === "pago" ? "Pago" : "A pagar"}
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })
-              ) : (
-                <tr>
-                  <td
-                    colSpan="6"
-                    className="py-8 text-center text-gray-500 dark:text-gray-400"
-                  >
-                    Nenhuma comissão encontrada
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+                      Nenhuma comissão encontrada
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
 
-        {/* Resumo */}
-        <div className="px-6 py-3 bg-gray-50 dark:bg-gray-800/50 border-t border-gray-200 dark:border-gray-700">
-          <div className="flex items-center justify-end gap-6">
-            <div className="text-sm">
-              <span className="text-gray-500 dark:text-gray-400">
-                Total a pagar:{" "}
-              </span>
-              <span className="font-semibold text-red-600 dark:text-red-400">
-                {formatarMoeda(
-                  comissoesFiltradas
-                    .filter((c) => c.status === "a_pagar")
-                    .reduce((acc, c) => acc + c.valor, 0),
-                )}
-              </span>
-            </div>
-            <div className="text-sm">
-              <span className="text-gray-500 dark:text-gray-400">
-                Total pago:{" "}
-              </span>
-              <span className="font-semibold text-green-600 dark:text-green-400">
-                {formatarMoeda(
-                  comissoesFiltradas
-                    .filter((c) => c.status === "pago")
-                    .reduce((acc, c) => acc + c.valor, 0),
-                )}
-              </span>
+          {/* Resumo */}
+          <div className="px-6 py-3 bg-gray-50 dark:bg-gray-800/50 border-t border-gray-200 dark:border-gray-700">
+            <div className="flex items-center justify-end gap-6">
+              <div className="text-sm">
+                <span className="text-gray-500 dark:text-gray-400">
+                  Total a pagar:{" "}
+                </span>
+                <span className="font-semibold text-red-600 dark:text-red-400">
+                  {formatarMoeda(totalComissoesAPagarTabela)}
+                </span>
+              </div>
+              <div className="text-sm">
+                <span className="text-gray-500 dark:text-gray-400">
+                  Total pago:{" "}
+                </span>
+                <span className="font-semibold text-green-600 dark:text-green-400">
+                  {formatarMoeda(totalComissoesPagasTabela)}
+                </span>
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   // ========== ABA CORRETORES ==========
   const AbaCorretores = () => (

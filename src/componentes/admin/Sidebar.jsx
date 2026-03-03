@@ -70,6 +70,12 @@ const Sidebar = ({ onLogout, userName = "Adventus Imobiliária" }) => {
   const { notificacoes } = useNotifications();
   const { user } = useAuth();
 
+  // 🔍 LOGS PARA DEBUG
+  useEffect(() => {
+    console.log("🔥 Sidebar - user recebido:", user);
+    console.log("🔥 Sidebar - user.perfil:", user?.perfil);
+  }, [user]);
+
   useEffect(() => {
     console.log(
       "Rota alterada para:",
@@ -335,96 +341,100 @@ const Sidebar = ({ onLogout, userName = "Adventus Imobiliária" }) => {
     </svg>
   );
 
-  // MENU ITEMS COM PERMISSÕES DEFINIDAS
+  // ✅ MENU ITEMS COM PERMISSÕES CORRETAS
   const menuItems = [
+    // Dashboard: só master e gerente (corretor NÃO vê)
     {
       icon: HomeIcon,
       label: "Dashboard",
       to: "/admin",
       exact: true,
-      permission: [
-        "master",
-        "gerente",
-        "rh",
-        "marketing",
-        "financeiro",
-        "corretor",
-      ],
+      permission: ["master", "gerente"],
     },
+    // Imóveis: todos veem
     {
       icon: BuildingOfficeIcon,
       label: "Imóveis",
       to: "/admin/imoveis",
-      badge: notificacoes.imoveis,
+      badge: notificacoes?.imoveis,
       permission: ["master", "gerente", "corretor"],
     },
+    // Empreendimentos: só master e gerente
     {
       icon: BuildingLibraryIcon,
       label: "Empreendimentos",
       to: "/admin/empreendimentos",
-      badge: notificacoes.empreendimentos,
+      badge: notificacoes?.empreendimentos,
       permission: ["master", "gerente"],
     },
+    // Corretores: só master e gerente (corretor NÃO vê outros corretores)
     {
       icon: UserGroupIcon,
       label: "Corretores",
       to: "/admin/corretores",
-      badge: notificacoes.corretores,
+      badge: notificacoes?.corretores,
       permission: ["master", "gerente"],
     },
+    // Leads: todos veem
     {
       icon: EnvelopeIcon,
       label: "Leads",
       to: "/admin/leads",
-      badge: notificacoes.leads,
-      permission: ["master", "gerente", "marketing"],
+      badge: notificacoes?.leads,
+      permission: ["master", "gerente", "corretor"],
     },
+    // Visitas: todos veem
     {
       icon: CalendarIcon,
       label: "Visitas",
       to: "/admin/visitas",
-      badge: notificacoes.visitas,
+      badge: notificacoes?.visitas,
       permission: ["master", "gerente", "corretor"],
     },
+    // Estados: só master (cadastro básico)
     {
       icon: MapIcon,
       label: "Estados",
       to: "/admin/estados",
       permission: ["master"],
     },
+    // Cidades: só master
     {
       icon: LocationMarkerIcon,
       label: "Cidades",
       to: "/admin/cidades",
       permission: ["master"],
     },
+    // Bairros: só master
     {
       icon: HomeModernIcon,
       label: "Bairros",
       to: "/admin/bairros",
       permission: ["master"],
     },
+    // Relatórios: só master e gerente
     {
       icon: ChartBarIcon,
       label: "Relatórios",
       to: "/admin/relatorios",
       permission: ["master", "gerente"],
     },
+    // Contratos: todos veem (corretores precisam ver seus contratos)
     {
       icon: DocumentTextIcon,
       label: "Contratos",
       to: "/admin/contratos",
-      badge: notificacoes.contratos,
-      permission: ["master", "gerente"],
+      badge: notificacoes?.contratos,
+      permission: ["master", "gerente", "corretor"],
     },
-    // USUÁRIOS - SÓ MASTER VÊ
+    // Usuários: só master
     {
       icon: UserGroupIcon,
       label: "Usuários",
       to: "/admin/usuarios",
       permission: ["master"],
     },
-    // CONFIGURAÇÕES - SÓ MASTER VÊ
+    // Configurações: só master
     {
       icon: Cog6ToothIcon,
       label: "Configurações",
@@ -433,9 +443,21 @@ const Sidebar = ({ onLogout, userName = "Adventus Imobiliária" }) => {
     },
   ];
 
-  // FILTRA MENU BASEADO NO PERFIL DO USUÁRIO
-  const filteredMenuItems = menuItems.filter((item) =>
-    item.permission.includes(user?.role),
+  // ✅ FILTRA MENU BASEADO NO PERFIL DO USUÁRIO
+  const filteredMenuItems = menuItems.filter((item) => {
+    if (!user) return false;
+
+    const perfil = user.perfil || user.role;
+    if (!perfil) return false;
+
+    return item.permission.includes(perfil);
+  });
+
+  console.log(
+    "📋 Itens filtrados para perfil",
+    user?.perfil,
+    ":",
+    filteredMenuItems.map((i) => i.label),
   );
 
   const isItemActive = (item) => {
@@ -583,7 +605,6 @@ const Sidebar = ({ onLogout, userName = "Adventus Imobiliária" }) => {
           `}
         </style>
 
-        {/* RENDERIZA APENAS OS ITENS QUE O USUÁRIO TEM PERMISSÃO */}
         {filteredMenuItems.map((item) => (
           <MenuItem
             key={item.label}
@@ -596,8 +617,6 @@ const Sidebar = ({ onLogout, userName = "Adventus Imobiliária" }) => {
           />
         ))}
       </nav>
-
-      {/* BOTÃO SAIR REMOVIDO - Agora só no Header */}
     </aside>
   );
 };

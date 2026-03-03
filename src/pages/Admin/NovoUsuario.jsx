@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "../../contexts/ThemeContext";
 import { supabase } from "../../lib/supabase";
-import bcrypt from "bcryptjs";
 import Button from "../../componentes/ui/Button";
 
 // Ícones
@@ -53,18 +52,50 @@ const NovoUsuario = () => {
   };
 
   const handleSubmit = async (e) => {
+    console.log("🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴");
+    console.log("🚀 HANDLE SUBMIT USUÁRIO EXECUTOU!");
+    console.log("🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴");
+
     e.preventDefault();
-    if (!validarFormulario()) return;
+    console.log("1️⃣ handleSubmit iniciou");
 
+    const valido = validarFormulario();
+    console.log("2️⃣ validação:", valido);
+
+    if (!valido) return;
+
+    console.log("3️⃣ passou validação");
     setLoading(true);
-    try {
-      const senhaHash = await bcrypt.hash(formData.senha, 10);
+    console.log("4️⃣ loading true");
 
-      const { error } = await supabase.from("usuarios").insert([
+    try {
+      console.log("5️⃣ dentro do try, formData:", formData);
+
+      // ✅ CRIA NO AUTH com tipo = 'usuario'
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: formData.email,
+        password: formData.senha,
+        options: {
+          data: {
+            nome: formData.nome,
+            perfil: formData.perfil,
+            cargo: formData.cargo,
+            tipo: "usuario", // ← ESSENCIAL para diferenciar de corretor
+          },
+        },
+      });
+
+      console.log("6️⃣ resposta signUp:", { authData, authError });
+
+      if (authError) throw authError;
+      console.log("7️⃣ sem erro, usuário criado:", authData.user?.id);
+
+      // ✅ DEPOIS CRIA NA TABELA usuarios
+      const { error: insertError } = await supabase.from("usuarios").insert([
         {
+          id: authData.user.id, // usa o mesmo ID do Auth
           nome: formData.nome,
           email: formData.email,
-          senha: senhaHash,
           perfil: formData.perfil,
           cargo: formData.cargo,
           ativo: formData.ativo,
@@ -73,14 +104,22 @@ const NovoUsuario = () => {
         },
       ]);
 
-      if (error) throw error;
+      console.log("8️⃣ insert na tabela usuarios:", insertError ? "erro" : "ok");
+
+      if (insertError) {
+        console.warn(
+          "9️⃣ erro ao inserir na tabela (não crítico):",
+          insertError,
+        );
+      }
 
       alert("✅ Usuário cadastrado com sucesso!");
       navigate("/admin/usuarios");
     } catch (error) {
-      console.error("Erro ao cadastrar:", error);
-      alert("Erro ao cadastrar usuário");
+      console.error("❌ erro capturado:", error);
+      alert("Erro ao cadastrar: " + error.message);
     } finally {
+      console.log("🔚 finally");
       setLoading(false);
     }
   };
@@ -92,7 +131,7 @@ const NovoUsuario = () => {
       }
     >
       <div className="max-w-7xl mx-auto px-6 py-8">
-        {/* Header com botão Voltar no estilo "Cadastrar Imóvel" */}
+        {/* Header com botão Voltar */}
         <div className="flex items-center gap-4 mb-6">
           <button
             onClick={() => navigate("/admin/usuarios")}
@@ -123,7 +162,7 @@ const NovoUsuario = () => {
           </div>
         </div>
 
-        {/* Formulário expandido */}
+        {/* Formulário */}
         <form onSubmit={handleSubmit} className="space-y-6">
           <div
             className={`p-8 rounded-xl border ${
