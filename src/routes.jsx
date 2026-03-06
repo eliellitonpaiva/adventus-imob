@@ -14,6 +14,7 @@ import Login from "./pages/Login";
 // ========== Lazy loading das páginas do SITE NORMAL ==========
 const Home = lazy(() => import("./pages/Home"));
 const ComprarImovel = lazy(() => import("./pages/ComprarImovel"));
+const AlugarImovel = lazy(() => import("./pages/AlugarImovel")); // ← NOVO COMPONENTE
 const DetalheImovel = lazy(() => import("./pages/DetalheImovel"));
 
 // ========== Lazy loading das páginas do ADMIN ==========
@@ -72,14 +73,7 @@ function Institucional() {
   );
 }
 
-function Alugar() {
-  return (
-    <div style={{ padding: "40px", textAlign: "center" }}>
-      <h1>Alugar Imóvel</h1>
-      <p>Página de aluguel em construção</p>
-    </div>
-  );
-}
+// ❌ REMOVIDO: componente Alugar placeholder
 
 function Contato() {
   return (
@@ -137,7 +131,17 @@ function AppRoutes() {
               }
             />
 
-            {/* 🔥🔥🔥 ROTA DO SITE: DETALHE DO IMÓVEL POR SLUG 🔥🔥🔥 */}
+            {/* 🔥🔥🔥 NOVA ROTA: Alugar com componente completo */}
+            <Route
+              path="/alugar"
+              element={
+                <Layout>
+                  <AlugarImovel />
+                </Layout>
+              }
+            />
+
+            {/* 🔥🔥🔥 ROTA DO SITE: DETALHE DO IMÓVEL POR SLUG */}
             <Route
               path="/imovel/:slug"
               element={
@@ -152,15 +156,6 @@ function AppRoutes() {
               element={
                 <Layout>
                   <Institucional />
-                </Layout>
-              }
-            />
-
-            <Route
-              path="/alugar"
-              element={
-                <Layout>
-                  <Alugar />
                 </Layout>
               }
             />

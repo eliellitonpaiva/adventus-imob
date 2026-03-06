@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "/src/lib/supabase";
 import ReactDOM from "react-dom";
 
 // ===========================================
-// BOTTOM SHEET (MOBILE) - JÁ RESOLVIDO
+// BOTTOM SHEET (MOBILE) - IGUAL AO COMPRAIMOVEL
 // ===========================================
 const BottomSheet = React.memo(
   ({
@@ -17,14 +18,12 @@ const BottomSheet = React.memo(
     garageOptions,
     suiteOptions,
     bathroomOptions,
+    bedroomOptions,
   }) => {
-    // Ref para o conteúdo
     const contentRef = useRef(null);
-
-    // ESTADO LOCAL - DECLARADO PRIMEIRO
     const [localDropdownOpen, setLocalDropdownOpen] = useState(null);
+    const dropdownRef = useRef(null);
 
-    // LOG PARA VER QUANDO MONTA/DESMONTA
     useEffect(() => {
       console.log("📱 BOTTOM SHEET MONTADO");
       return () => {
@@ -32,27 +31,37 @@ const BottomSheet = React.memo(
       };
     }, []);
 
-    console.log("📱 BOTTOM SHEET RENDERIZOU", {
-      timestamp: Date.now(),
-      localDropdownOpen,
-    });
+    // 🔥 Fechar dropdown ao clicar fora
+    useEffect(() => {
+      const handleClickOutside = (event) => {
+        if (
+          localDropdownOpen &&
+          dropdownRef.current &&
+          !dropdownRef.current.contains(event.target)
+        ) {
+          setLocalDropdownOpen(null);
+        }
+      };
 
-    // Função para fechar o modal (separada)
+      document.addEventListener("mousedown", handleClickOutside);
+      document.addEventListener("touchstart", handleClickOutside);
+
+      return () => {
+        document.removeEventListener("mousedown", handleClickOutside);
+        document.removeEventListener("touchstart", handleClickOutside);
+      };
+    }, [localDropdownOpen]);
+
     const closeSheet = () => {
-      console.log("🔚 closeSheet chamado");
       onClose();
       setLocalDropdownOpen(null);
     };
 
-    // Handler do overlay - FECHA APENAS SE CLICAR FORA
-    const handleOverlayClick = (e) => {
-      console.log("⬛ Overlay clicado");
+    const handleOverlayClick = () => {
       closeSheet();
     };
 
-    // Handler para toggle de dropdown - COM STOP PROPAGATION
     const toggleDropdown = (dropdownName, e) => {
-      console.log("🔽 toggleDropdown:", dropdownName);
       e.stopPropagation();
       e.preventDefault();
       setLocalDropdownOpen((prev) =>
@@ -60,35 +69,27 @@ const BottomSheet = React.memo(
       );
     };
 
-    // Handler para selecionar opção - COM STOP PROPAGATION
     const selectOption = (field, value, e) => {
-      console.log("✅ selectOption:", { field, value });
       e.stopPropagation();
       e.preventDefault();
       onInputChange(field, value);
       setLocalDropdownOpen(null);
     };
 
-    // Handler para limpar - COM STOP PROPAGATION
     const handleClear = (e) => {
-      console.log("🧹 handleClear");
       e.stopPropagation();
       e.preventDefault();
       onClearFilters();
     };
 
-    // Handler para aplicar - COM STOP PROPAGATION
     const handleApply = (e) => {
-      console.log("✅ handleApply");
       e.stopPropagation();
       e.preventDefault();
       closeSheet();
       onSearch(e);
     };
 
-    // Handler para fechar com X - COM STOP PROPAGATION
     const handleClose = (e) => {
-      console.log("❌ handleClose");
       e.stopPropagation();
       e.preventDefault();
       closeSheet();
@@ -97,18 +98,14 @@ const BottomSheet = React.memo(
     if (!show) return null;
 
     return ReactDOM.createPortal(
-      // Overlay - fecha apenas se clicar fora
       <div
         className="fixed inset-0 bg-black/50 z-[999999] flex justify-center items-end md:hidden"
         onClick={handleOverlayClick}
       >
-        {/* Conteúdo interno - BLOQUEIA PROPAGAÇÃO */}
         <div
           ref={contentRef}
           className="bg-white w-full rounded-t-3xl max-h-[85vh] overflow-y-auto animate-slide-up"
           onClick={(e) => e.stopPropagation()}
-          onMouseDown={(e) => e.stopPropagation()}
-          onTouchStart={(e) => e.stopPropagation()}
         >
           {/* Header */}
           <div className="sticky top-0 bg-white pt-4 pb-2 px-6 border-b border-gray-100 z-10">
@@ -117,7 +114,7 @@ const BottomSheet = React.memo(
               <h3 className="text-xl font-bold text-gray-800">Mais filtros</h3>
               <button
                 onClick={handleClose}
-                className="p-2 bg-[#D4A24D] text-white rounded-full hover:bg-[#c0903d] transition-colors shadow-sm flex items-center justify-center w-8 h-8"
+                className="p-2 bg-[#D4A24D] text-white rounded-full hover:bg-[#c0903d] transition-colors shadow-sm"
               >
                 <i className="fas fa-times text-white text-sm" />
               </button>
@@ -125,18 +122,24 @@ const BottomSheet = React.memo(
           </div>
 
           <div className="p-6 space-y-6">
-            {/* Faixa de preço */}
-            <div className="relative">
+            {/* FAIXA DE PREÇO */}
+            <div
+              className="relative"
+              ref={localDropdownOpen === "priceRange" ? dropdownRef : null}
+            >
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Faixa de preço
               </label>
               <div
-                onClick={(e) => toggleDropdown("priceRange", e)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleDropdown("priceRange", e);
+                }}
                 className={`flex items-center justify-between w-full px-4 py-3 bg-white border ${
                   localDropdownOpen === "priceRange"
                     ? "border-[#D4A24D] ring-2 ring-[#D4A24D]/20"
                     : "border-gray-200 hover:border-gray-300"
-                } rounded-xl cursor-pointer transition-all shadow-sm hover:shadow-md`}
+                } rounded-xl cursor-pointer transition-all shadow-sm`}
               >
                 <span
                   className={`flex-1 text-left text-sm md:text-base font-medium truncate ${
@@ -149,7 +152,7 @@ const BottomSheet = React.memo(
                     ? priceRangeOptions.find(
                         (o) => o.id === propsFormValues.priceRange,
                       )?.label
-                    : "Selecione a faixa de preço"}
+                    : "Selecione"}
                 </span>
                 <i
                   className={`fas fa-chevron-down text-gray-400 text-xs transition-all duration-300 ${
@@ -165,7 +168,7 @@ const BottomSheet = React.memo(
                   className="absolute top-[calc(100%+4px)] left-0 w-full bg-white rounded-xl shadow-2xl border border-gray-100 z-[100] overflow-hidden animate-dropdown"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <div className="max-h-[220px] overflow-y-auto custom-scrollbar">
+                  <div className="max-h-[220px] overflow-y-auto">
                     {priceRangeOptions.map((opt) => (
                       <div
                         key={opt.id}
@@ -177,7 +180,7 @@ const BottomSheet = React.memo(
                         }`}
                       >
                         <span
-                          className={`text-sm md:text-base font-medium ${
+                          className={`text-sm font-medium ${
                             propsFormValues.priceRange === opt.id
                               ? "text-[#D4A24D] font-semibold"
                               : "text-gray-700"
@@ -195,488 +198,29 @@ const BottomSheet = React.memo(
               )}
             </div>
 
-            {/* Área */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Área (m²)
-              </label>
-              <div className="grid grid-cols-2 gap-3">
-                <input
-                  type="number"
-                  placeholder="Mínimo"
-                  value={propsFormValues.minArea}
-                  onChange={(e) => {
+            {/* GRID DE 2 COLUNAS */}
+            <div className="grid grid-cols-2 gap-4">
+              {/* VAGAS */}
+              <div
+                className="relative"
+                ref={localDropdownOpen === "garage" ? dropdownRef : null}
+              >
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Vagas
+                </label>
+                <div
+                  onClick={(e) => {
                     e.stopPropagation();
-                    onInputChange("minArea", e.target.value);
+                    toggleDropdown("garage", e);
                   }}
-                  onClick={(e) => e.stopPropagation()}
-                  className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:border-[#D4A24D] focus:ring-1 focus:ring-[#D4A24D]/20 text-gray-800 placeholder-gray-400 transition-all shadow-sm hover:border-gray-300"
-                />
-                <input
-                  type="number"
-                  placeholder="Máximo"
-                  value={propsFormValues.maxArea}
-                  onChange={(e) => {
-                    e.stopPropagation();
-                    onInputChange("maxArea", e.target.value);
-                  }}
-                  onClick={(e) => e.stopPropagation()}
-                  className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:border-[#D4A24D] focus:ring-1 focus:ring-[#D4A24D]/20 text-gray-800 placeholder-gray-400 transition-all shadow-sm hover:border-gray-300"
-                />
-              </div>
-            </div>
-
-            {/* Bairro */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Bairro
-              </label>
-              <input
-                type="text"
-                placeholder="Digite o bairro"
-                value={propsFormValues.neighborhood}
-                onChange={(e) => {
-                  e.stopPropagation();
-                  onInputChange("neighborhood", e.target.value);
-                }}
-                onClick={(e) => e.stopPropagation()}
-                className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:border-[#D4A24D] focus:ring-1 focus:ring-[#D4A24D]/20 text-gray-800 placeholder-gray-400 transition-all shadow-sm hover:border-gray-300"
-              />
-            </div>
-
-            {/* Vagas na garagem */}
-            <div className="relative">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Vagas na garagem
-              </label>
-              <div
-                onClick={(e) => toggleDropdown("garage", e)}
-                className={`flex items-center justify-between w-full px-4 py-3 bg-white border ${
-                  localDropdownOpen === "garage"
-                    ? "border-[#D4A24D] ring-2 ring-[#D4A24D]/20"
-                    : "border-gray-200 hover:border-gray-300"
-                } rounded-xl cursor-pointer transition-all shadow-sm hover:shadow-md`}
-              >
-                <span
-                  className={`flex-1 text-left text-sm md:text-base font-medium truncate ${
-                    propsFormValues.garage ? "text-gray-800" : "text-gray-400"
-                  }`}
-                >
-                  {propsFormValues.garage
-                    ? garageOptions.find((o) => o.id === propsFormValues.garage)
-                        ?.label
-                    : "Qualquer número"}
-                </span>
-                <i
-                  className={`fas fa-chevron-down text-gray-400 text-xs transition-all duration-300 ${
-                    localDropdownOpen === "garage"
-                      ? "rotate-180 text-[#D4A24D]"
-                      : ""
-                  }`}
-                />
-              </div>
-
-              {localDropdownOpen === "garage" && (
-                <div
-                  className="absolute top-[calc(100%+4px)] left-0 w-full bg-white rounded-xl shadow-2xl border border-gray-100 z-[100] overflow-hidden animate-dropdown"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  {garageOptions.map((opt) => (
-                    <div
-                      key={opt.id}
-                      onClick={(e) => selectOption("garage", opt.id, e)}
-                      className={`flex items-center justify-between px-4 py-3 hover:bg-[#D4A24D]/10 cursor-pointer border-b border-gray-50 last:border-0 ${
-                        propsFormValues.garage === opt.id
-                          ? "bg-[#D4A24D]/5"
-                          : ""
-                      }`}
-                    >
-                      <span
-                        className={`text-sm md:text-base font-medium ${
-                          propsFormValues.garage === opt.id
-                            ? "text-[#D4A24D] font-semibold"
-                            : "text-gray-700"
-                        }`}
-                      >
-                        {opt.label}
-                      </span>
-                      {propsFormValues.garage === opt.id && (
-                        <i className="fas fa-check text-[#D4A24D] text-sm" />
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Suítes */}
-            <div className="relative">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Suítes
-              </label>
-              <div
-                onClick={(e) => toggleDropdown("suite", e)}
-                className={`flex items-center justify-between w-full px-4 py-3 bg-white border ${
-                  localDropdownOpen === "suite"
-                    ? "border-[#D4A24D] ring-2 ring-[#D4A24D]/20"
-                    : "border-gray-200 hover:border-gray-300"
-                } rounded-xl cursor-pointer transition-all shadow-sm hover:shadow-md`}
-              >
-                <span
-                  className={`flex-1 text-left text-sm md:text-base font-medium truncate ${
-                    propsFormValues.suite ? "text-gray-800" : "text-gray-400"
-                  }`}
-                >
-                  {propsFormValues.suite
-                    ? suiteOptions.find((o) => o.id === propsFormValues.suite)
-                        ?.label
-                    : "Qualquer número"}
-                </span>
-                <i
-                  className={`fas fa-chevron-down text-gray-400 text-xs transition-all duration-300 ${
-                    localDropdownOpen === "suite"
-                      ? "rotate-180 text-[#D4A24D]"
-                      : ""
-                  }`}
-                />
-              </div>
-
-              {localDropdownOpen === "suite" && (
-                <div
-                  className="absolute top-[calc(100%+4px)] left-0 w-full bg-white rounded-xl shadow-2xl border border-gray-100 z-[100] overflow-hidden animate-dropdown"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  {suiteOptions.map((opt) => (
-                    <div
-                      key={opt.id}
-                      onClick={(e) => selectOption("suite", opt.id, e)}
-                      className={`flex items-center justify-between px-4 py-3 hover:bg-[#D4A24D]/10 cursor-pointer border-b border-gray-50 last:border-0 ${
-                        propsFormValues.suite === opt.id ? "bg-[#D4A24D]/5" : ""
-                      }`}
-                    >
-                      <span
-                        className={`text-sm md:text-base font-medium ${
-                          propsFormValues.suite === opt.id
-                            ? "text-[#D4A24D] font-semibold"
-                            : "text-gray-700"
-                        }`}
-                      >
-                        {opt.label}
-                      </span>
-                      {propsFormValues.suite === opt.id && (
-                        <i className="fas fa-check text-[#D4A24D] text-sm" />
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Banheiros */}
-            <div className="relative">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Banheiros
-              </label>
-              <div
-                onClick={(e) => toggleDropdown("bathrooms", e)}
-                className={`flex items-center justify-between w-full px-4 py-3 bg-white border ${
-                  localDropdownOpen === "bathrooms"
-                    ? "border-[#D4A24D] ring-2 ring-[#D4A24D]/20"
-                    : "border-gray-200 hover:border-gray-300"
-                } rounded-xl cursor-pointer transition-all shadow-sm hover:shadow-md`}
-              >
-                <span
-                  className={`flex-1 text-left text-sm md:text-base font-medium truncate ${
-                    propsFormValues.bathrooms
-                      ? "text-gray-800"
-                      : "text-gray-400"
-                  }`}
-                >
-                  {propsFormValues.bathrooms
-                    ? bathroomOptions.find(
-                        (o) => o.id === propsFormValues.bathrooms,
-                      )?.label
-                    : "Qualquer número"}
-                </span>
-                <i
-                  className={`fas fa-chevron-down text-gray-400 text-xs transition-all duration-300 ${
-                    localDropdownOpen === "bathrooms"
-                      ? "rotate-180 text-[#D4A24D]"
-                      : ""
-                  }`}
-                />
-              </div>
-
-              {localDropdownOpen === "bathrooms" && (
-                <div
-                  className="absolute top-[calc(100%+4px)] left-0 w-full bg-white rounded-xl shadow-2xl border border-gray-100 z-[100] overflow-hidden animate-dropdown"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  {bathroomOptions.map((opt) => (
-                    <div
-                      key={opt.id}
-                      onClick={(e) => selectOption("bathrooms", opt.id, e)}
-                      className={`flex items-center justify-between px-4 py-3 hover:bg-[#D4A24D]/10 cursor-pointer border-b border-gray-50 last:border-0 ${
-                        propsFormValues.bathrooms === opt.id
-                          ? "bg-[#D4A24D]/5"
-                          : ""
-                      }`}
-                    >
-                      <span
-                        className={`text-sm md:text-base font-medium ${
-                          propsFormValues.bathrooms === opt.id
-                            ? "text-[#D4A24D] font-semibold"
-                            : "text-gray-700"
-                        }`}
-                      >
-                        {opt.label}
-                      </span>
-                      {propsFormValues.bathrooms === opt.id && (
-                        <i className="fas fa-check text-[#D4A24D] text-sm" />
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Botões */}
-            <div className="grid grid-cols-2 gap-3 pt-4 sticky bottom-0 bg-white pb-6 border-t border-gray-100">
-              <button
-                type="button"
-                onClick={handleClear}
-                className="px-6 py-3 bg-gray-100 text-gray-700 font-bold rounded-lg hover:bg-gray-200 transition-colors border border-gray-200"
-              >
-                Limpar
-              </button>
-              <button
-                type="button"
-                onClick={handleApply}
-                className="px-6 py-3 bg-[#D4A24D] text-white font-bold rounded-lg hover:bg-[#c0903d] transition-colors"
-              >
-                Aplicar
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>,
-      document.body,
-    );
-  },
-);
-
-// ===========================================
-// MODAL DESKTOP - CORRIGIDO (ALTURA AJUSTADA)
-// ===========================================
-const DesktopModal = React.memo(
-  ({
-    show,
-    onClose,
-    formValues: propsFormValues,
-    onInputChange,
-    onClearFilters,
-    onSearch,
-    priceRangeOptions,
-    garageOptions,
-    suiteOptions,
-    bathroomOptions,
-  }) => {
-    // Ref para o conteúdo
-    const contentRef = useRef(null);
-
-    // ESTADO LOCAL para controlar o dropdown
-    const [localDropdownOpen, setLocalDropdownOpen] = useState(null);
-
-    if (!show) return null;
-
-    // Função para fechar o modal
-    const closeModal = () => {
-      onClose();
-      setLocalDropdownOpen(null);
-    };
-
-    // Handler para toggle de dropdown
-    const toggleDropdown = (dropdownName, e) => {
-      e.stopPropagation();
-      e.preventDefault();
-      setLocalDropdownOpen((prev) =>
-        prev === dropdownName ? null : dropdownName,
-      );
-    };
-
-    // Handler para selecionar opção
-    const selectOption = (field, value, e) => {
-      e.stopPropagation();
-      e.preventDefault();
-      onInputChange(field, value);
-      setLocalDropdownOpen(null);
-    };
-
-    // Handler para limpar
-    const handleClear = (e) => {
-      e.stopPropagation();
-      e.preventDefault();
-      onClearFilters();
-    };
-
-    // Handler para aplicar
-    const handleApply = (e) => {
-      e.stopPropagation();
-      e.preventDefault();
-      closeModal();
-      onSearch(e);
-    };
-
-    return ReactDOM.createPortal(
-      <div
-        className="fixed inset-0 bg-black/50 z-[999999] hidden md:flex items-center justify-center"
-        onClick={closeModal}
-      >
-        {/* Modal Content - SEM SCROLLBAR (overflow-hidden) */}
-        <div
-          ref={contentRef}
-          className="bg-white rounded-2xl w-full max-w-2xl shadow-2xl animate-fade-in overflow-hidden"
-          onClick={(e) => e.stopPropagation()}
-        >
-          {/* Header */}
-          <div className="sticky top-0 bg-white px-6 py-4 border-b border-gray-100 flex justify-between items-center">
-            <h3 className="text-2xl font-bold text-gray-800">Mais filtros</h3>
-            <button
-              onClick={closeModal}
-              className="p-2 bg-[#D4A24D] text-white rounded-full hover:bg-[#c0903d] transition-colors shadow-sm flex items-center justify-center w-8 h-8"
-            >
-              <i className="fas fa-times text-white text-sm" />
-            </button>
-          </div>
-
-          {/* Content - COM SCROLL APENAS SE NECESSÁRIO, ALTURA AJUSTADA PARA 95vh */}
-          <div className="p-6 max-h-[calc(95vh-80px)] overflow-y-auto">
-            <div className="grid grid-cols-2 gap-6">
-              {/* Faixa de preço (ocupa 2 colunas) */}
-              <div className="col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Faixa de preço
-                </label>
-                <div className="relative">
-                  <div
-                    onClick={(e) => toggleDropdown("priceRangeDesktop", e)}
-                    className={`flex items-center justify-between w-full px-4 py-3 bg-white border ${
-                      localDropdownOpen === "priceRangeDesktop"
-                        ? "border-[#D4A24D] ring-2 ring-[#D4A24D]/20"
-                        : "border-gray-200 hover:border-gray-300"
-                    } rounded-xl cursor-pointer transition-all shadow-sm hover:shadow-md`}
-                  >
-                    <span
-                      className={`flex-1 text-left text-sm font-medium truncate ${
-                        propsFormValues.priceRange
-                          ? "text-gray-800"
-                          : "text-gray-400"
-                      }`}
-                    >
-                      {propsFormValues.priceRange
-                        ? priceRangeOptions.find(
-                            (o) => o.id === propsFormValues.priceRange,
-                          )?.label
-                        : "Selecione a faixa de preço"}
-                    </span>
-                    <i
-                      className={`fas fa-chevron-down text-gray-400 text-xs transition-all duration-300 ${
-                        localDropdownOpen === "priceRangeDesktop"
-                          ? "rotate-180 text-[#D4A24D]"
-                          : ""
-                      }`}
-                    />
-                  </div>
-
-                  {localDropdownOpen === "priceRangeDesktop" && (
-                    <div className="absolute top-[calc(100%+4px)] left-0 w-full bg-white rounded-xl shadow-2xl border border-gray-100 z-[100] overflow-hidden animate-dropdown">
-                      <div className="max-h-[220px] overflow-y-auto">
-                        {priceRangeOptions.map((opt) => (
-                          <div
-                            key={opt.id}
-                            onClick={(e) =>
-                              selectOption("priceRange", opt.id, e)
-                            }
-                            className={`flex items-center justify-between px-4 py-3 hover:bg-[#D4A24D]/10 cursor-pointer border-b border-gray-50 last:border-0 ${
-                              propsFormValues.priceRange === opt.id
-                                ? "bg-[#D4A24D]/5"
-                                : ""
-                            }`}
-                          >
-                            <span
-                              className={`text-sm font-medium ${
-                                propsFormValues.priceRange === opt.id
-                                  ? "text-[#D4A24D] font-semibold"
-                                  : "text-gray-700"
-                              }`}
-                            >
-                              {opt.label}
-                            </span>
-                            {propsFormValues.priceRange === opt.id && (
-                              <i className="fas fa-check text-[#D4A24D] text-sm" />
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Área (ocupa 2 colunas) */}
-              <div className="col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Área (m²)
-                </label>
-                <div className="grid grid-cols-2 gap-3">
-                  <input
-                    type="number"
-                    placeholder="Mínimo"
-                    value={propsFormValues.minArea}
-                    onChange={(e) => onInputChange("minArea", e.target.value)}
-                    className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:border-[#D4A24D] focus:ring-1 focus:ring-[#D4A24D]/20 text-gray-800 placeholder-gray-400 transition-all"
-                  />
-                  <input
-                    type="number"
-                    placeholder="Máximo"
-                    value={propsFormValues.maxArea}
-                    onChange={(e) => onInputChange("maxArea", e.target.value)}
-                    className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:border-[#D4A24D] focus:ring-1 focus:ring-[#D4A24D]/20 text-gray-800 placeholder-gray-400 transition-all"
-                  />
-                </div>
-              </div>
-
-              {/* Bairro */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Bairro
-                </label>
-                <input
-                  type="text"
-                  placeholder="Digite o bairro"
-                  value={propsFormValues.neighborhood}
-                  onChange={(e) =>
-                    onInputChange("neighborhood", e.target.value)
-                  }
-                  className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:border-[#D4A24D] focus:ring-1 focus:ring-[#D4A24D]/20 text-gray-800 placeholder-gray-400 transition-all"
-                />
-              </div>
-
-              {/* Vagas na garagem */}
-              <div className="relative">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Vagas na garagem
-                </label>
-                <div
-                  onClick={(e) => toggleDropdown("garageDesktop", e)}
                   className={`flex items-center justify-between w-full px-4 py-3 bg-white border ${
-                    localDropdownOpen === "garageDesktop"
+                    localDropdownOpen === "garage"
                       ? "border-[#D4A24D] ring-2 ring-[#D4A24D]/20"
                       : "border-gray-200 hover:border-gray-300"
-                  } rounded-xl cursor-pointer transition-all shadow-sm hover:shadow-md`}
+                  } rounded-xl cursor-pointer transition-all shadow-sm`}
                 >
                   <span
-                    className={`flex-1 text-left text-sm font-medium truncate ${
+                    className={`flex-1 text-left text-sm md:text-base font-medium truncate ${
                       propsFormValues.garage ? "text-gray-800" : "text-gray-400"
                     }`}
                   >
@@ -684,19 +228,22 @@ const DesktopModal = React.memo(
                       ? garageOptions.find(
                           (o) => o.id === propsFormValues.garage,
                         )?.label
-                      : "Qualquer número"}
+                      : "Selecione"}
                   </span>
                   <i
                     className={`fas fa-chevron-down text-gray-400 text-xs transition-all duration-300 ${
-                      localDropdownOpen === "garageDesktop"
+                      localDropdownOpen === "garage"
                         ? "rotate-180 text-[#D4A24D]"
                         : ""
                     }`}
                   />
                 </div>
 
-                {localDropdownOpen === "garageDesktop" && (
-                  <div className="absolute top-[calc(100%+4px)] left-0 w-full bg-white rounded-xl shadow-2xl border border-gray-100 z-[100] overflow-hidden animate-dropdown">
+                {localDropdownOpen === "garage" && (
+                  <div
+                    className="absolute top-[calc(100%+4px)] left-0 w-full bg-white rounded-xl shadow-2xl border border-gray-100 z-[100] overflow-hidden animate-dropdown"
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     {garageOptions.map((opt) => (
                       <div
                         key={opt.id}
@@ -725,40 +272,49 @@ const DesktopModal = React.memo(
                 )}
               </div>
 
-              {/* Suítes */}
-              <div className="relative">
+              {/* SUÍTES */}
+              <div
+                className="relative"
+                ref={localDropdownOpen === "suite" ? dropdownRef : null}
+              >
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Suítes
                 </label>
                 <div
-                  onClick={(e) => toggleDropdown("suiteDesktop", e)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleDropdown("suite", e);
+                  }}
                   className={`flex items-center justify-between w-full px-4 py-3 bg-white border ${
-                    localDropdownOpen === "suiteDesktop"
+                    localDropdownOpen === "suite"
                       ? "border-[#D4A24D] ring-2 ring-[#D4A24D]/20"
                       : "border-gray-200 hover:border-gray-300"
-                  } rounded-xl cursor-pointer transition-all shadow-sm hover:shadow-md`}
+                  } rounded-xl cursor-pointer transition-all shadow-sm`}
                 >
                   <span
-                    className={`flex-1 text-left text-sm font-medium truncate ${
+                    className={`flex-1 text-left text-sm md:text-base font-medium truncate ${
                       propsFormValues.suite ? "text-gray-800" : "text-gray-400"
                     }`}
                   >
                     {propsFormValues.suite
                       ? suiteOptions.find((o) => o.id === propsFormValues.suite)
                           ?.label
-                      : "Qualquer número"}
+                      : "Selecione"}
                   </span>
                   <i
                     className={`fas fa-chevron-down text-gray-400 text-xs transition-all duration-300 ${
-                      localDropdownOpen === "suiteDesktop"
+                      localDropdownOpen === "suite"
                         ? "rotate-180 text-[#D4A24D]"
                         : ""
                     }`}
                   />
                 </div>
 
-                {localDropdownOpen === "suiteDesktop" && (
-                  <div className="absolute top-[calc(100%+4px)] left-0 w-full bg-white rounded-xl shadow-2xl border border-gray-100 z-[100] overflow-hidden animate-dropdown">
+                {localDropdownOpen === "suite" && (
+                  <div
+                    className="absolute top-[calc(100%+4px)] left-0 w-full bg-white rounded-xl shadow-2xl border border-gray-100 z-[100] overflow-hidden animate-dropdown"
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     {suiteOptions.map((opt) => (
                       <div
                         key={opt.id}
@@ -787,21 +343,27 @@ const DesktopModal = React.memo(
                 )}
               </div>
 
-              {/* Banheiros */}
-              <div className="relative">
+              {/* BANHEIROS */}
+              <div
+                className="relative"
+                ref={localDropdownOpen === "bathrooms" ? dropdownRef : null}
+              >
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Banheiros
                 </label>
                 <div
-                  onClick={(e) => toggleDropdown("bathroomsDesktop", e)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleDropdown("bathrooms", e);
+                  }}
                   className={`flex items-center justify-between w-full px-4 py-3 bg-white border ${
-                    localDropdownOpen === "bathroomsDesktop"
+                    localDropdownOpen === "bathrooms"
                       ? "border-[#D4A24D] ring-2 ring-[#D4A24D]/20"
                       : "border-gray-200 hover:border-gray-300"
-                  } rounded-xl cursor-pointer transition-all shadow-sm hover:shadow-md`}
+                  } rounded-xl cursor-pointer transition-all shadow-sm`}
                 >
                   <span
-                    className={`flex-1 text-left text-sm font-medium truncate ${
+                    className={`flex-1 text-left text-sm md:text-base font-medium truncate ${
                       propsFormValues.bathrooms
                         ? "text-gray-800"
                         : "text-gray-400"
@@ -811,19 +373,22 @@ const DesktopModal = React.memo(
                       ? bathroomOptions.find(
                           (o) => o.id === propsFormValues.bathrooms,
                         )?.label
-                      : "Qualquer número"}
+                      : "Selecione"}
                   </span>
                   <i
                     className={`fas fa-chevron-down text-gray-400 text-xs transition-all duration-300 ${
-                      localDropdownOpen === "bathroomsDesktop"
+                      localDropdownOpen === "bathrooms"
                         ? "rotate-180 text-[#D4A24D]"
                         : ""
                     }`}
                   />
                 </div>
 
-                {localDropdownOpen === "bathroomsDesktop" && (
-                  <div className="absolute top-[calc(100%+4px)] left-0 w-full bg-white rounded-xl shadow-2xl border border-gray-100 z-[100] overflow-hidden animate-dropdown">
+                {localDropdownOpen === "bathrooms" && (
+                  <div
+                    className="absolute top-[calc(100%+4px)] left-0 w-full bg-white rounded-xl shadow-2xl border border-gray-100 z-[100] overflow-hidden animate-dropdown"
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     {bathroomOptions.map((opt) => (
                       <div
                         key={opt.id}
@@ -851,9 +416,578 @@ const DesktopModal = React.memo(
                   </div>
                 )}
               </div>
+
+              {/* DORMITÓRIOS */}
+              <div
+                className="relative"
+                ref={localDropdownOpen === "bedrooms" ? dropdownRef : null}
+              >
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Dormitórios
+                </label>
+                <div
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleDropdown("bedrooms", e);
+                  }}
+                  className={`flex items-center justify-between w-full px-4 py-3 bg-white border ${
+                    localDropdownOpen === "bedrooms"
+                      ? "border-[#D4A24D] ring-2 ring-[#D4A24D]/20"
+                      : "border-gray-200 hover:border-gray-300"
+                  } rounded-xl cursor-pointer transition-all shadow-sm`}
+                >
+                  <span
+                    className={`flex-1 text-left text-sm md:text-base font-medium truncate ${
+                      propsFormValues.bedrooms
+                        ? "text-gray-800"
+                        : "text-gray-400"
+                    }`}
+                  >
+                    {propsFormValues.bedrooms
+                      ? bedroomOptions.find(
+                          (o) => o.id === propsFormValues.bedrooms,
+                        )?.label
+                      : "Selecione"}
+                  </span>
+                  <i
+                    className={`fas fa-chevron-down text-gray-400 text-xs transition-all duration-300 ${
+                      localDropdownOpen === "bedrooms"
+                        ? "rotate-180 text-[#D4A24D]"
+                        : ""
+                    }`}
+                  />
+                </div>
+
+                {localDropdownOpen === "bedrooms" && (
+                  <div
+                    className="absolute top-[calc(100%+4px)] left-0 w-full bg-white rounded-xl shadow-2xl border border-gray-100 z-[100] overflow-hidden animate-dropdown"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {bedroomOptions.map((opt) => (
+                      <div
+                        key={opt.id}
+                        onClick={(e) => selectOption("bedrooms", opt.id, e)}
+                        className={`flex items-center justify-between px-4 py-3 hover:bg-[#D4A24D]/10 cursor-pointer border-b border-gray-50 last:border-0 ${
+                          propsFormValues.bedrooms === opt.id
+                            ? "bg-[#D4A24D]/5"
+                            : ""
+                        }`}
+                      >
+                        <span
+                          className={`text-sm font-medium ${
+                            propsFormValues.bedrooms === opt.id
+                              ? "text-[#D4A24D] font-semibold"
+                              : "text-gray-700"
+                          }`}
+                        >
+                          {opt.label}
+                        </span>
+                        {propsFormValues.bedrooms === opt.id && (
+                          <i className="fas fa-check text-[#D4A24D] text-sm" />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
 
-            {/* Footer com botões */}
+            {/* Botões */}
+            <div className="grid grid-cols-2 gap-3 pt-4 sticky bottom-0 bg-white pb-6 border-t border-gray-100">
+              <button
+                type="button"
+                onClick={handleClear}
+                className="px-6 py-3 bg-gray-100 text-gray-700 font-bold rounded-lg hover:bg-gray-200 transition-colors border border-gray-200"
+              >
+                Limpar
+              </button>
+              <button
+                type="button"
+                onClick={handleApply}
+                className="px-6 py-3 bg-[#D4A24D] text-white font-bold rounded-lg hover:bg-[#c0903d] transition-colors"
+              >
+                Aplicar
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>,
+      document.body,
+    );
+  },
+);
+
+// ===========================================
+// MODAL DESKTOP - IGUAL AO COMPRAIMOVEL
+// ===========================================
+const DesktopModal = React.memo(
+  ({
+    show,
+    onClose,
+    formValues: propsFormValues,
+    onInputChange,
+    onClearFilters,
+    onSearch,
+    priceRangeOptions,
+    garageOptions,
+    suiteOptions,
+    bathroomOptions,
+    bedroomOptions,
+  }) => {
+    const contentRef = useRef(null);
+    const [localDropdownOpen, setLocalDropdownOpen] = useState(null);
+    const dropdownRef = useRef(null);
+
+    // Fechar dropdown ao clicar fora
+    useEffect(() => {
+      const handleClickOutside = (event) => {
+        if (
+          localDropdownOpen &&
+          dropdownRef.current &&
+          !dropdownRef.current.contains(event.target)
+        ) {
+          setLocalDropdownOpen(null);
+        }
+      };
+
+      document.addEventListener("mousedown", handleClickOutside);
+      return () =>
+        document.removeEventListener("mousedown", handleClickOutside);
+    }, [localDropdownOpen]);
+
+    if (!show) return null;
+
+    const closeModal = () => {
+      onClose();
+      setLocalDropdownOpen(null);
+    };
+
+    const toggleDropdown = (dropdownName, e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      setLocalDropdownOpen((prev) =>
+        prev === dropdownName ? null : dropdownName,
+      );
+    };
+
+    const selectOption = (field, value, e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      onInputChange(field, value);
+      setLocalDropdownOpen(null);
+    };
+
+    const handleClear = (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      onClearFilters();
+    };
+
+    const handleApply = (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      closeModal();
+      onSearch(e);
+    };
+
+    return ReactDOM.createPortal(
+      <div
+        className="fixed inset-0 bg-black/50 z-[999999] hidden md:flex items-center justify-center"
+        onClick={closeModal}
+      >
+        <div
+          ref={contentRef}
+          className="bg-white rounded-2xl w-full max-w-2xl shadow-2xl animate-fade-in overflow-hidden"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Header */}
+          <div className="sticky top-0 bg-white px-6 py-4 border-b border-gray-100 flex justify-between items-center">
+            <h3 className="text-2xl font-bold text-gray-800">Mais filtros</h3>
+            <button
+              onClick={closeModal}
+              className="p-2 bg-[#D4A24D] text-white rounded-full hover:bg-[#c0903d] transition-colors shadow-sm flex items-center justify-center w-8 h-8"
+            >
+              <i className="fas fa-times text-white text-sm" />
+            </button>
+          </div>
+
+          <div className="p-6 max-h-[calc(95vh-80px)] overflow-y-auto">
+            <div className="grid grid-cols-2 gap-6">
+              {/* FAIXA DE PREÇO */}
+              <div
+                className="col-span-2 relative"
+                ref={
+                  localDropdownOpen === "priceRangeDesktop" ? dropdownRef : null
+                }
+              >
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Faixa de preço
+                </label>
+                <div
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleDropdown("priceRangeDesktop", e);
+                  }}
+                  className={`flex items-center justify-between w-full px-4 py-3 bg-white border ${
+                    localDropdownOpen === "priceRangeDesktop"
+                      ? "border-[#D4A24D] ring-2 ring-[#D4A24D]/20"
+                      : "border-gray-200 hover:border-gray-300"
+                  } rounded-xl cursor-pointer transition-all shadow-sm`}
+                >
+                  <span
+                    className={`flex-1 text-left text-sm font-medium truncate ${
+                      propsFormValues.priceRange
+                        ? "text-gray-800"
+                        : "text-gray-400"
+                    }`}
+                  >
+                    {propsFormValues.priceRange
+                      ? priceRangeOptions.find(
+                          (o) => o.id === propsFormValues.priceRange,
+                        )?.label
+                      : "Selecione"}
+                  </span>
+                  <i
+                    className={`fas fa-chevron-down text-gray-400 text-xs transition-all duration-300 ${
+                      localDropdownOpen === "priceRangeDesktop"
+                        ? "rotate-180 text-[#D4A24D]"
+                        : ""
+                    }`}
+                  />
+                </div>
+
+                {localDropdownOpen === "priceRangeDesktop" && (
+                  <div
+                    className="absolute top-[calc(100%+4px)] left-0 w-full bg-white rounded-xl shadow-2xl border border-gray-100 z-[100] overflow-hidden animate-dropdown"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div className="max-h-[220px] overflow-y-auto">
+                      {priceRangeOptions.map((opt) => (
+                        <div
+                          key={opt.id}
+                          onClick={(e) => selectOption("priceRange", opt.id, e)}
+                          className={`flex items-center justify-between px-4 py-3 hover:bg-[#D4A24D]/10 cursor-pointer border-b border-gray-50 last:border-0 ${
+                            propsFormValues.priceRange === opt.id
+                              ? "bg-[#D4A24D]/5"
+                              : ""
+                          }`}
+                        >
+                          <span
+                            className={`text-sm font-medium ${
+                              propsFormValues.priceRange === opt.id
+                                ? "text-[#D4A24D] font-semibold"
+                                : "text-gray-700"
+                            }`}
+                          >
+                            {opt.label}
+                          </span>
+                          {propsFormValues.priceRange === opt.id && (
+                            <i className="fas fa-check text-[#D4A24D] text-sm" />
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* VAGAS */}
+              <div
+                className="relative"
+                ref={localDropdownOpen === "garageDesktop" ? dropdownRef : null}
+              >
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Vagas
+                </label>
+                <div
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleDropdown("garageDesktop", e);
+                  }}
+                  className={`flex items-center justify-between w-full px-4 py-3 bg-white border ${
+                    localDropdownOpen === "garageDesktop"
+                      ? "border-[#D4A24D] ring-2 ring-[#D4A24D]/20"
+                      : "border-gray-200 hover:border-gray-300"
+                  } rounded-xl cursor-pointer transition-all shadow-sm`}
+                >
+                  <span
+                    className={`flex-1 text-left text-sm font-medium truncate ${
+                      propsFormValues.garage ? "text-gray-800" : "text-gray-400"
+                    }`}
+                  >
+                    {propsFormValues.garage
+                      ? garageOptions.find(
+                          (o) => o.id === propsFormValues.garage,
+                        )?.label
+                      : "Selecione"}
+                  </span>
+                  <i
+                    className={`fas fa-chevron-down text-gray-400 text-xs transition-all duration-300 ${
+                      localDropdownOpen === "garageDesktop"
+                        ? "rotate-180 text-[#D4A24D]"
+                        : ""
+                    }`}
+                  />
+                </div>
+
+                {localDropdownOpen === "garageDesktop" && (
+                  <div
+                    className="absolute top-[calc(100%+4px)] left-0 w-full bg-white rounded-xl shadow-2xl border border-gray-100 z-[100] overflow-hidden animate-dropdown"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {garageOptions.map((opt) => (
+                      <div
+                        key={opt.id}
+                        onClick={(e) => selectOption("garage", opt.id, e)}
+                        className={`flex items-center justify-between px-4 py-3 hover:bg-[#D4A24D]/10 cursor-pointer border-b border-gray-50 last:border-0 ${
+                          propsFormValues.garage === opt.id
+                            ? "bg-[#D4A24D]/5"
+                            : ""
+                        }`}
+                      >
+                        <span
+                          className={`text-sm font-medium ${
+                            propsFormValues.garage === opt.id
+                              ? "text-[#D4A24D] font-semibold"
+                              : "text-gray-700"
+                          }`}
+                        >
+                          {opt.label}
+                        </span>
+                        {propsFormValues.garage === opt.id && (
+                          <i className="fas fa-check text-[#D4A24D] text-sm" />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* SUÍTES */}
+              <div
+                className="relative"
+                ref={localDropdownOpen === "suiteDesktop" ? dropdownRef : null}
+              >
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Suítes
+                </label>
+                <div
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleDropdown("suiteDesktop", e);
+                  }}
+                  className={`flex items-center justify-between w-full px-4 py-3 bg-white border ${
+                    localDropdownOpen === "suiteDesktop"
+                      ? "border-[#D4A24D] ring-2 ring-[#D4A24D]/20"
+                      : "border-gray-200 hover:border-gray-300"
+                  } rounded-xl cursor-pointer transition-all shadow-sm`}
+                >
+                  <span
+                    className={`flex-1 text-left text-sm font-medium truncate ${
+                      propsFormValues.suite ? "text-gray-800" : "text-gray-400"
+                    }`}
+                  >
+                    {propsFormValues.suite
+                      ? suiteOptions.find((o) => o.id === propsFormValues.suite)
+                          ?.label
+                      : "Selecione"}
+                  </span>
+                  <i
+                    className={`fas fa-chevron-down text-gray-400 text-xs transition-all duration-300 ${
+                      localDropdownOpen === "suiteDesktop"
+                        ? "rotate-180 text-[#D4A24D]"
+                        : ""
+                    }`}
+                  />
+                </div>
+
+                {localDropdownOpen === "suiteDesktop" && (
+                  <div
+                    className="absolute top-[calc(100%+4px)] left-0 w-full bg-white rounded-xl shadow-2xl border border-gray-100 z-[100] overflow-hidden animate-dropdown"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {suiteOptions.map((opt) => (
+                      <div
+                        key={opt.id}
+                        onClick={(e) => selectOption("suite", opt.id, e)}
+                        className={`flex items-center justify-between px-4 py-3 hover:bg-[#D4A24D]/10 cursor-pointer border-b border-gray-50 last:border-0 ${
+                          propsFormValues.suite === opt.id
+                            ? "bg-[#D4A24D]/5"
+                            : ""
+                        }`}
+                      >
+                        <span
+                          className={`text-sm font-medium ${
+                            propsFormValues.suite === opt.id
+                              ? "text-[#D4A24D] font-semibold"
+                              : "text-gray-700"
+                          }`}
+                        >
+                          {opt.label}
+                        </span>
+                        {propsFormValues.suite === opt.id && (
+                          <i className="fas fa-check text-[#D4A24D] text-sm" />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* BANHEIROS */}
+              <div
+                className="relative"
+                ref={
+                  localDropdownOpen === "bathroomsDesktop" ? dropdownRef : null
+                }
+              >
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Banheiros
+                </label>
+                <div
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleDropdown("bathroomsDesktop", e);
+                  }}
+                  className={`flex items-center justify-between w-full px-4 py-3 bg-white border ${
+                    localDropdownOpen === "bathroomsDesktop"
+                      ? "border-[#D4A24D] ring-2 ring-[#D4A24D]/20"
+                      : "border-gray-200 hover:border-gray-300"
+                  } rounded-xl cursor-pointer transition-all shadow-sm`}
+                >
+                  <span
+                    className={`flex-1 text-left text-sm font-medium truncate ${
+                      propsFormValues.bathrooms
+                        ? "text-gray-800"
+                        : "text-gray-400"
+                    }`}
+                  >
+                    {propsFormValues.bathrooms
+                      ? bathroomOptions.find(
+                          (o) => o.id === propsFormValues.bathrooms,
+                        )?.label
+                      : "Selecione"}
+                  </span>
+                  <i
+                    className={`fas fa-chevron-down text-gray-400 text-xs transition-all duration-300 ${
+                      localDropdownOpen === "bathroomsDesktop"
+                        ? "rotate-180 text-[#D4A24D]"
+                        : ""
+                    }`}
+                  />
+                </div>
+
+                {localDropdownOpen === "bathroomsDesktop" && (
+                  <div
+                    className="absolute top-[calc(100%+4px)] left-0 w-full bg-white rounded-xl shadow-2xl border border-gray-100 z-[100] overflow-hidden animate-dropdown"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {bathroomOptions.map((opt) => (
+                      <div
+                        key={opt.id}
+                        onClick={(e) => selectOption("bathrooms", opt.id, e)}
+                        className={`flex items-center justify-between px-4 py-3 hover:bg-[#D4A24D]/10 cursor-pointer border-b border-gray-50 last:border-0 ${
+                          propsFormValues.bathrooms === opt.id
+                            ? "bg-[#D4A24D]/5"
+                            : ""
+                        }`}
+                      >
+                        <span
+                          className={`text-sm font-medium ${
+                            propsFormValues.bathrooms === opt.id
+                              ? "text-[#D4A24D] font-semibold"
+                              : "text-gray-700"
+                          }`}
+                        >
+                          {opt.label}
+                        </span>
+                        {propsFormValues.bathrooms === opt.id && (
+                          <i className="fas fa-check text-[#D4A24D] text-sm" />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* DORMITÓRIOS */}
+              <div
+                className="relative"
+                ref={
+                  localDropdownOpen === "bedroomsDesktop" ? dropdownRef : null
+                }
+              >
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Dormitórios
+                </label>
+                <div
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleDropdown("bedroomsDesktop", e);
+                  }}
+                  className={`flex items-center justify-between w-full px-4 py-3 bg-white border ${
+                    localDropdownOpen === "bedroomsDesktop"
+                      ? "border-[#D4A24D] ring-2 ring-[#D4A24D]/20"
+                      : "border-gray-200 hover:border-gray-300"
+                  } rounded-xl cursor-pointer transition-all shadow-sm`}
+                >
+                  <span
+                    className={`flex-1 text-left text-sm font-medium truncate ${
+                      propsFormValues.bedrooms
+                        ? "text-gray-800"
+                        : "text-gray-400"
+                    }`}
+                  >
+                    {propsFormValues.bedrooms
+                      ? bedroomOptions.find(
+                          (o) => o.id === propsFormValues.bedrooms,
+                        )?.label
+                      : "Selecione"}
+                  </span>
+                  <i
+                    className={`fas fa-chevron-down text-gray-400 text-xs transition-all duration-300 ${
+                      localDropdownOpen === "bedroomsDesktop"
+                        ? "rotate-180 text-[#D4A24D]"
+                        : ""
+                    }`}
+                  />
+                </div>
+
+                {localDropdownOpen === "bedroomsDesktop" && (
+                  <div
+                    className="absolute top-[calc(100%+4px)] left-0 w-full bg-white rounded-xl shadow-2xl border border-gray-100 z-[100] overflow-hidden animate-dropdown"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {bedroomOptions.map((opt) => (
+                      <div
+                        key={opt.id}
+                        onClick={(e) => selectOption("bedrooms", opt.id, e)}
+                        className={`flex items-center justify-between px-4 py-3 hover:bg-[#D4A24D]/10 cursor-pointer border-b border-gray-50 last:border-0 ${
+                          propsFormValues.bedrooms === opt.id
+                            ? "bg-[#D4A24D]/5"
+                            : ""
+                        }`}
+                      >
+                        <span
+                          className={`text-sm font-medium ${
+                            propsFormValues.bedrooms === opt.id
+                              ? "text-[#D4A24D] font-semibold"
+                              : "text-gray-700"
+                          }`}
+                        >
+                          {opt.label}
+                        </span>
+                        {propsFormValues.bedrooms === opt.id && (
+                          <i className="fas fa-check text-[#D4A24D] text-sm" />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Footer */}
             <div className="grid grid-cols-2 gap-3 mt-6 pt-4 border-t border-gray-100">
               <button
                 type="button"
@@ -904,6 +1038,10 @@ const Hero = () => {
 
   const [filterDropdownOpen, setFilterDropdownOpen] = useState(null);
 
+  // 🔥 ESTADO PARA BAIRROS (vindo do banco)
+  const [bairros, setBairros] = useState([]);
+  const [bairrosFiltrados, setBairrosFiltrados] = useState([]);
+
   console.log("🔥 PAI RENDERIZOU", {
     timestamp: Date.now(),
     showMoreFilters,
@@ -925,7 +1063,7 @@ const Hero = () => {
   // Refs
   const cityRef = useRef(null);
   const propertyRef = useRef(null);
-  const bedroomRef = useRef(null);
+  const neighborhoodRef = useRef(null);
 
   const cityOptions = [
     { id: "acailandia", label: "Açailândia" },
@@ -978,6 +1116,46 @@ const Hero = () => {
     { id: "acima-1m", label: "Acima de R$ 1 milhão" },
   ];
 
+  // ===========================================
+  // 🔥 CARREGAR BAIRROS DO BANCO
+  // ===========================================
+  useEffect(() => {
+    const fetchBairros = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("bairros")
+          .select("id, nome, cidade_id, cidades(nome)")
+          .order("nome");
+
+        if (error) throw error;
+        setBairros(data || []);
+      } catch (err) {
+        console.error("Erro ao carregar bairros:", err);
+      }
+    };
+
+    fetchBairros();
+  }, []);
+
+  // ===========================================
+  // 🔥 FILTRAR BAIRROS POR CIDADE
+  // ===========================================
+  useEffect(() => {
+    if (formValues.city && formValues.city !== "") {
+      const cidadeSelecionada = cityOptions.find(
+        (c) => c.id === formValues.city,
+      )?.label;
+
+      const filtrados = bairros.filter(
+        (bairro) => bairro.cidades?.nome === cidadeSelecionada,
+      );
+
+      setBairrosFiltrados(filtrados);
+    } else {
+      setBairrosFiltrados([]);
+    }
+  }, [formValues.city, bairros]);
+
   // Fechar dropdown principal ao clicar fora
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -990,8 +1168,8 @@ const Hero = () => {
         !cityRef.current.contains(event.target) &&
         propertyRef.current &&
         !propertyRef.current.contains(event.target) &&
-        bedroomRef.current &&
-        !bedroomRef.current.contains(event.target);
+        neighborhoodRef.current &&
+        !neighborhoodRef.current.contains(event.target);
 
       if (isOutside) {
         setOpenDropdown(null);
@@ -1019,7 +1197,6 @@ const Hero = () => {
     };
   }, [showMoreFilters]);
 
-  // ✅ CORRIGIDO: FECHA O DROPDOWN APÓS SELECIONAR
   const handleInputChange = (field, value) => {
     console.log("📝 handleInputChange:", { field, value });
     setFormValues((prev) => ({
@@ -1044,16 +1221,30 @@ const Hero = () => {
     setTouchStart(null);
   };
 
-  // ✅ CORRETO: NÃO FECHA O MODAL (quem fecha é o botão Aplicar)
+  // ✅ HANDLE SEARCH CORRIGIDO - IGUAL AO COMPRAIMOVEL
   const handleSearch = (e) => {
     e.preventDefault();
-    console.log("🔍 handleSearch", { activeTab, formValues });
-    const searchParams = { tipo: activeTab, ...formValues };
+
+    console.log("🔍 Bairro selecionado ID:", formValues.neighborhood); // ← ADICIONE
+
+    const searchParams = {
+      tipo: activeTab,
+      city: formValues.city || "",
+      propertyType: formValues.propertyType || "",
+      bedrooms: formValues.bedrooms || "",
+      minArea: formValues.minArea || "",
+      maxArea: formValues.maxArea || "",
+      neighborhood: formValues.neighborhood || "", // ← TEM QUE SER O UUID!
+      garage: formValues.garage || "",
+      suite: formValues.suite || "",
+      bathrooms: formValues.bathrooms || "",
+      priceRange: formValues.priceRange || "",
+    };
+
     localStorage.setItem("hero_filters", JSON.stringify(searchParams));
-    navigate(`/${activeTab}`, { state: searchParams });
+    navigate(`/${activeTab}`);
   };
 
-  // ✅ CORRETO: NUNCA APAGA, SEMPRE PRESERVA A ESTRUTURA
   const clearFilters = () => {
     console.log("🧹 clearFilters");
     setFormValues({
@@ -1070,13 +1261,11 @@ const Hero = () => {
     });
   };
 
-  // ✅ CORRETO: APENAS ABRE, NUNCA FECHA
   const handleOpenFilters = () => {
     console.log("🔘 Abrindo filtros");
     setShowMoreFilters(true);
   };
 
-  // ✅ CORRETO: FECHAMENTO EXPLÍCITO
   const handleCloseFilters = () => {
     console.log("❌ Fechando filtros");
     setShowMoreFilters(false);
@@ -1252,9 +1441,7 @@ const Hero = () => {
 
                 {openDropdown === "propertyType" && (
                   <div className="absolute top-[105%] left-0 w-full bg-white rounded-xl shadow-2xl border border-gray-100 z-[100] overflow-hidden animate-dropdown">
-                    <div
-                      className={`${propertyOptions.length > 3 ? "max-h-[200px] overflow-y-auto custom-scrollbar" : ""}`}
-                    >
+                    <div className="max-h-[200px] overflow-y-auto custom-scrollbar">
                       {propertyOptions.map((opt) => (
                         <div
                           key={opt.id}
@@ -1286,63 +1473,85 @@ const Hero = () => {
                 )}
               </div>
 
-              {/* DROPDOWN DORMITÓRIOS */}
-              <div className="relative w-full md:col-span-1" ref={bedroomRef}>
+              {/* DROPDOWN BAIRRO */}
+              <div
+                className="relative w-full md:col-span-1"
+                ref={neighborhoodRef}
+              >
                 <div
-                  onClick={() => toggleDropdown("bedrooms")}
+                  onClick={() => toggleDropdown("neighborhood")}
                   className={`flex items-center w-full h-[56px] md:h-[60px] px-4 bg-white border ${
-                    openDropdown === "bedrooms"
+                    openDropdown === "neighborhood"
                       ? "border-[#D4A24D] ring-2 ring-[#D4A24D]/20"
                       : "border-gray-200 hover:border-gray-300"
-                  } rounded-xl cursor-pointer transition-all shadow-sm hover:shadow-md`}
+                  } rounded-xl cursor-pointer transition-all shadow-sm hover:shadow-md ${
+                    !formValues.city ? "opacity-50 cursor-not-allowed" : ""
+                  }`}
                 >
                   <i
-                    className={`fas fa-bed mr-2 text-sm ${formValues.bedrooms ? "text-[#D4A24D]" : "text-gray-400"}`}
+                    className={`fas fa-map-pin mr-2 text-sm ${formValues.neighborhood ? "text-[#D4A24D]" : "text-gray-400"}`}
                   />
                   <span
                     className={`flex-1 text-sm md:text-base font-semibold truncate ${
-                      formValues.bedrooms ? "text-gray-800" : "text-gray-400"
+                      formValues.neighborhood
+                        ? "text-gray-800"
+                        : "text-gray-400"
                     }`}
                   >
-                    {formValues.bedrooms
-                      ? bedroomOptions.find(
-                          (opt) => opt.id === formValues.bedrooms,
-                        )?.label
-                      : "Dormitórios"}
+                    {formValues.neighborhood
+                      ? bairros.find((b) => b.id === formValues.neighborhood)
+                          ?.nome
+                      : !formValues.city
+                        ? "Selecione uma cidade"
+                        : "Bairro"}
                   </span>
                   <i
                     className={`fas fa-chevron-down text-gray-400 text-xs transition-all duration-300 ${
-                      openDropdown === "bedrooms"
+                      openDropdown === "neighborhood"
                         ? "rotate-180 text-[#D4A24D]"
                         : ""
                     }`}
                   />
                 </div>
 
-                {openDropdown === "bedrooms" && (
+                {openDropdown === "neighborhood" && (
                   <div className="absolute top-[105%] left-0 w-full bg-white rounded-xl shadow-2xl border border-gray-100 z-[100] overflow-hidden animate-dropdown">
-                    {bedroomOptions.map((opt) => (
-                      <div
-                        key={opt.id}
-                        onClick={() => handleInputChange("bedrooms", opt.id)}
-                        className={`flex items-center justify-between px-4 py-3 hover:bg-[#D4A24D]/10 cursor-pointer border-b border-gray-50 last:border-0 transition-colors ${
-                          formValues.bedrooms === opt.id ? "bg-[#D4A24D]/5" : ""
-                        }`}
-                      >
-                        <span
-                          className={`text-sm md:text-base font-medium ${
-                            formValues.bedrooms === opt.id
-                              ? "text-[#D4A24D] font-semibold"
-                              : "text-gray-700"
-                          }`}
-                        >
-                          {opt.label}
-                        </span>
-                        {formValues.bedrooms === opt.id && (
-                          <i className="fas fa-check text-[#D4A24D] text-sm" />
-                        )}
-                      </div>
-                    ))}
+                    <div className="max-h-[200px] overflow-y-auto custom-scrollbar">
+                      {bairrosFiltrados.length > 0 ? (
+                        bairrosFiltrados.map((bairro) => (
+                          <div
+                            key={bairro.id}
+                            onClick={() =>
+                              handleInputChange("neighborhood", bairro.id)
+                            }
+                            className={`flex items-center justify-between px-4 py-3 hover:bg-[#D4A24D]/10 cursor-pointer border-b border-gray-50 last:border-0 transition-colors ${
+                              formValues.neighborhood === bairro.id
+                                ? "bg-[#D4A24D]/5"
+                                : ""
+                            }`}
+                          >
+                            <span
+                              className={`text-sm font-medium ${
+                                formValues.neighborhood === bairro.id
+                                  ? "text-[#D4A24D] font-semibold"
+                                  : "text-gray-700"
+                              }`}
+                            >
+                              {bairro.nome}
+                            </span>
+                            {formValues.neighborhood === bairro.id && (
+                              <i className="fas fa-check text-[#D4A24D] text-sm" />
+                            )}
+                          </div>
+                        ))
+                      ) : (
+                        <div className="px-4 py-3 text-gray-500 text-sm">
+                          {!formValues.city
+                            ? "Selecione uma cidade primeiro"
+                            : "Nenhum bairro cadastrado para esta cidade"}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
@@ -1391,10 +1600,11 @@ const Hero = () => {
           garageOptions={garageOptions}
           suiteOptions={suiteOptions}
           bathroomOptions={bathroomOptions}
+          bedroomOptions={bedroomOptions}
         />
       )}
 
-      {/* MODAL DESKTOP - COM ALTURA AJUSTADA */}
+      {/* MODAL DESKTOP */}
       {showMoreFilters && (
         <DesktopModal
           show={showMoreFilters}
@@ -1407,6 +1617,7 @@ const Hero = () => {
           garageOptions={garageOptions}
           suiteOptions={suiteOptions}
           bathroomOptions={bathroomOptions}
+          bedroomOptions={bedroomOptions}
         />
       )}
     </section>

@@ -1015,10 +1015,11 @@ const DesktopModal = React.memo(
     );
   },
 );
+
 // ===========================================
-// COMPONENTE PRINCIPAL - COMPRAR IMÓVEL
+// COMPONENTE PRINCIPAL - ALUGAR IMÓVEL
 // ===========================================
-const ComprarImovel = () => {
+const AlugarImovel = () => {
   const location = useLocation();
   const [initialFilters, setInitialFilters] = useState({});
 
@@ -1039,7 +1040,7 @@ const ComprarImovel = () => {
   const [formValues, setFormValues] = useState({
     city: "",
     propertyType: "",
-    neighborhood: "", // 🔥 AGORA É BAIRRO (não mais bedrooms)
+    neighborhood: "",
     bedrooms: "",
     minArea: "",
     maxArea: "",
@@ -1106,7 +1107,7 @@ const ComprarImovel = () => {
   // Refs
   const cityRef = useRef(null);
   const propertyRef = useRef(null);
-  const neighborhoodRef = useRef(null); // 🔥 NOVA REF PARA BAIRRO
+  const neighborhoodRef = useRef(null);
 
   // ===========================================
   // 🔥 CARREGAR BAIRROS DO BANCO
@@ -1151,16 +1152,9 @@ const ComprarImovel = () => {
     const loadFiltersFromStorage = () => {
       try {
         const savedFilters = localStorage.getItem("hero_filters");
-        console.log("🔍 localStorage hero_filters:", savedFilters);
-
         if (savedFilters) {
           const parsed = JSON.parse(savedFilters);
-          console.log("📦 parsed filters:", parsed);
-
-          if (parsed.tipo === "comprar") {
-            console.log("✅ Filtros para compra encontrados:", parsed);
-            console.log("🏘️ Bairro ID recebido:", parsed.neighborhood);
-
+          if (parsed.tipo === "alugar") {
             const heroFilters = {
               city: parsed.city || "",
               propertyType: parsed.propertyType || "",
@@ -1173,27 +1167,18 @@ const ComprarImovel = () => {
               bathrooms: parsed.bathrooms || "",
               priceRange: parsed.priceRange || "",
             };
-
-            console.log("🎯 heroFilters montado:", heroFilters);
-
             setFormValues(heroFilters);
             setInitialFilters(heroFilters);
             return heroFilters;
-          } else {
-            console.log("❌ Tipo não é comprar:", parsed.tipo);
           }
-        } else {
-          console.log("⚠️ Nenhum filtro no localStorage");
         }
       } catch (error) {
-        console.error("💥 Erro ao ler localStorage:", error);
+        console.error("Erro ao ler localStorage:", error);
       }
       return null;
     };
 
     const savedFilters = loadFiltersFromStorage();
-    console.log("📋 savedFilters retornado:", savedFilters);
-
     fetchImoveis(savedFilters || formValues);
   }, []);
 
@@ -1221,17 +1206,17 @@ const ComprarImovel = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [openDropdown, showMoreFilters]);
 
-  // Buscar imóveis para compra
+  // Buscar imóveis para aluguel
   const fetchImoveis = async (filtros = formValues) => {
     setLoading(true);
     setError(null);
 
     try {
-      // Primeiro, buscar os IDs dos imóveis que têm finalidade de venda ativa
+      // Primeiro, buscar os IDs dos imóveis que têm finalidade de aluguel ativa
       const { data: finalidadesData, error: finalidadesError } = await supabase
         .from("imovel_finalidades")
         .select("imovel_id, preco")
-        .eq("tipo", "venda")
+        .eq("tipo", "aluguel")
         .eq("status", "ativo");
 
       if (finalidadesError) throw finalidadesError;
@@ -1243,14 +1228,12 @@ const ComprarImovel = () => {
       }
 
       // Extrair os IDs dos imóveis
-      const imoveisIds = finalidadesData.map(
-        (finalidade) => finalidade.imovel_id,
-      );
+      const imoveisIds = finalidadesData.map((f) => f.imovel_id);
 
       // Criar um mapa de preços por imóvel
       const precosMap = {};
-      finalidadesData.forEach((finalidade) => {
-        precosMap[finalidade.imovel_id] = finalidade.preco;
+      finalidadesData.forEach((f) => {
+        precosMap[f.imovel_id] = f.preco;
       });
 
       // Agora buscar os imóveis com esses IDs
@@ -1260,11 +1243,9 @@ const ComprarImovel = () => {
         .in("id", imoveisIds)
         .in("status", ["disponivel", "reservado"]);
 
-      // Aplicar filtros
+      // Aplicar filtros adicionais
       if (filtros.city) {
-        const cidadeObj = cityOptions.find(
-          (cidade) => cidade.id === filtros.city,
-        );
+        const cidadeObj = cityOptions.find((c) => c.id === filtros.city);
         if (cidadeObj) {
           query = query.eq("cidade", cidadeObj.label);
         }
@@ -1272,41 +1253,17 @@ const ComprarImovel = () => {
 
       if (filtros.propertyType) {
         const tipoObj = propertyOptions.find(
-          (tipo) => tipo.id === filtros.propertyType,
+          (t) => t.id === filtros.propertyType,
         );
         if (tipoObj) {
           query = query.eq("tipo", tipoObj.label.toLowerCase());
         }
       }
 
-      // Filtro por bairro
       if (filtros.neighborhood && filtros.neighborhood !== "") {
-        console.log("Buscando bairro com ID:", filtros.neighborhood);
-        console.log("Bairros disponíveis:", bairros);
-
-        if (bairros.length === 0) {
-          console.log("Bairros ainda não carregaram, buscando diretamente...");
-          const { data: bairroData } = await supabase
-            .from("bairros")
-            .select("id, nome")
-            .eq("id", filtros.neighborhood)
-            .single();
-
-          if (bairroData) {
-            console.log("Bairro encontrado no banco:", bairroData);
-            query = query.eq("bairro", bairroData.nome);
-          }
-        } else {
-          const bairroObj = bairros.find(
-            (bairro) => bairro.id === filtros.neighborhood,
-          );
-          console.log("Bairro encontrado no estado:", bairroObj);
-
-          if (bairroObj) {
-            query = query.eq("bairro", bairroObj.nome);
-          } else {
-            console.log("Bairro não encontrado no estado!");
-          }
+        const bairroObj = bairros.find((b) => b.id === filtros.neighborhood);
+        if (bairroObj) {
+          query = query.eq("bairro", bairroObj.nome);
         }
       }
 
@@ -1314,7 +1271,7 @@ const ComprarImovel = () => {
 
       if (supabaseError) throw supabaseError;
 
-      // Adicionar o preço de venda a cada imóvel
+      // Adicionar o preço de aluguel a cada imóvel
       let imoveisComPreco = (imoveisData || []).map((imovel) => ({
         ...imovel,
         preco: precosMap[imovel.id] || null,
@@ -1322,10 +1279,10 @@ const ComprarImovel = () => {
 
       // Filtrar por preço
       if (filtros.priceRange && filtros.priceRange !== "") {
-        const opcao = priceRangeOptions.find(
-          (opcao) => opcao.id === filtros.priceRange,
+        const option = priceRangeOptions.find(
+          (o) => o.id === filtros.priceRange,
         );
-        if (opcao) {
+        if (option) {
           if (filtros.priceRange === "ate-170k") {
             imoveisComPreco = imoveisComPreco.filter(
               (imovel) => imovel.preco <= 170000,
@@ -1335,13 +1292,13 @@ const ComprarImovel = () => {
               (imovel) => imovel.preco >= 1000000,
             );
           } else {
-            const [minimo, maximo] = filtros.priceRange
+            const [min, max] = filtros.priceRange
               .replace("k", "000")
               .split("-")
               .map(Number);
-            if (minimo && maximo) {
+            if (min && max) {
               imoveisComPreco = imoveisComPreco.filter(
-                (imovel) => imovel.preco >= minimo && imovel.preco <= maximo,
+                (imovel) => imovel.preco >= min && imovel.preco <= max,
               );
             }
           }
@@ -1350,37 +1307,34 @@ const ComprarImovel = () => {
 
       // Filtrar por quartos
       if (filtros.bedrooms && filtros.bedrooms !== "") {
-        const quartosMinimo = parseInt(filtros.bedrooms) || 0;
+        const quartosMin = parseInt(filtros.bedrooms) || 0;
         imoveisComPreco = imoveisComPreco.filter((imovel) => {
-          const quantidadeQuartos = parseInt(imovel.quartos || "0");
-          return quantidadeQuartos >= quartosMinimo;
+          const qtdQuartos = parseInt(imovel.quartos || "0");
+          return qtdQuartos >= quartosMin;
         });
       }
 
-      // Filtrar por vagas
       if (filtros.garage && filtros.garage !== "") {
-        const vagasMinimo = parseInt(filtros.garage) || 0;
+        const vagasMin = parseInt(filtros.garage) || 0;
         imoveisComPreco = imoveisComPreco.filter((imovel) => {
-          const quantidadeVagas = parseInt(imovel.vagas || "0");
-          return quantidadeVagas >= vagasMinimo;
+          const qtdVagas = parseInt(imovel.vagas || "0");
+          return qtdVagas >= vagasMin;
         });
       }
 
-      // Filtrar por banheiros
       if (filtros.bathrooms && filtros.bathrooms !== "") {
-        const banheirosMinimo = parseInt(filtros.bathrooms) || 0;
+        const banheirosMin = parseInt(filtros.bathrooms) || 0;
         imoveisComPreco = imoveisComPreco.filter((imovel) => {
-          const quantidadeBanheiros = parseInt(imovel.banheiros || "0");
-          return quantidadeBanheiros >= banheirosMinimo;
+          const qtdBanheiros = parseInt(imovel.banheiros || "0");
+          return qtdBanheiros >= banheirosMin;
         });
       }
 
-      // Filtrar por suítes
       if (filtros.suite && filtros.suite !== "") {
-        const suitesMinimo = parseInt(filtros.suite) || 0;
+        const suitesMin = parseInt(filtros.suite) || 0;
         imoveisComPreco = imoveisComPreco.filter((imovel) => {
-          const quantidadeSuites = parseInt(imovel.suites || "0");
-          return quantidadeSuites >= suitesMinimo;
+          const qtdSuites = parseInt(imovel.suites || "0");
+          return qtdSuites >= suitesMin;
         });
       }
 
@@ -1394,14 +1348,11 @@ const ComprarImovel = () => {
               .eq("imovel_id", imovel.id)
               .order("ordem", { ascending: true });
 
-            if (fotosError) {
-              console.error("Erro ao buscar fotos do imóvel:", fotosError);
-              return { ...imovel, fotos: [] };
-            }
+            if (fotosError) throw fotosError;
 
             let fotoCapa = null;
             if (fotos && fotos.length > 0) {
-              const capa = fotos.find((foto) => foto.is_capa === true);
+              const capa = fotos.find((f) => f.is_capa === true);
               fotoCapa = capa ? capa.url : fotos[0].url;
             }
 
@@ -1412,8 +1363,7 @@ const ComprarImovel = () => {
                 fotoCapa ||
                 "https://images.unsplash.com/photo-1568605114967-8130f3a36994?auto=format&fit=crop&w=400&h=300&q=60",
             };
-          } catch (erro) {
-            console.error("Erro ao processar fotos:", erro);
+          } catch (err) {
             return {
               ...imovel,
               fotos: [],
@@ -1430,8 +1380,8 @@ const ComprarImovel = () => {
       });
 
       setImoveis(imoveisOrdenados);
-    } catch (erro) {
-      console.error("Erro ao buscar imóveis para compra:", erro);
+    } catch (err) {
+      console.error("💥 Erro ao buscar imóveis para aluguel:", err);
       setError("Erro ao carregar os imóveis. Tente novamente.");
       setImoveis([]);
     } finally {
@@ -1553,10 +1503,10 @@ const ComprarImovel = () => {
 
   return (
     <div className="w-full min-h-screen bg-[#f8f9fa]">
-      {/* HEADER AZUL COM TÍTULO BRANCO */}
+      {/* HEADER AMARELO COM TÍTULO BRANCO */}
       <header
         className="w-full mt-16 md:mt-20 lg:mt-24"
-        style={{ backgroundColor: "#31363E" }}
+        style={{ backgroundColor: "#D4A24D" }}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-[135px] md:h-[155px] lg:h-[175px] flex items-center justify-center">
           <h1 className="text-3xl md:text-4xl lg:text-5xl font-extrabold text-white tracking-tight text-center">
@@ -1575,10 +1525,10 @@ const ComprarImovel = () => {
         </div>
       </header>
 
-      {/* SEÇÃO DE FILTROS - COM TEXTO ACIMA */}
+      {/* SEÇÃO DE FILTROS */}
       <section className="w-full">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* 🔥 TEXTO ACIMA - AGORA SÓ NO DESKTOP */}
+          {/* 🔥 TEXTO ACIMA - SÓ NO DESKTOP */}
           <div className="hidden md:block text-center mb-4 mt-6">
             <p className="text-gray-600 text-sm md:text-base">
               Use nossos filtros para encontrar o imóvel{" "}
@@ -1597,7 +1547,7 @@ const ComprarImovel = () => {
 
             {/* CONTEÚDO */}
             <div className="relative rounded-2xl p-6 md:p-8 z-10 bg-white/70 backdrop-blur-[1px]">
-              {/* VERSÃO MOBILE - TEXTO DENTRO DA BOX (COMO ESTAVA) */}
+              {/* VERSÃO MOBILE - TEXTO DENTRO DA BOX */}
               <div className="block md:hidden">
                 <div className="flex flex-col items-center">
                   <p className="text-gray-600 text-sm text-center max-w-xs mx-auto mb-[18px]">
@@ -1749,7 +1699,7 @@ const ComprarImovel = () => {
                       )}
                     </div>
 
-                    {/* 🔥 BAIRRO (ANTIGO DORMITÓRIOS) */}
+                    {/* 🔥 BAIRRO */}
                     <div className="relative col-span-2" ref={neighborhoodRef}>
                       <div
                         onClick={() => toggleDropdown("neighborhood")}
@@ -1880,7 +1830,7 @@ const ComprarImovel = () => {
           <div className="text-center py-16">
             <div className="animate-spin rounded-full h-16 w-16 border-4 border-[#D4A24D] border-t-transparent mx-auto mb-6"></div>
             <p className="text-lg text-gray-600">
-              Buscando imóveis para compra...
+              Buscando imóveis para aluguel...
             </p>
           </div>
         )}
@@ -1915,7 +1865,7 @@ const ComprarImovel = () => {
                       slug={imovel.slug}
                       status={getStatus(imovel)}
                       tipo={imovel.tipo?.toUpperCase() || "CASA"}
-                      finalidade="VENDA"
+                      finalidade="ALUGUEL"
                       preco={formatPrice(imovel.preco)}
                       titulo={tituloCard}
                       localizacao={`${imovel.bairro || ""}${imovel.bairro && imovel.cidade ? " • " : ""}${imovel.cidade || ""}${imovel.estado ? ` / ${imovel.estado}` : ""}`}
@@ -1948,7 +1898,7 @@ const ComprarImovel = () => {
                   Nenhum imóvel disponível
                 </h3>
                 <p className="text-gray-500 max-w-md mx-auto mb-8">
-                  Não encontramos imóveis para compra com os filtros
+                  Não encontramos imóveis para aluguel com os filtros
                   selecionados.
                 </p>
                 <button
@@ -2000,4 +1950,4 @@ const ComprarImovel = () => {
   );
 };
 
-export default ComprarImovel;
+export default AlugarImovel;

@@ -23,6 +23,7 @@ import {
   StarIcon,
   TrashIcon,
   ArrowUpTrayIcon,
+  XMarkIcon,
 } from "@heroicons/react/24/outline";
 import { StarIcon as StarIconSolid } from "@heroicons/react/24/solid";
 import Button from "../../componentes/ui/Button";
@@ -47,7 +48,7 @@ import {
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
-// Componente SortableItem para as fotos
+// ========== COMPONENTE SORTABLE ITEM PARA FOTOS ==========
 const SortableItem = ({
   id,
   url,
@@ -94,7 +95,7 @@ const SortableItem = ({
           className="w-full h-full object-cover"
         />
 
-        {/* Overlay com ações */}
+        {/* Overlay com acoes */}
         <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
           <button
             type="button"
@@ -152,6 +153,413 @@ const SortableItem = ({
   );
 };
 
+// ========== COMPONENTE DE INPUT DE PREÇO COM MÁSCARA ==========
+const PriceInput = ({
+  name,
+  value,
+  onChange,
+  label,
+  required,
+  isDark,
+  getInputClasses,
+}) => {
+  const [displayValue, setDisplayValue] = useState("");
+
+  useEffect(() => {
+    if (value && !isNaN(parseFloat(value)) && parseFloat(value) > 0) {
+      const formatted = new Intl.NumberFormat("pt-BR", {
+        style: "currency",
+        currency: "BRL",
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }).format(value);
+      setDisplayValue(formatted);
+    } else {
+      setDisplayValue("");
+    }
+  }, [value]);
+
+  const handlePriceChange = (e) => {
+    const rawValue = e.target.value.replace(/\D/g, "");
+
+    if (rawValue === "") {
+      setDisplayValue("");
+      const syntheticEvent = {
+        target: {
+          name: e.target.name,
+          value: "",
+          type: "text",
+        },
+      };
+      onChange(syntheticEvent);
+      return;
+    }
+
+    const numericValue = parseFloat(rawValue) / 100;
+
+    const formatted = new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(numericValue);
+
+    setDisplayValue(formatted);
+
+    const syntheticEvent = {
+      target: {
+        name: e.target.name,
+        value: numericValue,
+        type: "number",
+      },
+    };
+    onChange(syntheticEvent);
+  };
+
+  return (
+    <div>
+      <label
+        className={`block text-sm font-medium mb-2 ${isDark ? "text-gray-300" : "text-gray-700"}`}
+      >
+        {label} {required && "*"}
+      </label>
+      <div className="relative">
+        <span
+          className={`absolute left-4 top-1/2 transform -translate-y-1/2 ${isDark ? "text-gray-400" : "text-gray-500"}`}
+        >
+          R$
+        </span>
+        <input
+          type="text"
+          name={name}
+          value={displayValue}
+          onChange={handlePriceChange}
+          required={required}
+          placeholder="R$ 0,00"
+          className={`w-full pl-12 pr-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors duration-200 ${getInputClasses()}`}
+        />
+      </div>
+    </div>
+  );
+};
+
+// ========== COMPONENTE DE CHECKBOX COM BOTÃO ADICIONAR ==========
+const CheckboxAccordion = ({
+  title,
+  subtitle,
+  icon: Icon,
+  section,
+  isOpen,
+  onToggle,
+  items,
+  formData,
+  setFormData,
+  handleChange,
+  isDark,
+  getBorderClass,
+  getHoverBgClass,
+  getTextClass,
+  getCheckboxClass,
+  getIconBgClass,
+  getIconColorClass,
+  getAccordionTitleClass,
+  getAccordionSubtitleClass,
+  getTextSecondaryClass,
+}) => {
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [newItemName, setNewItemName] = useState("");
+  const [customItems, setCustomItems] = useState([]);
+
+  const handleAddCustomItem = () => {
+    if (!newItemName.trim()) return;
+    const newItemId = `custom-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    setCustomItems([...customItems, { id: newItemId, name: newItemName }]);
+    setFormData((prev) => ({
+      ...prev,
+      [section]: { ...prev[section], [newItemId]: false },
+    }));
+    setNewItemName("");
+    setShowAddForm(false);
+  };
+
+  const handleRemoveCustomItem = (itemId) => {
+    setCustomItems(customItems.filter((item) => item.id !== itemId));
+    setFormData((prev) => {
+      const newSection = { ...prev[section] };
+      delete newSection[itemId];
+      return { ...prev, [section]: newSection };
+    });
+  };
+
+  return (
+    <div
+      className={`rounded-xl border overflow-hidden transition-colors duration-200 ${isDark ? "bg-gray-900" : "bg-white"} ${getBorderClass()}`}
+    >
+      <button
+        type="button"
+        onClick={onToggle}
+        className={`w-full flex items-center justify-between p-6 transition-colors duration-200 ${isDark ? "bg-gray-900" : "bg-white"} ${getHoverBgClass()}`}
+      >
+        <div className="flex items-center space-x-3">
+          <div className={`p-2 rounded-lg ${getIconBgClass()}`}>
+            <Icon className={`w-5 h-5 ${getIconColorClass()}`} />
+          </div>
+          <div className="text-left">
+            <h3
+              className={`text-lg font-semibold transition-colors ${getAccordionTitleClass()}`}
+            >
+              {title}
+            </h3>
+            <p
+              className={`text-sm transition-colors ${getAccordionSubtitleClass()}`}
+            >
+              {subtitle}
+            </p>
+          </div>
+        </div>
+        <div
+          className={`transform transition-transform ${isOpen ? "rotate-180" : ""}`}
+        >
+          <svg
+            className={`w-6 h-6 transition-colors ${getTextSecondaryClass()}`}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M19 9l-7 7-7-7"
+            />
+          </svg>
+        </div>
+      </button>
+
+      {isOpen && (
+        <div
+          className={`px-6 pb-6 border-t pt-6 transition-colors duration-200 ${isDark ? "bg-gray-900" : "bg-white"} ${getBorderClass()}`}
+        >
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h4 className={`text-md font-semibold ${getTextClass()}`}>
+                Itens
+              </h4>
+              <button
+                type="button"
+                onClick={() => setShowAddForm(!showAddForm)}
+                className="flex items-center space-x-1 px-3 py-1.5 rounded-lg text-sm bg-[#D4A24D] text-white hover:bg-[#c0913c]"
+              >
+                <PlusIcon className="w-4 h-4" />
+                <span>Adicionar item</span>
+              </button>
+            </div>
+
+            {showAddForm && (
+              <div
+                className={`p-4 border rounded-lg ${isDark ? "bg-gray-800" : "bg-gray-50"}`}
+              >
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={newItemName}
+                    onChange={(e) => setNewItemName(e.target.value)}
+                    placeholder="Nome do item"
+                    className="flex-1 px-3 py-2 border rounded-lg"
+                    onKeyPress={(e) =>
+                      e.key === "Enter" && handleAddCustomItem()
+                    }
+                  />
+                  <button
+                    onClick={handleAddCustomItem}
+                    className="px-3 py-2 bg-[#D4A24D] text-white rounded-lg"
+                  >
+                    OK
+                  </button>
+                  <button
+                    onClick={() => setShowAddForm(false)}
+                    className="px-3 py-2 bg-gray-500 text-white rounded-lg"
+                  >
+                    X
+                  </button>
+                </div>
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {items.map(({ key, label }) => (
+                <label
+                  key={key}
+                  className={`flex items-center space-x-3 p-3 border rounded-lg cursor-pointer ${getBorderClass()} ${getHoverBgClass()}`}
+                >
+                  <input
+                    type="checkbox"
+                    name={`${section}.${key}`}
+                    checked={formData[section]?.[key] || false}
+                    onChange={handleChange}
+                    className={getCheckboxClass()}
+                  />
+                  <span className={getTextClass()}>{label}</span>
+                </label>
+              ))}
+
+              {customItems.map((item) => (
+                <div key={item.id} className="relative group">
+                  <label
+                    className={`flex items-center space-x-3 p-3 border rounded-lg cursor-pointer ${getBorderClass()} ${getHoverBgClass()}`}
+                  >
+                    <input
+                      type="checkbox"
+                      name={`${section}.${item.id}`}
+                      checked={formData[section]?.[item.id] || false}
+                      onChange={handleChange}
+                      className={getCheckboxClass()}
+                    />
+                    <span className={getTextClass()}>{item.name}</span>
+                  </label>
+                  <button
+                    onClick={() => handleRemoveCustomItem(item.id)}
+                    className="absolute -top-2 -right-2 p-1 rounded-full bg-red-500 text-white opacity-0 group-hover:opacity-100"
+                  >
+                    <XMarkIcon className="w-4 h-4" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ========== COMPONENTE PARA SEÇÕES DE ACABAMENTO ==========
+const SecaoAcabamento = ({
+  titulo,
+  section,
+  items,
+  formData,
+  setFormData,
+  handleChange,
+  isDark,
+  getBorderClass,
+  getHoverBgClass,
+  getTextClass,
+  getCheckboxClass,
+}) => {
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [newItemName, setNewItemName] = useState("");
+  const [customItems, setCustomItems] = useState([]);
+
+  const handleAddCustomItem = () => {
+    if (!newItemName.trim()) return;
+    const newItemId = `custom-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    setCustomItems([...customItems, { id: newItemId, name: newItemName }]);
+    setFormData((prev) => ({
+      ...prev,
+      [section]: { ...prev[section], [newItemId]: false },
+    }));
+    setNewItemName("");
+    setShowAddForm(false);
+  };
+
+  const handleRemoveCustomItem = (itemId) => {
+    setCustomItems(customItems.filter((item) => item.id !== itemId));
+    setFormData((prev) => {
+      const newSection = { ...prev[section] };
+      delete newSection[itemId];
+      return { ...prev, [section]: newSection };
+    });
+  };
+
+  return (
+    <div className="mb-8">
+      <div className="flex items-center justify-between mb-4">
+        <h4 className={`text-md font-semibold ${getTextClass()}`}>{titulo}</h4>
+        <button
+          type="button"
+          onClick={() => setShowAddForm(!showAddForm)}
+          className="flex items-center space-x-1 px-3 py-1.5 rounded-lg text-sm bg-[#D4A24D] text-white hover:bg-[#c0913c]"
+        >
+          <PlusIcon className="w-4 h-4" />
+          <span>Adicionar</span>
+        </button>
+      </div>
+
+      {showAddForm && (
+        <div
+          className={`mb-4 p-4 border rounded-lg ${isDark ? "bg-gray-800" : "bg-gray-50"}`}
+        >
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={newItemName}
+              onChange={(e) => setNewItemName(e.target.value)}
+              placeholder="Nome do item"
+              className="flex-1 px-3 py-2 border rounded-lg"
+              onKeyPress={(e) => e.key === "Enter" && handleAddCustomItem()}
+            />
+            <button
+              onClick={handleAddCustomItem}
+              className="px-3 py-2 bg-[#D4A24D] text-white rounded-lg"
+            >
+              OK
+            </button>
+            <button
+              onClick={() => setShowAddForm(false)}
+              className="px-3 py-2 bg-gray-500 text-white rounded-lg"
+            >
+              X
+            </button>
+          </div>
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+        {items.map(({ key, label }) => (
+          <label
+            key={key}
+            className={`flex items-center space-x-3 p-3 border rounded-lg cursor-pointer ${getBorderClass()} ${getHoverBgClass()}`}
+          >
+            <input
+              type="checkbox"
+              name={`${section}.${key}`}
+              checked={formData[section]?.[key] || false}
+              onChange={handleChange}
+              className={getCheckboxClass()}
+            />
+            <span className={getTextClass()}>{label}</span>
+          </label>
+        ))}
+
+        {customItems.map((item) => (
+          <div key={item.id} className="relative group">
+            <label
+              className={`flex items-center space-x-3 p-3 border rounded-lg cursor-pointer ${getBorderClass()} ${getHoverBgClass()}`}
+            >
+              <input
+                type="checkbox"
+                name={`${section}.${item.id}`}
+                checked={formData[section]?.[item.id] || false}
+                onChange={handleChange}
+                className={getCheckboxClass()}
+              />
+              <span className={getTextClass()}>{item.name}</span>
+            </label>
+            <button
+              onClick={() => handleRemoveCustomItem(item.id)}
+              className="absolute -top-2 -right-2 p-1 rounded-full bg-red-500 text-white opacity-0 group-hover:opacity-100"
+            >
+              <XMarkIcon className="w-4 h-4" />
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+// ========== COMPONENTE PRINCIPAL ==========
 const EditarImovel = () => {
   const navigate = useNavigate();
   const { id } = useParams();
@@ -192,7 +600,7 @@ const EditarImovel = () => {
   const [fotosError, setFotosError] = useState("");
   const [fotosCarregadas, setFotosCarregadas] = useState(false);
 
-  // Configuração dos sensores para drag-and-drop
+  // Configuracao dos sensores para drag-and-drop
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
@@ -204,7 +612,7 @@ const EditarImovel = () => {
     }),
   );
 
-  // =============== FUNÇÕES DO GERENCIADOR DE FOTOS ===============
+  // =============== FUNCOES DO GERENCIADOR DE FOTOS ===============
   const handleDragEnd = (event) => {
     const { active, over } = event;
 
@@ -258,7 +666,7 @@ const EditarImovel = () => {
     if (files.length === 0) return;
 
     if (fotos.length + files.length > 20) {
-      setFotosError("Máximo de 20 fotos permitidas");
+      setFotosError("Maximo de 20 fotos permitidas");
       return;
     }
 
@@ -268,11 +676,11 @@ const EditarImovel = () => {
     try {
       const uploadPromises = files.map(async (file, index) => {
         if (!file.type.startsWith("image/")) {
-          throw new Error("Apenas imagens são permitidas");
+          throw new Error("Apenas imagens sao permitidas");
         }
 
         if (file.size > 5 * 1024 * 1024) {
-          throw new Error("Imagem muito grande. Máximo 5MB");
+          throw new Error("Imagem muito grande. Maximo 5MB");
         }
 
         const fileExt = file.name.split(".").pop();
@@ -318,7 +726,7 @@ const EditarImovel = () => {
     }
   };
 
-  // =============== CARREGAR FOTOS DO IMÓVEL ===============
+  // =============== CARREGAR FOTOS DO IMOVEL ===============
   const carregarFotos = async (imovelId) => {
     try {
       const { data, error } = await supabase
@@ -350,38 +758,83 @@ const EditarImovel = () => {
   // =============== BUSCAR EMPREENDIMENTOS ===============
   const [empreendimentos, setEmpreendimentos] = useState([]);
 
-  // =============== ESTADO DO FORMULÁRIO ===============
+  const carregarEmpreendimentos = async () => {
+    const { data } = await supabase
+      .from("edificios")
+      .select("id, nome, tipo, bairro, cidade")
+      .order("nome");
+    setEmpreendimentos(data || []);
+  };
+
+  // =============== CARREGAR FINALIDADES ===============
+  const carregarFinalidades = async (imovelId) => {
+    try {
+      const { data, error } = await supabase
+        .from("imovel_finalidades")
+        .select("tipo, preco")
+        .eq("imovel_id", imovelId)
+        .eq("status", "ativo");
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        const venda = data.find((f) => f.tipo === "venda");
+        const aluguel = data.find((f) => f.tipo === "aluguel");
+
+        setFormData((prev) => ({
+          ...prev,
+          finalidade_venda: !!venda,
+          finalidade_aluguel: !!aluguel,
+          preco_venda: venda?.preco || "",
+          preco_aluguel: aluguel?.preco || "",
+        }));
+      }
+    } catch (error) {
+      console.error("Erro ao carregar finalidades:", error);
+    }
+  };
+
+  // =============== ESTADO DO FORMULARIO ===============
   const [formData, setFormData] = useState({
+    // Campos diretos
     codigo: "",
     titulo: "",
-    finalidade: { venda: true, aluguel: false },
     tipo: "",
-    preco: "",
     status: "disponivel",
     financiado: false,
     emCondominio: false,
     proprietarioId: "",
     corretorId: "",
     ocultarPreco: false,
+
+    // Finalidades (agora separadas, não objeto)
+    finalidade_venda: false,
+    finalidade_aluguel: false,
+    preco_venda: "",
+    preco_aluguel: "",
+
+    // Relacionamento com edificios
     empreendimento_id: "",
     unidade: "",
     andar: "",
     lote: "",
     bloco: "",
     quadra: "",
-    dependencias: {
-      dormitorios: "",
-      banheiros: "",
-      suites: "",
-      vagas: "",
-      area_total: "",
-      area_construida: "",
-    },
 
-    // 👇 ADICIONAR AQUI (depois de dependencias)
-    precoAnterior: "", // Preço anterior para quando o imóvel baixou de preço
+    // Dependências (colunas diretas)
+    quartos: 0,
+    suites: 0,
+    banheiros: 0,
+    vagas: 0,
+    area_total: 0,
+    area_construida: 0,
+    area_privativa: 0,
 
-    // LOCALIZAÇÃO SIMPLIFICADA
+    // Custos
+    condominio_mensal: 0,
+    iptu_anual: 0,
+
+    // Localização
     cep: "",
     endereco: "",
     numero: "",
@@ -391,195 +844,33 @@ const EditarImovel = () => {
     estado: "",
     exibirEnderecoSite: false,
 
-    // ETIQUETAS DA VITRINE
+    // Etiquetas (JSONB)
     etiquetas: {
       destaqueSemana: false,
       novoSite: false,
       baixouPreco: false,
-      financiável: false,
+      financivel: false,
     },
-    caracteristicas: {
-      areaUtil: "",
-      areaPrivativa: "",
-      frenteTerreno: "",
-      fundo: "",
-      lateralEsquerda: "",
-      lateralDireita: "",
-      peDireito: "",
-      topografia: "",
-      esquina: false,
-      tipoConstrucao: "",
-      anoConstrucao: "",
-      reformadoRecentemente: false,
-      numeroPavimentos: "",
-      imovelAverbado: false,
-      financiavel: false,
-      aceitaPermuta: false,
-      tipoIluminacao: "",
-      tipoTelhado: "",
-      forroLaje: false,
-      sistemaEletricoNovo: false,
-      caixaDAgua: "",
-      sistemaEsgoto: "",
-      aquecimentoAgua: "",
-      posicaoSolar: "",
-      ventilacaoCruzada: false,
-      vistaLivre: false,
-      vistaPermanente: false,
-      ruaSemSaida: false,
-      esquinaInfo: false,
-      condominioTaxaMensal: "",
-    },
-    infraestrutura: {
-      agua: false,
-      energia: false,
-      esgoto: false,
-      internet: false,
-      gas: false,
-      piscina: false,
-      churrasqueira: false,
-      academia: false,
-      salaoFestas: false,
-      playground: false,
-      portaoEletronico: false,
-      interfone: false,
-      cameraSeguranca: false,
-      alarme: false,
-    },
-    acabamentos: {
-      pisoPorcelanato: false,
-      pisoCeramica: false,
-      pisoLaminado: false,
-      pisoVinilico: false,
-      pisoMadeiraMaciça: false,
-      pisoTaco: false,
-      pisoCimentoQueimado: false,
-      pisoMarmore: false,
-      pisoGranito: false,
-      pisoFrio: false,
-      revestimentoAzulejo: false,
-      revestimentoPastilha: false,
-      revestimentoPorcelanato: false,
-      revestimentoPedraNatural: false,
-      revestimentoPapelParede: false,
-      revestimento3D: false,
-      tetoGessoRebaixado: false,
-      tetoSancaGesso: false,
-      tetoForroPVC: false,
-      tetoLaje: false,
-      portaMadeiraMaciça: false,
-      portaLaqueada: false,
-      esquadriaAluminio: false,
-      esquadriaPVC: false,
-      portaPivotante: false,
-      bancadaGranito: false,
-      bancadaMarmore: false,
-      bancadaQuartzo: false,
-      bancadaNanoglass: false,
-      piso: "",
-      azulejo: "",
-      porta: "",
-      janela: "",
-      forro: "",
-      armarioCozinha: false,
-      armarioBanheiro: false,
-      banheira: false,
-      boxVidro: false,
-      varanda: false,
-      sacada: false,
-      lavabo: false,
-      dependenciaEmpregada: false,
-    },
-    areaLazer: {
-      piscina: false,
-      churrasqueira: false,
-      espacoGourmet: false,
-      salaoFestas: false,
-      salaoJogos: false,
-      academia: false,
-      playground: false,
-      quadraPoliesportiva: false,
-      campoSociety: false,
-      areaVerde: false,
-      jardim: false,
-      deck: false,
-      rooftop: false,
-      sauna: false,
-      espacoPet: false,
-      brinquedoteca: false,
-    },
-    localizacaoVizinhanca: {
-      proximoCentro: false,
-      proximoSupermercado: false,
-      proximoEscola: false,
-      proximoHospital: false,
-      proximoFarmacia: false,
-      proximoOnibus: false,
-      proximoShopping: false,
-      proximoFaculdade: false,
-      bairroResidencial: false,
-      bairroComercial: false,
-      ruaAsfaltada: false,
-      ruaTranquila: false,
-      regiaoValorizada: false,
-    },
-    seguranca: {
-      portaoEletronico: false,
-      interfone: false,
-      cercaEletrica: false,
-      sistemaCameras: false,
-      alarme: false,
-      portaria24h: false,
-      vigilancia24h: false,
-      controleAcesso: false,
-      fechaduraDigital: false,
-      condominioFechado: false,
-      murosAltos: false,
-    },
-    armariosArmazenamento: {
-      armarioCozinhaPlanejado: false,
-      armariosEmbutidos: false,
-      armariosQuarto: false,
-      armariosBanheiro: false,
-      closet: false,
-      despensa: false,
-      deposito: false,
-      roupeiro: false,
-      maleiro: false,
-    },
-    servicosUtilidades: {
-      aguaEncanada: false,
-      energiaEletrica: false,
-      pocoArtesiano: false,
-      aquecimentoGas: false,
-      aquecimentoSolar: false,
-      gasEncanado: false,
-      arCondicionadoInstalado: false,
-      infraArCondicionado: false,
-      internetFibra: false,
-      iluminacaoLED: false,
-      energiaSolar: false,
-      elevador: false,
-      coletaLixo: false,
-    },
-    diferenciais: {
-      varanda: false,
-      sacada: false,
-      lavabo: false,
-      banheira: false,
-      boxVidro: false,
-      dependenciaEmpregada: false,
-      escritorio: false,
-      peDireitoDuplo: false,
-      mezanino: false,
-      vistaPanoramica: false,
-    },
+
+    // JSONBs
+    caracteristicas: {},
+    infraestrutura: {},
+    acabamentos: {},
+    areaLazer: {},
+    localizacaoVizinhanca: {},
+    seguranca: {},
+    armariosArmazenamento: {},
+    servicosUtilidades: {},
+    diferenciais: {},
+
+    // Textos
     descricao: "",
     observacoes: "",
-    iptu_anual: "",
+
+    precoAnterior: "",
   });
 
-  // =============== CARREGAR DADOS DO IMÓVEL ===============
+  // =============== CARREGAR DADOS DO IMOVEL ===============
   useEffect(() => {
     carregarImovel();
     carregarEmpreendimentos();
@@ -597,37 +888,45 @@ const EditarImovel = () => {
       if (error) throw error;
 
       setFormData({
+        // Campos diretos
         codigo: data.codigo || "",
         titulo: data.titulo || "",
-        finalidade: {
-          venda: data.finalidade_venda || false,
-          aluguel: data.finalidade_aluguel || false,
-        },
         tipo: data.tipo || "",
-        preco: data.preco || "",
         status: data.status || "disponivel",
         financiado: data.financiado || false,
         emCondominio: data.em_condominio || false,
         proprietarioId: data.proprietario_id || "",
         corretorId: data.corretor_id || "",
         ocultarPreco: data.ocultar_preco || false,
+
+        // Finalidades (serão preenchidas pela carregarFinalidades)
+        finalidade_venda: false,
+        finalidade_aluguel: false,
+        preco_venda: "",
+        preco_aluguel: "",
+
+        // Relacionamento com edificios
         empreendimento_id: data.id_edificios || "",
         unidade: data.unidade || "",
         andar: data.andar || "",
         lote: data.lote || "",
         bloco: data.bloco || "",
         quadra: data.quadra || "",
-        dependencias: {
-          dormitorios: data.quartos || "",
-          banheiros: data.banheiros || "",
-          suites: data.suites || "",
-          vagas: data.vagas || "",
-          area_total: data.area_total || "",
-          area_construida: data.area_construida || "",
-        },
-        // 👇 ADICIONAR ESTA LINHA (carrega o preço anterior do banco)
-        precoAnterior: data.preco_anterior || "",
 
+        // Dependências (colunas diretas)
+        quartos: data.quartos || 0,
+        suites: data.suites || 0,
+        banheiros: data.banheiros || 0,
+        vagas: data.vagas || 0,
+        area_total: data.area_total || 0,
+        area_construida: data.area_construida || 0,
+        area_privativa: data.area_privativa || 0,
+
+        // Custos
+        condominio_mensal: data.condominio_mensal || 0,
+        iptu_anual: data.iptu_anual || 0,
+
+        // Localização
         cep: data.cep || "",
         endereco: data.endereco || "",
         numero: data.numero || "",
@@ -636,44 +935,17 @@ const EditarImovel = () => {
         cidade: data.cidade || "",
         estado: data.estado || "",
         exibirEnderecoSite: data.exibir_endereco_site || false,
+
+        // Etiquetas (JSONB)
         etiquetas: data.etiquetas || {
           destaqueSemana: false,
           novoSite: false,
           baixouPreco: false,
-          financiável: false,
+          financivel: false,
         },
-        caracteristicas: data.caracteristicas || {
-          areaUtil: "",
-          areaPrivativa: "",
-          frenteTerreno: "",
-          fundo: "",
-          lateralEsquerda: "",
-          lateralDireita: "",
-          peDireito: "",
-          topografia: "",
-          esquina: false,
-          tipoConstrucao: "",
-          anoConstrucao: "",
-          reformadoRecentemente: false,
-          numeroPavimentos: "",
-          imovelAverbado: false,
-          financiavel: false,
-          aceitaPermuta: false,
-          tipoIluminacao: "",
-          tipoTelhado: "",
-          forroLaje: false,
-          sistemaEletricoNovo: false,
-          caixaDAgua: "",
-          sistemaEsgoto: "",
-          aquecimentoAgua: "",
-          posicaoSolar: "",
-          ventilacaoCruzada: false,
-          vistaLivre: false,
-          vistaPermanente: false,
-          ruaSemSaida: false,
-          esquinaInfo: false,
-          condominioTaxaMensal: "",
-        },
+
+        // JSONBs
+        caracteristicas: data.caracteristicas || {},
         infraestrutura: data.infraestrutura || {},
         acabamentos: data.acabamentos || {},
         areaLazer: data.area_lazer || {},
@@ -682,54 +954,59 @@ const EditarImovel = () => {
         armariosArmazenamento: data.armarios_armazenamento || {},
         servicosUtilidades: data.servicos_utilidades || {},
         diferenciais: data.diferenciais || {},
+
+        // Textos
         descricao: data.descricao || "",
         observacoes: data.observacoes || "",
-        iptu_anual: data.iptu_anual || "",
+
+        precoAnterior: data.preco_anterior || "",
       });
 
+      await carregarFinalidades(id);
       await carregarFotos(id);
     } catch (error) {
-      console.error("Erro ao carregar imóvel:", error);
+      console.error("Erro ao carregar imovel:", error);
       setSubmitMessage({
         type: "error",
-        text: "Erro ao carregar dados do imóvel. Tente novamente.",
+        text: "Erro ao carregar dados do imovel. Tente novamente.",
       });
     } finally {
       setLoadingDados(false);
     }
   };
 
-  // =============== CARREGAR EMPREENDIMENTOS ===============
-  const carregarEmpreendimentos = async () => {
-    const { data } = await supabase
-      .from("edificios")
-      .select("id, nome, tipo, bairro, cidade")
-      .order("nome");
-    setEmpreendimentos(data || []);
-  };
-
-  // =============== FUNÇÕES DE BUSCA CEP ===============
+  // =============== FUNCOES DE BUSCA CEP ===============
   const [cepLoading, setCepLoading] = useState(false);
   const [cepError, setCepError] = useState("");
 
   const buscarCep = async (cep) => {
     const cepLimpo = cep.replace(/\D/g, "");
     if (cepLimpo.length !== 8) {
-      setCepError("CEP deve ter 8 dígitos");
+      setCepError("CEP deve ter 8 digitos");
       return;
     }
     setCepLoading(true);
     setCepError("");
     try {
       const response = await fetch(
-        `https://viacep.com.br/ws/${cepLimpo}/json/`,
+        `https://aqhiaherelldknfpscrd.supabase.co/functions/v1/buscar-cep/${cepLimpo}`,
       );
-      if (!response.ok) throw new Error("Erro na resposta da API");
+
       const data = await response.json();
-      if (data.erro) {
-        setCepError("CEP não encontrado");
+
+      if (data.error) {
+        if (data.error === "CEP nao encontrado") {
+          setCepError("CEP nao encontrado");
+        } else if (data.error === "ViaCEP temporariamente indisponivel") {
+          setCepError(
+            "Servico de CEP esta fora do ar. Tente novamente em alguns minutos ou digite o endereco manualmente.",
+          );
+        } else {
+          setCepError("Erro ao buscar CEP. Tente novamente.");
+        }
         return;
       }
+
       setFormData((prev) => ({
         ...prev,
         endereco: data.logradouro || "",
@@ -739,7 +1016,8 @@ const EditarImovel = () => {
         complemento: data.complemento || prev.complemento,
       }));
     } catch (error) {
-      setCepError("Erro ao buscar CEP. Verifique a conexão.");
+      console.error("Erro:", error);
+      setCepError("Erro ao buscar CEP. Verifique sua conexao.");
     } finally {
       setCepLoading(false);
     }
@@ -759,6 +1037,16 @@ const EditarImovel = () => {
   // =============== HANDLERS ===============
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
+
+    // Campos de preço (já tratados pelo PriceInput)
+    if (name === "preco_venda" || name === "preco_aluguel") {
+      setFormData((prev) => ({
+        ...prev,
+        [name]: value,
+      }));
+      return;
+    }
+
     if (name.includes(".")) {
       const [parent, child] = name.split(".");
       setFormData((prev) => ({
@@ -801,13 +1089,45 @@ const EditarImovel = () => {
     setLoading(true);
     setSubmitMessage({ type: "", text: "" });
 
+    if (!formData.finalidade_venda && !formData.finalidade_aluguel) {
+      setSubmitMessage({
+        type: "error",
+        text: "Selecione pelo menos uma finalidade (venda ou aluguel)",
+      });
+      setLoading(false);
+      return;
+    }
+
+    if (formData.finalidade_venda && !formData.preco_venda) {
+      setSubmitMessage({
+        type: "error",
+        text: "Preco de venda e obrigatorio quando a finalidade venda esta selecionada",
+      });
+      setLoading(false);
+      return;
+    }
+
+    if (formData.finalidade_aluguel && !formData.preco_aluguel) {
+      setSubmitMessage({
+        type: "error",
+        text: "Preco de aluguel e obrigatorio quando a finalidade aluguel esta selecionada",
+      });
+      setLoading(false);
+      return;
+    }
+
     const dadosParaSupabase = {
       codigo: formData.codigo,
       titulo: formData.titulo,
-      finalidade_venda: formData.finalidade.venda,
-      finalidade_aluguel: formData.finalidade.aluguel,
+      finalidade_venda: formData.finalidade_venda,
+      finalidade_aluguel: formData.finalidade_aluguel,
       tipo: formData.tipo,
-      preco: formData.preco ? parseFloat(formData.preco) : null,
+      preco_venda: formData.finalidade_venda
+        ? parseFloat(formData.preco_venda)
+        : null,
+      preco_aluguel: formData.finalidade_aluguel
+        ? parseFloat(formData.preco_aluguel)
+        : null,
       status: formData.status,
       financiado: formData.financiado,
       em_condominio: formData.emCondominio,
@@ -820,17 +1140,15 @@ const EditarImovel = () => {
       lote: formData.lote || "",
       bloco: formData.bloco || "",
       quadra: formData.quadra || "",
-      quartos: parseInt(formData.dependencias.dormitorios) || 0,
-      suites: parseInt(formData.dependencias.suites) || 0,
-      banheiros: parseInt(formData.dependencias.banheiros) || 0,
-      vagas: parseInt(formData.dependencias.vagas) || 1,
-      area_total: parseFloat(formData.dependencias.area_total) || 0,
-      area_construida: parseFloat(formData.dependencias.area_construida) || 0,
-      area_privativa: parseFloat(formData.caracteristicas.areaPrivativa) || 0,
-      condominio_mensal:
-        parseFloat(formData.caracteristicas.condominioTaxaMensal) || 0,
+      quartos: parseInt(formData.quartos) || 0,
+      suites: parseInt(formData.suites) || 0,
+      banheiros: parseInt(formData.banheiros) || 0,
+      vagas: parseInt(formData.vagas) || 1,
+      area_total: parseFloat(formData.area_total) || 0,
+      area_construida: parseFloat(formData.area_construida) || 0,
+      area_privativa: parseFloat(formData.area_privativa) || 0,
+      condominio_mensal: parseFloat(formData.condominio_mensal) || 0,
       iptu_anual: parseFloat(formData.iptu_anual) || 0,
-      data_disponibilidade: null,
       cep: formData.cep || "",
       endereco: formData.endereco || "",
       numero: formData.numero || "",
@@ -839,34 +1157,11 @@ const EditarImovel = () => {
       cidade: formData.cidade || "",
       estado: formData.estado || "",
       exibir_endereco_site: formData.exibirEnderecoSite || false,
-
-      // 👇 NOVA LINHA: preço anterior (só envia se tiver valor, senão manda null)
       preco_anterior: formData.precoAnterior
         ? parseFloat(formData.precoAnterior)
         : null,
-
       etiquetas: formData.etiquetas,
-      caracteristicas: {
-        ...formData.caracteristicas,
-        areaUtil: formData.caracteristicas.areaUtil
-          ? parseFloat(formData.caracteristicas.areaUtil)
-          : 0,
-        areaPrivativa: formData.caracteristicas.areaPrivativa
-          ? parseFloat(formData.caracteristicas.areaPrivativa)
-          : 0,
-        anoConstrucao: formData.caracteristicas.anoConstrucao
-          ? parseInt(formData.caracteristicas.anoConstrucao)
-          : null,
-        numeroPavimentos: formData.caracteristicas.numeroPavimentos
-          ? parseInt(formData.caracteristicas.numeroPavimentos)
-          : 0,
-        caixaDAgua: formData.caracteristicas.caixaDAgua
-          ? parseInt(formData.caracteristicas.caixaDAgua)
-          : 0,
-        condominioTaxaMensal: formData.caracteristicas.condominioTaxaMensal
-          ? parseFloat(formData.caracteristicas.condominioTaxaMensal)
-          : 0,
-      },
+      caracteristicas: formData.caracteristicas,
       infraestrutura: formData.infraestrutura || {},
       acabamentos: formData.acabamentos || {},
       area_lazer: formData.areaLazer || {},
@@ -875,18 +1170,13 @@ const EditarImovel = () => {
       armarios_armazenamento: formData.armariosArmazenamento || {},
       servicos_utilidades: formData.servicosUtilidades || {},
       diferenciais: formData.diferenciais || {},
-      dependencias: {
-        dormitorios: formData.dependencias.dormitorios || 0,
-        banheiros: formData.dependencias.banheiros || 0,
-        suites: formData.dependencias.suites || 0,
-        vagas: formData.dependencias.vagas || 0,
-        area_total: formData.dependencias.area_total || 0,
-        area_construida: formData.dependencias.area_construida || 0,
-      },
+      descricao: formData.descricao || "",
+      observacoes: formData.observacoes || "",
       updated_at: new Date(),
     };
 
     try {
+      // Atualizar imóvel
       const { error } = await supabase
         .from("imoveis")
         .update(dadosParaSupabase)
@@ -894,26 +1184,55 @@ const EditarImovel = () => {
 
       if (error) throw error;
 
-      // =============== ATUALIZAR FOTOS ===============
-      try {
-        // Deletar fotos antigas
-        console.log("🗑️ Deletando fotos antigas do imóvel:", id);
+      // Atualizar finalidades
+      const { error: deleteError } = await supabase
+        .from("imovel_finalidades")
+        .delete()
+        .eq("imovel_id", id);
 
-        const { error: deleteError } = await supabase
+      if (deleteError) throw deleteError;
+
+      const finalidadesParaInserir = [];
+
+      if (formData.finalidade_venda) {
+        finalidadesParaInserir.push({
+          imovel_id: id,
+          tipo: "venda",
+          preco: parseFloat(formData.preco_venda),
+          status: "ativo",
+        });
+      }
+
+      if (formData.finalidade_aluguel) {
+        finalidadesParaInserir.push({
+          imovel_id: id,
+          tipo: "aluguel",
+          preco: parseFloat(formData.preco_aluguel),
+          status: "ativo",
+        });
+      }
+
+      if (finalidadesParaInserir.length > 0) {
+        const { error: insertError } = await supabase
+          .from("imovel_finalidades")
+          .insert(finalidadesParaInserir);
+
+        if (insertError) throw insertError;
+      }
+
+      // Atualizar fotos
+      try {
+        const { error: deleteFotosError } = await supabase
           .from("fotos_imovel")
           .delete()
           .eq("imovel_id", id);
 
-        if (deleteError) throw deleteError;
+        if (deleteFotosError) throw deleteFotosError;
 
-        // Se NÃO TEM fotos novas, para por aqui
         if (fotos.length === 0) {
-          console.log("📸 Nenhuma foto para salvar");
+          console.log("Nenhuma foto para salvar");
           return;
         }
-
-        // Inserir as novas fotos
-        console.log(`📸 Preparando ${fotos.length} novas fotos`);
 
         const fotosParaInserir = await Promise.all(
           fotos.map(async (foto, index) => {
@@ -944,21 +1263,20 @@ const EditarImovel = () => {
         );
 
         if (fotosParaInserir.length > 0) {
-          const { error: insertError } = await supabase
+          const { error: insertFotosError } = await supabase
             .from("fotos_imovel")
             .insert(fotosParaInserir);
 
-          if (insertError) throw insertError;
-          console.log(`✅ ${fotosParaInserir.length} fotos salvas`);
+          if (insertFotosError) throw insertFotosError;
         }
       } catch (fotoError) {
-        console.error("💥 Erro nas fotos:", fotoError);
+        console.error("Erro nas fotos:", fotoError);
         throw fotoError;
       }
 
       setSubmitMessage({
         type: "success",
-        text: `Imóvel "${formData.titulo}" atualizado com sucesso!`,
+        text: `Imovel "${formData.titulo}" atualizado com sucesso!`,
       });
 
       setTimeout(() => {
@@ -978,14 +1296,14 @@ const EditarImovel = () => {
   const handleCancel = () => {
     if (
       window.confirm(
-        "Tem certeza que deseja cancelar? As alterações serão perdidas.",
+        "Tem certeza que deseja cancelar? As alteracoes serao perdidas.",
       )
     ) {
       navigate("/admin/imoveis");
     }
   };
 
-  // =============== FUNÇÕES DE CORES (TEMA) ===============
+  // =============== FUNCOES DE CORES (TEMA) ===============
   const getBgClass = () => (isDark ? "bg-gray-900" : "bg-white");
   const getBorderClass = () => (isDark ? "border-gray-700" : "border-gray-200");
   const getTextClass = () => (isDark ? "text-gray-100" : "text-gray-900");
@@ -1017,8 +1335,14 @@ const EditarImovel = () => {
       ? "bg-gray-800 border-gray-700 text-gray-200"
       : "bg-white border-gray-300 text-gray-900";
   const getOptionBgClass = () => (isDark ? "bg-gray-800" : "bg-white");
+  const getCheckboxClass = () =>
+    `appearance-none h-5 w-5 border rounded transition-colors focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/50 focus:ring-offset-2 ${
+      isDark ? "bg-gray-800" : "bg-white"
+    } ${getCheckboxBorderClass()} checked:bg-[#D4A24D] checked:border-[#D4A24D] relative checked:after:absolute checked:after:content-[''] checked:after:h-[0.625rem] checked:after:w-[0.3125rem] checked:after:rotate-45 checked:after:translate-x-[0.375rem] checked:after:translate-y-[0.125rem] checked:after:border-solid checked:after:border-white checked:after:border-width-0 checked:after:border-r-2 checked:after:border-b-2`;
+  const getInputClasses = () =>
+    `${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()} ${getPlaceholderClass()}`;
 
-  // =============== OPÇÕES PARA SELECTS ===============
+  // =============== OPCOES PARA SELECTS ===============
   const tiposImovel = [
     { value: "apartamento", label: "Apartamento" },
     { value: "casa", label: "Casa" },
@@ -1027,80 +1351,46 @@ const EditarImovel = () => {
     { value: "sobrado", label: "Sobrado" },
     { value: "kitnet", label: "Kitnet" },
     { value: "fazenda", label: "Fazenda" },
-    { value: "chacara", label: "Chácara" },
-    { value: "sitio", label: "Sítio" },
-    { value: "galpao", label: "Galpão" },
+    { value: "chacara", label: "Chacara" },
+    { value: "sitio", label: "Sitio" },
+    { value: "galpao", label: "Galpao" },
   ];
 
   const estadosBrasil = [
     { value: "AC", label: "Acre" },
     { value: "AL", label: "Alagoas" },
-    { value: "AP", label: "Amapá" },
+    { value: "AP", label: "Amapa" },
     { value: "AM", label: "Amazonas" },
     { value: "BA", label: "Bahia" },
-    { value: "CE", label: "Ceará" },
+    { value: "CE", label: "Ceara" },
     { value: "DF", label: "Distrito Federal" },
-    { value: "ES", label: "Espírito Santo" },
-    { value: "GO", label: "Goiás" },
-    { value: "MA", label: "Maranhão" },
+    { value: "ES", label: "Espirito Santo" },
+    { value: "GO", label: "Goias" },
+    { value: "MA", label: "Maranhao" },
     { value: "MT", label: "Mato Grosso" },
     { value: "MS", label: "Mato Grosso do Sul" },
     { value: "MG", label: "Minas Gerais" },
-    { value: "PA", label: "Pará" },
-    { value: "PB", label: "Paraíba" },
-    { value: "PR", label: "Paraná" },
+    { value: "PA", label: "Para" },
+    { value: "PB", label: "Paraiba" },
+    { value: "PR", label: "Parana" },
     { value: "PE", label: "Pernambuco" },
-    { value: "PI", label: "Piauí" },
+    { value: "PI", label: "Piaui" },
     { value: "RJ", label: "Rio de Janeiro" },
     { value: "RN", label: "Rio Grande do Norte" },
     { value: "RS", label: "Rio Grande do Sul" },
-    { value: "RO", label: "Rondônia" },
+    { value: "RO", label: "Rondonia" },
     { value: "RR", label: "Roraima" },
     { value: "SC", label: "Santa Catarina" },
-    { value: "SP", label: "São Paulo" },
+    { value: "SP", label: "Sao Paulo" },
     { value: "SE", label: "Sergipe" },
     { value: "TO", label: "Tocantins" },
   ];
 
   const proprietarios = [
     { id: "1", nome: "Maria Silva" },
-    { id: "2", nome: "João Santos" },
+    { id: "2", nome: "Joao Santos" },
     { id: "3", nome: "Ana Oliveira" },
   ];
-
-  const getStatusColor = (status) => {
-    const baseColors = {
-      disponivel: {
-        light: "bg-green-100 text-green-800",
-        dark: "bg-green-900/30 text-green-300 border border-green-800",
-      },
-      reservado: {
-        light: "bg-yellow-100 text-yellow-800",
-        dark: "bg-yellow-900/30 text-yellow-300 border border-yellow-800",
-      },
-      vendido: {
-        light: "bg-gray-100 text-gray-800",
-        dark: "bg-gray-800 text-gray-300 border border-gray-700",
-      },
-      alugado: {
-        light: "bg-blue-100 text-blue-800",
-        dark: "bg-blue-900/30 text-blue-300 border border-blue-800",
-      },
-    };
-    return isDark
-      ? baseColors[status]?.dark || "bg-gray-800 text-gray-300"
-      : baseColors[status]?.light || "bg-gray-100 text-gray-800";
-  };
-
-  const getFinanciavelColor = () =>
-    isDark
-      ? "bg-blue-900/30 text-blue-300 border border-blue-800"
-      : "bg-blue-100 text-blue-800";
-
-  const getCheckboxClass = () =>
-    `appearance-none h-5 w-5 border rounded transition-colors focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/50 focus:ring-offset-2 ${
-      isDark ? "bg-gray-800" : "bg-white"
-    } ${getCheckboxBorderClass()} checked:bg-[#D4A24D] checked:border-[#D4A24D] relative checked:after:absolute checked:after:content-[''] checked:after:h-[0.625rem] checked:after:w-[0.3125rem] checked:after:rotate-45 checked:after:translate-x-[0.375rem] checked:after:translate-y-[0.125rem] checked:after:border-solid checked:after:border-white checked:after:border-width-0 checked:after:border-r-2 checked:after:border-b-2`;
 
   const formatPrice = (price) => {
     if (!price) return "";
@@ -1117,7 +1407,7 @@ const EditarImovel = () => {
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#D4A24D] mx-auto"></div>
           <p className={`mt-4 ${isDark ? "text-gray-300" : "text-gray-600"}`}>
-            Carregando dados do imóvel...
+            Carregando dados do imovel...
           </p>
         </div>
       </div>
@@ -1132,7 +1422,7 @@ const EditarImovel = () => {
           : "bg-gradient-to-b from-[#D4A24D]/5 to-[#31353E]/5"
       }`}
     >
-      {/* ===== HEADER COM BOTÕES FIXOS ===== */}
+      {/* ===== HEADER COM BOTOES FIXOS ===== */}
       <div
         className={`sticky top-0 z-50 border-b px-4 py-3 transition-colors duration-200 ${
           isDark ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"
@@ -1140,7 +1430,6 @@ const EditarImovel = () => {
       >
         <div className="max-w-7xl mx-auto">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-            {/* Lado Esquerdo - Título e Navegação */}
             <div className="flex items-center space-x-3">
               <button
                 onClick={() => navigate("/admin/imoveis")}
@@ -1156,7 +1445,7 @@ const EditarImovel = () => {
                 <h1
                   className={`text-xl md:text-2xl font-bold transition-colors ${getTextClass()}`}
                 >
-                  Editar Imóvel
+                  Editar Imovel
                 </h1>
                 <p
                   className={`text-xs md:text-sm transition-colors ${getTextSecondaryClass()}`}
@@ -1167,9 +1456,7 @@ const EditarImovel = () => {
               </div>
             </div>
 
-            {/* Lado Direito - Badge + Botões */}
             <div className="flex items-center justify-end space-x-2 md:space-x-3">
-              {/* BOTÕES DE AÇÃO */}
               <div className="flex items-center space-x-2">
                 <button
                   type="button"
@@ -1184,7 +1471,7 @@ const EditarImovel = () => {
                   disabled={loading}
                   className="px-3 md:px-4 py-1.5 md:py-2 bg-[#D4A24D] hover:bg-[#C4933E] text-white font-medium rounded-lg border border-transparent transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-[#D4A24D] focus:ring-offset-2 text-xs md:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {loading ? "Salvando..." : "Atualizar Imóvel"}
+                  {loading ? "Salvando..." : "Atualizar Imovel"}
                 </button>
               </div>
             </div>
@@ -1192,14 +1479,14 @@ const EditarImovel = () => {
         </div>
       </div>
 
-      {/* Conteúdo Principal - TODO O RESTO DO CÓDICO PERMANECE IGUAL */}
+      {/* Conteudo Principal */}
       <div className="max-w-7xl mx-auto px-4 py-6">
         <form
           id="form-editar-imovel"
           onSubmit={handleSubmit}
           className="space-y-8"
         >
-          {/* ========== SEÇÃO 1: INFORMAÇÕES GERAIS ========== */}
+          {/* ========== SECAO 1: INFORMACOES GERAIS ========== */}
           <div
             className={`rounded-xl border p-6 transition-colors duration-200 ${getBgClass()} ${getBorderClass()}`}
           >
@@ -1211,22 +1498,21 @@ const EditarImovel = () => {
                 <h2
                   className={`text-xl font-semibold transition-colors ${getTextClass()}`}
                 >
-                  Informações Gerais do Imóvel
+                  Informacoes Gerais do Imovel
                 </h2>
                 <p
                   className={`text-sm transition-colors ${getTextSecondaryClass()}`}
                 >
-                  Dados para identificação, comercialização e gestão
+                  Dados para identificacao, comercializacao e gestao
                 </p>
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {/* Código do Imóvel */}
               <div>
                 <label
                   className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
                 >
-                  Código do Imóvel *
+                  Codigo do Imovel *
                 </label>
                 <input
                   type="text"
@@ -1235,15 +1521,14 @@ const EditarImovel = () => {
                   onChange={handleChange}
                   required
                   placeholder="Ex: APT-001"
-                  className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors duration-200 ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()} ${getPlaceholderClass()}`}
+                  className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors duration-200 ${getInputClasses()}`}
                 />
               </div>
-              {/* Título do Anúncio */}
               <div>
                 <label
                   className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
                 >
-                  Título do Anúncio *
+                  Titulo do Anuncio *
                 </label>
                 <input
                   type="text"
@@ -1252,60 +1537,91 @@ const EditarImovel = () => {
                   onChange={handleChange}
                   required
                   placeholder="Ex: Casa moderna com piscina no Jardins"
-                  className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors duration-200 ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()} ${getPlaceholderClass()}`}
+                  className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors duration-200 ${getInputClasses()}`}
                 />
               </div>
-              {/* Finalidade */}
-              <div>
+              <div className="md:col-span-2">
                 <label
                   className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
                 >
                   Finalidade *
                 </label>
-                <div className="flex space-x-4">
-                  <label className="flex items-center">
-                    <input
-                      type="checkbox"
-                      name="finalidade.venda"
-                      checked={formData.finalidade.venda}
-                      onChange={handleChange}
-                      className={getCheckboxClass()}
-                    />
-                    <span
-                      className={`ml-2 transition-colors ${getTextClass()}`}
-                    >
-                      Venda
-                    </span>
-                  </label>
-                  <label className="flex items-center">
-                    <input
-                      type="checkbox"
-                      name="finalidade.aluguel"
-                      checked={formData.finalidade.aluguel}
-                      onChange={handleChange}
-                      className={getCheckboxClass()}
-                    />
-                    <span
-                      className={`ml-2 transition-colors ${getTextClass()}`}
-                    >
-                      Aluguel
-                    </span>
-                  </label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 border rounded-lg">
+                  <div className="space-y-4">
+                    <label className="flex items-center space-x-3">
+                      <input
+                        type="checkbox"
+                        name="finalidade_venda"
+                        checked={formData.finalidade_venda}
+                        onChange={handleChange}
+                        className={getCheckboxClass()}
+                      />
+                      <span
+                        className={`font-medium transition-colors ${getTextClass()}`}
+                      >
+                        Venda
+                      </span>
+                    </label>
+
+                    {formData.finalidade_venda && (
+                      <div className="ml-8">
+                        <PriceInput
+                          name="preco_venda"
+                          value={formData.preco_venda}
+                          onChange={handleChange}
+                          label="Preco de Venda"
+                          required={formData.finalidade_venda}
+                          isDark={isDark}
+                          getInputClasses={getInputClasses}
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="space-y-4">
+                    <label className="flex items-center space-x-3">
+                      <input
+                        type="checkbox"
+                        name="finalidade_aluguel"
+                        checked={formData.finalidade_aluguel}
+                        onChange={handleChange}
+                        className={getCheckboxClass()}
+                      />
+                      <span
+                        className={`font-medium transition-colors ${getTextClass()}`}
+                      >
+                        Aluguel
+                      </span>
+                    </label>
+
+                    {formData.finalidade_aluguel && (
+                      <div className="ml-8">
+                        <PriceInput
+                          name="preco_aluguel"
+                          value={formData.preco_aluguel}
+                          onChange={handleChange}
+                          label="Preco de Aluguel"
+                          required={formData.finalidade_aluguel}
+                          isDark={isDark}
+                          getInputClasses={getInputClasses}
+                        />
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
-              {/* Tipo do Imóvel */}
               <div>
                 <label
                   className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
                 >
-                  Tipo do Imóvel *
+                  Tipo do Imovel *
                 </label>
                 <select
                   name="tipo"
                   value={formData.tipo}
                   onChange={handleChange}
                   required
-                  className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors duration-200 ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()}`}
+                  className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors duration-200 ${getInputClasses()}`}
                 >
                   <option value="" className={getOptionBgClass()}>
                     Selecione o tipo
@@ -1321,21 +1637,20 @@ const EditarImovel = () => {
                   ))}
                 </select>
               </div>
-              {/* Proprietário */}
               <div>
                 <label
                   className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
                 >
-                  Proprietário
+                  Proprietario
                 </label>
                 <select
                   name="proprietarioId"
                   value={formData.proprietarioId}
                   onChange={handleChange}
-                  className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors duration-200 ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()}`}
+                  className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors duration-200 ${getInputClasses()}`}
                 >
                   <option value="" className={getOptionBgClass()}>
-                    Selecionar proprietário
+                    Selecionar proprietario
                   </option>
                   {proprietarios.map((proprietario) => (
                     <option
@@ -1348,18 +1663,17 @@ const EditarImovel = () => {
                   ))}
                 </select>
               </div>
-              {/* Corretor Responsável */}
               <div>
                 <label
                   className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
                 >
-                  Corretor Responsável
+                  Corretor Responsavel
                 </label>
                 <select
                   name="corretorId"
                   value={formData.corretorId}
                   onChange={handleChange}
-                  className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors duration-200 ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()}`}
+                  className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors duration-200 ${getInputClasses()}`}
                 >
                   <option value="" className={getOptionBgClass()}>
                     {loadingCorretores
@@ -1381,68 +1695,11 @@ const EditarImovel = () => {
                   <p
                     className={`text-xs mt-1 ${isDark ? "text-yellow-400" : "text-yellow-600"}`}
                   >
-                    ⚠️ Nenhum corretor ativo encontrado. Cadastre um corretor
+                    Nenhum corretor ativo encontrado. Cadastre um corretor
                     primeiro.
                   </p>
                 )}
               </div>
-              {/* Preço */}
-              <div>
-                <label
-                  className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
-                >
-                  Preço *
-                </label>
-                <div className="space-y-2">
-                  <div className="relative">
-                    <span
-                      className={`absolute left-4 top-1/2 transform -translate-y-1/2 transition-colors ${getTextSecondaryClass()}`}
-                    >
-                      R$
-                    </span>
-                    <input
-                      type="number"
-                      name="preco"
-                      value={formData.preco}
-                      onChange={handleChange}
-                      required
-                      min="0"
-                      step="0.01"
-                      placeholder="0,00"
-                      className={`w-full pl-12 pr-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors duration-200 ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()} ${getPlaceholderClass()}`}
-                    />
-                  </div>
-                  <label className="flex items-center space-x-3">
-                    <input
-                      type="checkbox"
-                      name="ocultarPreco"
-                      checked={formData.ocultarPreco}
-                      onChange={handleChange}
-                      className={getCheckboxClass()}
-                    />
-                    <span
-                      className={`text-sm transition-colors ${getTextClass()}`}
-                    >
-                      Ocultar preço na vitrine
-                    </span>
-                  </label>
-                </div>
-                {formData.preco && !formData.ocultarPreco && (
-                  <p
-                    className={`mt-2 text-sm transition-colors ${getTextSecondaryClass()}`}
-                  >
-                    {formatPrice(formData.preco)}
-                  </p>
-                )}
-                {formData.ocultarPreco && (
-                  <p
-                    className={`mt-2 text-sm ${isDark ? "text-yellow-400" : "text-yellow-600"}`}
-                  >
-                    Preço não será exibido publicamente.
-                  </p>
-                )}
-              </div>
-              {/* Status */}
               <div>
                 <label
                   className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
@@ -1454,10 +1711,10 @@ const EditarImovel = () => {
                   value={formData.status}
                   onChange={handleChange}
                   required
-                  className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors duration-200 ${getInputBgClass()} ${getBorderClass()} ${getInputTextClass()}`}
+                  className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors duration-200 ${getInputClasses()}`}
                 >
                   <option value="disponivel" className={getOptionBgClass()}>
-                    Disponível
+                    Disponivel
                   </option>
                   <option value="reservado" className={getOptionBgClass()}>
                     Reservado
@@ -1470,7 +1727,6 @@ const EditarImovel = () => {
                   </option>
                 </select>
               </div>
-              {/* Financiável */}
               <div className="flex items-center space-x-3 pt-6">
                 <input
                   type="checkbox"
@@ -1484,10 +1740,9 @@ const EditarImovel = () => {
                   htmlFor="financiado"
                   className={`text-sm transition-colors ${getTextClass()}`}
                 >
-                  Imóvel financiável
+                  Imovel financiavel
                 </label>
               </div>
-              {/* Em Condomínio */}
               <div className="flex items-center space-x-3 pt-6">
                 <input
                   type="checkbox"
@@ -1501,12 +1756,23 @@ const EditarImovel = () => {
                   htmlFor="emCondominio"
                   className={`text-sm transition-colors ${getTextClass()}`}
                 >
-                  Imóvel em condomínio
+                  Imovel em condominio
                 </label>
+              </div>
+              <div className="flex items-center space-x-3 pt-6">
+                <input
+                  type="checkbox"
+                  name="ocultarPreco"
+                  checked={formData.ocultarPreco}
+                  onChange={handleChange}
+                  className={getCheckboxClass()}
+                />
+                <span className={`text-sm transition-colors ${getTextClass()}`}>
+                  Ocultar preco na vitrine
+                </span>
               </div>
             </div>
 
-            {/* BLOCO VÍNCULO COM EMPREENDIMENTO */}
             {formData.emCondominio && (
               <div
                 className={`col-span-3 mt-6 p-5 border rounded-lg transition-colors duration-200 ${
@@ -1526,7 +1792,7 @@ const EditarImovel = () => {
                       isDark ? "text-blue-400" : "text-blue-700"
                     }`}
                   >
-                    Vínculo com Empreendimento
+                    Vinculo com Empreendimento
                   </h3>
                   {formData.tipo === "apartamento" && (
                     <span
@@ -1536,7 +1802,7 @@ const EditarImovel = () => {
                           : "bg-gray-200 text-gray-800"
                       }`}
                     >
-                      Edifício obrigatório
+                      Edificio obrigatorio
                     </span>
                   )}
                   {formData.tipo === "casa" && (
@@ -1547,13 +1813,12 @@ const EditarImovel = () => {
                           : "bg-gray-200 text-gray-800"
                       }`}
                     >
-                      Condomínio/Residencial
+                      Condominio/Residencial
                     </span>
                   )}
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                  {/* SELECT DE EMPREENDIMENTOS */}
                   <div className="lg:col-span-2">
                     <label
                       className={`block text-xs font-medium mb-1 ${
@@ -1622,7 +1887,6 @@ const EditarImovel = () => {
                     </p>
                   </div>
 
-                  {/* UNIDADE (só para apartamentos) */}
                   {formData.tipo === "apartamento" && (
                     <>
                       <div>
@@ -1691,7 +1955,6 @@ const EditarImovel = () => {
                     </>
                   )}
 
-                  {/* LOTE e QUADRA (só para casas em condomínio) */}
                   {formData.tipo === "casa" && (
                     <>
                       <div>
@@ -1700,7 +1963,7 @@ const EditarImovel = () => {
                             isDark ? "text-gray-300" : "text-gray-700"
                           }`}
                         >
-                          Lote/Número
+                          Lote/Numero
                         </label>
                         <input
                           type="text"
@@ -1740,7 +2003,6 @@ const EditarImovel = () => {
                   )}
                 </div>
 
-                {/* MENSAGENS DE VALIDAÇÃO */}
                 {formData.tipo === "apartamento" &&
                   !formData.empreendimento_id && (
                     <p
@@ -1749,7 +2011,7 @@ const EditarImovel = () => {
                       }`}
                     >
                       <ExclamationTriangleIcon className="w-3 h-3 mr-1" />
-                      Apartamento precisa estar vinculado a um Edifício.
+                      Apartamento precisa estar vinculado a um Edificio.
                     </p>
                   )}
                 {formData.tipo === "casa" &&
@@ -1761,15 +2023,15 @@ const EditarImovel = () => {
                       }`}
                     >
                       <ExclamationTriangleIcon className="w-3 h-3 mr-1" />
-                      Casa em condomínio precisa estar vinculada a um
-                      Condomínio/Residencial.
+                      Casa em condominio precisa estar vinculada a um
+                      Condominio/Residencial.
                     </p>
                   )}
               </div>
             )}
           </div>
 
-          {/* ========== NOVA SEÇÃO: DEPENDÊNCIAS DO IMÓVEL ========== */}
+          {/* ========== SECAO: DEPENDENCIAS DO IMOVEL ========== */}
           <div
             className={`rounded-xl border p-6 transition-colors duration-200 ${getBgClass()} ${getBorderClass()}`}
           >
@@ -1783,22 +2045,21 @@ const EditarImovel = () => {
                 <h2
                   className={`text-xl font-semibold transition-colors ${getTextClass()}`}
                 >
-                  Dependências do Imóvel
+                  Dependencias do Imovel
                 </h2>
                 <p
                   className={`text-sm transition-colors ${getTextSecondaryClass()}`}
                 >
-                  Quantidade de cômodos, vagas e áreas do imóvel
+                  Quantidade de comodos, vagas e areas do imovel
                 </p>
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {/* Dormitórios */}
               <div>
                 <label
                   className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
                 >
-                  Dormitórios
+                  Dormitorios
                 </label>
                 <div className="flex items-center space-x-2">
                   <button
@@ -1806,13 +2067,7 @@ const EditarImovel = () => {
                     onClick={() =>
                       setFormData((prev) => ({
                         ...prev,
-                        dependencias: {
-                          ...prev.dependencias,
-                          dormitorios: Math.max(
-                            0,
-                            (parseInt(prev.dependencias.dormitorios) || 0) - 1,
-                          ),
-                        },
+                        quartos: Math.max(0, (parseInt(prev.quartos) || 0) - 1),
                       }))
                     }
                     className={`p-2 rounded-lg border transition-colors ${getCounterButtonClass()}`}
@@ -1821,8 +2076,8 @@ const EditarImovel = () => {
                   </button>
                   <input
                     type="number"
-                    name="dependencias.dormitorios"
-                    value={formData.dependencias.dormitorios}
+                    name="quartos"
+                    value={formData.quartos}
                     onChange={handleChange}
                     min="0"
                     placeholder="0"
@@ -1833,11 +2088,7 @@ const EditarImovel = () => {
                     onClick={() =>
                       setFormData((prev) => ({
                         ...prev,
-                        dependencias: {
-                          ...prev.dependencias,
-                          dormitorios:
-                            (parseInt(prev.dependencias.dormitorios) || 0) + 1,
-                        },
+                        quartos: (parseInt(prev.quartos) || 0) + 1,
                       }))
                     }
                     className={`p-2 rounded-lg border transition-colors ${getCounterButtonClass()}`}
@@ -1846,7 +2097,6 @@ const EditarImovel = () => {
                   </button>
                 </div>
               </div>
-              {/* Banheiros */}
               <div>
                 <label
                   className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
@@ -1859,13 +2109,10 @@ const EditarImovel = () => {
                     onClick={() =>
                       setFormData((prev) => ({
                         ...prev,
-                        dependencias: {
-                          ...prev.dependencias,
-                          banheiros: Math.max(
-                            0,
-                            (parseInt(prev.dependencias.banheiros) || 0) - 1,
-                          ),
-                        },
+                        banheiros: Math.max(
+                          0,
+                          (parseInt(prev.banheiros) || 0) - 1,
+                        ),
                       }))
                     }
                     className={`p-2 rounded-lg border transition-colors ${getCounterButtonClass()}`}
@@ -1874,8 +2121,8 @@ const EditarImovel = () => {
                   </button>
                   <input
                     type="number"
-                    name="dependencias.banheiros"
-                    value={formData.dependencias.banheiros}
+                    name="banheiros"
+                    value={formData.banheiros}
                     onChange={handleChange}
                     min="0"
                     placeholder="0"
@@ -1886,11 +2133,7 @@ const EditarImovel = () => {
                     onClick={() =>
                       setFormData((prev) => ({
                         ...prev,
-                        dependencias: {
-                          ...prev.dependencias,
-                          banheiros:
-                            (parseInt(prev.dependencias.banheiros) || 0) + 1,
-                        },
+                        banheiros: (parseInt(prev.banheiros) || 0) + 1,
                       }))
                     }
                     className={`p-2 rounded-lg border transition-colors ${getCounterButtonClass()}`}
@@ -1899,12 +2142,11 @@ const EditarImovel = () => {
                   </button>
                 </div>
               </div>
-              {/* Suíte */}
               <div>
                 <label
                   className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
                 >
-                  Suíte
+                  Suite
                 </label>
                 <div className="flex items-center space-x-2">
                   <button
@@ -1912,13 +2154,7 @@ const EditarImovel = () => {
                     onClick={() =>
                       setFormData((prev) => ({
                         ...prev,
-                        dependencias: {
-                          ...prev.dependencias,
-                          suites: Math.max(
-                            0,
-                            (parseInt(prev.dependencias.suites) || 0) - 1,
-                          ),
-                        },
+                        suites: Math.max(0, (parseInt(prev.suites) || 0) - 1),
                       }))
                     }
                     className={`p-2 rounded-lg border transition-colors ${getCounterButtonClass()}`}
@@ -1927,8 +2163,8 @@ const EditarImovel = () => {
                   </button>
                   <input
                     type="number"
-                    name="dependencias.suites"
-                    value={formData.dependencias.suites}
+                    name="suites"
+                    value={formData.suites}
                     onChange={handleChange}
                     min="0"
                     placeholder="0"
@@ -1939,10 +2175,7 @@ const EditarImovel = () => {
                     onClick={() =>
                       setFormData((prev) => ({
                         ...prev,
-                        dependencias: {
-                          ...prev.dependencias,
-                          suites: (parseInt(prev.dependencias.suites) || 0) + 1,
-                        },
+                        suites: (parseInt(prev.suites) || 0) + 1,
                       }))
                     }
                     className={`p-2 rounded-lg border transition-colors ${getCounterButtonClass()}`}
@@ -1951,7 +2184,6 @@ const EditarImovel = () => {
                   </button>
                 </div>
               </div>
-              {/* Vagas */}
               <div>
                 <label
                   className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
@@ -1964,13 +2196,7 @@ const EditarImovel = () => {
                     onClick={() =>
                       setFormData((prev) => ({
                         ...prev,
-                        dependencias: {
-                          ...prev.dependencias,
-                          vagas: Math.max(
-                            0,
-                            (parseInt(prev.dependencias.vagas) || 0) - 1,
-                          ),
-                        },
+                        vagas: Math.max(0, (parseInt(prev.vagas) || 0) - 1),
                       }))
                     }
                     className={`p-2 rounded-lg border transition-colors ${getCounterButtonClass()}`}
@@ -1979,8 +2205,8 @@ const EditarImovel = () => {
                   </button>
                   <input
                     type="number"
-                    name="dependencias.vagas"
-                    value={formData.dependencias.vagas}
+                    name="vagas"
+                    value={formData.vagas}
                     onChange={handleChange}
                     min="0"
                     placeholder="0"
@@ -1991,10 +2217,7 @@ const EditarImovel = () => {
                     onClick={() =>
                       setFormData((prev) => ({
                         ...prev,
-                        dependencias: {
-                          ...prev.dependencias,
-                          vagas: (parseInt(prev.dependencias.vagas) || 0) + 1,
-                        },
+                        vagas: (parseInt(prev.vagas) || 0) + 1,
                       }))
                     }
                     className={`p-2 rounded-lg border transition-colors ${getCounterButtonClass()}`}
@@ -2004,23 +2227,22 @@ const EditarImovel = () => {
                 </div>
               </div>
 
-              {/* Área Total */}
               <div>
                 <label
                   className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
                 >
-                  Área Total (m²)
+                  Area Total (m²)
                 </label>
                 <div className="relative">
                   <input
                     type="number"
-                    name="dependencias.area_total"
-                    value={formData.dependencias.area_total}
+                    name="area_total"
+                    value={formData.area_total}
                     onChange={handleChange}
                     min="0"
                     step="0.01"
                     placeholder="0,00"
-                    className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()} ${getPlaceholderClass()}`}
+                    className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors ${getInputClasses()}`}
                   />
                   <span
                     className={`absolute right-4 top-1/2 transform -translate-y-1/2 transition-colors ${getTextSecondaryClass()}`}
@@ -2030,35 +2252,84 @@ const EditarImovel = () => {
                 </div>
               </div>
 
-              {/* Área Construída */}
               <div>
                 <label
                   className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
                 >
-                  Área Construída (m²)
+                  Area Construida (m²)
                 </label>
                 <div className="relative">
                   <input
                     type="number"
-                    name="dependencias.area_construida"
-                    value={formData.dependencias.area_construida}
+                    name="area_construida"
+                    value={formData.area_construida}
                     onChange={handleChange}
                     min="0"
                     step="0.01"
                     placeholder="0,00"
-                    className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()} ${getPlaceholderClass()}`}
+                    className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors ${getInputClasses()}`}
                   />
                   <span
                     className={`absolute right-4 top-1/2 transform -translate-y-1/2 transition-colors ${getTextSecondaryClass()}`}
                   >
                     m²
                   </span>
+                </div>
+              </div>
+
+              <div>
+                <label
+                  className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
+                >
+                  Area Privativa (m²)
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    name="area_privativa"
+                    value={formData.area_privativa}
+                    onChange={handleChange}
+                    min="0"
+                    step="0.01"
+                    placeholder="0,00"
+                    className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors ${getInputClasses()}`}
+                  />
+                  <span
+                    className={`absolute right-4 top-1/2 transform -translate-y-1/2 transition-colors ${getTextSecondaryClass()}`}
+                  >
+                    m²
+                  </span>
+                </div>
+              </div>
+
+              <div>
+                <label
+                  className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
+                >
+                  Condominio Mensal (R$)
+                </label>
+                <div className="relative">
+                  <span
+                    className={`absolute left-4 top-1/2 transform -translate-y-1/2 transition-colors ${getTextSecondaryClass()}`}
+                  >
+                    R$
+                  </span>
+                  <input
+                    type="number"
+                    name="condominio_mensal"
+                    value={formData.condominio_mensal}
+                    onChange={handleChange}
+                    min="0"
+                    step="0.01"
+                    placeholder="0,00"
+                    className={`w-full pl-12 pr-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors ${getInputClasses()}`}
+                  />
                 </div>
               </div>
             </div>
           </div>
 
-          {/* ========== SEÇÃO 2: LOCALIZAÇÃO SIMPLIFICADA ========== */}
+          {/* ========== SECAO: LOCALIZACAO DO IMOVEL ========== */}
           <div
             className={`rounded-xl border p-6 transition-colors duration-200 ${getBgClass()} ${getBorderClass()}`}
           >
@@ -2070,18 +2341,17 @@ const EditarImovel = () => {
                 <h2
                   className={`text-xl font-semibold transition-colors ${getTextClass()}`}
                 >
-                  Localização do Imóvel
+                  Localizacao do Imovel
                 </h2>
                 <p
                   className={`text-sm transition-colors ${getTextSecondaryClass()}`}
                 >
-                  Endereço para controle interno e exibição no site
+                  Endereco para controle interno e exibicao no site
                 </p>
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {/* CEP */}
               <div>
                 <label
                   className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
@@ -2096,7 +2366,7 @@ const EditarImovel = () => {
                     onChange={handleCepChange}
                     placeholder="00000-000"
                     maxLength="9"
-                    className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors duration-200 ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()} ${getPlaceholderClass()}`}
+                    className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors duration-200 ${getInputClasses()}`}
                   />
                   {cepLoading && (
                     <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
@@ -2117,17 +2387,16 @@ const EditarImovel = () => {
                     <p
                       className={`mt-1 text-sm ${isDark ? "text-green-400" : "text-green-600"}`}
                     >
-                      CEP válido. Endereço preenchido automaticamente.
+                      CEP valido. Endereco preenchido automaticamente.
                     </p>
                   )}
               </div>
 
-              {/* Endereço */}
               <div className="md:col-span-2">
                 <label
                   className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
                 >
-                  Endereço
+                  Endereco
                 </label>
                 <input
                   type="text"
@@ -2135,16 +2404,15 @@ const EditarImovel = () => {
                   value={formData.endereco}
                   onChange={handleChange}
                   placeholder="Ex: Rua das Flores"
-                  className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors duration-200 ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()} ${getPlaceholderClass()}`}
+                  className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors duration-200 ${getInputClasses()}`}
                 />
               </div>
 
-              {/* Número */}
               <div>
                 <label
                   className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
                 >
-                  Número
+                  Numero
                 </label>
                 <input
                   type="text"
@@ -2152,11 +2420,10 @@ const EditarImovel = () => {
                   value={formData.numero}
                   onChange={handleChange}
                   placeholder="Ex: 123"
-                  className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors duration-200 ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()} ${getPlaceholderClass()}`}
+                  className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors duration-200 ${getInputClasses()}`}
                 />
               </div>
 
-              {/* Complemento */}
               <div>
                 <label
                   className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
@@ -2169,11 +2436,10 @@ const EditarImovel = () => {
                   value={formData.complemento}
                   onChange={handleChange}
                   placeholder="Ex: Apto 101, Bloco B"
-                  className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors duration-200 ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()} ${getPlaceholderClass()}`}
+                  className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors duration-200 ${getInputClasses()}`}
                 />
               </div>
 
-              {/* Bairro */}
               <div>
                 <label
                   className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
@@ -2187,11 +2453,10 @@ const EditarImovel = () => {
                   onChange={handleChange}
                   required
                   placeholder="Ex: Centro"
-                  className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors duration-200 ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()} ${getPlaceholderClass()}`}
+                  className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors duration-200 ${getInputClasses()}`}
                 />
               </div>
 
-              {/* Cidade */}
               <div>
                 <label
                   className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
@@ -2204,12 +2469,11 @@ const EditarImovel = () => {
                   value={formData.cidade}
                   onChange={handleChange}
                   required
-                  placeholder="Ex: Açailândia"
-                  className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors duration-200 ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()} ${getPlaceholderClass()}`}
+                  placeholder="Ex: Acailandia"
+                  className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors duration-200 ${getInputClasses()}`}
                 />
               </div>
 
-              {/* Estado */}
               <div>
                 <label
                   className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
@@ -2221,7 +2485,7 @@ const EditarImovel = () => {
                   value={formData.estado}
                   onChange={handleChange}
                   required
-                  className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors duration-200 ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()}`}
+                  className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors duration-200 ${getInputClasses()}`}
                 >
                   <option value="" className={getOptionBgClass()}>
                     Selecione o estado
@@ -2238,7 +2502,6 @@ const EditarImovel = () => {
                 </select>
               </div>
 
-              {/* CHECKBOX ÚNICO - MOSTRAR ENDEREÇO NO SITE */}
               <div className="md:col-span-3">
                 <label className="flex items-center space-x-3 p-4 border rounded-lg cursor-pointer transition-all duration-200 hover:border-[#D4A24D]">
                   <input
@@ -2250,12 +2513,11 @@ const EditarImovel = () => {
                   />
                   <div>
                     <div className={`font-medium ${getTextClass()}`}>
-                      🌐 Mostrar endereço completo no site
+                      Mostrar endereco completo no site
                     </div>
                     <div className={`text-sm ${getTextSecondaryClass()}`}>
-                      Se marcado, o endereço (Rua, Número) aparecerá na página
-                      pública do imóvel. Se desmarcado, fica visível apenas
-                      internamente.
+                      Se marcado, o endereco (Rua, Numero) aparecera na pagina
+                      publica do imovel.
                     </div>
                   </div>
                 </label>
@@ -2263,7 +2525,7 @@ const EditarImovel = () => {
             </div>
           </div>
 
-          {/* ========== SEÇÃO: EXIBIR NA VITRINE ========== */}
+          {/* ========== SECAO: EXIBIR NA VITRINE ========== */}
           <div
             className={`rounded-xl border p-6 transition-colors duration-200 ${getBgClass()} ${getBorderClass()}`}
           >
@@ -2275,17 +2537,15 @@ const EditarImovel = () => {
               </div>
               <div>
                 <h2 className={`text-xl font-semibold ${getTextClass()}`}>
-                  ✨ Exibir na Vitrine
+                  Exibir na Vitrine
                 </h2>
                 <p className={`text-sm ${getTextSecondaryClass()}`}>
-                  Dê destaque especial ao seu imóvel na página principal
+                  De destaque especial ao seu imovel na pagina principal
                 </p>
               </div>
             </div>
 
-            {/* Badges de destaque - TODOS UNIFORMIZADOS */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {/* Destaque da Semana */}
               <label
                 className={`flex items-start space-x-3 p-4 border rounded-lg cursor-pointer transition-all duration-300 group hover:shadow-lg ${getBorderClass()} ${getHoverBgClass()}`}
               >
@@ -2308,7 +2568,6 @@ const EditarImovel = () => {
                 </div>
               </label>
 
-              {/* Novo no Site */}
               <label
                 className={`flex items-start space-x-3 p-4 border rounded-lg cursor-pointer transition-all duration-300 group hover:shadow-lg ${getBorderClass()} ${getHoverBgClass()}`}
               >
@@ -2326,12 +2585,11 @@ const EditarImovel = () => {
                     🆕 Novo no Site
                   </div>
                   <div className={`text-xs ${getTextSecondaryClass()}`}>
-                    Badge azul para imóveis recentes
+                    Badge azul para imoveis recentes
                   </div>
                 </div>
               </label>
 
-              {/* Baixou o Preço */}
               <label
                 className={`flex items-start space-x-3 p-4 border rounded-lg cursor-pointer transition-all duration-300 group hover:shadow-lg ${getBorderClass()} ${getHoverBgClass()}`}
               >
@@ -2346,22 +2604,21 @@ const EditarImovel = () => {
                   <div
                     className={`font-medium flex items-center gap-1 group-hover:text-[#D4A24D] ${getTextClass()}`}
                   >
-                    📉 Baixou o Preço
+                    📉 Baixou o Preco
                   </div>
                   <div className={`text-xs ${getTextSecondaryClass()}`}>
-                    Badge vermelho indicando redução
+                    Badge vermelho indicando reducao
                   </div>
                 </div>
               </label>
 
-              {/* Financiável */}
               <label
                 className={`flex items-start space-x-3 p-4 border rounded-lg cursor-pointer transition-all duration-300 group hover:shadow-lg ${getBorderClass()} ${getHoverBgClass()}`}
               >
                 <input
                   type="checkbox"
-                  name="etiquetas.financiável"
-                  checked={formData.etiquetas.financiável}
+                  name="etiquetas.financivel"
+                  checked={formData.etiquetas.financivel}
                   onChange={handleChange}
                   className={getCheckboxClass()}
                 />
@@ -2369,7 +2626,7 @@ const EditarImovel = () => {
                   <div
                     className={`font-medium flex items-center gap-1 group-hover:text-[#D4A24D] ${getTextClass()}`}
                   >
-                    💰 Financiável
+                    💰 Financiavel
                   </div>
                   <div className={`text-xs ${getTextSecondaryClass()}`}>
                     Badge roxo para financiamento
@@ -2377,23 +2634,23 @@ const EditarImovel = () => {
                 </div>
               </label>
             </div>
-            {/* ===== CAMPO DE PREÇO ANTERIOR (só aparece quando "Baixou o Preço" está marcado) ===== */}
+
             {formData.etiquetas.baixouPreco && (
               <div className="mt-6 p-5 border-2 border-red-500/30 bg-red-500/10 rounded-xl backdrop-blur-sm">
                 <div className="flex items-start space-x-4">
                   <div className="text-3xl">📉</div>
                   <div className="flex-1">
                     <h4 className="text-base font-semibold text-white mb-1">
-                      Informe o preço anterior
+                      Informe o preco anterior
                     </h4>
                     <p className="text-sm text-white/80 mb-4">
-                      Este valor aparecerá riscado ao lado do preço atual na
-                      página do imóvel, destacando a economia para o cliente.
+                      Este valor aparecera riscado ao lado do preco atual na
+                      pagina do imovel.
                     </p>
 
                     <div className="max-w-md mb-4">
                       <label className="block text-sm font-medium text-white/90 mb-2">
-                        Preço anterior (R$)
+                        Preco anterior (R$)
                       </label>
                       <div className="relative">
                         <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-white/60">
@@ -2412,23 +2669,22 @@ const EditarImovel = () => {
                       </div>
                     </div>
 
-                    {/* 🔥 NOVO: PREVIEW DO PREÇO COM DESCONTO (dentro da box vermelha) */}
-                    {formData.preco && formData.precoAnterior && (
+                    {formData.preco_venda && formData.precoAnterior && (
                       <div className="mt-4 p-4 bg-red-500/20 border border-red-500/30 rounded-lg">
                         <p className="text-xs text-white/70 mb-2">
-                          Preview do preço na página do imóvel:
+                          Preview do preco na pagina do imovel:
                         </p>
                         <div className="flex items-baseline gap-3 flex-wrap">
                           <span className="text-gray-300 line-through text-sm">
                             {formatPrice(formData.precoAnterior)}
                           </span>
                           <span className="text-white font-bold text-base">
-                            {formatPrice(formData.preco)}
+                            {formatPrice(formData.preco_venda)}
                           </span>
                           <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
                             -
                             {Math.round(
-                              ((formData.precoAnterior - formData.preco) /
+                              ((formData.precoAnterior - formData.preco_venda) /
                                 formData.precoAnterior) *
                                 100,
                             )}
@@ -2436,22 +2692,23 @@ const EditarImovel = () => {
                           </span>
                         </div>
                         <p className="text-green-400 text-xs mt-2">
-                          🎉 Economia de{" "}
-                          {formatPrice(formData.precoAnterior - formData.preco)}
+                          Economia de{" "}
+                          {formatPrice(
+                            formData.precoAnterior - formData.preco_venda,
+                          )}
                         </p>
                       </div>
                     )}
 
                     <p className="text-xs text-white/60 mt-2">
-                      💡 Dica: Quanto maior o desconto aparente, mais atrativo o
-                      imóvel fica.
+                      Dica: Quanto maior o desconto aparente, mais atrativo o
+                      imovel fica.
                     </p>
                   </div>
                 </div>
               </div>
             )}
 
-            {/* Preview da Vitrine */}
             <div
               className={`mt-6 p-4 rounded-lg ${isDark ? "bg-gray-800" : "bg-gray-50"}`}
             >
@@ -2464,7 +2721,7 @@ const EditarImovel = () => {
               <div className="bg-white rounded-lg shadow-sm p-4 border">
                 <div className="flex items-center justify-between flex-wrap gap-2">
                   <h3 className="text-lg font-semibold text-gray-800">
-                    {formData.titulo || "Título do Imóvel"}
+                    {formData.titulo || "Titulo do Imovel"}
                   </h3>
                   <div className="flex gap-1 flex-wrap">
                     {formData.etiquetas.destaqueSemana && (
@@ -2482,9 +2739,9 @@ const EditarImovel = () => {
                         📉 Baixou
                       </span>
                     )}
-                    {formData.etiquetas.financiável && (
+                    {formData.etiquetas.financivel && (
                       <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded text-xs font-medium flex items-center gap-1">
-                        💰 Financiável
+                        💰 Financiavel
                       </span>
                     )}
                   </div>
@@ -2496,15 +2753,33 @@ const EditarImovel = () => {
                     /{formData.estado || "UF"}
                   </span>
                 </div>
+                <div className="mt-3 flex flex-wrap gap-4">
+                  {formData.finalidade_venda && formData.preco_venda && (
+                    <div className="text-sm">
+                      <span className="text-gray-500">Venda: </span>
+                      <span className="font-bold text-green-600">
+                        {formatPrice(formData.preco_venda)}
+                      </span>
+                    </div>
+                  )}
+                  {formData.finalidade_aluguel && formData.preco_aluguel && (
+                    <div className="text-sm">
+                      <span className="text-gray-500">Aluguel: </span>
+                      <span className="font-bold text-blue-600">
+                        {formatPrice(formData.preco_aluguel)}
+                      </span>
+                    </div>
+                  )}
+                </div>
               </div>
               <p className={`text-xs mt-3 ${getTextSecondaryClass()}`}>
-                ℹ️ Na vitrine, sempre mostramos: Título + Badges + Bairro,
-                Cidade/UF
+                Na vitrine, mostramos: Titulo + Badges + Bairro, Cidade/UF +
+                Precos
               </p>
             </div>
           </div>
 
-          {/* ========== NOVA SEÇÃO: FOTOS DO IMÓVEL ========== */}
+          {/* ========== SECAO: FOTOS DO IMOVEL ========== */}
           <div
             className={`rounded-xl border p-6 transition-colors duration-200 ${getBgClass()} ${getBorderClass()}`}
           >
@@ -2516,18 +2791,17 @@ const EditarImovel = () => {
                 <h2
                   className={`text-xl font-semibold transition-colors ${getTextClass()}`}
                 >
-                  Fotos do Imóvel
+                  Fotos do Imovel
                 </h2>
                 <p
                   className={`text-sm transition-colors ${getTextSecondaryClass()}`}
                 >
                   Arraste para organizar • Clique na estrela para definir a capa
-                  • Máximo 20 fotos
+                  • Maximo 20 fotos
                 </p>
               </div>
             </div>
 
-            {/* Área de upload */}
             <div className="mb-6">
               <label
                 className={`relative flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer transition-colors hover:border-[#D4A24D] ${getBorderClass()} ${getHoverBgClass()}`}
@@ -2542,7 +2816,7 @@ const EditarImovel = () => {
                       : "Clique para fazer upload"}
                   </p>
                   <p className={`text-xs ${getTextSecondaryClass()}`}>
-                    PNG, JPG ou JPEG (máx. 5MB cada)
+                    PNG, JPG ou JPEG (max. 5MB cada)
                   </p>
                   <p className={`text-xs ${getTextSecondaryClass()} mt-1`}>
                     {fotos.length}/20 fotos
@@ -2566,7 +2840,6 @@ const EditarImovel = () => {
               )}
             </div>
 
-            {/* Grid de fotos com drag-and-drop */}
             {fotos.length > 0 && (
               <DndContext
                 sensors={sensors}
@@ -2595,7 +2868,6 @@ const EditarImovel = () => {
               </DndContext>
             )}
 
-            {/* Informações adicionais */}
             {fotos.length > 0 && (
               <div
                 className={`mt-4 p-3 rounded-lg ${isDark ? "bg-gray-800" : "bg-gray-50"}`}
@@ -2604,17 +2876,17 @@ const EditarImovel = () => {
                   <span className="font-medium text-[#D4A24D]">
                     ⭐ Foto de capa:
                   </span>{" "}
-                  Será a primeira imagem do carrossel e a miniatura do imóvel.
+                  Sera a primeira imagem do carrossel e a miniatura do imovel.
                 </p>
                 <p className={`text-sm ${getTextSecondaryClass()} mt-1`}>
-                  <span className="font-medium">🖱️ Arraste:</span> As fotos
-                  podem ser reorganizadas livremente.
+                  <span className="font-medium"> Arraste:</span> As fotos podem
+                  ser reorganizadas livremente.
                 </p>
               </div>
             )}
           </div>
 
-          {/* ========== SEÇÃO 4: CUSTOS ADICIONAIS ========== */}
+          {/* ========== SECAO: CUSTOS ADICIONAIS ========== */}
           <div
             className={`rounded-xl border p-6 transition-colors duration-200 ${getBgClass()} ${getBorderClass()}`}
           >
@@ -2631,12 +2903,11 @@ const EditarImovel = () => {
                 <p
                   className={`text-sm transition-colors ${getTextSecondaryClass()}`}
                 >
-                  IPTU e outros custos do imóvel
+                  IPTU e outros custos do imovel
                 </p>
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {/* IPTU Anual */}
               <div>
                 <label
                   className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
@@ -2657,16 +2928,16 @@ const EditarImovel = () => {
                     min="0"
                     step="0.01"
                     placeholder="0,00"
-                    className={`w-full pl-12 pr-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors duration-200 ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()} ${getPlaceholderClass()}`}
+                    className={`w-full pl-12 pr-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors duration-200 ${getInputClasses()}`}
                   />
                 </div>
               </div>
             </div>
           </div>
 
-          {/* ========== SEÇÃO 5: ACCORDIONS ========== */}
+          {/* ========== SEÇÃO: ACCORDIONS ========== */}
           <div className="space-y-4">
-            {/* ACCORDION 1: CARACTERÍSTICAS DO IMÓVEL */}
+            {/* CARACTERISTICAS DO IMOVEL */}
             <div
               className={`rounded-xl border overflow-hidden transition-colors duration-200 ${getBgClass()} ${getBorderClass()}`}
             >
@@ -2685,13 +2956,13 @@ const EditarImovel = () => {
                     <h3
                       className={`text-lg font-semibold transition-colors ${getAccordionTitleClass()}`}
                     >
-                      Características do Imóvel
+                      Caracteristicas do Imovel
                     </h3>
                     <p
                       className={`text-sm transition-colors ${getAccordionSubtitleClass()}`}
                     >
-                      Medidas, estrutura, infraestrutura e informações
-                      estratégicas
+                      Medidas, estrutura, infraestrutura e informacoes
+                      estrategicas
                     </p>
                   </div>
                 </div>
@@ -2718,7 +2989,6 @@ const EditarImovel = () => {
                   className={`px-6 pb-6 border-t pt-6 transition-colors duration-200 ${getBgClass()} ${getBorderClass()}`}
                 >
                   <div className="space-y-8">
-                    {/* 📐 Medidas e Dimensões */}
                     <div>
                       <div className="flex items-center space-x-2 mb-4">
                         <CubeTransparentIcon
@@ -2727,7 +2997,7 @@ const EditarImovel = () => {
                         <h4
                           className={`text-md font-semibold ${getTextClass()}`}
                         >
-                          📐 Medidas e Dimensões
+                          Medidas e Dimensoes
                         </h4>
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -2735,7 +3005,7 @@ const EditarImovel = () => {
                           <label
                             className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
                           >
-                            Área útil (m²)
+                            Area util (m²)
                           </label>
                           <input
                             type="number"
@@ -2743,14 +3013,14 @@ const EditarImovel = () => {
                             value={formData.caracteristicas.areaUtil}
                             onChange={handleChange}
                             placeholder="0,00"
-                            className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()} ${getPlaceholderClass()}`}
+                            className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors ${getInputClasses()}`}
                           />
                         </div>
                         <div>
                           <label
                             className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
                           >
-                            Área privativa (m²)
+                            Area privativa (m²)
                           </label>
                           <input
                             type="number"
@@ -2758,7 +3028,7 @@ const EditarImovel = () => {
                             value={formData.caracteristicas.areaPrivativa}
                             onChange={handleChange}
                             placeholder="0,00"
-                            className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()} ${getPlaceholderClass()}`}
+                            className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors ${getInputClasses()}`}
                           />
                         </div>
                         <div>
@@ -2773,7 +3043,7 @@ const EditarImovel = () => {
                             value={formData.caracteristicas.frenteTerreno}
                             onChange={handleChange}
                             placeholder="Ex: 10m"
-                            className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()} ${getPlaceholderClass()}`}
+                            className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors ${getInputClasses()}`}
                           />
                         </div>
                         <div>
@@ -2788,7 +3058,7 @@ const EditarImovel = () => {
                             value={formData.caracteristicas.fundo}
                             onChange={handleChange}
                             placeholder="Ex: 25m"
-                            className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()} ${getPlaceholderClass()}`}
+                            className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors ${getInputClasses()}`}
                           />
                         </div>
                         <div>
@@ -2803,7 +3073,7 @@ const EditarImovel = () => {
                             value={formData.caracteristicas.lateralEsquerda}
                             onChange={handleChange}
                             placeholder="Ex: 30m"
-                            className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()} ${getPlaceholderClass()}`}
+                            className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors ${getInputClasses()}`}
                           />
                         </div>
                         <div>
@@ -2818,14 +3088,14 @@ const EditarImovel = () => {
                             value={formData.caracteristicas.lateralDireita}
                             onChange={handleChange}
                             placeholder="Ex: 30m"
-                            className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()} ${getPlaceholderClass()}`}
+                            className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors ${getInputClasses()}`}
                           />
                         </div>
                         <div>
                           <label
                             className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
                           >
-                            Pé direito (m)
+                            Pe direito (m)
                           </label>
                           <input
                             type="text"
@@ -2833,7 +3103,7 @@ const EditarImovel = () => {
                             value={formData.caracteristicas.peDireito}
                             onChange={handleChange}
                             placeholder="Ex: 3,20m"
-                            className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()} ${getPlaceholderClass()}`}
+                            className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors ${getInputClasses()}`}
                           />
                         </div>
                       </div>
@@ -2849,7 +3119,7 @@ const EditarImovel = () => {
                             name="caracteristicas.topografia"
                             value={formData.caracteristicas.topografia}
                             onChange={handleChange}
-                            className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()}`}
+                            className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors ${getInputClasses()}`}
                           >
                             <option value="" className={getOptionBgClass()}>
                               Selecione
@@ -2893,7 +3163,6 @@ const EditarImovel = () => {
                       </div>
                     </div>
 
-                    {/* 🏗 Estrutura do Imóvel */}
                     <div className="pt-4 border-t">
                       <div className="flex items-center space-x-2 mb-4">
                         <HomeIcon
@@ -2902,7 +3171,7 @@ const EditarImovel = () => {
                         <h4
                           className={`text-md font-semibold ${getTextClass()}`}
                         >
-                          🏗 Estrutura do Imóvel
+                          Estrutura do Imovel
                         </h4>
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -2910,13 +3179,13 @@ const EditarImovel = () => {
                           <label
                             className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
                           >
-                            Tipo de construção
+                            Tipo de construcao
                           </label>
                           <select
                             name="caracteristicas.tipoConstrucao"
                             value={formData.caracteristicas.tipoConstrucao}
                             onChange={handleChange}
-                            className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()}`}
+                            className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors ${getInputClasses()}`}
                           >
                             <option value="" className={getOptionBgClass()}>
                               Selecione
@@ -2945,7 +3214,7 @@ const EditarImovel = () => {
                           <label
                             className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
                           >
-                            Ano de construção
+                            Ano de construcao
                           </label>
                           <input
                             type="number"
@@ -2953,14 +3222,14 @@ const EditarImovel = () => {
                             value={formData.caracteristicas.anoConstrucao}
                             onChange={handleChange}
                             placeholder="Ex: 2020"
-                            className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()} ${getPlaceholderClass()}`}
+                            className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors ${getInputClasses()}`}
                           />
                         </div>
                         <div>
                           <label
                             className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
                           >
-                            Número de pavimentos
+                            Numero de pavimentos
                           </label>
                           <input
                             type="number"
@@ -2969,7 +3238,7 @@ const EditarImovel = () => {
                             onChange={handleChange}
                             min="0"
                             placeholder="0"
-                            className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()} ${getPlaceholderClass()}`}
+                            className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors ${getInputClasses()}`}
                           />
                         </div>
                       </div>
@@ -3001,7 +3270,7 @@ const EditarImovel = () => {
                           <span
                             className={`transition-colors ${getTextClass()}`}
                           >
-                            Imóvel averbado?
+                            Imovel averbado?
                           </span>
                         </label>
                         <label className="flex items-center space-x-3 p-3 border rounded-lg cursor-pointer transition-all duration-200">
@@ -3015,7 +3284,7 @@ const EditarImovel = () => {
                           <span
                             className={`transition-colors ${getTextClass()}`}
                           >
-                            Financiável?
+                            Financiavel?
                           </span>
                         </label>
                         <label className="flex items-center space-x-3 p-3 border rounded-lg cursor-pointer transition-all duration-200">
@@ -3035,7 +3304,6 @@ const EditarImovel = () => {
                       </div>
                     </div>
 
-                    {/* ⚡ Infraestrutura interna */}
                     <div className="pt-4 border-t">
                       <div className="flex items-center space-x-2 mb-4">
                         <LightBulbIcon
@@ -3044,7 +3312,7 @@ const EditarImovel = () => {
                         <h4
                           className={`text-md font-semibold ${getTextClass()}`}
                         >
-                          ⚡ Infraestrutura interna
+                          Infraestrutura interna
                         </h4>
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -3052,7 +3320,7 @@ const EditarImovel = () => {
                           <label
                             className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
                           >
-                            Tipo de iluminação
+                            Tipo de iluminacao
                           </label>
                           <input
                             type="text"
@@ -3060,7 +3328,7 @@ const EditarImovel = () => {
                             value={formData.caracteristicas.tipoIluminacao}
                             onChange={handleChange}
                             placeholder="Ex: LED, Fluorescente"
-                            className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()} ${getPlaceholderClass()}`}
+                            className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors ${getInputClasses()}`}
                           />
                         </div>
                         <div>
@@ -3074,15 +3342,15 @@ const EditarImovel = () => {
                             name="caracteristicas.tipoTelhado"
                             value={formData.caracteristicas.tipoTelhado}
                             onChange={handleChange}
-                            placeholder="Ex: Cerâmica, Metálico"
-                            className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()} ${getPlaceholderClass()}`}
+                            placeholder="Ex: Ceramica, Metalico"
+                            className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors ${getInputClasses()}`}
                           />
                         </div>
                         <div>
                           <label
                             className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
                           >
-                            Caixa d'água (litros)
+                            Caixa d'agua (litros)
                           </label>
                           <input
                             type="number"
@@ -3090,7 +3358,7 @@ const EditarImovel = () => {
                             value={formData.caracteristicas.caixaDAgua}
                             onChange={handleChange}
                             placeholder="0"
-                            className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()} ${getPlaceholderClass()}`}
+                            className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors ${getInputClasses()}`}
                           />
                         </div>
                         <div>
@@ -3103,7 +3371,7 @@ const EditarImovel = () => {
                             name="caracteristicas.sistemaEsgoto"
                             value={formData.caracteristicas.sistemaEsgoto}
                             onChange={handleChange}
-                            className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()}`}
+                            className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors ${getInputClasses()}`}
                           >
                             <option value="" className={getOptionBgClass()}>
                               Selecione
@@ -3112,13 +3380,13 @@ const EditarImovel = () => {
                               value="rede_publica"
                               className={getOptionBgClass()}
                             >
-                              Rede Pública
+                              Rede Publica
                             </option>
                             <option
                               value="fossa_septica"
                               className={getOptionBgClass()}
                             >
-                              Fossa Séptica
+                              Fossa Septica
                             </option>
                             <option
                               value="fossa_filtro"
@@ -3127,19 +3395,19 @@ const EditarImovel = () => {
                               Fossa e Filtro
                             </option>
                             <option
-                              value="fossa_filtro"
+                              value="sumidouro"
                               className={getOptionBgClass()}
                             >
-                              Sumidoro
+                              Sumidouro
                             </option>
                             <option
-                              value="fossa_filtro"
+                              value="fossa_ecologica"
                               className={getOptionBgClass()}
                             >
-                              Fossa Ecológica/Biodigestor
+                              Fossa Ecologica/Biodigestor
                             </option>
                             <option
-                              value="Fossa Ecológica/Biodigestor"
+                              value="inexistente"
                               className={getOptionBgClass()}
                             >
                               Inexistente
@@ -3150,19 +3418,19 @@ const EditarImovel = () => {
                           <label
                             className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
                           >
-                            Aquecimento de água
+                            Aquecimento de agua
                           </label>
                           <select
                             name="caracteristicas.aquecimentoAgua"
                             value={formData.caracteristicas.aquecimentoAgua}
                             onChange={handleChange}
-                            className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()}`}
+                            className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors ${getInputClasses()}`}
                           >
                             <option value="" className={getOptionBgClass()}>
                               Selecione
                             </option>
                             <option value="gas" className={getOptionBgClass()}>
-                              Gás
+                              Gas
                             </option>
                             <option
                               value="solar"
@@ -3174,7 +3442,7 @@ const EditarImovel = () => {
                               value="eletrico"
                               className={getOptionBgClass()}
                             >
-                              Elétrico
+                              Eletrico
                             </option>
                             <option
                               value="central"
@@ -3213,13 +3481,12 @@ const EditarImovel = () => {
                           <span
                             className={`transition-colors ${getTextClass()}`}
                           >
-                            Sistema elétrico novo?
+                            Sistema eletrico novo?
                           </span>
                         </label>
                       </div>
                     </div>
 
-                    {/* 🏘 Informações estratégicas */}
                     <div className="pt-4 border-t">
                       <div className="flex items-center space-x-2 mb-4">
                         <MapPinIcon
@@ -3228,7 +3495,7 @@ const EditarImovel = () => {
                         <h4
                           className={`text-md font-semibold ${getTextClass()}`}
                         >
-                          🏘 Informações estratégicas
+                          Informacoes estrategicas
                         </h4>
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -3236,13 +3503,13 @@ const EditarImovel = () => {
                           <label
                             className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
                           >
-                            Posição solar
+                            Posicao solar
                           </label>
                           <select
                             name="caracteristicas.posicaoSolar"
                             value={formData.caracteristicas.posicaoSolar}
                             onChange={handleChange}
-                            className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()}`}
+                            className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors ${getInputClasses()}`}
                           >
                             <option value="" className={getOptionBgClass()}>
                               Selecione
@@ -3274,7 +3541,7 @@ const EditarImovel = () => {
                           <label
                             className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
                           >
-                            Condomínio com taxa mensal (R$)
+                            Condominio com taxa mensal (R$)
                           </label>
                           <input
                             type="text"
@@ -3284,7 +3551,7 @@ const EditarImovel = () => {
                             }
                             onChange={handleChange}
                             placeholder="0,00"
-                            className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()} ${getPlaceholderClass()}`}
+                            className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors ${getInputClasses()}`}
                           />
                         </div>
                       </div>
@@ -3300,7 +3567,7 @@ const EditarImovel = () => {
                           <span
                             className={`transition-colors ${getTextClass()}`}
                           >
-                            Ventilação cruzada
+                            Ventilacao cruzada
                           </span>
                         </label>
                         <label className="flex items-center space-x-3 p-3 border rounded-lg cursor-pointer transition-all duration-200">
@@ -3342,7 +3609,7 @@ const EditarImovel = () => {
                           <span
                             className={`transition-colors ${getTextClass()}`}
                           >
-                            Rua sem saída
+                            Rua sem saida
                           </span>
                         </label>
                         <label className="flex items-center space-x-3 p-3 border rounded-lg cursor-pointer transition-all duration-200">
@@ -3366,7 +3633,7 @@ const EditarImovel = () => {
               )}
             </div>
 
-            {/* ACCORDION 2: ACABAMENTOS */}
+            {/* ACABAMENTOS */}
             <div
               className={`rounded-xl border overflow-hidden transition-colors duration-200 ${getBgClass()} ${getBorderClass()}`}
             >
@@ -3417,26 +3684,25 @@ const EditarImovel = () => {
                   className={`px-6 pb-6 border-t pt-6 transition-colors duration-200 ${getBgClass()} ${getBorderClass()}`}
                 >
                   <div className="space-y-8">
-                    {/* 🔹 Pisos */}
                     <div>
                       <h4
                         className={`text-md font-semibold mb-4 ${getTextClass()}`}
                       >
-                        🔹 Pisos
+                        Pisos
                       </h4>
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                         {[
                           { key: "pisoPorcelanato", label: "Porcelanato" },
-                          { key: "pisoCeramica", label: "Cerâmica" },
+                          { key: "pisoCeramica", label: "Ceramica" },
                           { key: "pisoLaminado", label: "Piso laminado" },
-                          { key: "pisoVinilico", label: "Piso vinílico" },
-                          { key: "pisoMadeiraMaciça", label: "Madeira maciça" },
+                          { key: "pisoVinilico", label: "Piso vinilico" },
+                          { key: "pisoMadeiraMaciça", label: "Madeira macica" },
                           { key: "pisoTaco", label: "Taco" },
                           {
                             key: "pisoCimentoQueimado",
                             label: "Cimento queimado",
                           },
-                          { key: "pisoMarmore", label: "Mármore" },
+                          { key: "pisoMarmore", label: "Marmore" },
                           { key: "pisoGranito", label: "Granito" },
                           { key: "pisoFrio", label: "Piso frio" },
                         ].map(({ key, label }) => (
@@ -3461,12 +3727,11 @@ const EditarImovel = () => {
                       </div>
                     </div>
 
-                    {/* 🔹 Revestimentos de parede */}
                     <div className="pt-4 border-t">
                       <h4
                         className={`text-md font-semibold mb-4 ${getTextClass()}`}
                       >
-                        🔹 Revestimentos de parede
+                        Revestimentos de parede
                       </h4>
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                         {[
@@ -3507,12 +3772,11 @@ const EditarImovel = () => {
                       </div>
                     </div>
 
-                    {/* 🔹 Teto e forro */}
                     <div className="pt-4 border-t">
                       <h4
                         className={`text-md font-semibold mb-4 ${getTextClass()}`}
                       >
-                        🔹 Teto e forro
+                        Teto e forro
                       </h4>
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                         {[
@@ -3545,23 +3809,22 @@ const EditarImovel = () => {
                       </div>
                     </div>
 
-                    {/* 🔹 Esquadrias e portas */}
                     <div className="pt-4 border-t">
                       <h4
                         className={`text-md font-semibold mb-4 ${getTextClass()}`}
                       >
-                        🔹 Esquadrias e portas
+                        Esquadrias e portas
                       </h4>
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                         {[
                           {
                             key: "portaMadeiraMaciça",
-                            label: "Porta de madeira maciça",
+                            label: "Porta de madeira macica",
                           },
                           { key: "portaLaqueada", label: "Porta laqueada" },
                           {
                             key: "esquadriaAluminio",
-                            label: "Esquadrias de alumínio",
+                            label: "Esquadrias de aluminio",
                           },
                           { key: "esquadriaPVC", label: "Esquadrias de PVC" },
                           { key: "portaPivotante", label: "Porta pivotante" },
@@ -3587,17 +3850,16 @@ const EditarImovel = () => {
                       </div>
                     </div>
 
-                    {/* 🔹 Bancadas */}
                     <div className="pt-4 border-t">
                       <h4
                         className={`text-md font-semibold mb-4 ${getTextClass()}`}
                       >
-                        🔹 Bancadas
+                        Bancadas
                       </h4>
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                         {[
                           { key: "bancadaGranito", label: "Granito" },
-                          { key: "bancadaMarmore", label: "Mármore" },
+                          { key: "bancadaMarmore", label: "Marmore" },
                           { key: "bancadaQuartzo", label: "Quartzo" },
                           { key: "bancadaNanoglass", label: "Nanoglass" },
                         ].map(({ key, label }) => (
@@ -3626,546 +3888,242 @@ const EditarImovel = () => {
               )}
             </div>
 
-            {/* ACCORDION 3: ÁREA DE LAZER */}
-            <div
-              className={`rounded-xl border overflow-hidden transition-colors duration-200 ${getBgClass()} ${getBorderClass()}`}
-            >
-              <button
-                type="button"
-                onClick={() => toggleAccordion("areaLazer")}
-                className={`w-full flex items-center justify-between p-6 transition-colors duration-200 ${getBgClass()} ${getHoverBgClass()}`}
-              >
-                <div className="flex items-center space-x-3">
-                  <div className={`p-2 rounded-lg ${getIconBgClass()}`}>
-                    <SunIcon className={`w-5 h-5 ${getIconColorClass()}`} />
-                  </div>
-                  <div className="text-left">
-                    <h3
-                      className={`text-lg font-semibold transition-colors ${getAccordionTitleClass()}`}
-                    >
-                      Área de Lazer
-                    </h3>
-                    <p
-                      className={`text-sm transition-colors ${getAccordionSubtitleClass()}`}
-                    >
-                      Instalações de lazer e entretenimento
-                    </p>
-                  </div>
-                </div>
-                <div
-                  className={`transform transition-transform ${accordionOpen.areaLazer ? "rotate-180" : ""}`}
-                >
-                  <svg
-                    className={`w-6 h-6 transition-colors ${getTextSecondaryClass()}`}
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M19 9l-7 7-7-7"
-                    />
-                  </svg>
-                </div>
-              </button>
-              {accordionOpen.areaLazer && (
-                <div
-                  className={`px-6 pb-6 border-t pt-6 transition-colors duration-200 ${getBgClass()} ${getBorderClass()}`}
-                >
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {[
-                      { key: "piscina", label: "Piscina" },
-                      { key: "churrasqueira", label: "Churrasqueira" },
-                      { key: "espacoGourmet", label: "Espaço gourmet" },
-                      { key: "salaoFestas", label: "Salão de festas" },
-                      { key: "salaoJogos", label: "Salão de jogos" },
-                      { key: "academia", label: "Academia" },
-                      { key: "playground", label: "Playground" },
-                      {
-                        key: "quadraPoliesportiva",
-                        label: "Quadra poliesportiva",
-                      },
-                      { key: "campoSociety", label: "Campo society" },
-                      { key: "areaVerde", label: "Área verde" },
-                      { key: "jardim", label: "Jardim" },
-                      { key: "deck", label: "Deck" },
-                      { key: "rooftop", label: "Rooftop" },
-                      { key: "sauna", label: "Sauna" },
-                      { key: "espacoPet", label: "Espaço pet" },
-                      { key: "brinquedoteca", label: "Brinquedoteca" },
-                    ].map(({ key, label }) => (
-                      <label
-                        key={key}
-                        className={`flex items-center space-x-3 p-3 border rounded-lg cursor-pointer transition-all duration-200 ${getBorderClass()} ${getHoverBgClass()}`}
-                      >
-                        <input
-                          type="checkbox"
-                          name={`areaLazer.${key}`}
-                          checked={formData.areaLazer[key]}
-                          onChange={handleChange}
-                          className={getCheckboxClass()}
-                        />
-                        <span className={`transition-colors ${getTextClass()}`}>
-                          {label}
-                        </span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
+            {/* AREA DE LAZER */}
+            <CheckboxAccordion
+              title="Area de Lazer"
+              subtitle="Instalacoes de lazer e entretenimento"
+              icon={SunIcon}
+              section="areaLazer"
+              isOpen={accordionOpen.areaLazer}
+              onToggle={() => toggleAccordion("areaLazer")}
+              items={[
+                { key: "piscina", label: "Piscina" },
+                { key: "churrasqueira", label: "Churrasqueira" },
+                { key: "espacoGourmet", label: "Espaco gourmet" },
+                { key: "salaoFestas", label: "Salao de festas" },
+                { key: "salaoJogos", label: "Salao de jogos" },
+                { key: "academia", label: "Academia" },
+                { key: "playground", label: "Playground" },
+                { key: "quadraPoliesportiva", label: "Quadra poliesportiva" },
+                { key: "campoSociety", label: "Campo society" },
+                { key: "areaVerde", label: "Area verde" },
+                { key: "jardim", label: "Jardim" },
+                { key: "deck", label: "Deck" },
+                { key: "rooftop", label: "Rooftop" },
+                { key: "sauna", label: "Sauna" },
+                { key: "espacoPet", label: "Espaco pet" },
+                { key: "brinquedoteca", label: "Brinquedoteca" },
+              ]}
+              formData={formData}
+              setFormData={setFormData}
+              handleChange={handleChange}
+              isDark={isDark}
+              getBorderClass={getBorderClass}
+              getHoverBgClass={getHoverBgClass}
+              getTextClass={getTextClass}
+              getCheckboxClass={getCheckboxClass}
+              getIconBgClass={getIconBgClass}
+              getIconColorClass={getIconColorClass}
+              getAccordionTitleClass={getAccordionTitleClass}
+              getAccordionSubtitleClass={getAccordionSubtitleClass}
+              getTextSecondaryClass={getTextSecondaryClass}
+            />
 
-            {/* ACCORDION 4: LOCALIZAÇÃO E VIZINHANÇA */}
-            <div
-              className={`rounded-xl border overflow-hidden transition-colors duration-200 ${getBgClass()} ${getBorderClass()}`}
-            >
-              <button
-                type="button"
-                onClick={() => toggleAccordion("localizacaoVizinhanca")}
-                className={`w-full flex items-center justify-between p-6 transition-colors duration-200 ${getBgClass()} ${getHoverBgClass()}`}
-              >
-                <div className="flex items-center space-x-3">
-                  <div className={`p-2 rounded-lg ${getIconBgClass()}`}>
-                    <MapPinIcon className={`w-5 h-5 ${getIconColorClass()}`} />
-                  </div>
-                  <div className="text-left">
-                    <h3
-                      className={`text-lg font-semibold transition-colors ${getAccordionTitleClass()}`}
-                    >
-                      Localização e Vizinhança
-                    </h3>
-                    <p
-                      className={`text-sm transition-colors ${getAccordionSubtitleClass()}`}
-                    >
-                      Proximidade de serviços e características do entorno
-                    </p>
-                  </div>
-                </div>
-                <div
-                  className={`transform transition-transform ${accordionOpen.localizacaoVizinhanca ? "rotate-180" : ""}`}
-                >
-                  <svg
-                    className={`w-6 h-6 transition-colors ${getTextSecondaryClass()}`}
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M19 9l-7 7-7-7"
-                    />
-                  </svg>
-                </div>
-              </button>
-              {accordionOpen.localizacaoVizinhanca && (
-                <div
-                  className={`px-6 pb-6 border-t pt-6 transition-colors duration-200 ${getBgClass()} ${getBorderClass()}`}
-                >
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {[
-                      { key: "proximoCentro", label: "Próximo ao centro" },
-                      {
-                        key: "proximoSupermercado",
-                        label: "Próximo a supermercado",
-                      },
-                      { key: "proximoEscola", label: "Próximo a escola" },
-                      { key: "proximoHospital", label: "Próximo a hospital" },
-                      { key: "proximoFarmacia", label: "Próximo a farmácia" },
-                      {
-                        key: "proximoOnibus",
-                        label: "Próximo a ponto de ônibus",
-                      },
-                      { key: "proximoShopping", label: "Próximo a shopping" },
-                      { key: "proximoFaculdade", label: "Próximo a faculdade" },
-                      { key: "bairroResidencial", label: "Bairro residencial" },
-                      { key: "bairroComercial", label: "Bairro comercial" },
-                      { key: "ruaAsfaltada", label: "Rua asfaltada" },
-                      { key: "ruaTranquila", label: "Rua tranquila" },
-                      { key: "regiaoValorizada", label: "Região valorizada" },
-                    ].map(({ key, label }) => (
-                      <label
-                        key={key}
-                        className={`flex items-center space-x-3 p-3 border rounded-lg cursor-pointer transition-all duration-200 ${getBorderClass()} ${getHoverBgClass()}`}
-                      >
-                        <input
-                          type="checkbox"
-                          name={`localizacaoVizinhanca.${key}`}
-                          checked={formData.localizacaoVizinhanca[key]}
-                          onChange={handleChange}
-                          className={getCheckboxClass()}
-                        />
-                        <span className={`transition-colors ${getTextClass()}`}>
-                          {label}
-                        </span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
+            {/* LOCALIZACAO E VIZINHANCA */}
+            <CheckboxAccordion
+              title="Localizacao e Vinhanca"
+              subtitle="Proximidade de servicos e caracteristicas do entorno"
+              icon={MapPinIcon}
+              section="localizacaoVizinhanca"
+              isOpen={accordionOpen.localizacaoVizinhanca}
+              onToggle={() => toggleAccordion("localizacaoVizinhanca")}
+              items={[
+                { key: "proximoCentro", label: "Proximo ao centro" },
+                { key: "proximoSupermercado", label: "Proximo a supermercado" },
+                { key: "proximoEscola", label: "Proximo a escola" },
+                { key: "proximoHospital", label: "Proximo a hospital" },
+                { key: "proximoFarmacia", label: "Proximo a farmacia" },
+                { key: "proximoOnibus", label: "Proximo a ponto de onibus" },
+                { key: "proximoShopping", label: "Proximo a shopping" },
+                { key: "proximoFaculdade", label: "Proximo a faculdade" },
+                { key: "bairroResidencial", label: "Bairro residencial" },
+                { key: "bairroComercial", label: "Bairro comercial" },
+                { key: "ruaAsfaltada", label: "Rua asfaltada" },
+                { key: "ruaTranquila", label: "Rua tranquila" },
+                { key: "regiaoValorizada", label: "Regiao valorizada" },
+              ]}
+              formData={formData}
+              setFormData={setFormData}
+              handleChange={handleChange}
+              isDark={isDark}
+              getBorderClass={getBorderClass}
+              getHoverBgClass={getHoverBgClass}
+              getTextClass={getTextClass}
+              getCheckboxClass={getCheckboxClass}
+              getIconBgClass={getIconBgClass}
+              getIconColorClass={getIconColorClass}
+              getAccordionTitleClass={getAccordionTitleClass}
+              getAccordionSubtitleClass={getAccordionSubtitleClass}
+              getTextSecondaryClass={getTextSecondaryClass}
+            />
 
-            {/* ACCORDION 5: SEGURANÇA */}
-            <div
-              className={`rounded-xl border overflow-hidden transition-colors duration-200 ${getBgClass()} ${getBorderClass()}`}
-            >
-              <button
-                type="button"
-                onClick={() => toggleAccordion("seguranca")}
-                className={`w-full flex items-center justify-between p-6 transition-colors duration-200 ${getBgClass()} ${getHoverBgClass()}`}
-              >
-                <div className="flex items-center space-x-3">
-                  <div className={`p-2 rounded-lg ${getIconBgClass()}`}>
-                    <ShieldCheckIcon
-                      className={`w-5 h-5 ${getIconColorClass()}`}
-                    />
-                  </div>
-                  <div className="text-left">
-                    <h3
-                      className={`text-lg font-semibold transition-colors ${getAccordionTitleClass()}`}
-                    >
-                      Segurança
-                    </h3>
-                    <p
-                      className={`text-sm transition-colors ${getAccordionSubtitleClass()}`}
-                    >
-                      Sistemas de segurança e proteção patrimonial
-                    </p>
-                  </div>
-                </div>
-                <div
-                  className={`transform transition-transform ${accordionOpen.seguranca ? "rotate-180" : ""}`}
-                >
-                  <svg
-                    className={`w-6 h-6 transition-colors ${getTextSecondaryClass()}`}
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M19 9l-7 7-7-7"
-                    />
-                  </svg>
-                </div>
-              </button>
-              {accordionOpen.seguranca && (
-                <div
-                  className={`px-6 pb-6 border-t pt-6 transition-colors duration-200 ${getBgClass()} ${getBorderClass()}`}
-                >
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {[
-                      { key: "portaoEletronico", label: "Portão eletrônico" },
-                      { key: "interfone", label: "Interfone" },
-                      { key: "cercaEletrica", label: "Cerca elétrica" },
-                      { key: "sistemaCameras", label: "Sistema de câmeras" },
-                      { key: "alarme", label: "Alarme" },
-                      { key: "portaria24h", label: "Portaria 24h" },
-                      { key: "vigilancia24h", label: "Vigilância 24h" },
-                      { key: "controleAcesso", label: "Controle de acesso" },
-                      { key: "fechaduraDigital", label: "Fechadura digital" },
-                      { key: "condominioFechado", label: "Condomínio fechado" },
-                      { key: "murosAltos", label: "Muros altos" },
-                    ].map(({ key, label }) => (
-                      <label
-                        key={key}
-                        className={`flex items-center space-x-3 p-3 border rounded-lg cursor-pointer transition-all duration-200 ${getBorderClass()} ${getHoverBgClass()}`}
-                      >
-                        <input
-                          type="checkbox"
-                          name={`seguranca.${key}`}
-                          checked={formData.seguranca[key]}
-                          onChange={handleChange}
-                          className={getCheckboxClass()}
-                        />
-                        <span className={`transition-colors ${getTextClass()}`}>
-                          {label}
-                        </span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
+            {/* SEGURANCA */}
+            <CheckboxAccordion
+              title="Seguranca"
+              subtitle="Sistemas de seguranca e protecao patrimonial"
+              icon={ShieldCheckIcon}
+              section="seguranca"
+              isOpen={accordionOpen.seguranca}
+              onToggle={() => toggleAccordion("seguranca")}
+              items={[
+                { key: "portaoEletronico", label: "Portao eletronico" },
+                { key: "interfone", label: "Interfone" },
+                { key: "cercaEletrica", label: "Cerca eletrica" },
+                { key: "sistemaCameras", label: "Sistema de cameras" },
+                { key: "alarme", label: "Alarme" },
+                { key: "portaria24h", label: "Portaria 24h" },
+                { key: "vigilancia24h", label: "Vigilancia 24h" },
+                { key: "controleAcesso", label: "Controle de acesso" },
+                { key: "fechaduraDigital", label: "Fechadura digital" },
+                { key: "condominioFechado", label: "Condominio fechado" },
+                { key: "murosAltos", label: "Muros altos" },
+              ]}
+              formData={formData}
+              setFormData={setFormData}
+              handleChange={handleChange}
+              isDark={isDark}
+              getBorderClass={getBorderClass}
+              getHoverBgClass={getHoverBgClass}
+              getTextClass={getTextClass}
+              getCheckboxClass={getCheckboxClass}
+              getIconBgClass={getIconBgClass}
+              getIconColorClass={getIconColorClass}
+              getAccordionTitleClass={getAccordionTitleClass}
+              getAccordionSubtitleClass={getAccordionSubtitleClass}
+              getTextSecondaryClass={getTextSecondaryClass}
+            />
 
-            {/* ACCORDION 6: ARMÁRIOS E ARMAZENAMENTO */}
-            <div
-              className={`rounded-xl border overflow-hidden transition-colors duration-200 ${getBgClass()} ${getBorderClass()}`}
-            >
-              <button
-                type="button"
-                onClick={() => toggleAccordion("armariosArmazenamento")}
-                className={`w-full flex items-center justify-between p-6 transition-colors duration-200 ${getBgClass()} ${getHoverBgClass()}`}
-              >
-                <div className="flex items-center space-x-3">
-                  <div className={`p-2 rounded-lg ${getIconBgClass()}`}>
-                    <BuildingStorefrontIcon
-                      className={`w-5 h-5 ${getIconColorClass()}`}
-                    />
-                  </div>
-                  <div className="text-left">
-                    <h3
-                      className={`text-lg font-semibold transition-colors ${getAccordionTitleClass()}`}
-                    >
-                      Armários e Armazenamento
-                    </h3>
-                    <p
-                      className={`text-sm transition-colors ${getAccordionSubtitleClass()}`}
-                    >
-                      Móveis planejados e soluções de armazenamento
-                    </p>
-                  </div>
-                </div>
-                <div
-                  className={`transform transition-transform ${accordionOpen.armariosArmazenamento ? "rotate-180" : ""}`}
-                >
-                  <svg
-                    className={`w-6 h-6 transition-colors ${getTextSecondaryClass()}`}
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M19 9l-7 7-7-7"
-                    />
-                  </svg>
-                </div>
-              </button>
-              {accordionOpen.armariosArmazenamento && (
-                <div
-                  className={`px-6 pb-6 border-t pt-6 transition-colors duration-200 ${getBgClass()} ${getBorderClass()}`}
-                >
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {[
-                      {
-                        key: "armarioCozinhaPlanejado",
-                        label: "Armário de cozinha planejado",
-                      },
-                      { key: "armariosEmbutidos", label: "Armários embutidos" },
-                      { key: "armariosQuarto", label: "Armários no quarto" },
-                      {
-                        key: "armariosBanheiro",
-                        label: "Armários no banheiro",
-                      },
-                      { key: "closet", label: "Closet" },
-                      { key: "despensa", label: "Despensa" },
-                      { key: "deposito", label: "Depósito" },
-                      { key: "roupeiro", label: "Roupeiro" },
-                      { key: "maleiro", label: "Maleiro" },
-                    ].map(({ key, label }) => (
-                      <label
-                        key={key}
-                        className={`flex items-center space-x-3 p-3 border rounded-lg cursor-pointer transition-all duration-200 ${getBorderClass()} ${getHoverBgClass()}`}
-                      >
-                        <input
-                          type="checkbox"
-                          name={`armariosArmazenamento.${key}`}
-                          checked={formData.armariosArmazenamento[key]}
-                          onChange={handleChange}
-                          className={getCheckboxClass()}
-                        />
-                        <span className={`transition-colors ${getTextClass()}`}>
-                          {label}
-                        </span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
+            {/* ARMARIOS E ARMAZENAMENTO */}
+            <CheckboxAccordion
+              title="Armarios e Armazenamento"
+              subtitle="Moveis planejados e solucoes de armazenamento"
+              icon={BuildingStorefrontIcon}
+              section="armariosArmazenamento"
+              isOpen={accordionOpen.armariosArmazenamento}
+              onToggle={() => toggleAccordion("armariosArmazenamento")}
+              items={[
+                {
+                  key: "armarioCozinhaPlanejado",
+                  label: "Armario de cozinha planejado",
+                },
+                { key: "armariosEmbutidos", label: "Armarios embutidos" },
+                { key: "armariosQuarto", label: "Armarios no quarto" },
+                { key: "armariosBanheiro", label: "Armarios no banheiro" },
+                { key: "closet", label: "Closet" },
+                { key: "despensa", label: "Despensa" },
+                { key: "deposito", label: "Deposito" },
+                { key: "roupeiro", label: "Roupeiro" },
+                { key: "maleiro", label: "Maleiro" },
+              ]}
+              formData={formData}
+              setFormData={setFormData}
+              handleChange={handleChange}
+              isDark={isDark}
+              getBorderClass={getBorderClass}
+              getHoverBgClass={getHoverBgClass}
+              getTextClass={getTextClass}
+              getCheckboxClass={getCheckboxClass}
+              getIconBgClass={getIconBgClass}
+              getIconColorClass={getIconColorClass}
+              getAccordionTitleClass={getAccordionTitleClass}
+              getAccordionSubtitleClass={getAccordionSubtitleClass}
+              getTextSecondaryClass={getTextSecondaryClass}
+            />
 
-            {/* ACCORDION 7: SERVIÇOS E UTILIDADES */}
-            <div
-              className={`rounded-xl border overflow-hidden transition-colors duration-200 ${getBgClass()} ${getBorderClass()}`}
-            >
-              <button
-                type="button"
-                onClick={() => toggleAccordion("servicosUtilidades")}
-                className={`w-full flex items-center justify-between p-6 transition-colors duration-200 ${getBgClass()} ${getHoverBgClass()}`}
-              >
-                <div className="flex items-center space-x-3">
-                  <div className={`p-2 rounded-lg ${getIconBgClass()}`}>
-                    <BoltIcon className={`w-5 h-5 ${getIconColorClass()}`} />
-                  </div>
-                  <div className="text-left">
-                    <h3
-                      className={`text-lg font-semibold transition-colors ${getAccordionTitleClass()}`}
-                    >
-                      Serviços e Utilidades
-                    </h3>
-                    <p
-                      className={`text-sm transition-colors ${getAccordionSubtitleClass()}`}
-                    >
-                      Serviços coletivos, utilidades e infraestrutura urbana
-                    </p>
-                  </div>
-                </div>
-                <div
-                  className={`transform transition-transform ${accordionOpen.servicosUtilidades ? "rotate-180" : ""}`}
-                >
-                  <svg
-                    className={`w-6 h-6 transition-colors ${getTextSecondaryClass()}`}
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M19 9l-7 7-7-7"
-                    />
-                  </svg>
-                </div>
-              </button>
-              {accordionOpen.servicosUtilidades && (
-                <div
-                  className={`px-6 pb-6 border-t pt-6 transition-colors duration-200 ${getBgClass()} ${getBorderClass()}`}
-                >
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {[
-                      { key: "aguaEncanada", label: "Água encanada" },
-                      { key: "energiaEletrica", label: "Energia elétrica" },
-                      { key: "pocoArtesiano", label: "Poço artesiano" },
-                      { key: "aquecimentoGas", label: "Aquecimento a gás" },
-                      { key: "aquecimentoSolar", label: "Aquecimento solar" },
-                      { key: "gasEncanado", label: "Gás encanado" },
-                      {
-                        key: "arCondicionadoInstalado",
-                        label: "Ar-condicionado instalado",
-                      },
-                      {
-                        key: "infraArCondicionado",
-                        label: "Infra para ar-condicionado",
-                      },
-                      {
-                        key: "internetFibra",
-                        label: "Internet fibra disponível",
-                      },
-                      { key: "iluminacaoLED", label: "Iluminação em LED" },
-                      {
-                        key: "energiaSolar",
-                        label: "Sistema de energia solar",
-                      },
-                      { key: "elevador", label: "Elevador" },
-                      { key: "coletaLixo", label: "Coleta de lixo regular" },
-                    ].map(({ key, label }) => (
-                      <label
-                        key={key}
-                        className={`flex items-center space-x-3 p-3 border rounded-lg cursor-pointer transition-all duration-200 ${getBorderClass()} ${getHoverBgClass()}`}
-                      >
-                        <input
-                          type="checkbox"
-                          name={`servicosUtilidades.${key}`}
-                          checked={formData.servicosUtilidades[key]}
-                          onChange={handleChange}
-                          className={getCheckboxClass()}
-                        />
-                        <span className={`transition-colors ${getTextClass()}`}>
-                          {label}
-                        </span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
+            {/* SERVICOS E UTILIDADES */}
+            <CheckboxAccordion
+              title="Servicos e Utilidades"
+              subtitle="Servicos coletivos, utilidades e infraestrutura urbana"
+              icon={BoltIcon}
+              section="servicosUtilidades"
+              isOpen={accordionOpen.servicosUtilidades}
+              onToggle={() => toggleAccordion("servicosUtilidades")}
+              items={[
+                { key: "aguaEncanada", label: "Agua encanada" },
+                { key: "energiaEletrica", label: "Energia eletrica" },
+                { key: "pocoArtesiano", label: "Poco artesiano" },
+                { key: "aquecimentoGas", label: "Aquecimento a gas" },
+                { key: "aquecimentoSolar", label: "Aquecimento solar" },
+                { key: "gasEncanado", label: "Gas encanado" },
+                {
+                  key: "arCondicionadoInstalado",
+                  label: "Ar-condicionado instalado",
+                },
+                {
+                  key: "infraArCondicionado",
+                  label: "Infra para ar-condicionado",
+                },
+                { key: "internetFibra", label: "Internet fibra disponivel" },
+                { key: "iluminacaoLED", label: "Iluminacao em LED" },
+                { key: "energiaSolar", label: "Sistema de energia solar" },
+                { key: "elevador", label: "Elevador" },
+                { key: "coletaLixo", label: "Coleta de lixo regular" },
+              ]}
+              formData={formData}
+              setFormData={setFormData}
+              handleChange={handleChange}
+              isDark={isDark}
+              getBorderClass={getBorderClass}
+              getHoverBgClass={getHoverBgClass}
+              getTextClass={getTextClass}
+              getCheckboxClass={getCheckboxClass}
+              getIconBgClass={getIconBgClass}
+              getIconColorClass={getIconColorClass}
+              getAccordionTitleClass={getAccordionTitleClass}
+              getAccordionSubtitleClass={getAccordionSubtitleClass}
+              getTextSecondaryClass={getTextSecondaryClass}
+            />
 
-            {/* ACCORDION 8: DIFERENCIAIS DO IMÓVEL */}
-            <div
-              className={`rounded-xl border overflow-hidden transition-colors duration-200 ${getBgClass()} ${getBorderClass()}`}
-            >
-              <button
-                type="button"
-                onClick={() => toggleAccordion("diferenciais")}
-                className={`w-full flex items-center justify-between p-6 transition-colors duration-200 ${getBgClass()} ${getHoverBgClass()}`}
-              >
-                <div className="flex items-center space-x-3">
-                  <div className={`p-2 rounded-lg ${getIconBgClass()}`}>
-                    <HeartIcon className={`w-5 h-5 ${getIconColorClass()}`} />
-                  </div>
-                  <div className="text-left">
-                    <h3
-                      className={`text-lg font-semibold transition-colors ${getAccordionTitleClass()}`}
-                    >
-                      Diferenciais do Imóvel
-                    </h3>
-                    <p
-                      className={`text-sm transition-colors ${getAccordionSubtitleClass()}`}
-                    >
-                      Características especiais que valorizam o imóvel
-                    </p>
-                  </div>
-                </div>
-                <div
-                  className={`transform transition-transform ${accordionOpen.diferenciais ? "rotate-180" : ""}`}
-                >
-                  <svg
-                    className={`w-6 h-6 transition-colors ${getTextSecondaryClass()}`}
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M19 9l-7 7-7-7"
-                    />
-                  </svg>
-                </div>
-              </button>
-              {accordionOpen.diferenciais && (
-                <div
-                  className={`px-6 pb-6 border-t pt-6 transition-colors duration-200 ${getBgClass()} ${getBorderClass()}`}
-                >
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {[
-                      { key: "varanda", label: "Varanda" },
-                      { key: "sacada", label: "Sacada" },
-                      { key: "lavabo", label: "Lavabo" },
-                      { key: "banheira", label: "Banheira" },
-                      { key: "boxVidro", label: "Box de vidro" },
-                      {
-                        key: "dependenciaEmpregada",
-                        label: "Dependência de empregada",
-                      },
-                      { key: "escritorio", label: "Escritório" },
-                      { key: "peDireitoDuplo", label: "Pé direito duplo" },
-                      { key: "mezanino", label: "Mezanino" },
-                      { key: "vistaPanoramica", label: "Vista panorâmica" },
-                    ].map(({ key, label }) => (
-                      <label
-                        key={key}
-                        className={`flex items-center space-x-3 p-3 border rounded-lg cursor-pointer transition-all duration-200 ${getBorderClass()} ${getHoverBgClass()}`}
-                      >
-                        <input
-                          type="checkbox"
-                          name={`diferenciais.${key}`}
-                          checked={formData.diferenciais[key]}
-                          onChange={handleChange}
-                          className={getCheckboxClass()}
-                        />
-                        <span className={`transition-colors ${getTextClass()}`}>
-                          {label}
-                        </span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
+            {/* DIFERENCIAIS DO IMOVEL */}
+            <CheckboxAccordion
+              title="Diferenciais do Imovel"
+              subtitle="Caracteristicas especiais que valorizam o imovel"
+              icon={HeartIcon}
+              section="diferenciais"
+              isOpen={accordionOpen.diferenciais}
+              onToggle={() => toggleAccordion("diferenciais")}
+              items={[
+                { key: "varanda", label: "Varanda" },
+                { key: "sacada", label: "Sacada" },
+                { key: "lavabo", label: "Lavabo" },
+                { key: "banheira", label: "Banheira" },
+                { key: "boxVidro", label: "Box de vidro" },
+                {
+                  key: "dependenciaEmpregada",
+                  label: "Dependencia de empregada",
+                },
+                { key: "escritorio", label: "Escritorio" },
+                { key: "peDireitoDuplo", label: "Pe direito duplo" },
+                { key: "mezanino", label: "Mezanino" },
+                { key: "vistaPanoramica", label: "Vista panoramica" },
+              ]}
+              formData={formData}
+              setFormData={setFormData}
+              handleChange={handleChange}
+              isDark={isDark}
+              getBorderClass={getBorderClass}
+              getHoverBgClass={getHoverBgClass}
+              getTextClass={getTextClass}
+              getCheckboxClass={getCheckboxClass}
+              getIconBgClass={getIconBgClass}
+              getIconColorClass={getIconColorClass}
+              getAccordionTitleClass={getAccordionTitleClass}
+              getAccordionSubtitleClass={getAccordionSubtitleClass}
+              getTextSecondaryClass={getTextSecondaryClass}
+            />
           </div>
 
-          {/* ========== SEÇÃO 6: DESCRIÇÃO E OBSERVAÇÕES ========== */}
+          {/* ========== SECAO: DESCRICAO E OBSERVACOES ========== */}
           <div
             className={`rounded-xl border p-6 transition-colors duration-200 ${getBgClass()} ${getBorderClass()}`}
           >
@@ -4177,12 +4135,12 @@ const EditarImovel = () => {
                 <h2
                   className={`text-xl font-semibold transition-colors ${getTextClass()}`}
                 >
-                  Descrição e Observações
+                  Descricao e Observacoes
                 </h2>
                 <p
                   className={`text-sm transition-colors ${getTextSecondaryClass()}`}
                 >
-                  Informações detalhadas para clientes e uso interno
+                  Informacoes detalhadas para clientes e uso interno
                 </p>
               </div>
             </div>
@@ -4191,15 +4149,15 @@ const EditarImovel = () => {
                 <label
                   className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
                 >
-                  Descrição do Imóvel *
+                  Descricao do Imovel *
                 </label>
                 <textarea
                   name="descricao"
                   value={formData.descricao}
                   onChange={handleChange}
                   rows="4"
-                  placeholder="Descreva o imóvel com detalhes: acabamentos, diferenciais, localização, etc..."
-                  className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors duration-200 ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()} ${getPlaceholderClass()}`}
+                  placeholder="Descreva o imovel com detalhes: acabamentos, diferenciais, localizacao, etc..."
+                  className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors duration-200 ${getInputClasses()}`}
                   required
                 />
               </div>
@@ -4207,15 +4165,15 @@ const EditarImovel = () => {
                 <label
                   className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
                 >
-                  Observações Internas
+                  Observacoes Internas
                 </label>
                 <textarea
                   name="observacoes"
                   value={formData.observacoes}
                   onChange={handleChange}
                   rows="3"
-                  placeholder="Observações para uso interno da imobiliária (não aparece para clientes)..."
-                  className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors duration-200 ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()} ${getPlaceholderClass()}`}
+                  placeholder="Observacoes para uso interno da imobiliaria (nao aparece para clientes)..."
+                  className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors duration-200 ${getInputClasses()}`}
                 />
               </div>
             </div>
@@ -4240,7 +4198,7 @@ const EditarImovel = () => {
               </div>
               {submitMessage.type === "success" && (
                 <p className="mt-1 text-sm opacity-80">
-                  Você será redirecionado para a lista de imóveis em alguns
+                  Voce sera redirecionado para a lista de imoveis em alguns
                   segundos...
                 </p>
               )}

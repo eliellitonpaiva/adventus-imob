@@ -25,6 +25,8 @@ import {
   StarIcon,
   TrashIcon,
   ArrowUpTrayIcon,
+  CurrencyDollarIcon,
+  XMarkIcon,
 } from "@heroicons/react/24/outline";
 import { StarIcon as StarIconSolid } from "@heroicons/react/24/solid";
 import Button from "../../componentes/ui/Button";
@@ -50,7 +52,367 @@ import {
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
-// Componente SortableItem para as fotos
+// ========== COMPONENTE DE MÁSCARA DE PREÇO ==========
+const formatPriceWithSeparators = (value) => {
+  if (!value) return "";
+
+  // Remove tudo que não for número
+  const numbers = value.replace(/\D/g, "");
+
+  // Converte para número e formata
+  if (numbers.length === 0) return "";
+
+  // Formata com separadores de milhar e decimal
+  const amount = (parseInt(numbers, 10) / 100).toFixed(2);
+  return new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(amount);
+};
+
+// ========== COMPONENTE DE CHECKBOX PERSONALIZADO ==========
+const CustomCheckboxGroup = ({
+  title,
+  icon: Icon,
+  items,
+  section,
+  formData,
+  setFormData,
+  isDark,
+  getBorderClass,
+  getHoverBgClass,
+  getTextClass,
+  getCheckboxClass,
+}) => {
+  // 🔍 LOGS PARA DEBUG
+  console.log(`========== [${title}] ==========`);
+  console.log("Items recebidos:", items);
+  console.log(
+    "Items inválidos:",
+    items?.filter((item) => !item || !item.key),
+  );
+  console.log("Section:", section);
+  console.log("formData[section]:", formData[section]);
+  console.log("=================================");
+
+  const [searchTerm, setSearchTerm] = useState("");
+  const [customItems, setCustomItems] = useState([]);
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [newItemName, setNewItemName] = useState("");
+
+  // Combinar itens padrão com personalizados
+  const allItems = [
+    ...items,
+    ...customItems.map((c) => ({ key: c.id, label: c.name })),
+  ];
+
+  // Filtrar itens baseado na busca
+  const filteredItems = allItems.filter((item) =>
+    item.label.toLowerCase().includes(searchTerm.toLowerCase()),
+  );
+
+  const handleCheckboxChange = (key, checked) => {
+    setFormData((prev) => ({
+      ...prev,
+      [section]: {
+        ...prev[section],
+        [key]: checked,
+      },
+    }));
+  };
+
+  const handleAddCustomItem = () => {
+    if (!newItemName.trim()) return;
+
+    const newItemId = `custom-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const newItem = {
+      id: newItemId,
+      name: newItemName.trim(),
+    };
+
+    setCustomItems([...customItems, newItem]);
+
+    // Inicializar o checkbox do novo item como false
+    setFormData((prev) => ({
+      ...prev,
+      [section]: {
+        ...prev[section],
+        [newItemId]: false,
+      },
+    }));
+
+    setNewItemName("");
+    setShowAddForm(false);
+  };
+
+  const handleRemoveCustomItem = (itemId, e) => {
+    e.stopPropagation();
+    setCustomItems(customItems.filter((item) => item.id !== itemId));
+
+    // Remover também do estado de valores
+    setFormData((prev) => {
+      const newSection = { ...prev[section] };
+      delete newSection[itemId];
+      return {
+        ...prev,
+        [section]: newSection,
+      };
+    });
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-2">
+          {Icon && (
+            <Icon
+              className={`w-5 h-5 ${isDark ? "text-[#D4A24D]" : "text-[#D4A24D]"}`}
+            />
+          )}
+          <h4 className={`text-md font-semibold ${getTextClass()}`}>{title}</h4>
+        </div>
+        <button
+          type="button"
+          onClick={() => setShowAddForm(!showAddForm)}
+          className={`flex items-center space-x-1 px-3 py-1.5 rounded-lg text-sm transition-colors ${
+            isDark
+              ? "bg-gray-700 hover:bg-gray-600 text-gray-200"
+              : "bg-gray-100 hover:bg-gray-200 text-gray-700"
+          }`}
+        >
+          <PlusIcon className="w-4 h-4" />
+          <span>Adicionar item</span>
+        </button>
+      </div>
+
+      {/* Campo de busca */}
+      <div className="relative">
+        <input
+          type="text"
+          placeholder="Buscar item..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className={`w-full px-4 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors ${
+            isDark
+              ? "bg-gray-800 border-gray-700 text-gray-200 placeholder-gray-500"
+              : "bg-white border-gray-300 text-gray-900 placeholder-gray-400"
+          }`}
+        />
+      </div>
+
+      {/* Formulário para adicionar novo item */}
+      {showAddForm && (
+        <div
+          className={`p-4 border rounded-lg ${isDark ? "bg-gray-800 border-gray-700" : "bg-gray-50 border-gray-200"}`}
+        >
+          <div className="flex items-center space-x-2">
+            <input
+              type="text"
+              placeholder="Nome do item (ex: Piscina aquecida)"
+              value={newItemName}
+              onChange={(e) => setNewItemName(e.target.value)}
+              className={`flex-1 px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] ${
+                isDark
+                  ? "bg-gray-700 border-gray-600 text-gray-200 placeholder-gray-400"
+                  : "bg-white border-gray-300 text-gray-900 placeholder-gray-400"
+              }`}
+              onKeyPress={(e) => e.key === "Enter" && handleAddCustomItem()}
+            />
+            <button
+              type="button"
+              onClick={handleAddCustomItem}
+              className="p-2 bg-[#D4A24D] hover:bg-[#c0913c] text-white rounded-lg transition-colors"
+            >
+              <PlusIcon className="w-5 h-5" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowAddForm(false)}
+              className={`p-2 rounded-lg transition-colors ${
+                isDark
+                  ? "bg-gray-700 hover:bg-gray-600 text-gray-300"
+                  : "bg-gray-200 hover:bg-gray-300 text-gray-700"
+              }`}
+            >
+              <XMarkIcon className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Grid de checkboxes */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-96 overflow-y-auto p-1">
+        {filteredItems
+          .filter((item) => item && item.key) // Remove itens inválidos
+          .map((item) => {
+            const isCustom = item.key.toString().startsWith("custom-");
+            const isChecked = formData[section]?.[item.key] || false;
+
+            return (
+              <div key={item.key} className="relative group">
+                <label
+                  className={`flex items-center space-x-3 p-3 border rounded-lg cursor-pointer transition-all duration-200 ${getBorderClass()} ${getHoverBgClass()}`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={isChecked}
+                    onChange={(e) =>
+                      handleCheckboxChange(item.key, e.target.checked)
+                    }
+                    className={getCheckboxClass()}
+                  />
+                  <span
+                    className={`transition-colors flex-1 ${getTextClass()}`}
+                  >
+                    {item.label}
+                  </span>
+                </label>
+
+                {/* Botão de remover para itens personalizados */}
+                {isCustom && (
+                  <button
+                    type="button"
+                    onClick={(e) => handleRemoveCustomItem(item.key, e)}
+                    className={`absolute -top-2 -right-2 p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity ${
+                      isDark
+                        ? "bg-red-600 hover:bg-red-700"
+                        : "bg-red-500 hover:bg-red-600"
+                    } text-white`}
+                    title="Remover item"
+                  >
+                    <XMarkIcon className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+            );
+          })}
+
+        {filteredItems.length === 0 && (
+          <div
+            className={`col-span-3 p-8 text-center border rounded-lg ${getBorderClass()}`}
+          >
+            <p
+              className={`text-sm ${isDark ? "text-gray-400" : "text-gray-500"}`}
+            >
+              Nenhum item encontrado.{" "}
+              <button
+                type="button"
+                onClick={() => setShowAddForm(true)}
+                className="text-[#D4A24D] hover:underline font-medium"
+              >
+                Adicionar agora
+              </button>
+            </p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// ========== COMPONENTE DE INPUT DE PREÇO COM MÁSCARA ==========
+const PriceInput = ({
+  name, // ← ADICIONE ESTA LINHA
+  value,
+  onChange,
+  label,
+  required,
+  isDark,
+  getInputClasses,
+}) => {
+  const [displayValue, setDisplayValue] = useState("");
+
+  useEffect(() => {
+    console.log(
+      "📥 PriceInput - valor RECEBIDO do form:",
+      value,
+      "tipo:",
+      typeof value,
+    );
+
+    if (value && !isNaN(parseFloat(value)) && parseFloat(value) > 0) {
+      const formatted = new Intl.NumberFormat("pt-BR", {
+        style: "currency",
+        currency: "BRL",
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }).format(value);
+      setDisplayValue(formatted);
+    } else {
+      setDisplayValue("");
+    }
+  }, [value]);
+
+  const handlePriceChange = (e) => {
+    console.log("🖊️ PriceInput - onChange DISPARADO", e.target.value);
+
+    const rawValue = e.target.value.replace(/\D/g, "");
+    console.log("🔢 PriceInput - rawValue (só números):", rawValue);
+
+    if (rawValue === "") {
+      console.log("⚠️ PriceInput - campo vazio");
+      setDisplayValue("");
+      const syntheticEvent = {
+        target: {
+          name: e.target.name,
+          value: "",
+          type: "text",
+        },
+      };
+      console.log("📤 PriceInput - enviando evento VAZIO:", syntheticEvent);
+      onChange(syntheticEvent);
+      return;
+    }
+
+    const numericValue = parseFloat(rawValue) / 100;
+    console.log("💰 PriceInput - numericValue:", numericValue);
+
+    const formatted = new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(numericValue);
+    console.log("💵 PriceInput - valor formatado:", formatted);
+
+    setDisplayValue(formatted);
+
+    const syntheticEvent = {
+      target: {
+        name: e.target.name,
+        value: numericValue,
+        type: "number",
+      },
+    };
+    console.log("📤 PriceInput - enviando evento COM VALOR:", syntheticEvent);
+    onChange(syntheticEvent);
+  };
+
+  return (
+    <div>
+      <label
+        className={`block text-sm font-medium mb-2 ${isDark ? "text-gray-300" : "text-gray-700"}`}
+      >
+        {label} {required && "*"}
+      </label>
+      <div className="relative">
+        <input
+          type="text"
+          name={name}
+          value={displayValue}
+          onChange={handlePriceChange}
+          required={required}
+          placeholder="R$ 0,00"
+          className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors duration-200 ${getInputClasses()}`}
+        />
+      </div>
+    </div>
+  );
+};
+
+// ========== COMPONENTE SORTABLE ITEM (FOTOS) ==========
 const SortableItem = ({
   id,
   url,
@@ -78,9 +440,6 @@ const SortableItem = ({
 
   const getBorderClass = () => (isDark ? "border-gray-700" : "border-gray-200");
   const getBgClass = () => (isDark ? "bg-gray-800" : "bg-white");
-  const getTextClass = () => (isDark ? "text-gray-100" : "text-gray-900");
-  const getIconColorClass = () =>
-    isDark ? "text-[#D4A24D]" : "text-[#D4A24D]";
 
   return (
     <div
@@ -97,7 +456,6 @@ const SortableItem = ({
           className="w-full h-full object-cover"
         />
 
-        {/* Overlay com ações */}
         <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
           <button
             type="button"
@@ -127,14 +485,12 @@ const SortableItem = ({
           </button>
         </div>
 
-        {/* Badge de ordem */}
         <div
           className={`absolute top-2 left-2 ${isCapa ? "bg-[#D4A24D]" : "bg-black/70"} text-white text-xs font-bold px-2 py-1 rounded-full`}
         >
           {isCapa ? "⭐ CAPA" : `#${index + 1}`}
         </div>
 
-        {/* Badge de arrastar */}
         <div className="absolute bottom-2 right-2 bg-black/70 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
           <svg
             className="w-4 h-4"
@@ -154,7 +510,322 @@ const SortableItem = ({
     </div>
   );
 };
+// ========== COMPONENTE DE CHECKBOX COM BOTÃO ADICIONAR ==========
+const CheckboxAccordion = ({
+  title,
+  subtitle,
+  icon: Icon,
+  section,
+  isOpen,
+  onToggle,
+  items,
+  formData,
+  setFormData,
+  handleChange,
+  isDark,
+  getBorderClass,
+  getHoverBgClass,
+  getTextClass,
+  getCheckboxClass,
+  getIconBgClass,
+  getIconColorClass,
+  getAccordionTitleClass,
+  getAccordionSubtitleClass,
+  getTextSecondaryClass,
+}) => {
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [newItemName, setNewItemName] = useState("");
+  const [customItems, setCustomItems] = useState([]);
 
+  const handleAddCustomItem = () => {
+    if (!newItemName.trim()) return;
+    const newItemId = `custom-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    setCustomItems([...customItems, { id: newItemId, name: newItemName }]);
+    setFormData((prev) => ({
+      ...prev,
+      [section]: { ...prev[section], [newItemId]: false },
+    }));
+    setNewItemName("");
+    setShowAddForm(false);
+  };
+
+  const handleRemoveCustomItem = (itemId) => {
+    setCustomItems(customItems.filter((item) => item.id !== itemId));
+    setFormData((prev) => {
+      const newSection = { ...prev[section] };
+      delete newSection[itemId];
+      return { ...prev, [section]: newSection };
+    });
+  };
+
+  return (
+    <div
+      className={`rounded-xl border overflow-hidden transition-colors duration-200 ${isDark ? "bg-gray-900" : "bg-white"} ${getBorderClass()}`}
+    >
+      <button
+        type="button"
+        onClick={onToggle}
+        className={`w-full flex items-center justify-between p-6 transition-colors duration-200 ${isDark ? "bg-gray-900" : "bg-white"} ${getHoverBgClass()}`}
+      >
+        <div className="flex items-center space-x-3">
+          <div className={`p-2 rounded-lg ${getIconBgClass()}`}>
+            <Icon className={`w-5 h-5 ${getIconColorClass()}`} />
+          </div>
+          <div className="text-left">
+            <h3
+              className={`text-lg font-semibold transition-colors ${getAccordionTitleClass()}`}
+            >
+              {title}
+            </h3>
+            <p
+              className={`text-sm transition-colors ${getAccordionSubtitleClass()}`}
+            >
+              {subtitle}
+            </p>
+          </div>
+        </div>
+        <div
+          className={`transform transition-transform ${isOpen ? "rotate-180" : ""}`}
+        >
+          <svg
+            className={`w-6 h-6 transition-colors ${getTextSecondaryClass()}`}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M19 9l-7 7-7-7"
+            />
+          </svg>
+        </div>
+      </button>
+
+      {isOpen && (
+        <div
+          className={`px-6 pb-6 border-t pt-6 transition-colors duration-200 ${isDark ? "bg-gray-900" : "bg-white"} ${getBorderClass()}`}
+        >
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h4 className={`text-md font-semibold ${getTextClass()}`}>
+                Itens
+              </h4>
+              <button
+                type="button"
+                onClick={() => setShowAddForm(!showAddForm)}
+                className="flex items-center space-x-1 px-3 py-1.5 rounded-lg text-sm bg-[#D4A24D] text-white hover:bg-[#c0913c]"
+              >
+                <PlusIcon className="w-4 h-4" />
+                <span>Adicionar item</span>
+              </button>
+            </div>
+
+            {showAddForm && (
+              <div
+                className={`p-4 border rounded-lg ${isDark ? "bg-gray-800" : "bg-gray-50"}`}
+              >
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={newItemName}
+                    onChange={(e) => setNewItemName(e.target.value)}
+                    placeholder="Nome do item"
+                    className="flex-1 px-3 py-2 border rounded-lg"
+                    onKeyPress={(e) =>
+                      e.key === "Enter" && handleAddCustomItem()
+                    }
+                  />
+                  <button
+                    onClick={handleAddCustomItem}
+                    className="px-3 py-2 bg-[#D4A24D] text-white rounded-lg"
+                  >
+                    OK
+                  </button>
+                  <button
+                    onClick={() => setShowAddForm(false)}
+                    className="px-3 py-2 bg-gray-500 text-white rounded-lg"
+                  >
+                    X
+                  </button>
+                </div>
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {items.map(({ key, label }) => (
+                <label
+                  key={key}
+                  className={`flex items-center space-x-3 p-3 border rounded-lg cursor-pointer ${getBorderClass()} ${getHoverBgClass()}`}
+                >
+                  <input
+                    type="checkbox"
+                    name={`${section}.${key}`}
+                    checked={formData[section]?.[key] || false}
+                    onChange={handleChange}
+                    className={getCheckboxClass()}
+                  />
+                  <span className={getTextClass()}>{label}</span>
+                </label>
+              ))}
+
+              {customItems.map((item) => (
+                <div key={item.id} className="relative group">
+                  <label
+                    className={`flex items-center space-x-3 p-3 border rounded-lg cursor-pointer ${getBorderClass()} ${getHoverBgClass()}`}
+                  >
+                    <input
+                      type="checkbox"
+                      name={`${section}.${item.id}`}
+                      checked={formData[section]?.[item.id] || false}
+                      onChange={handleChange}
+                      className={getCheckboxClass()}
+                    />
+                    <span className={getTextClass()}>{item.name}</span>
+                  </label>
+                  <button
+                    onClick={() => handleRemoveCustomItem(item.id)}
+                    className="absolute -top-2 -right-2 p-1 rounded-full bg-red-500 text-white opacity-0 group-hover:opacity-100"
+                  >
+                    <XMarkIcon className="w-4 h-4" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ========== COMPONENTE PARA SEÇÕES DE ACABAMENTO ==========
+const SecaoAcabamento = ({
+  titulo,
+  section,
+  items,
+  formData,
+  setFormData,
+  handleChange,
+  isDark,
+  getBorderClass,
+  getHoverBgClass,
+  getTextClass,
+  getCheckboxClass,
+}) => {
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [newItemName, setNewItemName] = useState("");
+  const [customItems, setCustomItems] = useState([]);
+
+  const handleAddCustomItem = () => {
+    if (!newItemName.trim()) return;
+    const newItemId = `custom-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    setCustomItems([...customItems, { id: newItemId, name: newItemName }]);
+    setFormData((prev) => ({
+      ...prev,
+      [section]: { ...prev[section], [newItemId]: false },
+    }));
+    setNewItemName("");
+    setShowAddForm(false);
+  };
+
+  const handleRemoveCustomItem = (itemId) => {
+    setCustomItems(customItems.filter((item) => item.id !== itemId));
+    setFormData((prev) => {
+      const newSection = { ...prev[section] };
+      delete newSection[itemId];
+      return { ...prev, [section]: newSection };
+    });
+  };
+
+  return (
+    <div className="mb-8">
+      <div className="flex items-center justify-between mb-4">
+        <h4 className={`text-md font-semibold ${getTextClass()}`}>{titulo}</h4>
+        <button
+          type="button"
+          onClick={() => setShowAddForm(!showAddForm)}
+          className="flex items-center space-x-1 px-3 py-1.5 rounded-lg text-sm bg-[#D4A24D] text-white hover:bg-[#c0913c]"
+        >
+          <PlusIcon className="w-4 h-4" />
+          <span>Adicionar</span>
+        </button>
+      </div>
+
+      {showAddForm && (
+        <div
+          className={`mb-4 p-4 border rounded-lg ${isDark ? "bg-gray-800" : "bg-gray-50"}`}
+        >
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={newItemName}
+              onChange={(e) => setNewItemName(e.target.value)}
+              placeholder="Nome do item"
+              className="flex-1 px-3 py-2 border rounded-lg"
+              onKeyPress={(e) => e.key === "Enter" && handleAddCustomItem()}
+            />
+            <button
+              onClick={handleAddCustomItem}
+              className="px-3 py-2 bg-[#D4A24D] text-white rounded-lg"
+            >
+              OK
+            </button>
+            <button
+              onClick={() => setShowAddForm(false)}
+              className="px-3 py-2 bg-gray-500 text-white rounded-lg"
+            >
+              X
+            </button>
+          </div>
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+        {items.map(({ key, label }) => (
+          <label
+            key={key}
+            className={`flex items-center space-x-3 p-3 border rounded-lg cursor-pointer ${getBorderClass()} ${getHoverBgClass()}`}
+          >
+            <input
+              type="checkbox"
+              name={`${section}.${key}`}
+              checked={formData[section]?.[key] || false}
+              onChange={handleChange}
+              className={getCheckboxClass()}
+            />
+            <span className={getTextClass()}>{label}</span>
+          </label>
+        ))}
+
+        {customItems.map((item) => (
+          <div key={item.id} className="relative group">
+            <label
+              className={`flex items-center space-x-3 p-3 border rounded-lg cursor-pointer ${getBorderClass()} ${getHoverBgClass()}`}
+            >
+              <input
+                type="checkbox"
+                name={`${section}.${item.id}`}
+                checked={formData[section]?.[item.id] || false}
+                onChange={handleChange}
+                className={getCheckboxClass()}
+              />
+              <span className={getTextClass()}>{item.name}</span>
+            </label>
+            <button
+              onClick={() => handleRemoveCustomItem(item.id)}
+              className="absolute -top-2 -right-2 p-1 rounded-full bg-red-500 text-white opacity-0 group-hover:opacity-100"
+            >
+              <XMarkIcon className="w-4 h-4" />
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+// ========== COMPONENTE PRINCIPAL ==========
 const CadastrarImovel = () => {
   const navigate = useNavigate();
   const { isDark } = useTheme();
@@ -170,7 +841,7 @@ const CadastrarImovel = () => {
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 5, // Ativa após 5px de movimento (evita conflito com cliques)
+        distance: 5,
       },
     }),
     useSensor(KeyboardSensor, {
@@ -187,10 +858,8 @@ const CadastrarImovel = () => {
         const oldIndex = items.findIndex((item) => item.id === active.id);
         const newIndex = items.findIndex((item) => item.id === over.id);
 
-        // Reorganiza o array
         const newItems = arrayMove(items, oldIndex, newIndex);
 
-        // Atualiza as ordens (a capa continua sendo a primeira se existir)
         return newItems.map((item, index) => ({
           ...item,
           ordem: index,
@@ -201,18 +870,13 @@ const CadastrarImovel = () => {
 
   const handleSetCapa = (fotoId) => {
     setFotos((items) => {
-      // Encontra a foto que foi clicada
       const fotoClicada = items.find((f) => f.id === fotoId);
-
-      // Remove a foto da posição atual
       const semFotoClicada = items.filter((f) => f.id !== fotoId);
-
-      // Coloca a foto clicada no início e atualiza as ordens
       const novasFotos = [fotoClicada, ...semFotoClicada].map(
         (item, index) => ({
           ...item,
           ordem: index,
-          isCapa: index === 0, // A primeira foto é a capa
+          isCapa: index === 0,
         }),
       );
 
@@ -227,7 +891,7 @@ const CadastrarImovel = () => {
         .map((item, index) => ({
           ...item,
           ordem: index,
-          isCapa: index === 0, // Se removeu a capa, a nova primeira vira capa
+          isCapa: index === 0,
         }));
       return novasFotos;
     });
@@ -237,7 +901,6 @@ const CadastrarImovel = () => {
     const files = Array.from(event.target.files);
     if (files.length === 0) return;
 
-    // Validação: máximo 20 fotos
     if (fotos.length + files.length > 20) {
       setFotosError("Máximo de 20 fotos permitidas");
       return;
@@ -248,40 +911,35 @@ const CadastrarImovel = () => {
 
     try {
       const uploadPromises = files.map(async (file, index) => {
-        // Validação de tipo de arquivo
         if (!file.type.startsWith("image/")) {
           throw new Error("Apenas imagens são permitidas");
         }
 
-        // Validação de tamanho (máximo 5MB)
         if (file.size > 5 * 1024 * 1024) {
           throw new Error("Imagem muito grande. Máximo 5MB");
         }
 
-        // Criar nome único para o arquivo
         const fileExt = file.name.split(".").pop();
         const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
         const filePath = `imoveis/temp/${fileName}`;
 
-        // Upload para o Supabase Storage
         const { error: uploadError } = await supabase.storage
           .from("imoveis")
           .upload(filePath, file);
 
         if (uploadError) throw uploadError;
 
-        // Gerar URL pública
         const {
           data: { publicUrl },
         } = supabase.storage.from("imoveis").getPublicUrl(filePath);
 
         return {
-          id: `temp-${Date.now()}-${index}`, // ID temporário
+          id: `temp-${Date.now()}-${index}`,
           url: publicUrl,
           path: filePath,
           file: file,
           ordem: fotos.length + index,
-          isCapa: fotos.length === 0 && index === 0, // Primeira foto vira capa se não houver nenhuma
+          isCapa: fotos.length === 0 && index === 0,
         };
       });
 
@@ -289,7 +947,6 @@ const CadastrarImovel = () => {
 
       setFotos((prev) => {
         const todasFotos = [...prev, ...novasFotos];
-        // Garantir que apenas uma seja capa
         const temCapa = todasFotos.some((f) => f.isCapa);
         if (!temCapa && todasFotos.length > 0) {
           todasFotos[0].isCapa = true;
@@ -301,7 +958,6 @@ const CadastrarImovel = () => {
       setFotosError(error.message || "Erro ao fazer upload das fotos");
     } finally {
       setUploadingFotos(false);
-      // Limpar o input para permitir selecionar o mesmo arquivo novamente
       event.target.value = "";
     }
   };
@@ -331,7 +987,7 @@ const CadastrarImovel = () => {
         const { data, error } = await supabase
           .from("corretores")
           .select("id, nome, creci, email, ativo")
-          .eq("ativo", true) // Pega apenas corretores ativos
+          .eq("ativo", true)
           .order("nome");
 
         if (error) throw error;
@@ -393,46 +1049,19 @@ const CadastrarImovel = () => {
     }
   };
 
-  // =============== FUNÇÃO PARA EXTRAIR DADOS DO IMÓVEL ===============
-  const extrairDadosImovel = (formData) => {
-    return {
-      quartos: formData.dependencias?.dormitorios || 0,
-      areaTotal: formData.dependencias?.area_total || 0,
-      bairro: formData.bairro || "",
-      cidade: formData.cidade || "",
-      estado: formData.estado || "",
-    };
-  };
-
-  // =============== FUNÇÃO PARA GERAR SLUG HÍBRIDO ===============
+  // =============== FUNÇÃO PARA GERAR SLUG ===============
   const gerarSlug = (formData) => {
-    const dados = extrairDadosImovel(formData);
-
     let slugBase = "";
 
-    if (formData.tipo) {
-      slugBase += formData.tipo;
+    if (formData.titulo) {
+      slugBase = formData.titulo;
+    } else if (formData.tipo && formData.cidade) {
+      slugBase = `${formData.tipo} ${formData.cidade}`;
+    } else {
+      slugBase = `imovel-${formData.codigo}`;
     }
 
-    if (dados.cidade) {
-      slugBase += ` ${dados.cidade}`;
-    }
-
-    if (dados.quartos && dados.quartos > 0) {
-      slugBase += ` ${dados.quartos}-quartos`;
-    }
-
-    if (dados.areaTotal && dados.areaTotal > 0) {
-      slugBase += ` ${dados.areaTotal}-m`;
-    }
-
-    if (!slugBase.trim()) {
-      slugBase = formData.titulo || `imovel-${formData.codigo}`;
-    }
-
-    const slug = `${slugify(slugBase)}-${formData.codigo || "sem-codigo"}`;
-
-    return slug;
+    return slugify(slugBase);
   };
 
   // =============== TESTE DE CONEXÃO ===============
@@ -464,38 +1093,48 @@ const CadastrarImovel = () => {
     testarConexao();
   }, []);
 
-  // =============== ESTADO DO FORMULÁRIO ===============
+  // =============== ESTADO DO FORMULÁRIO (ALINHADO COM O BANCO) ===============
   const [formData, setFormData] = useState({
+    // Campos diretos da tabela imoveis
     codigo: "",
     titulo: "",
-    finalidade: { venda: true, aluguel: false },
+    slug: "",
     tipo: "",
-    preco: "",
     status: "disponivel",
     financiado: false,
-    emCondominio: false,
-    proprietarioId: "",
-    corretorId: "",
-    ocultarPreco: false,
-    slug: "",
+    em_condominio: false,
+    proprietario_id: "",
+    corretor_id: "",
+    ocultar_preco: false,
 
-    empreendimento_id: "",
+    // Finalidades (serão inseridas na tabela imovel_finalidades)
+    finalidade_venda: false,
+    finalidade_aluguel: false,
+    preco_venda: "",
+    preco_aluguel: "",
+
+    // Relacionamento com edificios
+    id_edificios: "",
     unidade: "",
     andar: "",
     lote: "",
     bloco: "",
     quadra: "",
 
-    dependencias: {
-      dormitorios: "",
-      banheiros: "",
-      suites: "",
-      vagas: "",
-      area_total: "",
-      area_construida: "",
-    },
+    // Dependências (colunas diretas)
+    quartos: 0,
+    suites: 0,
+    banheiros: 0,
+    vagas: 0,
+    area_total: 0,
+    area_construida: 0,
+    area_privativa: 0,
 
-    // LOCALIZAÇÃO SIMPLIFICADA
+    // Custos
+    condominio_mensal: 0,
+    iptu_anual: 0,
+
+    // Localização
     cep: "",
     endereco: "",
     numero: "",
@@ -503,48 +1142,58 @@ const CadastrarImovel = () => {
     bairro: "",
     cidade: "",
     estado: "",
-    exibirEnderecoSite: false, // CHECKBOX ÚNICO
+    exibir_endereco_site: false,
 
-    // ETIQUETAS DA VITRINE
+    // Textos
+    descricao: "",
+    observacoes: "",
+
+    // JSONB - Etiquetas da vitrine
     etiquetas: {
-      destaqueSemana: false,
-      novoSite: false,
-      baixouPreco: false,
-      financiável: false,
+      destaque_semana: false,
+      novo_site: false,
+      baixou_preco: false,
+      financiavel: false,
     },
 
+    // JSONB - Características técnicas
     caracteristicas: {
-      areaUtil: "",
-      areaPrivativa: "",
-      frenteTerreno: "",
+      // Medidas
+      area_util: "",
+      frente_terreno: "",
       fundo: "",
-      lateralEsquerda: "",
-      lateralDireita: "",
-      peDireito: "",
+      lateral_esquerda: "",
+      lateral_direita: "",
+      pe_direito: "",
       topografia: "",
       esquina: false,
-      tipoConstrucao: "",
-      anoConstrucao: "",
-      reformadoRecentemente: false,
-      numeroPavimentos: "",
-      imovelAverbado: false,
-      financiavel: false,
-      aceitaPermuta: false,
-      tipoIluminacao: "",
-      tipoTelhado: "",
-      forroLaje: false,
-      sistemaEletricoNovo: false,
-      caixaDAgua: "",
-      sistemaEsgoto: "",
-      aquecimentoAgua: "",
-      posicaoSolar: "",
-      ventilacaoCruzada: false,
-      vistaLivre: false,
-      vistaPermanente: false,
-      ruaSemSaida: false,
-      esquinaInfo: false,
-      condominioTaxaMensal: "",
 
+      // Estrutura
+      tipo_construcao: "",
+      ano_construcao: "",
+      numero_pavimentos: "",
+      reformado_recentemente: false,
+      imovel_averbado: false,
+      financiavel: false,
+      aceita_permuta: false,
+
+      // Infraestrutura interna
+      tipo_iluminacao: "",
+      tipo_telhado: "",
+      forro_laje: false,
+      sistema_eletrico_novo: false,
+      caixa_dagua: "",
+      sistema_esgoto: "",
+      aquecimento_agua: "",
+
+      // Estratégicas
+      posicao_solar: "",
+      ventilacao_cruzada: false,
+      vista_livre: false,
+      vista_permanente: false,
+      rua_sem_saida: false,
+
+      // Rurais (opcionais)
       area_total_hectares: "",
       area_agricultavel_hectares: "",
       area_preservacao_hectares: "",
@@ -578,198 +1227,180 @@ const CadastrarImovel = () => {
       atividades_complementares: "",
     },
 
+    // JSONB - Infraestrutura
     infraestrutura: {
       agua: false,
       energia: false,
       esgoto: false,
       internet: false,
       gas: false,
-      piscina: false,
-      churrasqueira: false,
-      academia: false,
-      salaoFestas: false,
-      playground: false,
-      portaoEletronico: false,
-      interfone: false,
-      cameraSeguranca: false,
-      alarme: false,
     },
 
+    // JSONB - Acabamentos (com suporte para personalizados)
     acabamentos: {
-      pisoPorcelanato: false,
-      pisoCeramica: false,
-      pisoLaminado: false,
-      pisoVinilico: false,
-      pisoMadeiraMaciça: false,
-      pisoTaco: false,
-      pisoCimentoQueimado: false,
-      pisoMarmore: false,
-      pisoGranito: false,
-      pisoFrio: false,
-      revestimentoAzulejo: false,
-      revestimentoPastilha: false,
-      revestimentoPorcelanato: false,
-      revestimentoPedraNatural: false,
-      revestimentoPapelParede: false,
-      revestimento3D: false,
-      tetoGessoRebaixado: false,
-      tetoSancaGesso: false,
-      tetoForroPVC: false,
-      tetoLaje: false,
-      portaMadeiraMaciça: false,
-      portaLaqueada: false,
-      esquadriaAluminio: false,
-      esquadriaPVC: false,
-      portaPivotante: false,
-      bancadaGranito: false,
-      bancadaMarmore: false,
-      bancadaQuartzo: false,
-      bancadaNanoglass: false,
-      piso: "",
-      azulejo: "",
-      porta: "",
-      janela: "",
-      forro: "",
-      armarioCozinha: false,
-      armarioBanheiro: false,
-      banheira: false,
-      boxVidro: false,
-      varanda: false,
-      sacada: false,
-      lavabo: false,
-      dependenciaEmpregada: false,
+      // Pisos (fixos)
+      piso_porcelanato: false,
+      piso_ceramica: false,
+      piso_laminado: false,
+      piso_vinilico: false,
+      piso_madeira_macica: false,
+      piso_taco: false,
+      piso_cimento_queimado: false,
+      piso_marmore: false,
+      piso_granito: false,
+      piso_frio: false,
+
+      // Revestimentos (fixos)
+      revestimento_azulejo: false,
+      revestimento_pastilha: false,
+      revestimento_porcelanato: false,
+      revestimento_pedra_natural: false,
+      revestimento_papel_parede: false,
+      revestimento_3d: false,
+
+      // Teto (fixos)
+      teto_gesso_rebaixado: false,
+      teto_sanca_gesso: false,
+      teto_forro_pvc: false,
+      teto_laje: false,
+
+      // Esquadrias (fixos)
+      porta_madeira_macica: false,
+      porta_laqueada: false,
+      esquadria_aluminio: false,
+      esquadria_pvc: false,
+      porta_pivotante: false,
+
+      // Bancadas (fixos)
+      bancada_granito: false,
+      bancada_marmore: false,
+      bancada_quartzo: false,
+      bancada_nanoglass: false,
+
+      // Personalizados (array)
+      personalizados: [],
     },
 
-    areaLazer: {
+    // JSONB - Área de Lazer
+    area_lazer: {
+      // Fixos
       piscina: false,
       churrasqueira: false,
-      espacoGourmet: false,
-      salaoFestas: false,
-      salaoJogos: false,
+      espaco_gourmet: false,
+      salao_festas: false,
+      salao_jogos: false,
       academia: false,
       playground: false,
-      quadraPoliesportiva: false,
-      campoSociety: false,
-      areaVerde: false,
+      quadra_poliesportiva: false,
+      campo_society: false,
+      area_verde: false,
       jardim: false,
       deck: false,
       rooftop: false,
       sauna: false,
-      espacoPet: false,
+      espaco_pet: false,
       brinquedoteca: false,
+
+      // Personalizados
+      personalizados: [],
     },
 
-    localizacaoVizinhanca: {
-      proximoCentro: false,
-      proximoSupermercado: false,
-      proximoEscola: false,
-      proximoHospital: false,
-      proximoFarmacia: false,
-      proximoOnibus: false,
-      proximoShopping: false,
-      proximoFaculdade: false,
-      bairroResidencial: false,
-      bairroComercial: false,
-      ruaAsfaltada: false,
-      ruaTranquila: false,
-      regiaoValorizada: false,
+    // JSONB - Localização e Vizinhança
+    localizacao_vizinhanca: {
+      proximo_centro: false,
+      proximo_supermercado: false,
+      proximo_escola: false,
+      proximo_hospital: false,
+      proximo_farmacia: false,
+      proximo_onibus: false,
+      proximo_shopping: false,
+      proximo_faculdade: false,
+      bairro_residencial: false,
+      bairro_comercial: false,
+      rua_asfaltada: false,
+      rua_tranquila: false,
+      regiao_valorizada: false,
+
+      personalizados: [],
     },
 
+    // JSONB - Segurança
     seguranca: {
-      portaoEletronico: false,
+      portao_eletronico: false,
       interfone: false,
-      cercaEletrica: false,
-      sistemaCameras: false,
+      cerca_eletrica: false,
+      sistema_cameras: false,
       alarme: false,
-      portaria24h: false,
-      vigilancia24h: false,
-      controleAcesso: false,
-      fechaduraDigital: false,
-      condominioFechado: false,
-      murosAltos: false,
+      portaria_24h: false,
+      vigilancia_24h: false,
+      controle_acesso: false,
+      fechadura_digital: false,
+      condominio_fechado: false,
+      muros_altos: false,
+
+      personalizados: [],
     },
 
-    armariosArmazenamento: {
-      armarioCozinhaPlanejado: false,
-      armariosEmbutidos: false,
-      armariosQuarto: false,
-      armariosBanheiro: false,
+    // JSONB - Armários e Armazenamento
+    armarios_armazenamento: {
+      armario_cozinha_planejado: false,
+      armarios_embutidos: false,
+      armarios_quarto: false,
+      armarios_banheiro: false,
       closet: false,
       despensa: false,
       deposito: false,
       roupeiro: false,
       maleiro: false,
+
+      personalizados: [],
     },
 
-    servicosUtilidades: {
-      aguaEncanada: false,
-      energiaEletrica: false,
-      pocoArtesiano: false,
-      aquecimentoGas: false,
-      aquecimentoSolar: false,
-      gasEncanado: false,
-      arCondicionadoInstalado: false,
-      infraArCondicionado: false,
-      internetFibra: false,
-      iluminacaoLED: false,
-      energiaSolar: false,
+    // JSONB - Serviços e Utilidades
+    servicos_utilidades: {
+      agua_encanada: false,
+      energia_eletrica: false,
+      poco_artesiano: false,
+      aquecimento_gas: false,
+      aquecimento_solar: false,
+      gas_encanado: false,
+      ar_condicionado_instalado: false,
+      infra_ar_condicionado: false,
+      internet_fibra: false,
+      iluminacao_led: false,
+      energia_solar: false,
       elevador: false,
-      coletaLixo: false,
+      coleta_lixo: false,
+
+      personalizados: [],
     },
 
+    // JSONB - Diferenciais
     diferenciais: {
       varanda: false,
       sacada: false,
       lavabo: false,
       banheira: false,
-      boxVidro: false,
-      dependenciaEmpregada: false,
+      box_vidro: false,
+      dependencia_empregada: false,
       escritorio: false,
-      peDireitoDuplo: false,
+      pe_direito_duplo: false,
       mezanino: false,
-      vistaPanoramica: false,
+      vista_panoramica: false,
+
+      personalizados: [],
     },
-
-    descricao: "",
-    observacoes: "",
-    iptu_anual: "",
-  });
-
-  const [showRuralFields, setShowRuralFields] = useState({
-    area_total_hectares: false,
-    area_agricultavel_hectares: false,
-    area_preservacao_hectares: false,
-    area_reflorestamento_hectares: false,
-    proximidade_br: false,
-    municipio_distrito: false,
-    solo_topografia_rural: false,
-    benfeitorias: false,
-    plantacao_fruticultura: false,
-    tipo_cultura: false,
-    sistemas_irrigacao: false,
-    tipo_pecuaria: false,
-    numero_cabecas: false,
-    racas_gado: false,
-    area_pastagem_hectares: false,
-    capacidade_suporte: false,
-    estruturas_pecuarias: false,
-    tem_agudada: false,
-    tem_cerca_eletrificada: false,
-    tem_sala_ordenha: false,
-    tipo_confinamento: false,
-    tem_agude: false,
-    tem_represa: false,
-    tem_cacimba: false,
-    tem_poco_artesiano: false,
-    tem_riacho: false,
-    fontes_agua: false,
-    tem_extrativismo: false,
-    tipo_extrativismo: false,
-    tem_ecoturismo: false,
-    atividades_complementares: false,
   });
 
   const [isRural, setIsRural] = useState(false);
+  const [showRuralFields, setShowRuralFields] = useState(false);
+
+  useEffect(() => {
+    const tiposRurais = ["fazenda", "chacara", "sitio", "terreno"];
+    const rural = tiposRurais.includes(formData.tipo);
+    setIsRural(rural);
+    setShowRuralFields(rural);
+  }, [formData.tipo]);
 
   useEffect(() => {
     const atualizarCodigo = async () => {
@@ -785,120 +1416,6 @@ const CadastrarImovel = () => {
     };
 
     atualizarCodigo();
-  }, [formData.tipo]);
-
-  useEffect(() => {
-    const tipo = formData.tipo;
-    const tiposRuraisCompletos = ["fazenda", "chacara", "sitio"];
-    const tiposRuraisBasicos = ["terreno"];
-
-    const rural =
-      tiposRuraisCompletos.includes(tipo) || tiposRuraisBasicos.includes(tipo);
-    setIsRural(rural);
-
-    if (tiposRuraisCompletos.includes(tipo)) {
-      setShowRuralFields({
-        area_total_hectares: true,
-        area_agricultavel_hectares: true,
-        area_preservacao_hectares: true,
-        area_reflorestamento_hectares: true,
-        proximidade_br: true,
-        municipio_distrito: true,
-        solo_topografia_rural: true,
-        benfeitorias: true,
-        plantacao_fruticultura: true,
-        tipo_cultura: true,
-        sistemas_irrigacao: true,
-        tipo_pecuaria: true,
-        numero_cabecas: true,
-        racas_gado: true,
-        area_pastagem_hectares: true,
-        capacidade_suporte: true,
-        estruturas_pecuarias: true,
-        tem_agudada: true,
-        tem_cerca_eletrificada: true,
-        tem_sala_ordenha: true,
-        tipo_confinamento: true,
-        tem_agude: true,
-        tem_represa: true,
-        tem_cacimba: true,
-        tem_poco_artesiano: true,
-        tem_riacho: true,
-        fontes_agua: true,
-        tem_extrativismo: true,
-        tipo_extrativismo: true,
-        tem_ecoturismo: true,
-        atividades_complementares: true,
-      });
-    } else if (tiposRuraisBasicos.includes(tipo)) {
-      setShowRuralFields({
-        area_total_hectares: true,
-        area_agricultavel_hectares: false,
-        area_preservacao_hectares: false,
-        area_reflorestamento_hectares: false,
-        proximidade_br: true,
-        municipio_distrito: true,
-        solo_topografia_rural: false,
-        benfeitorias: false,
-        plantacao_fruticultura: false,
-        tipo_cultura: false,
-        sistemas_irrigacao: false,
-        tipo_pecuaria: false,
-        numero_cabecas: false,
-        racas_gado: false,
-        area_pastagem_hectares: false,
-        capacidade_suporte: false,
-        estruturas_pecuarias: false,
-        tem_agudada: false,
-        tem_cerca_eletrificada: false,
-        tem_sala_ordenha: false,
-        tipo_confinamento: false,
-        tem_agude: false,
-        tem_represa: false,
-        tem_cacimba: false,
-        tem_poco_artesiano: false,
-        tem_riacho: false,
-        fontes_agua: false,
-        tem_extrativismo: false,
-        tipo_extrativismo: false,
-        tem_ecoturismo: false,
-        atividades_complementares: false,
-      });
-    } else {
-      setShowRuralFields({
-        area_total_hectares: false,
-        area_agricultavel_hectares: false,
-        area_preservacao_hectares: false,
-        area_reflorestamento_hectares: false,
-        proximidade_br: false,
-        municipio_distrito: false,
-        solo_topografia_rural: false,
-        benfeitorias: false,
-        plantacao_fruticultura: false,
-        tipo_cultura: false,
-        sistemas_irrigacao: false,
-        tipo_pecuaria: false,
-        numero_cabecas: false,
-        racas_gado: false,
-        area_pastagem_hectares: false,
-        capacidade_suporte: false,
-        estruturas_pecuarias: false,
-        tem_agudada: false,
-        tem_cerca_eletrificada: false,
-        tem_sala_ordenha: false,
-        tipo_confinamento: false,
-        tem_agude: false,
-        tem_represa: false,
-        tem_cacimba: false,
-        tem_poco_artesiano: false,
-        tem_riacho: false,
-        fontes_agua: false,
-        tem_extrativismo: false,
-        tipo_extrativismo: false,
-        tem_ecoturismo: false,
-        atividades_complementares: false,
-      });
-    }
   }, [formData.tipo]);
 
   const [accordionOpen, setAccordionOpen] = useState({
@@ -926,62 +1443,6 @@ const CadastrarImovel = () => {
     { value: "chacara", label: "Chácara" },
     { value: "sitio", label: "Sítio" },
     { value: "galpao", label: "Galpão" },
-  ];
-
-  const tipoPecuariaOpcoes = [
-    { value: "corte", label: "Corte" },
-    { value: "leite", label: "Leite" },
-    { value: "mista", label: "Mista (corte e leite)" },
-    { value: "cria_recria", label: "Cria e Recria" },
-    { value: "engorda", label: "Engorda" },
-  ];
-
-  const tipoConfinamentoOpcoes = [
-    { value: "nao", label: "Não possui" },
-    { value: "semi_confinamento", label: "Semi-confinamento" },
-    { value: "confinamento", label: "Confinamento" },
-    { value: "rotacionado", label: "Pastoreio rotacionado" },
-  ];
-
-  const tipoCulturaOpcoes = [
-    { value: "soja", label: "Soja" },
-    { value: "milho", label: "Milho" },
-    { value: "cafe", label: "Café" },
-    { value: "cana", label: "Cana-de-açúcar" },
-    { value: "laranja", label: "Laranja" },
-    { value: "eucalipto", label: "Eucalipto" },
-    { value: "pastagem", label: "Pastagem" },
-    { value: "hortifruti", label: "Hortifruti" },
-    { value: "diversas", label: "Diversas" },
-  ];
-
-  const estadosBrasil = [
-    { value: "AC", label: "Acre" },
-    { value: "AL", label: "Alagoas" },
-    { value: "AP", label: "Amapá" },
-    { value: "AM", label: "Amazonas" },
-    { value: "BA", label: "Bahia" },
-    { value: "CE", label: "Ceará" },
-    { value: "DF", label: "Distrito Federal" },
-    { value: "ES", label: "Espírito Santo" },
-    { value: "GO", label: "Goiás" },
-    { value: "MA", label: "Maranhão" },
-    { value: "MT", label: "Mato Grosso" },
-    { value: "MS", label: "Mato Grosso do Sul" },
-    { value: "MG", label: "Minas Gerais" },
-    { value: "PA", label: "Pará" },
-    { value: "PB", label: "Paraíba" },
-    { value: "PR", label: "Paraná" },
-    { value: "PE", label: "Pernambuco" },
-    { value: "PI", label: "Piauí" },
-    { value: "RJ", label: "Rio de Janeiro" },
-    { value: "RN", label: "Rio Grande do Norte" },
-    { value: "RO", label: "Rondônia" },
-    { value: "RR", label: "Roraima" },
-    { value: "SC", label: "Santa Catarina" },
-    { value: "SP", label: "São Paulo" },
-    { value: "SE", label: "Sergipe" },
-    { value: "TO", label: "Tocantins" },
   ];
 
   const topografiaOpcoes = [
@@ -1048,9 +1509,7 @@ const CadastrarImovel = () => {
       );
 
       const data = await response.json();
-      console.log("📦 Resposta da API:", data);
 
-      // Tratar erros conhecidos
       if (data.error) {
         if (data.error === "CEP não encontrado") {
           setCepError("CEP não encontrado");
@@ -1064,7 +1523,6 @@ const CadastrarImovel = () => {
         return;
       }
 
-      // Preencher os campos
       setFormData((prev) => ({
         ...prev,
         endereco: data.logradouro || "",
@@ -1094,6 +1552,18 @@ const CadastrarImovel = () => {
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
+
+    // Se for campo de preço, converte para número
+    if (name === "preco_venda" || name === "preco_aluguel") {
+      const numericValue = value === "" ? "" : Number(value);
+      setFormData((prev) => ({
+        ...prev,
+        [name]: numericValue,
+      }));
+      return;
+    }
+
+    // Campos aninhados (ex: caracteristicas.area_util)
     if (name.includes(".")) {
       const [parent, child] = name.split(".");
       setFormData((prev) => ({
@@ -1103,12 +1573,21 @@ const CadastrarImovel = () => {
           [child]: type === "checkbox" ? checked : value,
         },
       }));
-    } else {
+    }
+    // Campos diretos
+    else {
       setFormData((prev) => ({
         ...prev,
         [name]: type === "checkbox" ? checked : value,
       }));
     }
+  };
+
+  const handleCounterChange = (field, increment) => {
+    setFormData((prev) => ({
+      ...prev,
+      [field]: Math.max(0, (parseInt(prev[field]) || 0) + increment),
+    }));
   };
 
   const toggleAccordion = (section) => {
@@ -1118,215 +1597,139 @@ const CadastrarImovel = () => {
     }));
   };
 
-  const formatPrice = (price) => {
-    if (!price) return "";
-    return Number(price).toLocaleString("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    });
-  };
-
-  // =============== FUNÇÃO DE SUBMIT MODIFICADA PARA INCLUIR FOTOS ===============
+  // =============== FUNÇÃO DE SUBMIT MODIFICADA PARA O BANCO ===============
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setSubmitMessage({ type: "", text: "" });
 
-    const slug = gerarSlug(formData);
-    console.log("🔨 Slug híbrido gerado (interno):", slug);
+    if (!formData.finalidade_venda && !formData.finalidade_aluguel) {
+      setSubmitMessage({
+        type: "error",
+        text: "Selecione pelo menos uma finalidade (venda ou aluguel)",
+      });
+      setLoading(false);
+      return;
+    }
 
+    if (formData.finalidade_venda) {
+      const precoVendaNumero = parseFloat(formData.preco_venda);
+      if (
+        !formData.preco_venda ||
+        isNaN(precoVendaNumero) ||
+        precoVendaNumero <= 0
+      ) {
+        setSubmitMessage({
+          type: "error",
+          text: "Preço de venda é obrigatório e deve ser maior que zero",
+        });
+        setLoading(false);
+        return;
+      }
+    }
+
+    if (formData.finalidade_aluguel) {
+      const precoAluguelNumero = parseFloat(formData.preco_aluguel);
+      if (
+        !formData.preco_aluguel ||
+        isNaN(precoAluguelNumero) ||
+        precoAluguelNumero <= 0
+      ) {
+        setSubmitMessage({
+          type: "error",
+          text: "Preço de aluguel é obrigatório e deve ser maior que zero",
+        });
+        setLoading(false);
+        return;
+      }
+    }
+
+    // Gerar slug (opcional - o trigger do banco também gera)
+    const slug = gerarSlug(formData);
+
+    // Preparar dados para inserção na tabela imoveis
     const dadosParaSupabase = {
-      visualizado: false,
+      // Campos diretos
       codigo: formData.codigo,
       titulo: formData.titulo,
       slug: slug,
-      finalidade_venda: formData.finalidade.venda,
-      finalidade_aluguel: formData.finalidade.aluguel,
       tipo: formData.tipo,
-      preco: formData.preco ? parseFloat(formData.preco) : null,
       status: formData.status,
       financiado: formData.financiado,
-      em_condominio: isRural ? false : formData.emCondominio,
-      proprietario_id: formData.proprietarioId || null,
-      corretor_id: formData.corretorId || null,
-      ocultar_preco: formData.ocultarPreco,
+      em_condominio: isRural ? false : formData.em_condominio,
+      proprietario_id: formData.proprietario_id || null,
+      corretor_id: formData.corretor_id || null,
+      ocultar_preco: formData.ocultar_preco,
 
-      id_edificios: isRural ? null : formData.empreendimento_id || null,
+      // Relacionamento com edificios
+      id_edificios: isRural ? null : formData.id_edificios || null,
       unidade: isRural ? "" : formData.unidade || "",
       andar: isRural ? 0 : formData.andar ? parseInt(formData.andar) : 0,
       lote: formData.lote || "",
       bloco: isRural ? "" : formData.bloco || "",
       quadra: formData.quadra || "",
 
-      quartos: isRural ? 0 : parseInt(formData.dependencias.dormitorios) || 0,
-      suites: isRural ? 0 : parseInt(formData.dependencias.suites) || 0,
-      banheiros: isRural ? 0 : parseInt(formData.dependencias.banheiros) || 0,
-      vagas: isRural ? 0 : parseInt(formData.dependencias.vagas) || 1,
-      area_total: isRural
-        ? 0
-        : parseFloat(formData.dependencias.area_total) || 0,
-      area_construida: isRural
-        ? 0
-        : parseFloat(formData.dependencias.area_construida) || 0,
-      area_privativa: isRural
-        ? 0
-        : parseFloat(formData.caracteristicas.areaPrivativa) || 0,
+      // Dependências
+      quartos: isRural ? 0 : parseInt(formData.quartos) || 0,
+      suites: isRural ? 0 : parseInt(formData.suites) || 0,
+      banheiros: isRural ? 0 : parseInt(formData.banheiros) || 0,
+      vagas: isRural ? 0 : parseInt(formData.vagas) || 1,
+      area_total: parseFloat(formData.area_total) || 0,
+      area_construida: parseFloat(formData.area_construida) || 0,
+      area_privativa: parseFloat(formData.area_privativa) || 0,
 
-      condominio_mensal: isRural
-        ? 0
-        : parseFloat(formData.caracteristicas.condominioTaxaMensal) || 0,
+      // Custos
+      condominio_mensal: parseFloat(formData.condominio_mensal) || 0,
       iptu_anual: parseFloat(formData.iptu_anual) || 0,
-      data_disponibilidade: null,
 
-      // LOCALIZAÇÃO - com controle de exibição
+      // Localização
       cep: formData.cep || "",
       endereco: formData.endereco || "",
       numero: formData.numero || "",
       complemento: formData.complemento || "",
-      bairro: isRural ? "" : formData.bairro,
-      cidade: formData.cidade || "",
-      estado: formData.estado || "",
-      exibir_endereco_site: formData.exibirEnderecoSite || false, // NOVO CAMPO
+      bairro: formData.bairro,
+      cidade: formData.cidade,
+      estado: formData.estado,
+      exibir_endereco_site: formData.exibir_endereco_site || false,
 
+      // Textos
       descricao: formData.descricao || "",
       observacoes: formData.observacoes || "",
 
+      // JSONBs
       etiquetas: {
-        destaqueSemana: formData.etiquetas.destaqueSemana || false,
-        novoSite: formData.etiquetas.novoSite || false,
-        baixouPreco: formData.etiquetas.baixouPreco || false,
-        financiavel: formData.etiquetas.financiável || false,
+        destaque_semana: formData.etiquetas.destaque_semana || false,
+        novo_site: formData.etiquetas.novo_site || false,
+        baixou_preco: formData.etiquetas.baixou_preco || false,
+        financiavel: formData.etiquetas.financiavel || false,
       },
 
       caracteristicas: {
-        ...(isRural
-          ? {}
-          : {
-              areaUtil: formData.caracteristicas.areaUtil
-                ? parseFloat(formData.caracteristicas.areaUtil)
-                : 0,
-              areaPrivativa: formData.caracteristicas.areaPrivativa
-                ? parseFloat(formData.caracteristicas.areaPrivativa)
-                : 0,
-              frenteTerreno: formData.caracteristicas.frenteTerreno || "",
-              fundo: formData.caracteristicas.fundo || "",
-              lateralEsquerda: formData.caracteristicas.lateralEsquerda || "",
-              lateralDireita: formData.caracteristicas.lateralDireita || "",
-              peDireito: formData.caracteristicas.peDireito || "",
-              topografia: formData.caracteristicas.topografia || "",
-              esquina: formData.caracteristicas.esquina || false,
-              tipoConstrucao: formData.caracteristicas.tipoConstrucao || "",
-              anoConstrucao: formData.caracteristicas.anoConstrucao
-                ? parseInt(formData.caracteristicas.anoConstrucao)
-                : null,
-              numeroPavimentos: formData.caracteristicas.numeroPavimentos
-                ? parseInt(formData.caracteristicas.numeroPavimentos)
-                : 0,
-              tipoIluminacao: formData.caracteristicas.tipoIluminacao || "",
-              tipoTelhado: formData.caracteristicas.tipoTelhado || "",
-              forroLaje: formData.caracteristicas.forroLaje || false,
-              sistemaEletricoNovo:
-                formData.caracteristicas.sistemaEletricoNovo || false,
-              caixaDAgua: formData.caracteristicas.caixaDAgua
-                ? parseInt(formData.caracteristicas.caixaDAgua)
-                : 0,
-              sistemaEsgoto: formData.caracteristicas.sistemaEsgoto || "",
-              aquecimentoAgua: formData.caracteristicas.aquecimentoAgua || "",
-              posicaoSolar: formData.caracteristicas.posicaoSolar || "",
-              ventilacaoCruzada:
-                formData.caracteristicas.ventilacaoCruzada || false,
-              vistaLivre: formData.caracteristicas.vistaLivre || false,
-              vistaPermanente:
-                formData.caracteristicas.vistaPermanente || false,
-              ruaSemSaida: formData.caracteristicas.ruaSemSaida || false,
-              esquinaInfo: formData.caracteristicas.esquinaInfo || false,
-              reformadoRecentemente:
-                formData.caracteristicas.reformadoRecentemente || false,
-              imovelAverbado: formData.caracteristicas.imovelAverbado || false,
-              financiavel: formData.caracteristicas.financiavel || false,
-              aceitaPermuta: formData.caracteristicas.aceitaPermuta || false,
-            }),
-
-        area_total_hectares: formData.caracteristicas.area_total_hectares
-          ? parseFloat(formData.caracteristicas.area_total_hectares)
+        ...formData.caracteristicas,
+        // Converter números onde necessário
+        ano_construcao: formData.caracteristicas.ano_construcao
+          ? parseInt(formData.caracteristicas.ano_construcao)
           : null,
-        area_agricultavel_hectares: formData.caracteristicas
-          .area_agricultavel_hectares
-          ? parseFloat(formData.caracteristicas.area_agricultavel_hectares)
-          : null,
-        area_preservacao_hectares: formData.caracteristicas
-          .area_preservacao_hectares
-          ? parseFloat(formData.caracteristicas.area_preservacao_hectares)
-          : null,
-        area_reflorestamento_hectares: formData.caracteristicas
-          .area_reflorestamento_hectares
-          ? parseFloat(formData.caracteristicas.area_reflorestamento_hectares)
-          : null,
-        proximidade_br: formData.caracteristicas.proximidade_br || "",
-        municipio_distrito: formData.caracteristicas.municipio_distrito || "",
-        solo_topografia_rural:
-          formData.caracteristicas.solo_topografia_rural || "",
-        benfeitorias: formData.caracteristicas.benfeitorias || "",
-        plantacao_fruticultura:
-          formData.caracteristicas.plantacao_fruticultura || "",
-        tipo_cultura: formData.caracteristicas.tipo_cultura || "",
-        sistemas_irrigacao: formData.caracteristicas.sistemas_irrigacao || "",
-        tipo_pecuaria: formData.caracteristicas.tipo_pecuaria || "",
-        numero_cabecas: formData.caracteristicas.numero_cabecas
-          ? parseInt(formData.caracteristicas.numero_cabecas)
-          : null,
-        racas_gado: formData.caracteristicas.racas_gado || "",
-        area_pastagem_hectares: formData.caracteristicas.area_pastagem_hectares
-          ? parseFloat(formData.caracteristicas.area_pastagem_hectares)
-          : null,
-        capacidade_suporte: formData.caracteristicas.capacidade_suporte || "",
-        estruturas_pecuarias:
-          formData.caracteristicas.estruturas_pecuarias || "",
-        tem_agudada: formData.caracteristicas.tem_agudada || false,
-        tem_cerca_eletrificada:
-          formData.caracteristicas.tem_cerca_eletrificada || false,
-        tem_sala_ordenha: formData.caracteristicas.tem_sala_ordenha || false,
-        tipo_confinamento: formData.caracteristicas.tipo_confinamento || "",
-        tem_agude: formData.caracteristicas.tem_agude || false,
-        tem_represa: formData.caracteristicas.tem_represa || false,
-        tem_cacimba: formData.caracteristicas.tem_cacimba || false,
-        tem_poco_artesiano:
-          formData.caracteristicas.tem_poco_artesiano || false,
-        tem_riacho: formData.caracteristicas.tem_riacho || false,
-        fontes_agua: formData.caracteristicas.fontes_agua || "",
-        tem_extrativismo: formData.caracteristicas.tem_extrativismo || false,
-        tipo_extrativismo: formData.caracteristicas.tipo_extrativismo || "",
-        tem_ecoturismo: formData.caracteristicas.tem_ecoturismo || false,
-        atividades_complementares:
-          formData.caracteristicas.atividades_complementares || "",
+        numero_pavimentos: formData.caracteristicas.numero_pavimentos
+          ? parseInt(formData.caracteristicas.numero_pavimentos)
+          : 0,
+        caixa_dagua: formData.caracteristicas.caixa_dagua
+          ? parseInt(formData.caracteristicas.caixa_dagua)
+          : 0,
       },
 
-      infraestrutura: isRural ? {} : formData.infraestrutura || {},
-      acabamentos: isRural ? {} : formData.acabamentos || {},
-      area_lazer: isRural ? {} : formData.areaLazer || {},
-      localizacao_vizinhanca: isRural
-        ? {}
-        : formData.localizacaoVizinhanca || {},
-      seguranca: isRural ? {} : formData.seguranca || {},
-      armarios_armazenamento: isRural
-        ? {}
-        : formData.armariosArmazenamento || {},
-      servicos_utilidades: isRural ? {} : formData.servicosUtilidades || {},
-      diferenciais: isRural ? {} : formData.diferenciais || {},
-      dependencias: isRural
-        ? {}
-        : {
-            dormitorios: formData.dependencias.dormitorios || 0,
-            banheiros: formData.dependencias.banheiros || 0,
-            suites: formData.dependencias.suites || 0,
-            vagas: formData.dependencias.vagas || 0,
-            area_total: formData.dependencias.area_total || 0,
-            area_construida: formData.dependencias.area_construida || 0,
-          },
+      infraestrutura: formData.infraestrutura || {},
+      acabamentos: formData.acabamentos || {},
+      area_lazer: formData.area_lazer || {},
+      localizacao_vizinhanca: formData.localizacao_vizinhanca || {},
+      seguranca: formData.seguranca || {},
+      armarios_armazenamento: formData.armarios_armazenamento || {},
+      servicos_utilidades: formData.servicos_utilidades || {},
+      diferenciais: formData.diferenciais || {},
     };
 
     try {
-      // Primeiro, insere o imóvel
+      // Inserir imóvel
       const { data: imovelData, error } = await supabase
         .from("imoveis")
         .insert([dadosParaSupabase])
@@ -1336,12 +1739,39 @@ const CadastrarImovel = () => {
 
       const imovelId = imovelData[0].id;
 
-      // Depois, se houver fotos, move os arquivos do temp para a pasta definitiva e salva no banco
+      // Inserir finalidades na tabela imovel_finalidades
+      const finalidadesParaInserir = [];
+
+      if (formData.finalidade_venda) {
+        finalidadesParaInserir.push({
+          imovel_id: imovelId,
+          tipo: "venda",
+          preco: parseFloat(formData.preco_venda),
+          status: "ativo",
+        });
+      }
+
+      if (formData.finalidade_aluguel) {
+        finalidadesParaInserir.push({
+          imovel_id: imovelId,
+          tipo: "aluguel",
+          preco: parseFloat(formData.preco_aluguel),
+          status: "ativo",
+        });
+      }
+
+      if (finalidadesParaInserir.length > 0) {
+        const { error: finalidadesError } = await supabase
+          .from("imovel_finalidades")
+          .insert(finalidadesParaInserir);
+
+        if (finalidadesError) throw finalidadesError;
+      }
+
+      // Inserir fotos
       if (fotos.length > 0) {
         const fotosPromises = fotos.map(async (foto, index) => {
-          // Se for uma foto temporária (ainda não movida)
           if (foto.id.startsWith("temp-")) {
-            // Move o arquivo da pasta temp para a pasta do imóvel
             const newPath = `imoveis/${imovelId}/${foto.file.name}`;
 
             const { error: moveError } = await supabase.storage
@@ -1350,7 +1780,6 @@ const CadastrarImovel = () => {
 
             if (moveError) throw moveError;
 
-            // Gera a nova URL pública
             const {
               data: { publicUrl },
             } = supabase.storage.from("imoveis").getPublicUrl(newPath);
@@ -1384,7 +1813,7 @@ const CadastrarImovel = () => {
       });
 
       setTimeout(() => {
-        navigate("/admin");
+        navigate("/admin/imoveis");
       }, 2000);
     } catch (error) {
       console.error("Erro detalhado:", error);
@@ -1407,6 +1836,7 @@ const CadastrarImovel = () => {
     }
   };
 
+  // Classes utilitárias para temas
   const getBgClass = () => (isDark ? "bg-gray-900" : "bg-white");
   const getBorderClass = () => (isDark ? "border-gray-700" : "border-gray-200");
   const getTextClass = () => (isDark ? "text-gray-100" : "text-gray-900");
@@ -1437,36 +1867,11 @@ const CadastrarImovel = () => {
     isDark
       ? "bg-gray-800 border-gray-700 text-gray-200"
       : "bg-white border-gray-300 text-gray-900";
-  const getStatusColor = (status) => {
-    const baseColors = {
-      disponivel: {
-        light: "bg-green-100 text-green-800",
-        dark: "bg-green-900/30 text-green-300 border border-green-800",
-      },
-      reservado: {
-        light: "bg-yellow-100 text-yellow-800",
-        dark: "bg-yellow-900/30 text-yellow-300 border border-yellow-800",
-      },
-      vendido: {
-        light: "bg-gray-100 text-gray-800",
-        dark: "bg-gray-800 text-gray-300 border border-gray-700",
-      },
-      alugado: {
-        light: "bg-blue-100 text-blue-800",
-        dark: "bg-blue-900/30 text-blue-300 border border-blue-800",
-      },
-    };
-    return isDark
-      ? baseColors[status]?.dark || "bg-gray-800 text-gray-300"
-      : baseColors[status]?.light || "bg-gray-100 text-gray-800";
-  };
-  const getFinanciavelColor = () =>
-    isDark
-      ? "bg-blue-900/30 text-blue-300 border border-blue-800"
-      : "bg-blue-100 text-blue-800";
   const getCheckboxClass = () =>
     `appearance-none h-5 w-5 border rounded transition-colors focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/50 focus:ring-offset-2 ${isDark ? "bg-gray-800" : "bg-white"} ${getCheckboxBorderClass()} checked:bg-[#D4A24D] checked:border-[#D4A24D] relative checked:after:absolute checked:after:content-[''] checked:after:h-[0.625rem] checked:after:w-[0.3125rem] checked:after:rotate-45 checked:after:translate-x-[0.375rem] checked:after:translate-y-[0.125rem] checked:after:border-solid checked:after:border-white checked:after:border-width-0 checked:after:border-r-2 checked:after:border-b-2`;
   const getOptionBgClass = () => (isDark ? "bg-gray-800" : "bg-white");
+  const getInputClasses = () =>
+    `${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()} ${getPlaceholderClass()}`;
 
   return (
     <div
@@ -1500,16 +1905,6 @@ const CadastrarImovel = () => {
                 </p>
               </div>
             </div>
-            <div className="flex items-center space-x-4">
-              {/* Badge Financiável (se a etiqueta estiver marcada) */}
-              {formData.etiquetas.financiável && (
-                <div
-                  className={`px-3 py-1.5 rounded-full text-sm font-medium ${getFinanciavelColor()}`}
-                >
-                  Financiável
-                </div>
-              )}
-            </div>
           </div>
         </div>
       </div>
@@ -1534,12 +1929,11 @@ const CadastrarImovel = () => {
                 <p
                   className={`text-sm transition-colors ${getTextSecondaryClass()}`}
                 >
-                  {isRural
-                    ? "Dados para identificação do imóvel rural"
-                    : "Dados para identificação, comercialização e gestão"}
+                  Dados para identificação, comercialização e gestão
                 </p>
               </div>
             </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               <div>
                 <label
@@ -1552,7 +1946,7 @@ const CadastrarImovel = () => {
                   value={formData.tipo}
                   onChange={handleChange}
                   required
-                  className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors duration-200 ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()}`}
+                  className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors duration-200 ${getInputClasses()}`}
                 >
                   <option value="" className={getOptionBgClass()}>
                     Selecione o tipo
@@ -1568,7 +1962,6 @@ const CadastrarImovel = () => {
                   ))}
                 </select>
               </div>
-
               <div>
                 <label
                   className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
@@ -1583,7 +1976,7 @@ const CadastrarImovel = () => {
                   required
                   placeholder="Gerado automaticamente"
                   readOnly
-                  className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors duration-200 ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()} ${getPlaceholderClass()} opacity-80 cursor-not-allowed`}
+                  className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors duration-200 ${getInputClasses()} opacity-80 cursor-not-allowed`}
                 />
                 <p
                   className={`text-xs mt-1 ${isDark ? "text-gray-500" : "text-gray-500"}`}
@@ -1591,7 +1984,6 @@ const CadastrarImovel = () => {
                   ⚡ Gerado automaticamente ao selecionar o tipo
                 </p>
               </div>
-
               <div>
                 <label
                   className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
@@ -1609,106 +2001,83 @@ const CadastrarImovel = () => {
                       ? "Ex: Fazenda com 500 hectares e gado nelore"
                       : "Ex: Casa moderna com piscina no Jardins"
                   }
-                  className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors duration-200 ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()} ${getPlaceholderClass()}`}
+                  className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors duration-200 ${getInputClasses()}`}
                 />
               </div>
-
-              <div>
+              <div className="md:col-span-2">
                 <label
                   className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
                 >
                   Finalidade *
                 </label>
-                <div className="flex space-x-4">
-                  <label className="flex items-center">
-                    <input
-                      type="checkbox"
-                      name="finalidade.venda"
-                      checked={formData.finalidade.venda}
-                      onChange={handleChange}
-                      className={getCheckboxClass()}
-                    />
-                    <span
-                      className={`ml-2 transition-colors ${getTextClass()}`}
-                    >
-                      Venda
-                    </span>
-                  </label>
-                  <label className="flex items-center">
-                    <input
-                      type="checkbox"
-                      name="finalidade.aluguel"
-                      checked={formData.finalidade.aluguel}
-                      onChange={handleChange}
-                      className={getCheckboxClass()}
-                    />
-                    <span
-                      className={`ml-2 transition-colors ${getTextClass()}`}
-                    >
-                      Aluguel
-                    </span>
-                  </label>
-                </div>
-              </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 border rounded-lg">
+                  {/* Venda */}
+                  <div className="space-y-4">
+                    <label className="flex items-center space-x-3">
+                      <input
+                        type="checkbox"
+                        name="finalidade_venda"
+                        checked={formData.finalidade_venda}
+                        onChange={handleChange}
+                        className={getCheckboxClass()}
+                      />
+                      <span
+                        className={`font-medium transition-colors ${getTextClass()}`}
+                      >
+                        Venda
+                      </span>
+                    </label>
 
-              <div>
-                <label
-                  className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
-                >
-                  Preço *
-                </label>
-                <div className="space-y-2">
-                  <div className="relative">
-                    <span
-                      className={`absolute left-4 top-1/2 transform -translate-y-1/2 transition-colors ${getTextSecondaryClass()}`}
-                    >
-                      R$
-                    </span>
-                    <input
-                      type="number"
-                      name="preco"
-                      value={formData.preco}
-                      onChange={handleChange}
-                      required
-                      min="0"
-                      step="0.01"
-                      placeholder="0,00"
-                      className={`w-full pl-12 pr-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors duration-200 ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()} ${getPlaceholderClass()}`}
-                    />
+                    {formData.finalidade_venda && (
+                      <div className="ml-8">
+                        <PriceInput
+                          name="preco_venda"
+                          value={formData.preco_venda}
+                          onChange={handleChange}
+                          label="Preço de Venda"
+                          required={formData.finalidade_venda}
+                          isDark={isDark}
+                          getInputClasses={getInputClasses}
+                        />
+                      </div>
+                    )}
                   </div>
-                  <label className="flex items-center space-x-3">
-                    <input
-                      type="checkbox"
-                      name="ocultarPreco"
-                      checked={formData.ocultarPreco}
-                      onChange={handleChange}
-                      className={getCheckboxClass()}
-                    />
-                    <span
-                      className={`text-sm transition-colors ${getTextClass()}`}
-                    >
-                      Ocultar preço na vitrine
-                    </span>
-                  </label>
-                </div>
 
-                {formData.preco && !formData.ocultarPreco && (
-                  <p
-                    className={`mt-2 text-sm transition-colors ${getTextSecondaryClass()}`}
-                  >
-                    {formatPrice(formData.preco)}
-                  </p>
-                )}
+                  {/* Aluguel */}
+                  <div className="space-y-4">
+                    <label className="flex items-center space-x-3">
+                      <input
+                        type="checkbox"
+                        name="finalidade_aluguel"
+                        checked={formData.finalidade_aluguel}
+                        onChange={handleChange}
+                        className={getCheckboxClass()}
+                      />
+                      <span
+                        className={`font-medium transition-colors ${getTextClass()}`}
+                      >
+                        Aluguel
+                      </span>
+                    </label>
 
-                {formData.ocultarPreco && (
-                  <p
-                    className={`mt-2 text-sm ${isDark ? "text-yellow-400" : "text-yellow-600"}`}
-                  >
-                    Preço não será exibido publicamente.
-                  </p>
-                )}
-              </div>
-
+                    {formData.finalidade_aluguel && (
+                      <div className="ml-8">
+                        <PriceInput
+                          name="preco_aluguel"
+                          value={formData.preco_aluguel}
+                          onChange={handleChange}
+                          label="Preço de Aluguel"
+                          required={formData.finalidade_aluguel}
+                          isDark={isDark}
+                          getInputClasses={getInputClasses}
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>{" "}
+                {/* Fecha o grid */}
+              </div>{" "}
+              {/* Fecha o md:col-span-2 */}
               <div>
                 <label
                   className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
@@ -1716,10 +2085,10 @@ const CadastrarImovel = () => {
                   Proprietário
                 </label>
                 <select
-                  name="proprietarioId"
-                  value={formData.proprietarioId}
+                  name="proprietario_id"
+                  value={formData.proprietario_id}
                   onChange={handleChange}
-                  className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors duration-200 ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()}`}
+                  className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors duration-200 ${getInputClasses()}`}
                 >
                   <option value="" className={getOptionBgClass()}>
                     Selecionar proprietário
@@ -1735,7 +2104,6 @@ const CadastrarImovel = () => {
                   ))}
                 </select>
               </div>
-
               <div>
                 <label
                   className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
@@ -1743,10 +2111,10 @@ const CadastrarImovel = () => {
                   Corretor Responsável
                 </label>
                 <select
-                  name="corretorId"
-                  value={formData.corretorId}
+                  name="corretor_id"
+                  value={formData.corretor_id}
                   onChange={handleChange}
-                  className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors duration-200 ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()}`}
+                  className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors duration-200 ${getInputClasses()}`}
                 >
                   <option value="" className={getOptionBgClass()}>
                     {loadingCorretores
@@ -1773,7 +2141,6 @@ const CadastrarImovel = () => {
                   </p>
                 )}
               </div>
-
               <div>
                 <label
                   className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
@@ -1785,7 +2152,7 @@ const CadastrarImovel = () => {
                   value={formData.status}
                   onChange={handleChange}
                   required
-                  className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors duration-200 ${getInputBgClass()} ${getBorderClass()} ${getInputTextClass()}`}
+                  className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors duration-200 ${getInputClasses()}`}
                 >
                   <option value="disponivel" className={getOptionBgClass()}>
                     Disponível
@@ -1801,7 +2168,6 @@ const CadastrarImovel = () => {
                   </option>
                 </select>
               </div>
-
               <div className="flex items-center space-x-3 pt-6">
                 <input
                   type="checkbox"
@@ -1818,28 +2184,39 @@ const CadastrarImovel = () => {
                   Imóvel financiável
                 </label>
               </div>
-
               {!isRural && (
                 <div className="flex items-center space-x-3 pt-6">
                   <input
                     type="checkbox"
-                    id="emCondominio"
-                    name="emCondominio"
-                    checked={formData.emCondominio}
+                    id="em_condominio"
+                    name="em_condominio"
+                    checked={formData.em_condominio}
                     onChange={handleChange}
                     className={getCheckboxClass()}
                   />
                   <label
-                    htmlFor="emCondominio"
+                    htmlFor="em_condominio"
                     className={`text-sm transition-colors ${getTextClass()}`}
                   >
                     Imóvel em condomínio
                   </label>
                 </div>
               )}
+              <div className="flex items-center space-x-3 pt-6">
+                <input
+                  type="checkbox"
+                  name="ocultar_preco"
+                  checked={formData.ocultar_preco}
+                  onChange={handleChange}
+                  className={getCheckboxClass()}
+                />
+                <span className={`text-sm transition-colors ${getTextClass()}`}>
+                  Ocultar preço na vitrine
+                </span>
+              </div>
             </div>
 
-            {!isRural && formData.emCondominio && (
+            {!isRural && formData.em_condominio && (
               <div
                 className={`col-span-3 mt-6 p-5 border rounded-lg transition-colors duration-200 ${
                   isDark
@@ -1856,20 +2233,6 @@ const CadastrarImovel = () => {
                   >
                     Vínculo com Empreendimento
                   </h3>
-                  {formData.tipo === "apartamento" && (
-                    <span
-                      className={`text-xs px-2 py-0.5 rounded-full ${isDark ? "bg-gray-700 text-gray-200" : "bg-gray-200 text-gray-800"}`}
-                    >
-                      Edifício obrigatório
-                    </span>
-                  )}
-                  {formData.tipo === "casa" && (
-                    <span
-                      className={`text-xs px-2 py-0.5 rounded-full ${isDark ? "bg-gray-700 text-gray-200" : "bg-gray-200 text-gray-800"}`}
-                    >
-                      Condomínio/Residencial
-                    </span>
-                  )}
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -1880,11 +2243,15 @@ const CadastrarImovel = () => {
                       Nome do Empreendimento *
                     </label>
                     <select
-                      name="empreendimento_id"
-                      value={formData.empreendimento_id}
+                      name="id_edificios"
+                      value={formData.id_edificios}
                       onChange={handleChange}
-                      required={formData.emCondominio}
-                      className={`w-full px-3 py-2.5 border rounded-lg text-sm focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors duration-200 ${isDark ? "bg-gray-700 border-gray-600 text-white" : "bg-white border-gray-300 text-gray-900"}`}
+                      required={formData.em_condominio}
+                      className={`w-full px-3 py-2.5 border rounded-lg text-sm focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors duration-200 ${
+                        isDark
+                          ? "bg-gray-700 border-gray-600 text-white"
+                          : "bg-white border-gray-300 text-gray-900"
+                      }`}
                     >
                       <option
                         value=""
@@ -1910,25 +2277,9 @@ const CadastrarImovel = () => {
                             className={isDark ? "bg-gray-700" : "bg-white"}
                           >
                             {emp.nome} - {emp.bairro}/{emp.cidade}
-                            {emp.tipo === "edificio"
-                              ? " 🏢"
-                              : emp.tipo === "condominio"
-                                ? " 🏘️"
-                                : " 🏡"}
                           </option>
                         ))}
                     </select>
-                    <p className="text-[10px] mt-1.5">
-                      <a
-                        href="/admin/edificios/cadastrar"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className={`inline-flex items-center ${isDark ? "text-blue-400 hover:text-blue-300" : "text-blue-600 hover:text-blue-800"} hover:underline`}
-                      >
-                        <PlusIcon className="w-3 h-3 mr-1" />
-                        Cadastrar novo empreendimento
-                      </a>
-                    </p>
                   </div>
 
                   {formData.tipo === "apartamento" && (
@@ -1945,7 +2296,11 @@ const CadastrarImovel = () => {
                           value={formData.unidade}
                           onChange={handleChange}
                           placeholder="Ex: 101, 1203"
-                          className={`w-full px-3 py-2.5 border rounded-lg text-sm focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors duration-200 ${isDark ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400" : "bg-white border-gray-300 text-gray-900 placeholder-gray-500"}`}
+                          className={`w-full px-3 py-2.5 border rounded-lg text-sm focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors duration-200 ${
+                            isDark
+                              ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400"
+                              : "bg-white border-gray-300 text-gray-900 placeholder-gray-500"
+                          }`}
                         />
                       </div>
                       <div>
@@ -1960,7 +2315,11 @@ const CadastrarImovel = () => {
                           value={formData.andar}
                           onChange={handleChange}
                           placeholder="Ex: 1º, 12º, Cobertura"
-                          className={`w-full px-3 py-2.5 border rounded-lg text-sm focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors duration-200 ${isDark ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400" : "bg-white border-gray-300 text-gray-900 placeholder-gray-500"}`}
+                          className={`w-full px-3 py-2.5 border rounded-lg text-sm focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors duration-200 ${
+                            isDark
+                              ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400"
+                              : "bg-white border-gray-300 text-gray-900 placeholder-gray-500"
+                          }`}
                         />
                       </div>
                       <div>
@@ -1975,7 +2334,11 @@ const CadastrarImovel = () => {
                           value={formData.bloco}
                           onChange={handleChange}
                           placeholder="Ex: Bloco A, Torre 1"
-                          className={`w-full px-3 py-2.5 border rounded-lg text-sm focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors duration-200 ${isDark ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400" : "bg-white border-gray-300 text-gray-900 placeholder-gray-500"}`}
+                          className={`w-full px-3 py-2.5 border rounded-lg text-sm focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors duration-200 ${
+                            isDark
+                              ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400"
+                              : "bg-white border-gray-300 text-gray-900 placeholder-gray-500"
+                          }`}
                         />
                       </div>
                     </>
@@ -1995,7 +2358,11 @@ const CadastrarImovel = () => {
                           value={formData.lote}
                           onChange={handleChange}
                           placeholder="Ex: Lote 23"
-                          className={`w-full px-3 py-2.5 border rounded-lg text-sm focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors duration-200 ${isDark ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400" : "bg-white border-gray-300 text-gray-900 placeholder-gray-500"}`}
+                          className={`w-full px-3 py-2.5 border rounded-lg text-sm focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors duration-200 ${
+                            isDark
+                              ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400"
+                              : "bg-white border-gray-300 text-gray-900 placeholder-gray-500"
+                          }`}
                         />
                       </div>
                       <div>
@@ -2010,710 +2377,21 @@ const CadastrarImovel = () => {
                           value={formData.quadra}
                           onChange={handleChange}
                           placeholder="Ex: Quadra 15"
-                          className={`w-full px-3 py-2.5 border rounded-lg text-sm focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors duration-200 ${isDark ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400" : "bg-white border-gray-300 text-gray-900 placeholder-gray-500"}`}
+                          className={`w-full px-3 py-2.5 border rounded-lg text-sm focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors duration-200 ${
+                            isDark
+                              ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400"
+                              : "bg-white border-gray-300 text-gray-900 placeholder-gray-500"
+                          }`}
                         />
                       </div>
                     </>
                   )}
                 </div>
-
-                {formData.tipo === "apartamento" &&
-                  !formData.empreendimento_id && (
-                    <p
-                      className={`text-xs mt-3 flex items-center ${isDark ? "text-amber-400" : "text-amber-600"}`}
-                    >
-                      <ExclamationTriangleIcon className="w-3 h-3 mr-1" />
-                      Apartamento precisa estar vinculado a um Edifício.
-                    </p>
-                  )}
-                {formData.tipo === "casa" &&
-                  formData.emCondominio &&
-                  !formData.empreendimento_id && (
-                    <p
-                      className={`text-xs mt-3 flex items-center ${isDark ? "text-amber-400" : "text-amber-600"}`}
-                    >
-                      <ExclamationTriangleIcon className="w-3 h-3 mr-1" />
-                      Casa em condomínio precisa estar vinculada a um
-                      Condomínio/Residencial.
-                    </p>
-                  )}
-              </div>
-            )}
-
-            {isRural && (
-              <div
-                className={`mt-6 p-5 border rounded-lg transition-colors duration-200 ${
-                  isDark
-                    ? "bg-gray-800 border-gray-600"
-                    : "bg-white border-gray-300"
-                }`}
-              >
-                <div className="flex items-center space-x-2 mb-4">
-                  <BeakerIcon
-                    className={`w-5 h-5 ${isDark ? "text-green-400" : "text-green-700"}`}
-                  />
-                  <h3
-                    className={`font-semibold ${isDark ? "text-green-400" : "text-green-700"}`}
-                  >
-                    Informações do Imóvel Rural
-                  </h3>
-                </div>
-
-                <div className="mb-6">
-                  <h4
-                    className={`text-md font-semibold mb-3 ${getTextClass()}`}
-                  >
-                    🌱 Agricultura
-                  </h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {showRuralFields.area_total_hectares && (
-                      <div>
-                        <label
-                          className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
-                        >
-                          Área total (hectares) *
-                        </label>
-                        <input
-                          type="number"
-                          name="caracteristicas.area_total_hectares"
-                          value={formData.caracteristicas.area_total_hectares}
-                          onChange={handleChange}
-                          step="0.01"
-                          min="0"
-                          placeholder="0,00"
-                          className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()} ${getPlaceholderClass()}`}
-                          required={isRural}
-                        />
-                      </div>
-                    )}
-
-                    {showRuralFields.area_agricultavel_hectares && (
-                      <div>
-                        <label
-                          className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
-                        >
-                          Área agricultável (ha)
-                        </label>
-                        <input
-                          type="number"
-                          name="caracteristicas.area_agricultavel_hectares"
-                          value={
-                            formData.caracteristicas.area_agricultavel_hectares
-                          }
-                          onChange={handleChange}
-                          step="0.01"
-                          min="0"
-                          placeholder="0,00"
-                          className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()} ${getPlaceholderClass()}`}
-                        />
-                      </div>
-                    )}
-
-                    {showRuralFields.area_preservacao_hectares && (
-                      <div>
-                        <label
-                          className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
-                        >
-                          Área de preservação (ha)
-                        </label>
-                        <input
-                          type="number"
-                          name="caracteristicas.area_preservacao_hectares"
-                          value={
-                            formData.caracteristicas.area_preservacao_hectares
-                          }
-                          onChange={handleChange}
-                          step="0.01"
-                          min="0"
-                          placeholder="0,00"
-                          className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()} ${getPlaceholderClass()}`}
-                        />
-                      </div>
-                    )}
-
-                    {showRuralFields.area_reflorestamento_hectares && (
-                      <div>
-                        <label
-                          className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
-                        >
-                          Área de reflorestamento (ha)
-                        </label>
-                        <input
-                          type="number"
-                          name="caracteristicas.area_reflorestamento_hectares"
-                          value={
-                            formData.caracteristicas
-                              .area_reflorestamento_hectares
-                          }
-                          onChange={handleChange}
-                          step="0.01"
-                          min="0"
-                          placeholder="0,00"
-                          className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()} ${getPlaceholderClass()}`}
-                        />
-                      </div>
-                    )}
-
-                    {showRuralFields.proximidade_br && (
-                      <div>
-                        <label
-                          className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
-                        >
-                          Proximidade BR
-                        </label>
-                        <input
-                          type="text"
-                          name="caracteristicas.proximidade_br"
-                          value={formData.caracteristicas.proximidade_br}
-                          onChange={handleChange}
-                          placeholder="Ex: Próximo à BR-101, km 45"
-                          className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()} ${getPlaceholderClass()}`}
-                        />
-                      </div>
-                    )}
-
-                    {showRuralFields.municipio_distrito && (
-                      <div>
-                        <label
-                          className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
-                        >
-                          Município/Distrito
-                        </label>
-                        <input
-                          type="text"
-                          name="caracteristicas.municipio_distrito"
-                          value={formData.caracteristicas.municipio_distrito}
-                          onChange={handleChange}
-                          placeholder="Ex: Distrito de São João"
-                          className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()} ${getPlaceholderClass()}`}
-                        />
-                      </div>
-                    )}
-
-                    {showRuralFields.solo_topografia_rural && (
-                      <div>
-                        <label
-                          className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
-                        >
-                          Solo/Topografia
-                        </label>
-                        <select
-                          name="caracteristicas.solo_topografia_rural"
-                          value={formData.caracteristicas.solo_topografia_rural}
-                          onChange={handleChange}
-                          className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()}`}
-                        >
-                          <option value="" className={getOptionBgClass()}>
-                            Selecione
-                          </option>
-                          {topografiaOpcoes.map((opcao) => (
-                            <option
-                              key={opcao.value}
-                              value={opcao.value}
-                              className={getOptionBgClass()}
-                            >
-                              {opcao.label}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    )}
-
-                    {showRuralFields.tipo_cultura && (
-                      <div>
-                        <label
-                          className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
-                        >
-                          Tipo de Cultura
-                        </label>
-                        <select
-                          name="caracteristicas.tipo_cultura"
-                          value={formData.caracteristicas.tipo_cultura}
-                          onChange={handleChange}
-                          className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()}`}
-                        >
-                          <option value="" className={getOptionBgClass()}>
-                            Selecione
-                          </option>
-                          {tipoCulturaOpcoes.map((opcao) => (
-                            <option
-                              key={opcao.value}
-                              value={opcao.value}
-                              className={getOptionBgClass()}
-                            >
-                              {opcao.label}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    )}
-
-                    {showRuralFields.sistemas_irrigacao && (
-                      <div>
-                        <label
-                          className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
-                        >
-                          Sistemas de Irrigação
-                        </label>
-                        <input
-                          type="text"
-                          name="caracteristicas.sistemas_irrigacao"
-                          value={formData.caracteristicas.sistemas_irrigacao}
-                          onChange={handleChange}
-                          placeholder="Ex: Pivô central, gotejamento"
-                          className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()} ${getPlaceholderClass()}`}
-                        />
-                      </div>
-                    )}
-
-                    {showRuralFields.plantacao_fruticultura && (
-                      <div>
-                        <label
-                          className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
-                        >
-                          Plantação/Fruticultura
-                        </label>
-                        <input
-                          type="text"
-                          name="caracteristicas.plantacao_fruticultura"
-                          value={
-                            formData.caracteristicas.plantacao_fruticultura
-                          }
-                          onChange={handleChange}
-                          placeholder="Ex: Café, laranja, eucalipto"
-                          className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()} ${getPlaceholderClass()}`}
-                        />
-                      </div>
-                    )}
-
-                    {showRuralFields.benfeitorias && (
-                      <div>
-                        <label
-                          className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
-                        >
-                          Benfeitorias
-                        </label>
-                        <input
-                          type="text"
-                          name="caracteristicas.benfeitorias"
-                          value={formData.caracteristicas.benfeitorias}
-                          onChange={handleChange}
-                          placeholder="Ex: Curral, cercas, açude, casa sede"
-                          className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()} ${getPlaceholderClass()}`}
-                        />
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <div className="mb-6 pt-4 border-t">
-                  <h4
-                    className={`text-md font-semibold mb-3 ${getTextClass()}`}
-                  >
-                    🐄 Pecuária
-                  </h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {showRuralFields.tipo_pecuaria && (
-                      <div>
-                        <label
-                          className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
-                        >
-                          Tipo de Pecuária
-                        </label>
-                        <select
-                          name="caracteristicas.tipo_pecuaria"
-                          value={formData.caracteristicas.tipo_pecuaria}
-                          onChange={handleChange}
-                          className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()}`}
-                        >
-                          <option value="" className={getOptionBgClass()}>
-                            Selecione
-                          </option>
-                          {tipoPecuariaOpcoes.map((opcao) => (
-                            <option
-                              key={opcao.value}
-                              value={opcao.value}
-                              className={getOptionBgClass()}
-                            >
-                              {opcao.label}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    )}
-
-                    {showRuralFields.numero_cabecas && (
-                      <div>
-                        <label
-                          className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
-                        >
-                          Número de Cabeças
-                        </label>
-                        <input
-                          type="number"
-                          name="caracteristicas.numero_cabecas"
-                          value={formData.caracteristicas.numero_cabecas}
-                          onChange={handleChange}
-                          min="0"
-                          placeholder="0"
-                          className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()} ${getPlaceholderClass()}`}
-                        />
-                      </div>
-                    )}
-
-                    {showRuralFields.racas_gado && (
-                      <div>
-                        <label
-                          className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
-                        >
-                          Raças
-                        </label>
-                        <input
-                          type="text"
-                          name="caracteristicas.racas_gado"
-                          value={formData.caracteristicas.racas_gado}
-                          onChange={handleChange}
-                          placeholder="Ex: Nelore, Angus, Girolando"
-                          className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()} ${getPlaceholderClass()}`}
-                        />
-                      </div>
-                    )}
-
-                    {showRuralFields.area_pastagem_hectares && (
-                      <div>
-                        <label
-                          className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
-                        >
-                          Área de Pastagem (ha)
-                        </label>
-                        <input
-                          type="number"
-                          name="caracteristicas.area_pastagem_hectares"
-                          value={
-                            formData.caracteristicas.area_pastagem_hectares
-                          }
-                          onChange={handleChange}
-                          step="0.01"
-                          min="0"
-                          placeholder="0,00"
-                          className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()} ${getPlaceholderClass()}`}
-                        />
-                      </div>
-                    )}
-
-                    {showRuralFields.capacidade_suporte && (
-                      <div>
-                        <label
-                          className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
-                        >
-                          Capacidade de Suporte (UA/ha)
-                        </label>
-                        <input
-                          type="text"
-                          name="caracteristicas.capacidade_suporte"
-                          value={formData.caracteristicas.capacidade_suporte}
-                          onChange={handleChange}
-                          placeholder="Ex: 1.5 UA/ha"
-                          className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()} ${getPlaceholderClass()}`}
-                        />
-                      </div>
-                    )}
-
-                    {showRuralFields.estruturas_pecuarias && (
-                      <div>
-                        <label
-                          className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
-                        >
-                          Estruturas Pecuárias
-                        </label>
-                        <input
-                          type="text"
-                          name="caracteristicas.estruturas_pecuarias"
-                          value={formData.caracteristicas.estruturas_pecuarias}
-                          onChange={handleChange}
-                          placeholder="Ex: Curral, brete, balança, seringa"
-                          className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()} ${getPlaceholderClass()}`}
-                        />
-                      </div>
-                    )}
-
-                    {showRuralFields.tipo_confinamento && (
-                      <div>
-                        <label
-                          className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
-                        >
-                          Tipo de Confinamento
-                        </label>
-                        <select
-                          name="caracteristicas.tipo_confinamento"
-                          value={formData.caracteristicas.tipo_confinamento}
-                          onChange={handleChange}
-                          className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()}`}
-                        >
-                          <option value="" className={getOptionBgClass()}>
-                            Selecione
-                          </option>
-                          {tipoConfinamentoOpcoes.map((opcao) => (
-                            <option
-                              key={opcao.value}
-                              value={opcao.value}
-                              className={getOptionBgClass()}
-                            >
-                              {opcao.label}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    )}
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {showRuralFields.tem_agudada && (
-                        <label className="flex items-center space-x-3">
-                          <input
-                            type="checkbox"
-                            name="caracteristicas.tem_agudada"
-                            checked={formData.caracteristicas.tem_agudada}
-                            onChange={handleChange}
-                            className={getCheckboxClass()}
-                          />
-                          <span
-                            className={`transition-colors ${getTextClass()}`}
-                          >
-                            Tem aguada
-                          </span>
-                        </label>
-                      )}
-
-                      {showRuralFields.tem_cerca_eletrificada && (
-                        <label className="flex items-center space-x-3">
-                          <input
-                            type="checkbox"
-                            name="caracteristicas.tem_cerca_eletrificada"
-                            checked={
-                              formData.caracteristicas.tem_cerca_eletrificada
-                            }
-                            onChange={handleChange}
-                            className={getCheckboxClass()}
-                          />
-                          <span
-                            className={`transition-colors ${getTextClass()}`}
-                          >
-                            Cerca eletrificada
-                          </span>
-                        </label>
-                      )}
-
-                      {showRuralFields.tem_sala_ordenha && (
-                        <label className="flex items-center space-x-3">
-                          <input
-                            type="checkbox"
-                            name="caracteristicas.tem_sala_ordenha"
-                            checked={formData.caracteristicas.tem_sala_ordenha}
-                            onChange={handleChange}
-                            className={getCheckboxClass()}
-                          />
-                          <span
-                            className={`transition-colors ${getTextClass()}`}
-                          >
-                            Sala de ordenha
-                          </span>
-                        </label>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mb-6 pt-4 border-t">
-                  <h4
-                    className={`text-md font-semibold mb-3 ${getTextClass()}`}
-                  >
-                    💧 Recursos Hídricos
-                  </h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {showRuralFields.tem_agude && (
-                      <label className="flex items-center space-x-3">
-                        <input
-                          type="checkbox"
-                          name="caracteristicas.tem_agude"
-                          checked={formData.caracteristicas.tem_agude}
-                          onChange={handleChange}
-                          className={getCheckboxClass()}
-                        />
-                        <span className={`transition-colors ${getTextClass()}`}>
-                          Açude
-                        </span>
-                      </label>
-                    )}
-
-                    {showRuralFields.tem_represa && (
-                      <label className="flex items-center space-x-3">
-                        <input
-                          type="checkbox"
-                          name="caracteristicas.tem_represa"
-                          checked={formData.caracteristicas.tem_represa}
-                          onChange={handleChange}
-                          className={getCheckboxClass()}
-                        />
-                        <span className={`transition-colors ${getTextClass()}`}>
-                          Represa
-                        </span>
-                      </label>
-                    )}
-
-                    {showRuralFields.tem_cacimba && (
-                      <label className="flex items-center space-x-3">
-                        <input
-                          type="checkbox"
-                          name="caracteristicas.tem_cacimba"
-                          checked={formData.caracteristicas.tem_cacimba}
-                          onChange={handleChange}
-                          className={getCheckboxClass()}
-                        />
-                        <span className={`transition-colors ${getTextClass()}`}>
-                          Cacimba
-                        </span>
-                      </label>
-                    )}
-
-                    {showRuralFields.tem_poco_artesiano && (
-                      <label className="flex items-center space-x-3">
-                        <input
-                          type="checkbox"
-                          name="caracteristicas.tem_poco_artesiano"
-                          checked={formData.caracteristicas.tem_poco_artesiano}
-                          onChange={handleChange}
-                          className={getCheckboxClass()}
-                        />
-                        <span className={`transition-colors ${getTextClass()}`}>
-                          Poço artesiano
-                        </span>
-                      </label>
-                    )}
-
-                    {showRuralFields.tem_riacho && (
-                      <label className="flex items-center space-x-3">
-                        <input
-                          type="checkbox"
-                          name="caracteristicas.tem_riacho"
-                          checked={formData.caracteristicas.tem_riacho}
-                          onChange={handleChange}
-                          className={getCheckboxClass()}
-                        />
-                        <span className={`transition-colors ${getTextClass()}`}>
-                          Riacho/Córrego
-                        </span>
-                      </label>
-                    )}
-
-                    {showRuralFields.fontes_agua && (
-                      <div className="col-span-2">
-                        <label
-                          className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
-                        >
-                          Outras fontes de água
-                        </label>
-                        <input
-                          type="text"
-                          name="caracteristicas.fontes_agua"
-                          value={formData.caracteristicas.fontes_agua}
-                          onChange={handleChange}
-                          placeholder="Descreva outras fontes de água"
-                          className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()} ${getPlaceholderClass()}`}
-                        />
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <div className="pt-4 border-t">
-                  <h4
-                    className={`text-md font-semibold mb-3 ${getTextClass()}`}
-                  >
-                    🌳 Outros Recursos
-                  </h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {showRuralFields.tem_extrativismo && (
-                      <>
-                        <label className="flex items-center space-x-3">
-                          <input
-                            type="checkbox"
-                            name="caracteristicas.tem_extrativismo"
-                            checked={formData.caracteristicas.tem_extrativismo}
-                            onChange={handleChange}
-                            className={getCheckboxClass()}
-                          />
-                          <span
-                            className={`transition-colors ${getTextClass()}`}
-                          >
-                            Extrativismo
-                          </span>
-                        </label>
-
-                        {formData.caracteristicas.tem_extrativismo &&
-                          showRuralFields.tipo_extrativismo && (
-                            <div className="col-span-2">
-                              <input
-                                type="text"
-                                name="caracteristicas.tipo_extrativismo"
-                                value={
-                                  formData.caracteristicas.tipo_extrativismo
-                                }
-                                onChange={handleChange}
-                                placeholder="Tipo de extrativismo (ex: madeira, borracha)"
-                                className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()} ${getPlaceholderClass()}`}
-                              />
-                            </div>
-                          )}
-                      </>
-                    )}
-
-                    {showRuralFields.tem_ecoturismo && (
-                      <label className="flex items-center space-x-3">
-                        <input
-                          type="checkbox"
-                          name="caracteristicas.tem_ecoturismo"
-                          checked={formData.caracteristicas.tem_ecoturismo}
-                          onChange={handleChange}
-                          className={getCheckboxClass()}
-                        />
-                        <span className={`transition-colors ${getTextClass()}`}>
-                          Ecoturismo
-                        </span>
-                      </label>
-                    )}
-
-                    {showRuralFields.atividades_complementares && (
-                      <div className="col-span-3">
-                        <label
-                          className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
-                        >
-                          Atividades complementares
-                        </label>
-                        <input
-                          type="text"
-                          name="caracteristicas.atividades_complementares"
-                          value={
-                            formData.caracteristicas.atividades_complementares
-                          }
-                          onChange={handleChange}
-                          placeholder="Ex: Pesca esportiva, turismo rural, pousada"
-                          className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()} ${getPlaceholderClass()}`}
-                        />
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <p
-                  className={`text-xs mt-4 ${isDark ? "text-gray-400" : "text-gray-500"}`}
-                >
-                  ℹ️ Todos os campos rurais são armazenados em JSONB, permitindo
-                  flexibilidade total para adicionar mais informações no futuro.
-                </p>
               </div>
             )}
           </div>
 
+          {/* ========== SEÇÃO: Dependências do Imóvel ========== */}
           {!isRural && (
             <div
               className={`rounded-xl border p-6 transition-colors duration-200 ${getBgClass()} ${getBorderClass()}`}
@@ -2747,27 +2425,15 @@ const CadastrarImovel = () => {
                   <div className="flex items-center space-x-2">
                     <button
                       type="button"
-                      onClick={() =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          dependencias: {
-                            ...prev.dependencias,
-                            dormitorios: Math.max(
-                              0,
-                              (parseInt(prev.dependencias.dormitorios) || 0) -
-                                1,
-                            ),
-                          },
-                        }))
-                      }
+                      onClick={() => handleCounterChange("quartos", -1)}
                       className={`p-2 rounded-lg border transition-colors ${getCounterButtonClass()}`}
                     >
                       -
                     </button>
                     <input
                       type="number"
-                      name="dependencias.dormitorios"
-                      value={formData.dependencias.dormitorios}
+                      name="quartos"
+                      value={formData.quartos}
                       onChange={handleChange}
                       min="0"
                       placeholder="0"
@@ -2775,17 +2441,7 @@ const CadastrarImovel = () => {
                     />
                     <button
                       type="button"
-                      onClick={() =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          dependencias: {
-                            ...prev.dependencias,
-                            dormitorios:
-                              (parseInt(prev.dependencias.dormitorios) || 0) +
-                              1,
-                          },
-                        }))
-                      }
+                      onClick={() => handleCounterChange("quartos", 1)}
                       className={`p-2 rounded-lg border transition-colors ${getCounterButtonClass()}`}
                     >
                       +
@@ -2801,26 +2457,15 @@ const CadastrarImovel = () => {
                   <div className="flex items-center space-x-2">
                     <button
                       type="button"
-                      onClick={() =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          dependencias: {
-                            ...prev.dependencias,
-                            banheiros: Math.max(
-                              0,
-                              (parseInt(prev.dependencias.banheiros) || 0) - 1,
-                            ),
-                          },
-                        }))
-                      }
+                      onClick={() => handleCounterChange("banheiros", -1)}
                       className={`p-2 rounded-lg border transition-colors ${getCounterButtonClass()}`}
                     >
                       -
                     </button>
                     <input
                       type="number"
-                      name="dependencias.banheiros"
-                      value={formData.dependencias.banheiros}
+                      name="banheiros"
+                      value={formData.banheiros}
                       onChange={handleChange}
                       min="0"
                       placeholder="0"
@@ -2828,16 +2473,7 @@ const CadastrarImovel = () => {
                     />
                     <button
                       type="button"
-                      onClick={() =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          dependencias: {
-                            ...prev.dependencias,
-                            banheiros:
-                              (parseInt(prev.dependencias.banheiros) || 0) + 1,
-                          },
-                        }))
-                      }
+                      onClick={() => handleCounterChange("banheiros", 1)}
                       className={`p-2 rounded-lg border transition-colors ${getCounterButtonClass()}`}
                     >
                       +
@@ -2853,26 +2489,15 @@ const CadastrarImovel = () => {
                   <div className="flex items-center space-x-2">
                     <button
                       type="button"
-                      onClick={() =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          dependencias: {
-                            ...prev.dependencias,
-                            suites: Math.max(
-                              0,
-                              (parseInt(prev.dependencias.suites) || 0) - 1,
-                            ),
-                          },
-                        }))
-                      }
+                      onClick={() => handleCounterChange("suites", -1)}
                       className={`p-2 rounded-lg border transition-colors ${getCounterButtonClass()}`}
                     >
                       -
                     </button>
                     <input
                       type="number"
-                      name="dependencias.suites"
-                      value={formData.dependencias.suites}
+                      name="suites"
+                      value={formData.suites}
                       onChange={handleChange}
                       min="0"
                       placeholder="0"
@@ -2880,16 +2505,7 @@ const CadastrarImovel = () => {
                     />
                     <button
                       type="button"
-                      onClick={() =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          dependencias: {
-                            ...prev.dependencias,
-                            suites:
-                              (parseInt(prev.dependencias.suites) || 0) + 1,
-                          },
-                        }))
-                      }
+                      onClick={() => handleCounterChange("suites", 1)}
                       className={`p-2 rounded-lg border transition-colors ${getCounterButtonClass()}`}
                     >
                       +
@@ -2905,26 +2521,15 @@ const CadastrarImovel = () => {
                   <div className="flex items-center space-x-2">
                     <button
                       type="button"
-                      onClick={() =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          dependencias: {
-                            ...prev.dependencias,
-                            vagas: Math.max(
-                              0,
-                              (parseInt(prev.dependencias.vagas) || 0) - 1,
-                            ),
-                          },
-                        }))
-                      }
+                      onClick={() => handleCounterChange("vagas", -1)}
                       className={`p-2 rounded-lg border transition-colors ${getCounterButtonClass()}`}
                     >
                       -
                     </button>
                     <input
                       type="number"
-                      name="dependencias.vagas"
-                      value={formData.dependencias.vagas}
+                      name="vagas"
+                      value={formData.vagas}
                       onChange={handleChange}
                       min="0"
                       placeholder="0"
@@ -2932,15 +2537,7 @@ const CadastrarImovel = () => {
                     />
                     <button
                       type="button"
-                      onClick={() =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          dependencias: {
-                            ...prev.dependencias,
-                            vagas: (parseInt(prev.dependencias.vagas) || 0) + 1,
-                          },
-                        }))
-                      }
+                      onClick={() => handleCounterChange("vagas", 1)}
                       className={`p-2 rounded-lg border transition-colors ${getCounterButtonClass()}`}
                     >
                       +
@@ -2957,13 +2554,13 @@ const CadastrarImovel = () => {
                   <div className="relative">
                     <input
                       type="number"
-                      name="dependencias.area_total"
-                      value={formData.dependencias.area_total}
+                      name="area_total"
+                      value={formData.area_total}
                       onChange={handleChange}
                       min="0"
                       step="0.01"
                       placeholder="0,00"
-                      className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()} ${getPlaceholderClass()}`}
+                      className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors ${getInputClasses()}`}
                     />
                     <span
                       className={`absolute right-4 top-1/2 transform -translate-y-1/2 transition-colors ${getTextSecondaryClass()}`}
@@ -2982,13 +2579,38 @@ const CadastrarImovel = () => {
                   <div className="relative">
                     <input
                       type="number"
-                      name="dependencias.area_construida"
-                      value={formData.dependencias.area_construida}
+                      name="area_construida"
+                      value={formData.area_construida}
                       onChange={handleChange}
                       min="0"
                       step="0.01"
                       placeholder="0,00"
-                      className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()} ${getPlaceholderClass()}`}
+                      className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors ${getInputClasses()}`}
+                    />
+                    <span
+                      className={`absolute right-4 top-1/2 transform -translate-y-1/2 transition-colors ${getTextSecondaryClass()}`}
+                    >
+                      m²
+                    </span>
+                  </div>
+                </div>
+
+                <div>
+                  <label
+                    className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
+                  >
+                    Área Privativa (m²)
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      name="area_privativa"
+                      value={formData.area_privativa}
+                      onChange={handleChange}
+                      min="0"
+                      step="0.01"
+                      placeholder="0,00"
+                      className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors ${getInputClasses()}`}
                     />
                     <span
                       className={`absolute right-4 top-1/2 transform -translate-y-1/2 transition-colors ${getTextSecondaryClass()}`}
@@ -3001,7 +2623,7 @@ const CadastrarImovel = () => {
             </div>
           )}
 
-          {/* ========== SEÇÃO 2: LOCALIZAÇÃO DO IMÓVEL ========== */}
+          {/* ========== SEÇÃO: LOCALIZAÇÃO DO IMÓVEL ========== */}
           <div
             className={`rounded-xl border p-6 transition-colors duration-200 ${getBgClass()} ${getBorderClass()}`}
           >
@@ -3024,7 +2646,6 @@ const CadastrarImovel = () => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {/* CEP */}
               <div>
                 <label
                   className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
@@ -3039,7 +2660,7 @@ const CadastrarImovel = () => {
                     onChange={handleCepChange}
                     placeholder="00000-000"
                     maxLength="9"
-                    className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors duration-200 ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()} ${getPlaceholderClass()}`}
+                    className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors duration-200 ${getInputClasses()}`}
                   />
                   {cepLoading && (
                     <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
@@ -3054,18 +2675,8 @@ const CadastrarImovel = () => {
                     {cepError}
                   </p>
                 )}
-                {!cepError &&
-                  !cepLoading &&
-                  formData.cep.replace(/\D/g, "").length === 8 && (
-                    <p
-                      className={`mt-1 text-sm ${isDark ? "text-green-400" : "text-green-600"}`}
-                    >
-                      CEP válido. Endereço preenchido automaticamente.
-                    </p>
-                  )}
               </div>
 
-              {/* Endereço */}
               <div className="md:col-span-2">
                 <label
                   className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
@@ -3078,11 +2689,10 @@ const CadastrarImovel = () => {
                   value={formData.endereco}
                   onChange={handleChange}
                   placeholder="Ex: Rua das Flores"
-                  className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors duration-200 ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()} ${getPlaceholderClass()}`}
+                  className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors duration-200 ${getInputClasses()}`}
                 />
               </div>
 
-              {/* Número */}
               <div>
                 <label
                   className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
@@ -3095,11 +2705,10 @@ const CadastrarImovel = () => {
                   value={formData.numero}
                   onChange={handleChange}
                   placeholder="Ex: 123"
-                  className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors duration-200 ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()} ${getPlaceholderClass()}`}
+                  className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors duration-200 ${getInputClasses()}`}
                 />
               </div>
 
-              {/* Complemento */}
               <div>
                 <label
                   className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
@@ -3112,11 +2721,10 @@ const CadastrarImovel = () => {
                   value={formData.complemento}
                   onChange={handleChange}
                   placeholder="Ex: Apto 101, Bloco B"
-                  className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors duration-200 ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()} ${getPlaceholderClass()}`}
+                  className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors duration-200 ${getInputClasses()}`}
                 />
               </div>
 
-              {/* Bairro */}
               <div>
                 <label
                   className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
@@ -3130,11 +2738,10 @@ const CadastrarImovel = () => {
                   onChange={handleChange}
                   required
                   placeholder="Ex: Centro"
-                  className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors duration-200 ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()} ${getPlaceholderClass()}`}
+                  className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors duration-200 ${getInputClasses()}`}
                 />
               </div>
 
-              {/* Cidade */}
               <div>
                 <label
                   className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
@@ -3148,46 +2755,116 @@ const CadastrarImovel = () => {
                   onChange={handleChange}
                   required
                   placeholder="Ex: Açailândia"
-                  className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors duration-200 ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()} ${getPlaceholderClass()}`}
+                  className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors duration-200 ${getInputClasses()}`}
                 />
               </div>
 
-              {/* Estado */}
               <div>
                 <label
                   className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
                 >
-                  Estado *
+                  Estado * (UF)
                 </label>
                 <select
                   name="estado"
                   value={formData.estado}
                   onChange={handleChange}
                   required
-                  className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors duration-200 ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()}`}
+                  className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors duration-200 ${getInputClasses()}`}
                 >
                   <option value="" className={getOptionBgClass()}>
                     Selecione o estado
                   </option>
-                  {estadosBrasil.map((estado) => (
-                    <option
-                      key={estado.value}
-                      value={estado.value}
-                      className={getOptionBgClass()}
-                    >
-                      {estado.label}
-                    </option>
-                  ))}
+                  <option value="AC" className={getOptionBgClass()}>
+                    Acre
+                  </option>
+                  <option value="AL" className={getOptionBgClass()}>
+                    Alagoas
+                  </option>
+                  <option value="AP" className={getOptionBgClass()}>
+                    Amapá
+                  </option>
+                  <option value="AM" className={getOptionBgClass()}>
+                    Amazonas
+                  </option>
+                  <option value="BA" className={getOptionBgClass()}>
+                    Bahia
+                  </option>
+                  <option value="CE" className={getOptionBgClass()}>
+                    Ceará
+                  </option>
+                  <option value="DF" className={getOptionBgClass()}>
+                    Distrito Federal
+                  </option>
+                  <option value="ES" className={getOptionBgClass()}>
+                    Espírito Santo
+                  </option>
+                  <option value="GO" className={getOptionBgClass()}>
+                    Goiás
+                  </option>
+                  <option value="MA" className={getOptionBgClass()}>
+                    Maranhão
+                  </option>
+                  <option value="MT" className={getOptionBgClass()}>
+                    Mato Grosso
+                  </option>
+                  <option value="MS" className={getOptionBgClass()}>
+                    Mato Grosso do Sul
+                  </option>
+                  <option value="MG" className={getOptionBgClass()}>
+                    Minas Gerais
+                  </option>
+                  <option value="PA" className={getOptionBgClass()}>
+                    Pará
+                  </option>
+                  <option value="PB" className={getOptionBgClass()}>
+                    Paraíba
+                  </option>
+                  <option value="PR" className={getOptionBgClass()}>
+                    Paraná
+                  </option>
+                  <option value="PE" className={getOptionBgClass()}>
+                    Pernambuco
+                  </option>
+                  <option value="PI" className={getOptionBgClass()}>
+                    Piauí
+                  </option>
+                  <option value="RJ" className={getOptionBgClass()}>
+                    Rio de Janeiro
+                  </option>
+                  <option value="RN" className={getOptionBgClass()}>
+                    Rio Grande do Norte
+                  </option>
+                  <option value="RS" className={getOptionBgClass()}>
+                    Rio Grande do Sul
+                  </option>
+                  <option value="RO" className={getOptionBgClass()}>
+                    Rondônia
+                  </option>
+                  <option value="RR" className={getOptionBgClass()}>
+                    Roraima
+                  </option>
+                  <option value="SC" className={getOptionBgClass()}>
+                    Santa Catarina
+                  </option>
+                  <option value="SP" className={getOptionBgClass()}>
+                    São Paulo
+                  </option>
+                  <option value="SE" className={getOptionBgClass()}>
+                    Sergipe
+                  </option>
+                  <option value="TO" className={getOptionBgClass()}>
+                    Tocantins
+                  </option>
                 </select>
               </div>
 
-              {/* CHECKBOX ÚNICO - MOSTRAR ENDEREÇO NO SITE */}
               <div className="md:col-span-3">
                 <label className="flex items-center space-x-3 p-4 border rounded-lg cursor-pointer transition-all duration-200 hover:border-[#D4A24D]">
                   <input
                     type="checkbox"
-                    name="exibirEnderecoSite"
-                    checked={formData.exibirEnderecoSite}
+                    name="exibir_endereco_site"
+                    checked={formData.exibir_endereco_site}
                     onChange={handleChange}
                     className={getCheckboxClass()}
                   />
@@ -3197,8 +2874,7 @@ const CadastrarImovel = () => {
                     </div>
                     <div className={`text-sm ${getTextSecondaryClass()}`}>
                       Se marcado, o endereço (Rua, Número) aparecerá na página
-                      pública do imóvel. Se desmarcado, fica visível apenas
-                      internamente.
+                      pública do imóvel.
                     </div>
                   </div>
                 </label>
@@ -3208,7 +2884,7 @@ const CadastrarImovel = () => {
 
           {/* ========== SEÇÃO: EXIBIR NA VITRINE ========== */}
           <div
-            className={`rounded-xl border p-6 mt-6 ${getBgClass()} ${getBorderClass()}`}
+            className={`rounded-xl border p-6 ${getBgClass()} ${getBorderClass()}`}
           >
             <div className="flex items-center space-x-3 mb-6">
               <div
@@ -3226,16 +2902,14 @@ const CadastrarImovel = () => {
               </div>
             </div>
 
-            {/* Badges de destaque */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {/* Destaque da Semana */}
               <label
                 className={`flex items-start space-x-3 p-4 border rounded-lg cursor-pointer transition-all duration-300 group hover:shadow-lg ${getBorderClass()} ${getHoverBgClass()}`}
               >
                 <input
                   type="checkbox"
-                  name="etiquetas.destaqueSemana"
-                  checked={formData.etiquetas.destaqueSemana}
+                  name="etiquetas.destaque_semana"
+                  checked={formData.etiquetas.destaque_semana}
                   onChange={handleChange}
                   className={getCheckboxClass()}
                 />
@@ -3251,14 +2925,13 @@ const CadastrarImovel = () => {
                 </div>
               </label>
 
-              {/* Novo no Site */}
               <label
                 className={`flex items-start space-x-3 p-4 border rounded-lg cursor-pointer transition-all duration-300 group hover:shadow-lg ${getBorderClass()} ${getHoverBgClass()}`}
               >
                 <input
                   type="checkbox"
-                  name="etiquetas.novoSite"
-                  checked={formData.etiquetas.novoSite}
+                  name="etiquetas.novo_site"
+                  checked={formData.etiquetas.novo_site}
                   onChange={handleChange}
                   className={getCheckboxClass()}
                 />
@@ -3274,14 +2947,13 @@ const CadastrarImovel = () => {
                 </div>
               </label>
 
-              {/* Baixou o Preço */}
               <label
                 className={`flex items-start space-x-3 p-4 border rounded-lg cursor-pointer transition-all duration-300 group hover:shadow-lg ${getBorderClass()} ${getHoverBgClass()}`}
               >
                 <input
                   type="checkbox"
-                  name="etiquetas.baixouPreco"
-                  checked={formData.etiquetas.baixouPreco}
+                  name="etiquetas.baixou_preco"
+                  checked={formData.etiquetas.baixou_preco}
                   onChange={handleChange}
                   className={getCheckboxClass()}
                 />
@@ -3297,14 +2969,13 @@ const CadastrarImovel = () => {
                 </div>
               </label>
 
-              {/* Financiável */}
               <label
                 className={`flex items-start space-x-3 p-4 border rounded-lg cursor-pointer transition-all duration-300 group hover:shadow-lg ${getBorderClass()} ${getHoverBgClass()}`}
               >
                 <input
                   type="checkbox"
-                  name="etiquetas.financiável"
-                  checked={formData.etiquetas.financiável}
+                  name="etiquetas.financiavel"
+                  checked={formData.etiquetas.financiavel}
                   onChange={handleChange}
                   className={getCheckboxClass()}
                 />
@@ -3320,61 +2991,9 @@ const CadastrarImovel = () => {
                 </div>
               </label>
             </div>
-
-            {/* Preview da Vitrine */}
-            <div
-              className={`mt-6 p-4 rounded-lg ${isDark ? "bg-gray-800" : "bg-gray-50"}`}
-            >
-              <h4
-                className={`text-sm font-medium mb-3 ${getTextSecondaryClass()}`}
-              >
-                Preview da Vitrine:
-              </h4>
-
-              <div className="bg-white rounded-lg shadow-sm p-4 border">
-                <div className="flex items-center justify-between flex-wrap gap-2">
-                  <h3 className="text-lg font-semibold text-gray-800">
-                    {formData.titulo || "Título do Imóvel"}
-                  </h3>
-                  <div className="flex gap-1 flex-wrap">
-                    {formData.etiquetas.destaqueSemana && (
-                      <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded text-xs font-medium flex items-center gap-1">
-                        ⭐ Destaque
-                      </span>
-                    )}
-                    {formData.etiquetas.novoSite && (
-                      <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs font-medium flex items-center gap-1">
-                        🆕 Novo
-                      </span>
-                    )}
-                    {formData.etiquetas.baixouPreco && (
-                      <span className="px-2 py-1 bg-green-100 text-green-800 rounded text-xs font-medium flex items-center gap-1">
-                        📉 Baixou
-                      </span>
-                    )}
-                    {formData.etiquetas.financiável && (
-                      <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded text-xs font-medium flex items-center gap-1">
-                        💰 Financiável
-                      </span>
-                    )}
-                  </div>
-                </div>
-                <div className="flex items-center text-sm text-gray-500 mt-2">
-                  <MapPinIcon className="w-4 h-4 mr-1 text-[#D4A24D]" />
-                  <span>
-                    {formData.bairro || "Bairro"}, {formData.cidade || "Cidade"}
-                    /{formData.estado || "UF"}
-                  </span>
-                </div>
-              </div>
-              <p className={`text-xs mt-3 ${getTextSecondaryClass()}`}>
-                ℹ️ Na vitrine, sempre mostramos: Título + Badges + Bairro,
-                Cidade/UF
-              </p>
-            </div>
           </div>
 
-          {/* ========== SEÇÃO 7: FOTOS DO IMÓVEL (NOVA) ========== */}
+          {/* ========== SEÇÃO: FOTOS DO IMÓVEL ========== */}
           <div
             className={`rounded-xl border p-6 transition-colors duration-200 ${getBgClass()} ${getBorderClass()}`}
           >
@@ -3397,7 +3016,6 @@ const CadastrarImovel = () => {
               </div>
             </div>
 
-            {/* Área de upload */}
             <div className="mb-6">
               <label
                 className={`relative flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer transition-colors hover:border-[#D4A24D] ${getBorderClass()} ${getHoverBgClass()}`}
@@ -3436,7 +3054,6 @@ const CadastrarImovel = () => {
               )}
             </div>
 
-            {/* Grid de fotos com drag-and-drop */}
             {fotos.length > 0 && (
               <DndContext
                 sensors={sensors}
@@ -3464,24 +3081,6 @@ const CadastrarImovel = () => {
                 </SortableContext>
               </DndContext>
             )}
-
-            {/* Informações adicionais */}
-            {fotos.length > 0 && (
-              <div
-                className={`mt-4 p-3 rounded-lg ${isDark ? "bg-gray-800" : "bg-gray-50"}`}
-              >
-                <p className={`text-sm ${getTextSecondaryClass()}`}>
-                  <span className="font-medium text-[#D4A24D]">
-                    ⭐ Foto de capa:
-                  </span>{" "}
-                  Será a primeira imagem do carrossel e a miniatura do imóvel.
-                </p>
-                <p className={`text-sm ${getTextSecondaryClass()} mt-1`}>
-                  <span className="font-medium">🖱️ Arraste:</span> As fotos
-                  podem ser reorganizadas livremente.
-                </p>
-              </div>
-            )}
           </div>
 
           {/* ========== SEÇÃO: CUSTOS ADICIONAIS ========== */}
@@ -3490,7 +3089,9 @@ const CadastrarImovel = () => {
           >
             <div className="flex items-center space-x-3 mb-6">
               <div className={`p-2 rounded-lg ${getIconBgClass()}`}>
-                <SparklesIcon className={`w-6 h-6 ${getIconColorClass()}`} />
+                <CurrencyDollarIcon
+                  className={`w-6 h-6 ${getIconColorClass()}`}
+                />
               </div>
               <div>
                 <h2
@@ -3506,6 +3107,33 @@ const CadastrarImovel = () => {
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {!isRural && (
+                <div>
+                  <label
+                    className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
+                  >
+                    Condomínio Mensal (R$)
+                  </label>
+                  <div className="relative">
+                    <span
+                      className={`absolute left-4 top-1/2 transform -translate-y-1/2 transition-colors ${getTextSecondaryClass()}`}
+                    >
+                      R$
+                    </span>
+                    <input
+                      type="number"
+                      name="condominio_mensal"
+                      value={formData.condominio_mensal}
+                      onChange={handleChange}
+                      min="0"
+                      step="0.01"
+                      placeholder="0,00"
+                      className={`w-full pl-12 pr-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors duration-200 ${getInputClasses()}`}
+                    />
+                  </div>
+                </div>
+              )}
+
               <div>
                 <label
                   className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
@@ -3526,17 +3154,17 @@ const CadastrarImovel = () => {
                     min="0"
                     step="0.01"
                     placeholder="0,00"
-                    className={`w-full pl-12 pr-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors duration-200 ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()} ${getPlaceholderClass()}`}
+                    className={`w-full pl-12 pr-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors duration-200 ${getInputClasses()}`}
                   />
                 </div>
               </div>
             </div>
           </div>
 
-          {/* ========== SEÇÃO 5: ACCORDIONS (só para urbanos) ========== */}
+          {/* ========== SEÇÃO: ACCORDIONS (só para urbanos) ========== */}
           {!isRural && (
             <div className="space-y-4">
-              {/* ===== ACCORDION 1: CARACTERÍSTICAS DO IMÓVEL ===== */}
+              {/* CARACTERÍSTICAS DO IMÓVEL */}
               <div
                 className={`rounded-xl border overflow-hidden transition-colors duration-200 ${getBgClass()} ${getBorderClass()}`}
               >
@@ -3583,6 +3211,7 @@ const CadastrarImovel = () => {
                     </svg>
                   </div>
                 </button>
+
                 {accordionOpen.caracteristicas && (
                   <div
                     className={`px-6 pb-6 border-t pt-6 transition-colors duration-200 ${getBgClass()} ${getBorderClass()}`}
@@ -3590,65 +3219,45 @@ const CadastrarImovel = () => {
                     <div className="space-y-8">
                       {/* 📐 Medidas e Dimensões */}
                       <div>
-                        <div className="flex items-center space-x-2 mb-4">
-                          <CubeTransparentIcon
-                            className={`w-5 h-5 ${getIconColorClass()}`}
-                          />
-                          <h4
-                            className={`text-md font-semibold ${getTextClass()}`}
-                          >
-                            📐 Medidas e Dimensões
-                          </h4>
-                        </div>
+                        <h4
+                          className={`text-md font-semibold mb-4 ${getTextClass()}`}
+                        >
+                          📐 Medidas e Dimensões
+                        </h4>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                           <div>
                             <label
-                              className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
+                              className={`block text-sm font-medium mb-2 ${getTextSecondaryClass()}`}
                             >
                               Área útil (m²)
                             </label>
                             <input
                               type="number"
-                              name="caracteristicas.areaUtil"
-                              value={formData.caracteristicas.areaUtil}
+                              name="caracteristicas.area_util"
+                              value={formData.caracteristicas.area_util}
                               onChange={handleChange}
                               placeholder="0,00"
-                              className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()} ${getPlaceholderClass()}`}
+                              className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors ${getInputClasses()}`}
                             />
                           </div>
                           <div>
                             <label
-                              className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
-                            >
-                              Área privativa (m²)
-                            </label>
-                            <input
-                              type="number"
-                              name="caracteristicas.areaPrivativa"
-                              value={formData.caracteristicas.areaPrivativa}
-                              onChange={handleChange}
-                              placeholder="0,00"
-                              className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()} ${getPlaceholderClass()}`}
-                            />
-                          </div>
-                          <div>
-                            <label
-                              className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
+                              className={`block text-sm font-medium mb-2 ${getTextSecondaryClass()}`}
                             >
                               Frente do terreno (m)
                             </label>
                             <input
                               type="text"
-                              name="caracteristicas.frenteTerreno"
-                              value={formData.caracteristicas.frenteTerreno}
+                              name="caracteristicas.frente_terreno"
+                              value={formData.caracteristicas.frente_terreno}
                               onChange={handleChange}
                               placeholder="Ex: 10m"
-                              className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()} ${getPlaceholderClass()}`}
+                              className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors ${getInputClasses()}`}
                             />
                           </div>
                           <div>
                             <label
-                              className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
+                              className={`block text-sm font-medium mb-2 ${getTextSecondaryClass()}`}
                             >
                               Fundo (m)
                             </label>
@@ -3658,52 +3267,52 @@ const CadastrarImovel = () => {
                               value={formData.caracteristicas.fundo}
                               onChange={handleChange}
                               placeholder="Ex: 25m"
-                              className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()} ${getPlaceholderClass()}`}
+                              className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors ${getInputClasses()}`}
                             />
                           </div>
                           <div>
                             <label
-                              className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
+                              className={`block text-sm font-medium mb-2 ${getTextSecondaryClass()}`}
                             >
                               Lateral esquerda (m)
                             </label>
                             <input
                               type="text"
-                              name="caracteristicas.lateralEsquerda"
-                              value={formData.caracteristicas.lateralEsquerda}
+                              name="caracteristicas.lateral_esquerda"
+                              value={formData.caracteristicas.lateral_esquerda}
                               onChange={handleChange}
                               placeholder="Ex: 30m"
-                              className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()} ${getPlaceholderClass()}`}
+                              className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors ${getInputClasses()}`}
                             />
                           </div>
                           <div>
                             <label
-                              className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
+                              className={`block text-sm font-medium mb-2 ${getTextSecondaryClass()}`}
                             >
                               Lateral direita (m)
                             </label>
                             <input
                               type="text"
-                              name="caracteristicas.lateralDireita"
-                              value={formData.caracteristicas.lateralDireita}
+                              name="caracteristicas.lateral_direita"
+                              value={formData.caracteristicas.lateral_direita}
                               onChange={handleChange}
                               placeholder="Ex: 30m"
-                              className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()} ${getPlaceholderClass()}`}
+                              className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors ${getInputClasses()}`}
                             />
                           </div>
                           <div>
                             <label
-                              className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
+                              className={`block text-sm font-medium mb-2 ${getTextSecondaryClass()}`}
                             >
                               Pé direito (m)
                             </label>
                             <input
                               type="text"
-                              name="caracteristicas.peDireito"
-                              value={formData.caracteristicas.peDireito}
+                              name="caracteristicas.pe_direito"
+                              value={formData.caracteristicas.pe_direito}
                               onChange={handleChange}
                               placeholder="Ex: 3,20m"
-                              className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()} ${getPlaceholderClass()}`}
+                              className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors ${getInputClasses()}`}
                             />
                           </div>
                         </div>
@@ -3711,7 +3320,7 @@ const CadastrarImovel = () => {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
                           <div>
                             <label
-                              className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
+                              className={`block text-sm font-medium mb-2 ${getTextSecondaryClass()}`}
                             >
                               Topografia
                             </label>
@@ -3719,7 +3328,7 @@ const CadastrarImovel = () => {
                               name="caracteristicas.topografia"
                               value={formData.caracteristicas.topografia}
                               onChange={handleChange}
-                              className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()}`}
+                              className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors ${getInputClasses()}`}
                             >
                               <option value="" className={getOptionBgClass()}>
                                 Selecione
@@ -3756,28 +3365,23 @@ const CadastrarImovel = () => {
 
                       {/* 🏗 Estrutura do Imóvel */}
                       <div className="pt-4 border-t">
-                        <div className="flex items-center space-x-2 mb-4">
-                          <HomeIcon
-                            className={`w-5 h-5 ${getIconColorClass()}`}
-                          />
-                          <h4
-                            className={`text-md font-semibold ${getTextClass()}`}
-                          >
-                            🏗 Estrutura do Imóvel
-                          </h4>
-                        </div>
+                        <h4
+                          className={`text-md font-semibold mb-4 ${getTextClass()}`}
+                        >
+                          🏗 Estrutura do Imóvel
+                        </h4>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                           <div>
                             <label
-                              className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
+                              className={`block text-sm font-medium mb-2 ${getTextSecondaryClass()}`}
                             >
                               Tipo de construção
                             </label>
                             <select
-                              name="caracteristicas.tipoConstrucao"
-                              value={formData.caracteristicas.tipoConstrucao}
+                              name="caracteristicas.tipo_construcao"
+                              value={formData.caracteristicas.tipo_construcao}
                               onChange={handleChange}
-                              className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()}`}
+                              className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors ${getInputClasses()}`}
                             >
                               <option value="" className={getOptionBgClass()}>
                                 Selecione
@@ -3795,43 +3399,44 @@ const CadastrarImovel = () => {
                           </div>
                           <div>
                             <label
-                              className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
+                              className={`block text-sm font-medium mb-2 ${getTextSecondaryClass()}`}
                             >
                               Ano de construção
                             </label>
                             <input
                               type="number"
-                              name="caracteristicas.anoConstrucao"
-                              value={formData.caracteristicas.anoConstrucao}
+                              name="caracteristicas.ano_construcao"
+                              value={formData.caracteristicas.ano_construcao}
                               onChange={handleChange}
                               placeholder="Ex: 2020"
-                              className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()} ${getPlaceholderClass()}`}
+                              className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors ${getInputClasses()}`}
                             />
                           </div>
                           <div>
                             <label
-                              className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
+                              className={`block text-sm font-medium mb-2 ${getTextSecondaryClass()}`}
                             >
                               Número de pavimentos
                             </label>
                             <input
                               type="number"
-                              name="caracteristicas.numeroPavimentos"
-                              value={formData.caracteristicas.numeroPavimentos}
+                              name="caracteristicas.numero_pavimentos"
+                              value={formData.caracteristicas.numero_pavimentos}
                               onChange={handleChange}
                               min="0"
                               placeholder="0"
-                              className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()} ${getPlaceholderClass()}`}
+                              className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors ${getInputClasses()}`}
                             />
                           </div>
                         </div>
+
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
-                          <label className="flex items-center space-x-3 p-3 border rounded-lg cursor-pointer transition-all duration-200 ${getBorderClass()} ${getHoverBgClass()}">
+                          <label className="flex items-center space-x-3 p-3 border rounded-lg cursor-pointer transition-all duration-200">
                             <input
                               type="checkbox"
-                              name="caracteristicas.reformadoRecentemente"
+                              name="caracteristicas.reformado_recentemente"
                               checked={
-                                formData.caracteristicas.reformadoRecentemente
+                                formData.caracteristicas.reformado_recentemente
                               }
                               onChange={handleChange}
                               className={getCheckboxClass()}
@@ -3842,11 +3447,11 @@ const CadastrarImovel = () => {
                               Reformado recentemente?
                             </span>
                           </label>
-                          <label className="flex items-center space-x-3 p-3 border rounded-lg cursor-pointer transition-all duration-200 ${getBorderClass()} ${getHoverBgClass()}">
+                          <label className="flex items-center space-x-3 p-3 border rounded-lg cursor-pointer transition-all duration-200">
                             <input
                               type="checkbox"
-                              name="caracteristicas.imovelAverbado"
-                              checked={formData.caracteristicas.imovelAverbado}
+                              name="caracteristicas.imovel_averbado"
+                              checked={formData.caracteristicas.imovel_averbado}
                               onChange={handleChange}
                               className={getCheckboxClass()}
                             />
@@ -3856,7 +3461,7 @@ const CadastrarImovel = () => {
                               Imóvel averbado?
                             </span>
                           </label>
-                          <label className="flex items-center space-x-3 p-3 border rounded-lg cursor-pointer transition-all duration-200 ${getBorderClass()} ${getHoverBgClass()}">
+                          <label className="flex items-center space-x-3 p-3 border rounded-lg cursor-pointer transition-all duration-200">
                             <input
                               type="checkbox"
                               name="caracteristicas.financiavel"
@@ -3870,11 +3475,11 @@ const CadastrarImovel = () => {
                               Financiável?
                             </span>
                           </label>
-                          <label className="flex items-center space-x-3 p-3 border rounded-lg cursor-pointer transition-all duration-200 ${getBorderClass()} ${getHoverBgClass()}">
+                          <label className="flex items-center space-x-3 p-3 border rounded-lg cursor-pointer transition-all duration-200">
                             <input
                               type="checkbox"
-                              name="caracteristicas.aceitaPermuta"
-                              checked={formData.caracteristicas.aceitaPermuta}
+                              name="caracteristicas.aceita_permuta"
+                              checked={formData.caracteristicas.aceita_permuta}
                               onChange={handleChange}
                               className={getCheckboxClass()}
                             />
@@ -3886,290 +3491,12 @@ const CadastrarImovel = () => {
                           </label>
                         </div>
                       </div>
-
-                      {/* ⚡ Infraestrutura interna */}
-                      <div className="pt-4 border-t">
-                        <div className="flex items-center space-x-2 mb-4">
-                          <LightBulbIcon
-                            className={`w-5 h-5 ${getIconColorClass()}`}
-                          />
-                          <h4
-                            className={`text-md font-semibold ${getTextClass()}`}
-                          >
-                            ⚡ Infraestrutura interna
-                          </h4>
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                          <div>
-                            <label
-                              className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
-                            >
-                              Tipo de iluminação
-                            </label>
-                            <input
-                              type="text"
-                              name="caracteristicas.tipoIluminacao"
-                              value={formData.caracteristicas.tipoIluminacao}
-                              onChange={handleChange}
-                              placeholder="Ex: LED, Fluorescente"
-                              className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()} ${getPlaceholderClass()}`}
-                            />
-                          </div>
-                          <div>
-                            <label
-                              className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
-                            >
-                              Tipo de telhado
-                            </label>
-                            <input
-                              type="text"
-                              name="caracteristicas.tipoTelhado"
-                              value={formData.caracteristicas.tipoTelhado}
-                              onChange={handleChange}
-                              placeholder="Ex: Cerâmica, Metálico"
-                              className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()} ${getPlaceholderClass()}`}
-                            />
-                          </div>
-                          <div>
-                            <label
-                              className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
-                            >
-                              Caixa d'água (litros)
-                            </label>
-                            <input
-                              type="number"
-                              name="caracteristicas.caixaDAgua"
-                              value={formData.caracteristicas.caixaDAgua}
-                              onChange={handleChange}
-                              placeholder="0"
-                              className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()} ${getPlaceholderClass()}`}
-                            />
-                          </div>
-                          <div>
-                            <label
-                              className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
-                            >
-                              Sistema de esgoto
-                            </label>
-                            <select
-                              name="caracteristicas.sistemaEsgoto"
-                              value={formData.caracteristicas.sistemaEsgoto}
-                              onChange={handleChange}
-                              className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()}`}
-                            >
-                              <option value="" className={getOptionBgClass()}>
-                                Selecione
-                              </option>
-                              {sistemaEsgotoOpcoes.map((opcao) => (
-                                <option
-                                  key={opcao.value}
-                                  value={opcao.value}
-                                  className={getOptionBgClass()}
-                                >
-                                  {opcao.label}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
-                          <div>
-                            <label
-                              className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
-                            >
-                              Aquecimento de água
-                            </label>
-                            <select
-                              name="caracteristicas.aquecimentoAgua"
-                              value={formData.caracteristicas.aquecimentoAgua}
-                              onChange={handleChange}
-                              className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()}`}
-                            >
-                              <option value="" className={getOptionBgClass()}>
-                                Selecione
-                              </option>
-                              {aquecimentoAguaOpcoes.map((opcao) => (
-                                <option
-                                  key={opcao.value}
-                                  value={opcao.value}
-                                  className={getOptionBgClass()}
-                                >
-                                  {opcao.label}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                          <label className="flex items-center space-x-3 p-3 border rounded-lg cursor-pointer transition-all duration-200 ${getBorderClass()} ${getHoverBgClass()}">
-                            <input
-                              type="checkbox"
-                              name="caracteristicas.forroLaje"
-                              checked={formData.caracteristicas.forroLaje}
-                              onChange={handleChange}
-                              className={getCheckboxClass()}
-                            />
-                            <span
-                              className={`transition-colors ${getTextClass()}`}
-                            >
-                              Forro em laje?
-                            </span>
-                          </label>
-                          <label className="flex items-center space-x-3 p-3 border rounded-lg cursor-pointer transition-all duration-200 ${getBorderClass()} ${getHoverBgClass()}">
-                            <input
-                              type="checkbox"
-                              name="caracteristicas.sistemaEletricoNovo"
-                              checked={
-                                formData.caracteristicas.sistemaEletricoNovo
-                              }
-                              onChange={handleChange}
-                              className={getCheckboxClass()}
-                            />
-                            <span
-                              className={`transition-colors ${getTextClass()}`}
-                            >
-                              Sistema elétrico novo?
-                            </span>
-                          </label>
-                        </div>
-                      </div>
-
-                      {/* 🏘 Informações estratégicas */}
-                      <div className="pt-4 border-t">
-                        <div className="flex items-center space-x-2 mb-4">
-                          <MapPinIcon
-                            className={`w-5 h-5 ${getIconColorClass()}`}
-                          />
-                          <h4
-                            className={`text-md font-semibold ${getTextClass()}`}
-                          >
-                            🏘 Informações estratégicas
-                          </h4>
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                          <div>
-                            <label
-                              className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
-                            >
-                              Posição solar
-                            </label>
-                            <select
-                              name="caracteristicas.posicaoSolar"
-                              value={formData.caracteristicas.posicaoSolar}
-                              onChange={handleChange}
-                              className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()}`}
-                            >
-                              <option value="" className={getOptionBgClass()}>
-                                Selecione
-                              </option>
-                              {posicaoSolarOpcoes.map((opcao) => (
-                                <option
-                                  key={opcao.value}
-                                  value={opcao.value}
-                                  className={getOptionBgClass()}
-                                >
-                                  {opcao.label}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
-                          <div>
-                            <label
-                              className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
-                            >
-                              Condomínio com taxa mensal (R$)
-                            </label>
-                            <input
-                              type="text"
-                              name="caracteristicas.condominioTaxaMensal"
-                              value={
-                                formData.caracteristicas.condominioTaxaMensal
-                              }
-                              onChange={handleChange}
-                              placeholder="0,00"
-                              className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()} ${getPlaceholderClass()}`}
-                            />
-                          </div>
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
-                          <label className="flex items-center space-x-3 p-3 border rounded-lg cursor-pointer transition-all duration-200 ${getBorderClass()} ${getHoverBgClass()}">
-                            <input
-                              type="checkbox"
-                              name="caracteristicas.ventilacaoCruzada"
-                              checked={
-                                formData.caracteristicas.ventilacaoCruzada
-                              }
-                              onChange={handleChange}
-                              className={getCheckboxClass()}
-                            />
-                            <span
-                              className={`transition-colors ${getTextClass()}`}
-                            >
-                              Ventilação cruzada
-                            </span>
-                          </label>
-                          <label className="flex items-center space-x-3 p-3 border rounded-lg cursor-pointer transition-all duration-200 ${getBorderClass()} ${getHoverBgClass()}">
-                            <input
-                              type="checkbox"
-                              name="caracteristicas.vistaLivre"
-                              checked={formData.caracteristicas.vistaLivre}
-                              onChange={handleChange}
-                              className={getCheckboxClass()}
-                            />
-                            <span
-                              className={`transition-colors ${getTextClass()}`}
-                            >
-                              Vista livre
-                            </span>
-                          </label>
-                          <label className="flex items-center space-x-3 p-3 border rounded-lg cursor-pointer transition-all duration-200 ${getBorderClass()} ${getHoverBgClass()}">
-                            <input
-                              type="checkbox"
-                              name="caracteristicas.vistaPermanente"
-                              checked={formData.caracteristicas.vistaPermanente}
-                              onChange={handleChange}
-                              className={getCheckboxClass()}
-                            />
-                            <span
-                              className={`transition-colors ${getTextClass()}`}
-                            >
-                              Vista permanente
-                            </span>
-                          </label>
-                          <label className="flex items-center space-x-3 p-3 border rounded-lg cursor-pointer transition-all duration-200 ${getBorderClass()} ${getHoverBgClass()}">
-                            <input
-                              type="checkbox"
-                              name="caracteristicas.ruaSemSaida"
-                              checked={formData.caracteristicas.ruaSemSaida}
-                              onChange={handleChange}
-                              className={getCheckboxClass()}
-                            />
-                            <span
-                              className={`transition-colors ${getTextClass()}`}
-                            >
-                              Rua sem saída
-                            </span>
-                          </label>
-                          <label className="flex items-center space-x-3 p-3 border rounded-lg cursor-pointer transition-all duration-200 ${getBorderClass()} ${getHoverBgClass()}">
-                            <input
-                              type="checkbox"
-                              name="caracteristicas.esquinaInfo"
-                              checked={formData.caracteristicas.esquinaInfo}
-                              onChange={handleChange}
-                              className={getCheckboxClass()}
-                            />
-                            <span
-                              className={`transition-colors ${getTextClass()}`}
-                            >
-                              Esquina
-                            </span>
-                          </label>
-                        </div>
-                      </div>
                     </div>
                   </div>
                 )}
               </div>
 
-              {/* ===== ACCORDION 2: ACABAMENTOS ===== */}
+              {/* ACABAMENTOS */}
               <div
                 className={`rounded-xl border overflow-hidden transition-colors duration-200 ${getBgClass()} ${getBorderClass()}`}
               >
@@ -4215,790 +3542,569 @@ const CadastrarImovel = () => {
                     </svg>
                   </div>
                 </button>
+
                 {accordionOpen.acabamentos && (
                   <div
                     className={`px-6 pb-6 border-t pt-6 transition-colors duration-200 ${getBgClass()} ${getBorderClass()}`}
                   >
-                    <div className="space-y-8">
-                      {/* 🔹 Pisos */}
-                      <div>
-                        <h4
-                          className={`text-md font-semibold mb-4 ${getTextClass()}`}
-                        >
-                          🔹 Pisos
-                        </h4>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                          {[
-                            { key: "pisoPorcelanato", label: "Porcelanato" },
-                            { key: "pisoCeramica", label: "Cerâmica" },
-                            { key: "pisoLaminado", label: "Piso laminado" },
-                            { key: "pisoVinilico", label: "Piso vinílico" },
-                            {
-                              key: "pisoMadeiraMaciça",
-                              label: "Madeira maciça",
-                            },
-                            { key: "pisoTaco", label: "Taco" },
-                            {
-                              key: "pisoCimentoQueimado",
-                              label: "Cimento queimado",
-                            },
-                            { key: "pisoMarmore", label: "Mármore" },
-                            { key: "pisoGranito", label: "Granito" },
-                            { key: "pisoFrio", label: "Piso frio" },
-                          ].map(({ key, label }) => (
-                            <label
-                              key={key}
-                              className={`flex items-center space-x-3 p-3 border rounded-lg cursor-pointer transition-all duration-200 ${getBorderClass()} ${getHoverBgClass()}`}
-                            >
-                              <input
-                                type="checkbox"
-                                name={`acabamentos.${key}`}
-                                checked={formData.acabamentos[key]}
-                                onChange={handleChange}
-                                className={getCheckboxClass()}
-                              />
-                              <span
-                                className={`transition-colors ${getTextClass()}`}
-                              >
-                                {label}
-                              </span>
-                            </label>
-                          ))}
-                        </div>
-                      </div>
+                    <SecaoAcabamento
+                      titulo="Pisos"
+                      section="acabamentos"
+                      items={[
+                        { key: "piso_porcelanato", label: "Porcelanato" },
+                        { key: "piso_ceramica", label: "Cerâmica" },
+                        { key: "piso_laminado", label: "Piso laminado" },
+                        { key: "piso_vinilico", label: "Piso vinílico" },
+                        { key: "piso_madeira_macica", label: "Madeira maciça" },
+                        { key: "piso_taco", label: "Taco" },
+                        {
+                          key: "piso_cimento_queimado",
+                          label: "Cimento queimado",
+                        },
+                        { key: "piso_marmore", label: "Mármore" },
+                        { key: "piso_granito", label: "Granito" },
+                        { key: "piso_frio", label: "Piso frio" },
+                      ]}
+                      formData={formData}
+                      setFormData={setFormData}
+                      handleChange={handleChange}
+                      isDark={isDark}
+                      getBorderClass={getBorderClass}
+                      getHoverBgClass={getHoverBgClass}
+                      getTextClass={getTextClass}
+                      getCheckboxClass={getCheckboxClass}
+                    />
 
-                      {/* 🔹 Revestimentos de parede */}
-                      <div className="pt-4 border-t">
-                        <h4
-                          className={`text-md font-semibold mb-4 ${getTextClass()}`}
-                        >
-                          🔹 Revestimentos de parede
-                        </h4>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                          {[
-                            { key: "revestimentoAzulejo", label: "Azulejo" },
-                            { key: "revestimentoPastilha", label: "Pastilha" },
-                            {
-                              key: "revestimentoPorcelanato",
-                              label: "Porcelanato em parede",
-                            },
-                            {
-                              key: "revestimentoPedraNatural",
-                              label: "Pedra natural",
-                            },
-                            {
-                              key: "revestimentoPapelParede",
-                              label: "Papel de parede",
-                            },
-                            { key: "revestimento3D", label: "Revestimento 3D" },
-                          ].map(({ key, label }) => (
-                            <label
-                              key={key}
-                              className={`flex items-center space-x-3 p-3 border rounded-lg cursor-pointer transition-all duration-200 ${getBorderClass()} ${getHoverBgClass()}`}
-                            >
-                              <input
-                                type="checkbox"
-                                name={`acabamentos.${key}`}
-                                checked={formData.acabamentos[key]}
-                                onChange={handleChange}
-                                className={getCheckboxClass()}
-                              />
-                              <span
-                                className={`transition-colors ${getTextClass()}`}
-                              >
-                                {label}
-                              </span>
-                            </label>
-                          ))}
-                        </div>
-                      </div>
+                    <div className="pt-6 border-t mt-6">
+                      <SecaoAcabamento
+                        titulo="Revestimentos de parede"
+                        section="acabamentos"
+                        items={[
+                          { key: "revestimento_azulejo", label: "Azulejo" },
+                          { key: "revestimento_pastilha", label: "Pastilha" },
+                          {
+                            key: "revestimento_porcelanato",
+                            label: "Porcelanato em parede",
+                          },
+                          {
+                            key: "revestimento_pedra_natural",
+                            label: "Pedra natural",
+                          },
+                          {
+                            key: "revestimento_papel_parede",
+                            label: "Papel de parede",
+                          },
+                          { key: "revestimento_3d", label: "Revestimento 3D" },
+                        ]}
+                        formData={formData}
+                        setFormData={setFormData}
+                        handleChange={handleChange}
+                        isDark={isDark}
+                        getBorderClass={getBorderClass}
+                        getHoverBgClass={getHoverBgClass}
+                        getTextClass={getTextClass}
+                        getCheckboxClass={getCheckboxClass}
+                      />
+                    </div>
 
-                      {/* 🔹 Teto e forro */}
-                      <div className="pt-4 border-t">
-                        <h4
-                          className={`text-md font-semibold mb-4 ${getTextClass()}`}
-                        >
-                          🔹 Teto e forro
-                        </h4>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                          {[
-                            {
-                              key: "tetoGessoRebaixado",
-                              label: "Gesso rebaixado",
-                            },
-                            { key: "tetoSancaGesso", label: "Sanca de gesso" },
-                            { key: "tetoForroPVC", label: "Forro de PVC" },
-                            { key: "tetoLaje", label: "Laje" },
-                          ].map(({ key, label }) => (
-                            <label
-                              key={key}
-                              className={`flex items-center space-x-3 p-3 border rounded-lg cursor-pointer transition-all duration-200 ${getBorderClass()} ${getHoverBgClass()}`}
-                            >
-                              <input
-                                type="checkbox"
-                                name={`acabamentos.${key}`}
-                                checked={formData.acabamentos[key]}
-                                onChange={handleChange}
-                                className={getCheckboxClass()}
-                              />
-                              <span
-                                className={`transition-colors ${getTextClass()}`}
-                              >
-                                {label}
-                              </span>
-                            </label>
-                          ))}
-                        </div>
-                      </div>
+                    <div className="pt-6 border-t mt-6">
+                      <SecaoAcabamento
+                        titulo="Teto e forro"
+                        section="acabamentos"
+                        items={[
+                          {
+                            key: "teto_gesso_rebaixado",
+                            label: "Gesso rebaixado",
+                          },
+                          { key: "teto_sanca_gesso", label: "Sanca de gesso" },
+                          { key: "teto_forro_pvc", label: "Forro de PVC" },
+                          { key: "teto_laje", label: "Laje" },
+                        ]}
+                        formData={formData}
+                        setFormData={setFormData}
+                        handleChange={handleChange}
+                        isDark={isDark}
+                        getBorderClass={getBorderClass}
+                        getHoverBgClass={getHoverBgClass}
+                        getTextClass={getTextClass}
+                        getCheckboxClass={getCheckboxClass}
+                      />
+                    </div>
 
-                      {/* 🔹 Esquadrias e portas */}
-                      <div className="pt-4 border-t">
-                        <h4
-                          className={`text-md font-semibold mb-4 ${getTextClass()}`}
-                        >
-                          🔹 Esquadrias e portas
-                        </h4>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                          {[
-                            {
-                              key: "portaMadeiraMaciça",
-                              label: "Porta de madeira maciça",
-                            },
-                            { key: "portaLaqueada", label: "Porta laqueada" },
-                            {
-                              key: "esquadriaAluminio",
-                              label: "Esquadrias de alumínio",
-                            },
-                            { key: "esquadriaPVC", label: "Esquadrias de PVC" },
-                            { key: "portaPivotante", label: "Porta pivotante" },
-                          ].map(({ key, label }) => (
-                            <label
-                              key={key}
-                              className={`flex items-center space-x-3 p-3 border rounded-lg cursor-pointer transition-all duration-200 ${getBorderClass()} ${getHoverBgClass()}`}
-                            >
-                              <input
-                                type="checkbox"
-                                name={`acabamentos.${key}`}
-                                checked={formData.acabamentos[key]}
-                                onChange={handleChange}
-                                className={getCheckboxClass()}
-                              />
-                              <span
-                                className={`transition-colors ${getTextClass()}`}
-                              >
-                                {label}
-                              </span>
-                            </label>
-                          ))}
-                        </div>
-                      </div>
+                    <div className="pt-6 border-t mt-6">
+                      <SecaoAcabamento
+                        titulo="Esquadrias e portas"
+                        section="acabamentos"
+                        items={[
+                          {
+                            key: "porta_madeira_macica",
+                            label: "Porta de madeira maciça",
+                          },
+                          { key: "porta_laqueada", label: "Porta laqueada" },
+                          {
+                            key: "esquadria_aluminio",
+                            label: "Esquadrias de alumínio",
+                          },
+                          { key: "esquadria_pvc", label: "Esquadrias de PVC" },
+                          { key: "porta_pivotante", label: "Porta pivotante" },
+                        ]}
+                        formData={formData}
+                        setFormData={setFormData}
+                        handleChange={handleChange}
+                        isDark={isDark}
+                        getBorderClass={getBorderClass}
+                        getHoverBgClass={getHoverBgClass}
+                        getTextClass={getTextClass}
+                        getCheckboxClass={getCheckboxClass}
+                      />
+                    </div>
 
-                      {/* 🔹 Bancadas */}
-                      <div className="pt-4 border-t">
-                        <h4
-                          className={`text-md font-semibold mb-4 ${getTextClass()}`}
-                        >
-                          🔹 Bancadas
-                        </h4>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                          {[
-                            { key: "bancadaGranito", label: "Granito" },
-                            { key: "bancadaMarmore", label: "Mármore" },
-                            { key: "bancadaQuartzo", label: "Quartzo" },
-                            { key: "bancadaNanoglass", label: "Nanoglass" },
-                          ].map(({ key, label }) => (
-                            <label
-                              key={key}
-                              className={`flex items-center space-x-3 p-3 border rounded-lg cursor-pointer transition-all duration-200 ${getBorderClass()} ${getHoverBgClass()}`}
-                            >
-                              <input
-                                type="checkbox"
-                                name={`acabamentos.${key}`}
-                                checked={formData.acabamentos[key]}
-                                onChange={handleChange}
-                                className={getCheckboxClass()}
-                              />
-                              <span
-                                className={`transition-colors ${getTextClass()}`}
-                              >
-                                {label}
-                              </span>
-                            </label>
-                          ))}
-                        </div>
-                      </div>
+                    <div className="pt-6 border-t mt-6">
+                      <SecaoAcabamento
+                        titulo="Bancadas"
+                        section="acabamentos"
+                        items={[
+                          { key: "bancada_granito", label: "Granito" },
+                          { key: "bancada_marmore", label: "Mármore" },
+                          { key: "bancada_quartzo", label: "Quartzo" },
+                          { key: "bancada_nanoglass", label: "Nanoglass" },
+                        ]}
+                        formData={formData}
+                        setFormData={setFormData}
+                        handleChange={handleChange}
+                        isDark={isDark}
+                        getBorderClass={getBorderClass}
+                        getHoverBgClass={getHoverBgClass}
+                        getTextClass={getTextClass}
+                        getCheckboxClass={getCheckboxClass}
+                      />
                     </div>
                   </div>
                 )}
               </div>
 
-              {/* ===== ACCORDION 3: ÁREA DE LAZER ===== */}
-              <div
-                className={`rounded-xl border overflow-hidden transition-colors duration-200 ${getBgClass()} ${getBorderClass()}`}
-              >
-                <button
-                  type="button"
-                  onClick={() => toggleAccordion("areaLazer")}
-                  className={`w-full flex items-center justify-between p-6 transition-colors duration-200 ${getBgClass()} ${getHoverBgClass()}`}
-                >
-                  <div className="flex items-center space-x-3">
-                    <div className={`p-2 rounded-lg ${getIconBgClass()}`}>
-                      <SunIcon className={`w-5 h-5 ${getIconColorClass()}`} />
-                    </div>
-                    <div className="text-left">
-                      <h3
-                        className={`text-lg font-semibold transition-colors ${getAccordionTitleClass()}`}
-                      >
-                        Área de Lazer
-                      </h3>
-                      <p
-                        className={`text-sm transition-colors ${getAccordionSubtitleClass()}`}
-                      >
-                        Instalações de lazer e entretenimento
-                      </p>
-                    </div>
-                  </div>
-                  <div
-                    className={`transform transition-transform ${accordionOpen.areaLazer ? "rotate-180" : ""}`}
+              {/* ÁREA DE LAZER */}
+              <CheckboxAccordion
+                title="Área de Lazer"
+                subtitle="Instalações de lazer e entretenimento"
+                icon={SunIcon}
+                section="area_lazer"
+                isOpen={accordionOpen.areaLazer}
+                onToggle={() => toggleAccordion("areaLazer")}
+                items={[
+                  { key: "piscina", label: "Piscina" },
+                  { key: "churrasqueira", label: "Churrasqueira" },
+                  { key: "espaco_gourmet", label: "Espaço gourmet" },
+                  { key: "salao_festas", label: "Salão de festas" },
+                  { key: "salao_jogos", label: "Salão de jogos" },
+                  { key: "academia", label: "Academia" },
+                  { key: "playground", label: "Playground" },
+                  {
+                    key: "quadra_poliesportiva",
+                    label: "Quadra poliesportiva",
+                  },
+                  { key: "campo_society", label: "Campo society" },
+                  { key: "area_verde", label: "Área verde" },
+                  { key: "jardim", label: "Jardim" },
+                  { key: "deck", label: "Deck" },
+                  { key: "rooftop", label: "Rooftop" },
+                  { key: "sauna", label: "Sauna" },
+                  { key: "espaco_pet", label: "Espaço pet" },
+                  { key: "brinquedoteca", label: "Brinquedoteca" },
+                ]}
+                formData={formData}
+                setFormData={setFormData}
+                handleChange={handleChange}
+                isDark={isDark}
+                getBorderClass={getBorderClass}
+                getHoverBgClass={getHoverBgClass}
+                getTextClass={getTextClass}
+                getCheckboxClass={getCheckboxClass}
+                getIconBgClass={getIconBgClass}
+                getIconColorClass={getIconColorClass}
+                getAccordionTitleClass={getAccordionTitleClass}
+                getAccordionSubtitleClass={getAccordionSubtitleClass}
+                getTextSecondaryClass={getTextSecondaryClass}
+              />
+
+              {/* LOCALIZAÇÃO E VIZINHANÇA */}
+              <CheckboxAccordion
+                title="Localização e Vizinhança"
+                subtitle="Proximidade de serviços e características do entorno"
+                icon={MapPinIcon}
+                section="localizacao_vizinhanca"
+                isOpen={accordionOpen.localizacaoVizinhanca}
+                onToggle={() => toggleAccordion("localizacaoVizinhanca")}
+                items={[
+                  { key: "proximo_centro", label: "Próximo ao centro" },
+                  {
+                    key: "proximo_supermercado",
+                    label: "Próximo a supermercado",
+                  },
+                  { key: "proximo_escola", label: "Próximo a escola" },
+                  { key: "proximo_hospital", label: "Próximo a hospital" },
+                  { key: "proximo_farmacia", label: "Próximo a farmácia" },
+                  { key: "proximo_onibus", label: "Próximo a ponto de ônibus" },
+                  { key: "proximo_shopping", label: "Próximo a shopping" },
+                  { key: "proximo_faculdade", label: "Próximo a faculdade" },
+                  { key: "bairro_residencial", label: "Bairro residencial" },
+                  { key: "bairro_comercial", label: "Bairro comercial" },
+                  { key: "rua_asfaltada", label: "Rua asfaltada" },
+                  { key: "rua_tranquila", label: "Rua tranquila" },
+                  { key: "regiao_valorizada", label: "Região valorizada" },
+                ]}
+                formData={formData}
+                setFormData={setFormData}
+                handleChange={handleChange}
+                isDark={isDark}
+                getBorderClass={getBorderClass}
+                getHoverBgClass={getHoverBgClass}
+                getTextClass={getTextClass}
+                getCheckboxClass={getCheckboxClass}
+                getIconBgClass={getIconBgClass}
+                getIconColorClass={getIconColorClass}
+                getAccordionTitleClass={getAccordionTitleClass}
+                getAccordionSubtitleClass={getAccordionSubtitleClass}
+                getTextSecondaryClass={getTextSecondaryClass}
+              />
+
+              {/* SEGURANÇA */}
+              <CheckboxAccordion
+                title="Segurança"
+                subtitle="Sistemas de segurança e proteção patrimonial"
+                icon={ShieldCheckIcon}
+                section="seguranca"
+                isOpen={accordionOpen.seguranca}
+                onToggle={() => toggleAccordion("seguranca")}
+                items={[
+                  { key: "portao_eletronico", label: "Portão eletrônico" },
+                  { key: "interfone", label: "Interfone" },
+                  { key: "cerca_eletrica", label: "Cerca elétrica" },
+                  { key: "sistema_cameras", label: "Sistema de câmeras" },
+                  { key: "alarme", label: "Alarme" },
+                  { key: "portaria_24h", label: "Portaria 24h" },
+                  { key: "vigilancia_24h", label: "Vigilância 24h" },
+                  { key: "controle_acesso", label: "Controle de acesso" },
+                  { key: "fechadura_digital", label: "Fechadura digital" },
+                  { key: "condominio_fechado", label: "Condomínio fechado" },
+                  { key: "muros_altos", label: "Muros altos" },
+                ]}
+                formData={formData}
+                setFormData={setFormData}
+                handleChange={handleChange}
+                isDark={isDark}
+                getBorderClass={getBorderClass}
+                getHoverBgClass={getHoverBgClass}
+                getTextClass={getTextClass}
+                getCheckboxClass={getCheckboxClass}
+                getIconBgClass={getIconBgClass}
+                getIconColorClass={getIconColorClass}
+                getAccordionTitleClass={getAccordionTitleClass}
+                getAccordionSubtitleClass={getAccordionSubtitleClass}
+                getTextSecondaryClass={getTextSecondaryClass}
+              />
+
+              {/* ARMÁRIOS E ARMAZENAMENTO */}
+              <CheckboxAccordion
+                title="Armários e Armazenamento"
+                subtitle="Móveis planejados e soluções de armazenamento"
+                icon={BuildingStorefrontIcon}
+                section="armarios_armazenamento"
+                isOpen={accordionOpen.armariosArmazenamento}
+                onToggle={() => toggleAccordion("armariosArmazenamento")}
+                items={[
+                  {
+                    key: "armario_cozinha_planejado",
+                    label: "Armário de cozinha planejado",
+                  },
+                  { key: "armarios_embutidos", label: "Armários embutidos" },
+                  { key: "armarios_quarto", label: "Armários no quarto" },
+                  { key: "armarios_banheiro", label: "Armários no banheiro" },
+                  { key: "closet", label: "Closet" },
+                  { key: "despensa", label: "Despensa" },
+                  { key: "deposito", label: "Depósito" },
+                  { key: "roupeiro", label: "Roupeiro" },
+                  { key: "maleiro", label: "Maleiro" },
+                ]}
+                formData={formData}
+                setFormData={setFormData}
+                handleChange={handleChange}
+                isDark={isDark}
+                getBorderClass={getBorderClass}
+                getHoverBgClass={getHoverBgClass}
+                getTextClass={getTextClass}
+                getCheckboxClass={getCheckboxClass}
+                getIconBgClass={getIconBgClass}
+                getIconColorClass={getIconColorClass}
+                getAccordionTitleClass={getAccordionTitleClass}
+                getAccordionSubtitleClass={getAccordionSubtitleClass}
+                getTextSecondaryClass={getTextSecondaryClass}
+              />
+
+              {/* SERVIÇOS E UTILIDADES */}
+              <CheckboxAccordion
+                title="Serviços e Utilidades"
+                subtitle="Serviços coletivos, utilidades e infraestrutura urbana"
+                icon={BoltIcon}
+                section="servicos_utilidades"
+                isOpen={accordionOpen.servicosUtilidades}
+                onToggle={() => toggleAccordion("servicosUtilidades")}
+                items={[
+                  { key: "agua_encanada", label: "Água encanada" },
+                  { key: "energia_eletrica", label: "Energia elétrica" },
+                  { key: "poco_artesiano", label: "Poço artesiano" },
+                  { key: "aquecimento_gas", label: "Aquecimento a gás" },
+                  { key: "aquecimento_solar", label: "Aquecimento solar" },
+                  { key: "gas_encanado", label: "Gás encanado" },
+                  {
+                    key: "ar_condicionado_instalado",
+                    label: "Ar-condicionado instalado",
+                  },
+                  {
+                    key: "infra_ar_condicionado",
+                    label: "Infra para ar-condicionado",
+                  },
+                  { key: "internet_fibra", label: "Internet fibra disponível" },
+                  { key: "iluminacao_led", label: "Iluminação em LED" },
+                  { key: "energia_solar", label: "Sistema de energia solar" },
+                  { key: "elevador", label: "Elevador" },
+                  { key: "coleta_lixo", label: "Coleta de lixo regular" },
+                ]}
+                formData={formData}
+                setFormData={setFormData}
+                handleChange={handleChange}
+                isDark={isDark}
+                getBorderClass={getBorderClass}
+                getHoverBgClass={getHoverBgClass}
+                getTextClass={getTextClass}
+                getCheckboxClass={getCheckboxClass}
+                getIconBgClass={getIconBgClass}
+                getIconColorClass={getIconColorClass}
+                getAccordionTitleClass={getAccordionTitleClass}
+                getAccordionSubtitleClass={getAccordionSubtitleClass}
+                getTextSecondaryClass={getTextSecondaryClass}
+              />
+
+              {/* DIFERENCIAIS DO IMÓVEL */}
+              <CheckboxAccordion
+                title="Diferenciais do Imóvel"
+                subtitle="Características especiais que valorizam o imóvel"
+                icon={HeartIcon}
+                section="diferenciais"
+                isOpen={accordionOpen.diferenciais}
+                onToggle={() => toggleAccordion("diferenciais")}
+                items={[
+                  { key: "varanda", label: "Varanda" },
+                  { key: "sacada", label: "Sacada" },
+                  { key: "lavabo", label: "Lavabo" },
+                  { key: "banheira", label: "Banheira" },
+                  { key: "box_vidro", label: "Box de vidro" },
+                  {
+                    key: "dependencia_empregada",
+                    label: "Dependência de empregada",
+                  },
+                  { key: "escritorio", label: "Escritório" },
+                  { key: "pe_direito_duplo", label: "Pé direito duplo" },
+                  { key: "mezanino", label: "Mezanino" },
+                  { key: "vista_panoramica", label: "Vista panorâmica" },
+                ]}
+                formData={formData}
+                setFormData={setFormData}
+                handleChange={handleChange}
+                isDark={isDark}
+                getBorderClass={getBorderClass}
+                getHoverBgClass={getHoverBgClass}
+                getTextClass={getTextClass}
+                getCheckboxClass={getCheckboxClass}
+                getIconBgClass={getIconBgClass}
+                getIconColorClass={getIconColorClass}
+                getAccordionTitleClass={getAccordionTitleClass}
+                getAccordionSubtitleClass={getAccordionSubtitleClass}
+                getTextSecondaryClass={getTextSecondaryClass}
+              />
+            </div>
+          )}
+
+          {/* ========== SEÇÃO RURAL (condicional) ========== */}
+          {isRural && showRuralFields && (
+            <div
+              className={`rounded-xl border p-6 transition-colors duration-200 ${getBgClass()} ${getBorderClass()}`}
+            >
+              <div className="flex items-center space-x-3 mb-6">
+                <div className={`p-2 rounded-lg ${getIconBgClass()}`}>
+                  <BeakerIcon className={`w-6 h-6 ${getIconColorClass()}`} />
+                </div>
+                <div>
+                  <h2
+                    className={`text-xl font-semibold transition-colors ${getTextClass()}`}
                   >
-                    <svg
-                      className={`w-6 h-6 transition-colors ${getTextSecondaryClass()}`}
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M19 9l-7 7-7-7"
-                      />
-                    </svg>
-                  </div>
-                </button>
-                {accordionOpen.areaLazer && (
-                  <div
-                    className={`px-6 pb-6 border-t pt-6 transition-colors duration-200 ${getBgClass()} ${getBorderClass()}`}
+                    Informações do Imóvel Rural
+                  </h2>
+                  <p
+                    className={`text-sm transition-colors ${getTextSecondaryClass()}`}
                   >
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {[
-                        { key: "piscina", label: "Piscina" },
-                        { key: "churrasqueira", label: "Churrasqueira" },
-                        { key: "espacoGourmet", label: "Espaço gourmet" },
-                        { key: "salaoFestas", label: "Salão de festas" },
-                        { key: "salaoJogos", label: "Salão de jogos" },
-                        { key: "academia", label: "Academia" },
-                        { key: "playground", label: "Playground" },
-                        {
-                          key: "quadraPoliesportiva",
-                          label: "Quadra poliesportiva",
-                        },
-                        { key: "campoSociety", label: "Campo society" },
-                        { key: "areaVerde", label: "Área verde" },
-                        { key: "jardim", label: "Jardim" },
-                        { key: "deck", label: "Deck" },
-                        { key: "rooftop", label: "Rooftop" },
-                        { key: "sauna", label: "Sauna" },
-                        { key: "espacoPet", label: "Espaço pet" },
-                        { key: "brinquedoteca", label: "Brinquedoteca" },
-                      ].map(({ key, label }) => (
-                        <label
-                          key={key}
-                          className={`flex items-center space-x-3 p-3 border rounded-lg cursor-pointer transition-all duration-200 ${getBorderClass()} ${getHoverBgClass()}`}
-                        >
-                          <input
-                            type="checkbox"
-                            name={`areaLazer.${key}`}
-                            checked={formData.areaLazer[key]}
-                            onChange={handleChange}
-                            className={getCheckboxClass()}
-                          />
-                          <span
-                            className={`transition-colors ${getTextClass()}`}
-                          >
-                            {label}
-                          </span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                    Dados específicos para propriedades rurais
+                  </p>
+                </div>
               </div>
 
-              {/* ===== ACCORDION 4: LOCALIZAÇÃO E VIZINHANÇA ===== */}
-              <div
-                className={`rounded-xl border overflow-hidden transition-colors duration-200 ${getBgClass()} ${getBorderClass()}`}
-              >
-                <button
-                  type="button"
-                  onClick={() => toggleAccordion("localizacaoVizinhanca")}
-                  className={`w-full flex items-center justify-between p-6 transition-colors duration-200 ${getBgClass()} ${getHoverBgClass()}`}
-                >
-                  <div className="flex items-center space-x-3">
-                    <div className={`p-2 rounded-lg ${getIconBgClass()}`}>
-                      <MapPinIcon
-                        className={`w-5 h-5 ${getIconColorClass()}`}
-                      />
-                    </div>
-                    <div className="text-left">
-                      <h3
-                        className={`text-lg font-semibold transition-colors ${getAccordionTitleClass()}`}
-                      >
-                        Localização e Vizinhança
-                      </h3>
-                      <p
-                        className={`text-sm transition-colors ${getAccordionSubtitleClass()}`}
-                      >
-                        Proximidade de serviços e características do entorno
-                      </p>
-                    </div>
-                  </div>
-                  <div
-                    className={`transform transition-transform ${accordionOpen.localizacaoVizinhanca ? "rotate-180" : ""}`}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div>
+                  <label
+                    className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
                   >
-                    <svg
-                      className={`w-6 h-6 transition-colors ${getTextSecondaryClass()}`}
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M19 9l-7 7-7-7"
-                      />
-                    </svg>
-                  </div>
-                </button>
-                {accordionOpen.localizacaoVizinhanca && (
-                  <div
-                    className={`px-6 pb-6 border-t pt-6 transition-colors duration-200 ${getBgClass()} ${getBorderClass()}`}
-                  >
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {[
-                        { key: "proximoCentro", label: "Próximo ao centro" },
-                        {
-                          key: "proximoSupermercado",
-                          label: "Próximo a supermercado",
-                        },
-                        { key: "proximoEscola", label: "Próximo a escola" },
-                        { key: "proximoHospital", label: "Próximo a hospital" },
-                        { key: "proximoFarmacia", label: "Próximo a farmácia" },
-                        {
-                          key: "proximoOnibus",
-                          label: "Próximo a ponto de ônibus",
-                        },
-                        { key: "proximoShopping", label: "Próximo a shopping" },
-                        {
-                          key: "proximoFaculdade",
-                          label: "Próximo a faculdade",
-                        },
-                        {
-                          key: "bairroResidencial",
-                          label: "Bairro residencial",
-                        },
-                        { key: "bairroComercial", label: "Bairro comercial" },
-                        { key: "ruaAsfaltada", label: "Rua asfaltada" },
-                        { key: "ruaTranquila", label: "Rua tranquila" },
-                        { key: "regiaoValorizada", label: "Região valorizada" },
-                      ].map(({ key, label }) => (
-                        <label
-                          key={key}
-                          className={`flex items-center space-x-3 p-3 border rounded-lg cursor-pointer transition-all duration-200 ${getBorderClass()} ${getHoverBgClass()}`}
-                        >
-                          <input
-                            type="checkbox"
-                            name={`localizacaoVizinhanca.${key}`}
-                            checked={formData.localizacaoVizinhanca[key]}
-                            onChange={handleChange}
-                            className={getCheckboxClass()}
-                          />
-                          <span
-                            className={`transition-colors ${getTextClass()}`}
-                          >
-                            {label}
-                          </span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
+                    Área total (hectares) *
+                  </label>
+                  <input
+                    type="number"
+                    name="caracteristicas.area_total_hectares"
+                    value={formData.caracteristicas.area_total_hectares}
+                    onChange={handleChange}
+                    step="0.01"
+                    min="0"
+                    placeholder="0,00"
+                    className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors ${getInputClasses()}`}
+                    required={isRural}
+                  />
+                </div>
 
-              {/* ===== ACCORDION 5: SEGURANÇA ===== */}
-              <div
-                className={`rounded-xl border overflow-hidden transition-colors duration-200 ${getBgClass()} ${getBorderClass()}`}
-              >
-                <button
-                  type="button"
-                  onClick={() => toggleAccordion("seguranca")}
-                  className={`w-full flex items-center justify-between p-6 transition-colors duration-200 ${getBgClass()} ${getHoverBgClass()}`}
-                >
-                  <div className="flex items-center space-x-3">
-                    <div className={`p-2 rounded-lg ${getIconBgClass()}`}>
-                      <ShieldCheckIcon
-                        className={`w-5 h-5 ${getIconColorClass()}`}
-                      />
-                    </div>
-                    <div className="text-left">
-                      <h3
-                        className={`text-lg font-semibold transition-colors ${getAccordionTitleClass()}`}
-                      >
-                        Segurança
-                      </h3>
-                      <p
-                        className={`text-sm transition-colors ${getAccordionSubtitleClass()}`}
-                      >
-                        Sistemas de segurança e proteção patrimonial
-                      </p>
-                    </div>
-                  </div>
-                  <div
-                    className={`transform transition-transform ${accordionOpen.seguranca ? "rotate-180" : ""}`}
+                <div>
+                  <label
+                    className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
                   >
-                    <svg
-                      className={`w-6 h-6 transition-colors ${getTextSecondaryClass()}`}
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M19 9l-7 7-7-7"
-                      />
-                    </svg>
-                  </div>
-                </button>
-                {accordionOpen.seguranca && (
-                  <div
-                    className={`px-6 pb-6 border-t pt-6 transition-colors duration-200 ${getBgClass()} ${getBorderClass()}`}
-                  >
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {[
-                        { key: "portaoEletronico", label: "Portão eletrônico" },
-                        { key: "interfone", label: "Interfone" },
-                        { key: "cercaEletrica", label: "Cerca elétrica" },
-                        { key: "sistemaCameras", label: "Sistema de câmeras" },
-                        { key: "alarme", label: "Alarme" },
-                        { key: "portaria24h", label: "Portaria 24h" },
-                        { key: "vigilancia24h", label: "Vigilância 24h" },
-                        { key: "controleAcesso", label: "Controle de acesso" },
-                        { key: "fechaduraDigital", label: "Fechadura digital" },
-                        {
-                          key: "condominioFechado",
-                          label: "Condomínio fechado",
-                        },
-                        { key: "murosAltos", label: "Muros altos" },
-                      ].map(({ key, label }) => (
-                        <label
-                          key={key}
-                          className={`flex items-center space-x-3 p-3 border rounded-lg cursor-pointer transition-all duration-200 ${getBorderClass()} ${getHoverBgClass()}`}
-                        >
-                          <input
-                            type="checkbox"
-                            name={`seguranca.${key}`}
-                            checked={formData.seguranca[key]}
-                            onChange={handleChange}
-                            className={getCheckboxClass()}
-                          />
-                          <span
-                            className={`transition-colors ${getTextClass()}`}
-                          >
-                            {label}
-                          </span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
+                    Área agricultável (ha)
+                  </label>
+                  <input
+                    type="number"
+                    name="caracteristicas.area_agricultavel_hectares"
+                    value={formData.caracteristicas.area_agricultavel_hectares}
+                    onChange={handleChange}
+                    step="0.01"
+                    min="0"
+                    placeholder="0,00"
+                    className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors ${getInputClasses()}`}
+                  />
+                </div>
 
-              {/* ===== ACCORDION 6: ARMÁRIOS E ARMAZENAMENTO ===== */}
-              <div
-                className={`rounded-xl border overflow-hidden transition-colors duration-200 ${getBgClass()} ${getBorderClass()}`}
-              >
-                <button
-                  type="button"
-                  onClick={() => toggleAccordion("armariosArmazenamento")}
-                  className={`w-full flex items-center justify-between p-6 transition-colors duration-200 ${getBgClass()} ${getHoverBgClass()}`}
-                >
-                  <div className="flex items-center space-x-3">
-                    <div className={`p-2 rounded-lg ${getIconBgClass()}`}>
-                      <BuildingStorefrontIcon
-                        className={`w-5 h-5 ${getIconColorClass()}`}
-                      />
-                    </div>
-                    <div className="text-left">
-                      <h3
-                        className={`text-lg font-semibold transition-colors ${getAccordionTitleClass()}`}
-                      >
-                        Armários e Armazenamento
-                      </h3>
-                      <p
-                        className={`text-sm transition-colors ${getAccordionSubtitleClass()}`}
-                      >
-                        Móveis planejados e soluções de armazenamento
-                      </p>
-                    </div>
-                  </div>
-                  <div
-                    className={`transform transition-transform ${accordionOpen.armariosArmazenamento ? "rotate-180" : ""}`}
+                <div>
+                  <label
+                    className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
                   >
-                    <svg
-                      className={`w-6 h-6 transition-colors ${getTextSecondaryClass()}`}
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M19 9l-7 7-7-7"
-                      />
-                    </svg>
-                  </div>
-                </button>
-                {accordionOpen.armariosArmazenamento && (
-                  <div
-                    className={`px-6 pb-6 border-t pt-6 transition-colors duration-200 ${getBgClass()} ${getBorderClass()}`}
-                  >
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {[
-                        {
-                          key: "armarioCozinhaPlanejado",
-                          label: "Armário de cozinha planejado",
-                        },
-                        {
-                          key: "armariosEmbutidos",
-                          label: "Armários embutidos",
-                        },
-                        { key: "armariosQuarto", label: "Armários no quarto" },
-                        {
-                          key: "armariosBanheiro",
-                          label: "Armários no banheiro",
-                        },
-                        { key: "closet", label: "Closet" },
-                        { key: "despensa", label: "Despensa" },
-                        { key: "deposito", label: "Depósito" },
-                        { key: "roupeiro", label: "Roupeiro" },
-                        { key: "maleiro", label: "Maleiro" },
-                      ].map(({ key, label }) => (
-                        <label
-                          key={key}
-                          className={`flex items-center space-x-3 p-3 border rounded-lg cursor-pointer transition-all duration-200 ${getBorderClass()} ${getHoverBgClass()}`}
-                        >
-                          <input
-                            type="checkbox"
-                            name={`armariosArmazenamento.${key}`}
-                            checked={formData.armariosArmazenamento[key]}
-                            onChange={handleChange}
-                            className={getCheckboxClass()}
-                          />
-                          <span
-                            className={`transition-colors ${getTextClass()}`}
-                          >
-                            {label}
-                          </span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
+                    Área de preservação (ha)
+                  </label>
+                  <input
+                    type="number"
+                    name="caracteristicas.area_preservacao_hectares"
+                    value={formData.caracteristicas.area_preservacao_hectares}
+                    onChange={handleChange}
+                    step="0.01"
+                    min="0"
+                    placeholder="0,00"
+                    className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors ${getInputClasses()}`}
+                  />
+                </div>
 
-              {/* ===== ACCORDION 7: SERVIÇOS E UTILIDADES ===== */}
-              <div
-                className={`rounded-xl border overflow-hidden transition-colors duration-200 ${getBgClass()} ${getBorderClass()}`}
-              >
-                <button
-                  type="button"
-                  onClick={() => toggleAccordion("servicosUtilidades")}
-                  className={`w-full flex items-center justify-between p-6 transition-colors duration-200 ${getBgClass()} ${getHoverBgClass()}`}
-                >
-                  <div className="flex items-center space-x-3">
-                    <div className={`p-2 rounded-lg ${getIconBgClass()}`}>
-                      <BoltIcon className={`w-5 h-5 ${getIconColorClass()}`} />
-                    </div>
-                    <div className="text-left">
-                      <h3
-                        className={`text-lg font-semibold transition-colors ${getAccordionTitleClass()}`}
-                      >
-                        Serviços e Utilidades
-                      </h3>
-                      <p
-                        className={`text-sm transition-colors ${getAccordionSubtitleClass()}`}
-                      >
-                        Serviços coletivos, utilidades e infraestrutura urbana
-                      </p>
-                    </div>
-                  </div>
-                  <div
-                    className={`transform transition-transform ${accordionOpen.servicosUtilidades ? "rotate-180" : ""}`}
+                <div>
+                  <label
+                    className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
                   >
-                    <svg
-                      className={`w-6 h-6 transition-colors ${getTextSecondaryClass()}`}
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M19 9l-7 7-7-7"
-                      />
-                    </svg>
-                  </div>
-                </button>
-                {accordionOpen.servicosUtilidades && (
-                  <div
-                    className={`px-6 pb-6 border-t pt-6 transition-colors duration-200 ${getBgClass()} ${getBorderClass()}`}
-                  >
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {[
-                        { key: "aguaEncanada", label: "Água encanada" },
-                        { key: "energiaEletrica", label: "Energia elétrica" },
-                        { key: "pocoArtesiano", label: "Poço artesiano" },
-                        { key: "aquecimentoGas", label: "Aquecimento a gás" },
-                        { key: "aquecimentoSolar", label: "Aquecimento solar" },
-                        { key: "gasEncanado", label: "Gás encanado" },
-                        {
-                          key: "arCondicionadoInstalado",
-                          label: "Ar-condicionado instalado",
-                        },
-                        {
-                          key: "infraArCondicionado",
-                          label: "Infra para ar-condicionado",
-                        },
-                        {
-                          key: "internetFibra",
-                          label: "Internet fibra disponível",
-                        },
-                        { key: "iluminacaoLED", label: "Iluminação em LED" },
-                        {
-                          key: "energiaSolar",
-                          label: "Sistema de energia solar",
-                        },
-                        { key: "elevador", label: "Elevador" },
-                        { key: "coletaLixo", label: "Coleta de lixo regular" },
-                      ].map(({ key, label }) => (
-                        <label
-                          key={key}
-                          className={`flex items-center space-x-3 p-3 border rounded-lg cursor-pointer transition-all duration-200 ${getBorderClass()} ${getHoverBgClass()}`}
-                        >
-                          <input
-                            type="checkbox"
-                            name={`servicosUtilidades.${key}`}
-                            checked={formData.servicosUtilidades[key]}
-                            onChange={handleChange}
-                            className={getCheckboxClass()}
-                          />
-                          <span
-                            className={`transition-colors ${getTextClass()}`}
-                          >
-                            {label}
-                          </span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
+                    Proximidade BR
+                  </label>
+                  <input
+                    type="text"
+                    name="caracteristicas.proximidade_br"
+                    value={formData.caracteristicas.proximidade_br}
+                    onChange={handleChange}
+                    placeholder="Ex: Próximo à BR-101, km 45"
+                    className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors ${getInputClasses()}`}
+                  />
+                </div>
 
-              {/* ===== ACCORDION 8: DIFERENCIAIS DO IMÓVEL ===== */}
-              <div
-                className={`rounded-xl border overflow-hidden transition-colors duration-200 ${getBgClass()} ${getBorderClass()}`}
-              >
-                <button
-                  type="button"
-                  onClick={() => toggleAccordion("diferenciais")}
-                  className={`w-full flex items-center justify-between p-6 transition-colors duration-200 ${getBgClass()} ${getHoverBgClass()}`}
-                >
-                  <div className="flex items-center space-x-3">
-                    <div className={`p-2 rounded-lg ${getIconBgClass()}`}>
-                      <HeartIcon className={`w-5 h-5 ${getIconColorClass()}`} />
-                    </div>
-                    <div className="text-left">
-                      <h3
-                        className={`text-lg font-semibold transition-colors ${getAccordionTitleClass()}`}
-                      >
-                        Diferenciais do Imóvel
-                      </h3>
-                      <p
-                        className={`text-sm transition-colors ${getAccordionSubtitleClass()}`}
-                      >
-                        Características especiais que valorizam o imóvel
-                      </p>
-                    </div>
-                  </div>
-                  <div
-                    className={`transform transition-transform ${accordionOpen.diferenciais ? "rotate-180" : ""}`}
+                <div>
+                  <label
+                    className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
                   >
-                    <svg
-                      className={`w-6 h-6 transition-colors ${getTextSecondaryClass()}`}
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M19 9l-7 7-7-7"
-                      />
-                    </svg>
-                  </div>
-                </button>
-                {accordionOpen.diferenciais && (
-                  <div
-                    className={`px-6 pb-6 border-t pt-6 transition-colors duration-200 ${getBgClass()} ${getBorderClass()}`}
+                    Município/Distrito
+                  </label>
+                  <input
+                    type="text"
+                    name="caracteristicas.municipio_distrito"
+                    value={formData.caracteristicas.municipio_distrito}
+                    onChange={handleChange}
+                    placeholder="Ex: Distrito de São João"
+                    className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors ${getInputClasses()}`}
+                  />
+                </div>
+
+                <div>
+                  <label
+                    className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
                   >
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {[
-                        { key: "varanda", label: "Varanda" },
-                        { key: "sacada", label: "Sacada" },
-                        { key: "lavabo", label: "Lavabo" },
-                        { key: "banheira", label: "Banheira" },
-                        { key: "boxVidro", label: "Box de vidro" },
-                        {
-                          key: "dependenciaEmpregada",
-                          label: "Dependência de empregada",
-                        },
-                        { key: "escritorio", label: "Escritório" },
-                        { key: "peDireitoDuplo", label: "Pé direito duplo" },
-                        { key: "mezanino", label: "Mezanino" },
-                        { key: "vistaPanoramica", label: "Vista panorâmica" },
-                      ].map(({ key, label }) => (
-                        <label
-                          key={key}
-                          className={`flex items-center space-x-3 p-3 border rounded-lg cursor-pointer transition-all duration-200 ${getBorderClass()} ${getHoverBgClass()}`}
-                        >
-                          <input
-                            type="checkbox"
-                            name={`diferenciais.${key}`}
-                            checked={formData.diferenciais[key]}
-                            onChange={handleChange}
-                            className={getCheckboxClass()}
-                          />
-                          <span
-                            className={`transition-colors ${getTextClass()}`}
-                          >
-                            {label}
-                          </span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                    Benfeitorias
+                  </label>
+                  <input
+                    type="text"
+                    name="caracteristicas.benfeitorias"
+                    value={formData.caracteristicas.benfeitorias}
+                    onChange={handleChange}
+                    placeholder="Ex: Curral, cercas, açude, casa sede"
+                    className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors ${getInputClasses()}`}
+                  />
+                </div>
+
+                <div>
+                  <label
+                    className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
+                  >
+                    Tipo de Cultura
+                  </label>
+                  <input
+                    type="text"
+                    name="caracteristicas.tipo_cultura"
+                    value={formData.caracteristicas.tipo_cultura}
+                    onChange={handleChange}
+                    placeholder="Ex: Soja, milho, café"
+                    className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors ${getInputClasses()}`}
+                  />
+                </div>
+
+                <div>
+                  <label
+                    className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
+                  >
+                    Tipo de Pecuária
+                  </label>
+                  <input
+                    type="text"
+                    name="caracteristicas.tipo_pecuaria"
+                    value={formData.caracteristicas.tipo_pecuaria}
+                    onChange={handleChange}
+                    placeholder="Ex: Corte, leite"
+                    className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors ${getInputClasses()}`}
+                  />
+                </div>
+
+                <div>
+                  <label
+                    className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
+                  >
+                    Número de Cabeças
+                  </label>
+                  <input
+                    type="number"
+                    name="caracteristicas.numero_cabecas"
+                    value={formData.caracteristicas.numero_cabecas}
+                    onChange={handleChange}
+                    min="0"
+                    placeholder="0"
+                    className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors ${getInputClasses()}`}
+                  />
+                </div>
               </div>
             </div>
           )}
 
-          {/* ========== SEÇÃO 8: DESCRIÇÃO E OBSERVAÇÕES ========== */}
+          {/* ========== SEÇÃO: DESCRIÇÃO E OBSERVAÇÕES ========== */}
           <div
             className={`rounded-xl border p-6 transition-colors duration-200 ${getBgClass()} ${getBorderClass()}`}
           >
@@ -5036,7 +4142,7 @@ const CadastrarImovel = () => {
                       ? "Descreva a fazenda, suas atividades, potenciais, etc..."
                       : "Descreva o imóvel com detalhes: acabamentos, diferenciais, localização, etc..."
                   }
-                  className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors duration-200 ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()} ${getPlaceholderClass()}`}
+                  className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors duration-200 ${getInputClasses()}`}
                   required
                 />
               </div>
@@ -5052,7 +4158,7 @@ const CadastrarImovel = () => {
                   onChange={handleChange}
                   rows="3"
                   placeholder="Observações para uso interno da imobiliária (não aparece para clientes)..."
-                  className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors duration-200 ${getInputBgClass()} ${getInputBorderClass()} ${getInputTextClass()} ${getPlaceholderClass()}`}
+                  className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors duration-200 ${getInputClasses()}`}
                 />
               </div>
             </div>
@@ -5084,7 +4190,7 @@ const CadastrarImovel = () => {
             </div>
           )}
 
-          {/* ========== SEÇÃO 9: AÇÕES ========== */}
+          {/* ========== SEÇÃO: AÇÕES ========== */}
           <div
             className={`rounded-xl border p-6 transition-colors duration-200 ${getBgClass()} ${getBorderClass()}`}
           >
