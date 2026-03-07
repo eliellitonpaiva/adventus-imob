@@ -806,6 +806,7 @@ const EditarImovel = () => {
     proprietarioId: "",
     corretorId: "",
     ocultarPreco: false,
+    precoAnterior: "",
 
     // Finalidades (agora separadas, não objeto)
     finalidade_venda: false,
@@ -846,10 +847,10 @@ const EditarImovel = () => {
 
     // Etiquetas (JSONB)
     etiquetas: {
-      destaqueSemana: false,
-      novoSite: false,
-      baixouPreco: false,
-      financivel: false,
+      destaque_semana: false,
+      novo_site: false,
+      baixou_preco: false,
+      financiavel: false, // ←
     },
 
     // JSONBs
@@ -898,6 +899,7 @@ const EditarImovel = () => {
         proprietarioId: data.proprietario_id || "",
         corretorId: data.corretor_id || "",
         ocultarPreco: data.ocultar_preco || false,
+        precoAnterior: data.preco_anterior || "",
 
         // Finalidades (serão preenchidas pela carregarFinalidades)
         finalidade_venda: false,
@@ -937,11 +939,11 @@ const EditarImovel = () => {
         exibirEnderecoSite: data.exibir_endereco_site || false,
 
         // Etiquetas (JSONB)
-        etiquetas: data.etiquetas || {
-          destaqueSemana: false,
-          novoSite: false,
-          baixouPreco: false,
-          financivel: false,
+        etiquetas: {
+          destaque_semana: data.etiquetas?.destaque_semana || false,
+          novo_site: data.etiquetas?.novo_site || false,
+          baixou_preco: data.etiquetas?.baixou_preco || false,
+          financiavel: data.etiquetas?.financiavel || false,
         },
 
         // JSONBs
@@ -1119,15 +1121,11 @@ const EditarImovel = () => {
     const dadosParaSupabase = {
       codigo: formData.codigo,
       titulo: formData.titulo,
-      finalidade_venda: formData.finalidade_venda,
-      finalidade_aluguel: formData.finalidade_aluguel,
+      // ❌ REMOVER: finalidade_venda: formData.finalidade_venda,
+      // ❌ REMOVER: finalidade_aluguel: formData.finalidade_aluguel,
       tipo: formData.tipo,
-      preco_venda: formData.finalidade_venda
-        ? parseFloat(formData.preco_venda)
-        : null,
-      preco_aluguel: formData.finalidade_aluguel
-        ? parseFloat(formData.preco_aluguel)
-        : null,
+      // ❌ REMOVER: preco_venda: formData.finalidade_venda ? parseFloat(formData.preco_venda) : null,
+      // ❌ REMOVER: preco_aluguel: formData.finalidade_aluguel ? parseFloat(formData.preco_aluguel) : null,
       status: formData.status,
       financiado: formData.financiado,
       em_condominio: formData.emCondominio,
@@ -2551,8 +2549,8 @@ const EditarImovel = () => {
               >
                 <input
                   type="checkbox"
-                  name="etiquetas.destaqueSemana"
-                  checked={formData.etiquetas.destaqueSemana}
+                  name="etiquetas.destaque_semana"
+                  checked={formData.etiquetas.destaque_semana}
                   onChange={handleChange}
                   className={getCheckboxClass()}
                 />
@@ -2573,8 +2571,8 @@ const EditarImovel = () => {
               >
                 <input
                   type="checkbox"
-                  name="etiquetas.novoSite"
-                  checked={formData.etiquetas.novoSite}
+                  name="etiquetas.novo_site"
+                  checked={formData.etiquetas.novo_site}
                   onChange={handleChange}
                   className={getCheckboxClass()}
                 />
@@ -2595,7 +2593,7 @@ const EditarImovel = () => {
               >
                 <input
                   type="checkbox"
-                  name="etiquetas.baixouPreco"
+                  name="etiquetas.baixou_preco"
                   checked={formData.etiquetas.baixouPreco}
                   onChange={handleChange}
                   className={getCheckboxClass()}
@@ -2635,7 +2633,7 @@ const EditarImovel = () => {
               </label>
             </div>
 
-            {formData.etiquetas.baixouPreco && (
+            {formData.etiquetas.baixou_preco && (
               <div className="mt-6 p-5 border-2 border-red-500/30 bg-red-500/10 rounded-xl backdrop-blur-sm">
                 <div className="flex items-start space-x-4">
                   <div className="text-3xl">📉</div>
@@ -2724,17 +2722,17 @@ const EditarImovel = () => {
                     {formData.titulo || "Titulo do Imovel"}
                   </h3>
                   <div className="flex gap-1 flex-wrap">
-                    {formData.etiquetas.destaqueSemana && (
+                    {formData.etiquetas.destaque_semana && (
                       <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded text-xs font-medium flex items-center gap-1">
                         ⭐ Destaque
                       </span>
                     )}
-                    {formData.etiquetas.novoSite && (
+                    {formData.etiquetas.novo_site && (
                       <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs font-medium flex items-center gap-1">
                         🆕 Novo
                       </span>
                     )}
-                    {formData.etiquetas.baixouPreco && (
+                    {formData.etiquetas.baixou_preco && (
                       <span className="px-2 py-1 bg-green-100 text-green-800 rounded text-xs font-medium flex items-center gap-1">
                         📉 Baixou
                       </span>

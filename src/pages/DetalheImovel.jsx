@@ -29,6 +29,7 @@ const DetalheImovel = () => {
   // ESTADOS DO COMPONENTE
   // ==========================================================================
   const [imovel, setImovel] = useState(null);
+  const [finalidades, setFinalidades] = useState([]); // NOVO: armazenar finalidades
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [visualizacoes, setVisualizacoes] = useState(0);
@@ -333,13 +334,28 @@ const DetalheImovel = () => {
     return Math.round(desconto);
   };
 
-  const formatarFinalidade = useCallback((imovel) => {
-    if (imovel.finalidade_venda && imovel.finalidade_aluguel)
-      return "Venda e Aluguel";
-    if (imovel.finalidade_venda) return "Venda";
-    if (imovel.finalidade_aluguel) return "Aluguel";
+  // 🔥 NOVA FUNÇÃO: determinar finalidade baseada nas finalidades carregadas
+  const formatarFinalidade = useCallback(() => {
+    const temVenda = finalidades.some((f) => f.tipo === "venda");
+    const temAluguel = finalidades.some((f) => f.tipo === "aluguel");
+
+    if (temVenda && temAluguel) return "Venda e Aluguel";
+    if (temVenda) return "Venda";
+    if (temAluguel) return "Aluguel";
     return "Venda";
-  }, []);
+  }, [finalidades]);
+
+  // 🔥 NOVA FUNÇÃO: obter preço de venda
+  const getPrecoVenda = useCallback(() => {
+    const venda = finalidades.find((f) => f.tipo === "venda");
+    return venda?.preco || null;
+  }, [finalidades]);
+
+  // 🔥 NOVA FUNÇÃO: obter preço de aluguel
+  const getPrecoAluguel = useCallback(() => {
+    const aluguel = finalidades.find((f) => f.tipo === "aluguel");
+    return aluguel?.preco || null;
+  }, [finalidades]);
 
   const gerarTituloSEO = useCallback((dados) => {
     if (!dados) return "Imóvel em Açailândia – Adventus Imóveis";
@@ -394,69 +410,89 @@ const DetalheImovel = () => {
     return partes.join(" ");
   }, []);
 
-  const gerarSlugSEO = useCallback((dados) => {
-    if (!dados) return "imovel";
+  const gerarSlugSEO = useCallback(
+    (dados) => {
+      if (!dados) return "imovel";
 
-    const partes = [];
+      const partes = [];
 
-    if (dados.tipo) partes.push(dados.tipo.toLowerCase());
-    if (dados.quartos > 0) partes.push(`${dados.quartos}-dormitorios`);
-    if (dados.finalidade_venda) {
-      partes.push("venda");
-    } else if (dados.finalidade_aluguel) {
-      partes.push("aluguel");
-    }
-    if (dados.bairro)
-      partes.push(dados.bairro.toLowerCase().replace(/\s+/g, "-"));
-    if (dados.cidade)
-      partes.push(dados.cidade.toLowerCase().replace(/\s+/g, "-"));
-    if (dados.estado) partes.push(dados.estado.toLowerCase());
+      if (dados.tipo) partes.push(dados.tipo.toLowerCase());
+      if (dados.quartos > 0) partes.push(`${dados.quartos}-dormitorios`);
 
-    return partes.join("-");
-  }, []);
+      // 🔥 Usar finalidades carregadas
+      const temVenda = finalidades.some((f) => f.tipo === "venda");
+      const temAluguel = finalidades.some((f) => f.tipo === "aluguel");
 
-  const gerarMetaDescription = useCallback((dados) => {
-    if (!dados)
-      return "Imóveis em Açailândia e região. Compre ou alugue com a Adventus Imóveis.";
+      if (temVenda && !temAluguel) {
+        partes.push("venda");
+      } else if (temAluguel && !temVenda) {
+        partes.push("aluguel");
+      } else if (temVenda && temAluguel) {
+        partes.push("venda-aluguel");
+      }
 
-    const descricao = [];
-    descricao.push(
-      `${dados.tipo || "Imóvel"} com ${dados.quartos || 0} ${dados.quartos === 1 ? "quarto" : "quartos"}`,
-    );
+      if (dados.bairro)
+        partes.push(dados.bairro.toLowerCase().replace(/\s+/g, "-"));
+      if (dados.cidade)
+        partes.push(dados.cidade.toLowerCase().replace(/\s+/g, "-"));
+      if (dados.estado) partes.push(dados.estado.toLowerCase());
 
-    if (dados.suites > 0) {
+      return partes.join("-");
+    },
+    [finalidades],
+  );
+
+  const gerarMetaDescription = useCallback(
+    (dados) => {
+      if (!dados)
+        return "Imóveis em Açailândia e região. Compre ou alugue com a Adventus Imóveis.";
+
+      const descricao = [];
       descricao.push(
-        `${dados.suites} ${dados.suites === 1 ? "suíte" : "suítes"}`,
+        `${dados.tipo || "Imóvel"} com ${dados.quartos || 0} ${dados.quartos === 1 ? "quarto" : "quartos"}`,
       );
-    }
 
-    if (dados.areaConstruida > 0) {
-      descricao.push(`${dados.areaConstruida}m²`);
-    }
+      if (dados.suites > 0) {
+        descricao.push(
+          `${dados.suites} ${dados.suites === 1 ? "suíte" : "suítes"}`,
+        );
+      }
 
-    const localParts = [];
-    if (dados.bairro) localParts.push(dados.bairro);
-    if (dados.cidade) localParts.push(dados.cidade);
-    if (dados.estado) localParts.push(dados.estado);
+      if (dados.areaConstruida > 0) {
+        descricao.push(`${dados.areaConstruida}m²`);
+      }
 
-    descricao.push(`no ${localParts.join(" - ")}`);
+      const localParts = [];
+      if (dados.bairro) localParts.push(dados.bairro);
+      if (dados.cidade) localParts.push(dados.cidade);
+      if (dados.estado) localParts.push(dados.estado);
 
-    if (dados.finalidade_venda) {
-      descricao.push(
-        `à venda por ${dados.precoFormatado || "valor sob consulta"}`,
+      descricao.push(`no ${localParts.join(" - ")}`);
+
+      // 🔥 Usar preços das finalidades
+      const precoVenda = getPrecoVenda();
+      const precoAluguel = getPrecoAluguel();
+      const temVenda = finalidades.some((f) => f.tipo === "venda");
+      const temAluguel = finalidades.some((f) => f.tipo === "aluguel");
+
+      if (temVenda) {
+        descricao.push(
+          `à venda por ${precoVenda ? formatPrice(precoVenda) : "valor sob consulta"}`,
+        );
+      } else if (temAluguel) {
+        descricao.push(
+          `para alugar por ${precoAluguel ? formatPrice(precoAluguel) : "valor sob consulta"}/mês`,
+        );
+      }
+
+      const baseDesc = descricao.join(" ");
+      return `${baseDesc}. Agende sua visita com a Adventus Imóveis!`.slice(
+        0,
+        155,
       );
-    } else if (dados.finalidade_aluguel) {
-      descricao.push(
-        `para alugar por ${dados.precoAluguelFormatado || "valor sob consulta"}/mês`,
-      );
-    }
-
-    const baseDesc = descricao.join(" ");
-    return `${baseDesc}. Agende sua visita com a Adventus Imóveis!`.slice(
-      0,
-      155,
-    );
-  }, []);
+    },
+    [finalidades, getPrecoVenda, getPrecoAluguel, formatPrice],
+  );
 
   const gerarAltImagem = useCallback((dados, index = 0) => {
     if (!dados) return "Imóvel em Açailândia - Adventus Imóveis";
@@ -580,13 +616,12 @@ const DetalheImovel = () => {
   }, []);
 
   // ==========================================================================
-  // FUNÇÃO DE EXTRAÇÃO DE DADOS
+  // FUNÇÃO DE EXTRAÇÃO DE DADOS (ATUALIZADA)
   // ==========================================================================
   const getImovelData = useCallback(() => {
     if (!imovel) return null;
 
     const caracteristicas = imovel.caracteristicas || {};
-    const dependencias = imovel.dependencias || {};
     const acabamentos = imovel.acabamentos || {};
     const areaLazer = imovel.area_lazer || {};
     const localizacaoVizinhanca = imovel.localizacao_vizinhanca || {};
@@ -596,8 +631,15 @@ const DetalheImovel = () => {
     const diferenciais = imovel.diferenciais || {};
     const etiquetas = imovel.etiquetas || {};
 
+    // 🔥 Obter preços das finalidades
+    const precoVenda = getPrecoVenda();
+    const precoAluguel = getPrecoAluguel();
+    const temVenda = finalidades.some((f) => f.tipo === "venda");
+    const temAluguel = finalidades.some((f) => f.tipo === "aluguel");
+
     let financiavel = false;
 
+    // Prioridade 1: Campo financiado
     if (imovel.financiado !== undefined && imovel.financiado !== null) {
       if (typeof imovel.financiado === "boolean") {
         financiavel = imovel.financiado;
@@ -627,18 +669,20 @@ const DetalheImovel = () => {
       slug: imovel.slug,
       codigo: imovel.codigo || "Sem código",
       titulo: imovel.titulo || "Imóvel em Açailândia",
-      preco: imovel.preco,
-      precoFormatado: formatPrice(imovel.preco),
+      // 🔥 Usar preços das finalidades
+      preco: precoVenda,
+      precoFormatado: formatPrice(precoVenda),
       etiquetas: imovel.etiquetas || {},
       precoAnterior: imovel.preco_anterior,
       precoAnteriorFormatado: formatPrice(imovel.preco_anterior),
-      precoAluguel: imovel.preco_aluguel,
-      precoAluguelFormatado: formatPrice(imovel.preco_aluguel),
-      finalidade: formatarFinalidade(imovel),
+      precoAluguel: precoAluguel,
+      precoAluguelFormatado: formatPrice(precoAluguel),
+      finalidade: formatarFinalidade(),
       status: imovel.status,
       tipo: imovel.tipo,
-      finalidade_venda: imovel.finalidade_venda,
-      finalidade_aluguel: imovel.finalidade_aluguel,
+      // 🔥 Usar finalidades carregadas
+      finalidade_venda: temVenda,
+      finalidade_aluguel: temAluguel,
       empreendimento: imovel.edificios || null,
       endereco: imovel.endereco || "",
       numero: imovel.numero || "",
@@ -649,19 +693,26 @@ const DetalheImovel = () => {
       exibir_endereco_site: imovel.exibir_endereco_site || false,
       localizacaoCompleta: `${imovel.bairro || ""}, ${imovel.cidade || "Açailândia"}${imovel.estado ? ` - ${imovel.estado}` : ""}`,
       enderecoCompleto: `${imovel.endereco || ""}${imovel.numero ? `, ${imovel.numero}` : ""}${imovel.complemento ? ` - ${imovel.complemento}` : ""}`,
-      quartos: dependencias.dormitorios || caracteristicas.quartos || 0,
-      suites: dependencias.suites || caracteristicas.suites || 0,
-      banheiros: dependencias.banheiros || caracteristicas.banheiros || 0,
-      vagas: dependencias.vagas || caracteristicas.vagas || 0,
-      areaTotal: dependencias.area_total || caracteristicas.areaTotal || 0,
-      areaConstruida:
-        dependencias.area_construida || caracteristicas.areaConstruida || 0,
+
+      // 🔥 CORREÇÃO: Usar os campos diretos do imóvel
+      quartos: imovel.quartos || 0,
+      suites: imovel.suites || 0,
+      banheiros: imovel.banheiros || 0,
+      vagas: imovel.vagas || 0,
+      areaTotal: imovel.area_total || 0,
+      areaConstruida: imovel.area_construida || 0,
+
+      // 🔥 ADICIONAR ESTAS LINHAS AQUI
+      destaque_semana: etiquetas.destaque_semana || false,
+      novo_site: etiquetas.novo_site || false,
+      baixou_preco: etiquetas.baixou_preco || false,
+      financiavel: etiquetas.financiavel || false,
+
       destaqueSemana: etiquetas.destaqueSemana || false,
       financiavel: financiavel,
       emCondominio: imovel.em_condominio || false,
       ocultarPreco: imovel.ocultar_preco || false,
       caracteristicas,
-      dependencias,
       acabamentos,
       areaLazer,
       localizacaoVizinhanca,
@@ -685,11 +736,14 @@ const DetalheImovel = () => {
   }, [
     imovel,
     fotos,
+    finalidades,
     formatPrice,
     formatarFinalidade,
     gerarTituloSEO,
     gerarSlugSEO,
     gerarMetaDescription,
+    getPrecoVenda,
+    getPrecoAluguel,
   ]);
 
   // ==========================================================================
@@ -1081,7 +1135,7 @@ const DetalheImovel = () => {
   );
 
   // ==========================================================================
-  // BUSCAR DADOS DO IMÓVEL
+  // BUSCAR DADOS DO IMÓVEL (ATUALIZADO)
   // ==========================================================================
   useEffect(() => {
     let isMounted = true;
@@ -1090,6 +1144,7 @@ const DetalheImovel = () => {
       try {
         setLoading(true);
 
+        // Buscar imóvel
         const { data: imovelData, error: imovelError } = await supabase
           .from("imoveis")
           .select("*")
@@ -1098,6 +1153,16 @@ const DetalheImovel = () => {
 
         if (imovelError) throw imovelError;
         if (!imovelData) throw new Error("Imóvel não encontrado");
+
+        // 🔥 Buscar finalidades do imóvel
+        const { data: finalidadesData, error: finalidadesError } =
+          await supabase
+            .from("imovel_finalidades")
+            .select("tipo, preco")
+            .eq("imovel_id", imovelData.id)
+            .eq("status", "ativo");
+
+        if (finalidadesError) throw finalidadesError;
 
         if (imovelData.id_edificios && isMounted) {
           const { data: edificioData } = await supabase
@@ -1113,6 +1178,8 @@ const DetalheImovel = () => {
 
         if (isMounted) {
           setImovel(imovelData);
+          setFinalidades(finalidadesData || []); // 🔥 Salvar finalidades
+
           if (
             imovelData.status === "vendido" ||
             imovelData.status === "alugado"
@@ -1218,7 +1285,7 @@ const DetalheImovel = () => {
       }
     },
     [dados?.id],
-  ); // ✅ Agora 'dados' já foi declarado
+  );
 
   /**
    * Salva os dados do envio no localStorage
@@ -1256,7 +1323,7 @@ const DetalheImovel = () => {
       }
     },
     [dados?.id, dados?.codigo],
-  ); // ✅ Agora 'dados' já foi declarado
+  );
 
   /**
    * Limpa envios antigos do localStorage (mais de 7 dias)
@@ -1330,7 +1397,7 @@ const DetalheImovel = () => {
     } catch (error) {
       console.error("❌ Erro ao verificar envio existente:", error);
     }
-  }, [dados?.id]); // ✅ Agora 'dados' já foi declarado
+  }, [dados?.id]);
 
   // ==========================================================================
   // APLICAR SEO (UMA ÚNICA VEZ)
@@ -1476,7 +1543,7 @@ const DetalheImovel = () => {
   }, []);
 
   // ==========================================================================
-  // HANDLE SUBMIT DO MODAL - COM PROTEÇÃO CONTRA DUPLICIDADE
+  // HANDLE SUBMIT DO MODAL
   // ==========================================================================
   const handleSubmit = useCallback(
     async (e) => {
@@ -1544,8 +1611,8 @@ const DetalheImovel = () => {
           email: formData.email,
           dia_preferencia: formData.diaSemana,
           horario_preferencia: formData.horarioPreferencia,
-          status: "solicitada", // ← Status inicial
-          created_at: new Date().toISOString(), // ← Data da solicitação
+          status: "solicitada",
+          created_at: new Date().toISOString(),
         });
 
         if (error) throw error;
@@ -1626,7 +1693,7 @@ const DetalheImovel = () => {
   }
 
   // ==========================================================================
-  // RENDERIZAÇÃO - SOMENTE A PARTE DO CARROSSEL FOI ALTERADA
+  // RENDERIZAÇÃO - MANTIDA IGUAL, APENAS OS PREÇOS SERÃO BUSCADOS CORRETAMENTE
   // ==========================================================================
   return (
     <>
@@ -1804,9 +1871,10 @@ const DetalheImovel = () => {
 
               {/* PREÇO */}
               <div className="mb-6">
-                {dados.etiquetas?.baixouPreco &&
+                {dados.baixou_preco === true &&
                 dados.precoAnterior &&
                 dados.precoAnterior > 0 ? (
+                  // CASO 1: Imóvel com desconto (baixou o preço)
                   <div className="flex flex-col">
                     <div className="flex items-center gap-2 mb-1">
                       <span className="text-gray-400 line-through text-lg md:text-xl">
@@ -1826,24 +1894,52 @@ const DetalheImovel = () => {
                     </p>
                   </div>
                 ) : (
-                  <div className="text-3xl md:text-4xl font-black text-white">
-                    {dados.ocultarPreco
-                      ? "Preço sob consulta"
-                      : dados.precoFormatado}
-                  </div>
-                )}
+                  <>
+                    {/* CASO 2: Apenas venda - mostra apenas o preço de venda */}
+                    {dados.finalidade_venda &&
+                      !dados.finalidade_aluguel &&
+                      !dados.ocultarPreco && (
+                        <div className="text-3xl md:text-4xl font-black text-white">
+                          {dados.precoFormatado}
+                        </div>
+                      )}
 
-                {dados.finalidade_aluguel &&
-                  dados.precoAluguel &&
-                  !dados.ocultarPreco && (
-                    <div className="text-lg md:text-xl text-gray-300 mt-3">
-                      ou{" "}
-                      <span className="font-bold text-white">
-                        {dados.precoAluguelFormatado}/mês
-                      </span>{" "}
-                      para aluguel
-                    </div>
-                  )}
+                    {/* CASO 3: Apenas aluguel - mostra apenas o preço do aluguel com /mês */}
+                    {!dados.finalidade_venda &&
+                      dados.finalidade_aluguel &&
+                      !dados.ocultarPreco && (
+                        <div className="text-3xl md:text-4xl font-black text-white">
+                          {dados.precoAluguelFormatado}/mês
+                        </div>
+                      )}
+
+                    {/* CASO 4: Venda e aluguel - mostra o preço de venda e o de aluguel como opção */}
+                    {dados.finalidade_venda &&
+                      dados.finalidade_aluguel &&
+                      !dados.ocultarPreco && (
+                        <>
+                          <div className="text-3xl md:text-4xl font-black text-white">
+                            {dados.precoFormatado}
+                          </div>
+                          <div className="text-lg md:text-xl text-gray-300 mt-3">
+                            ou{" "}
+                            <span className="font-bold text-white">
+                              {dados.precoAluguelFormatado}/mês
+                            </span>{" "}
+                            para aluguel
+                          </div>
+                        </>
+                      )}
+
+                    {/* CASO 5: Preço oculto ou nenhum preço definido - mostra "Preço sob consulta" */}
+                    {(dados.ocultarPreco ||
+                      (!dados.preco && !dados.precoAluguel)) && (
+                      <div className="text-3xl md:text-4xl font-black text-white">
+                        Preço sob consulta
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
 
               {/* ÍCONES DE CARACTERÍSTICAS */}

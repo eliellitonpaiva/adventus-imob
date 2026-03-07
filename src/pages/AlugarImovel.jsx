@@ -1148,6 +1148,7 @@ const AlugarImovel = () => {
   }, [formValues.city, bairros]);
 
   // Efeito para carregar filtros iniciais
+  // Efeito para carregar filtros iniciais
   useEffect(() => {
     const loadFiltersFromStorage = () => {
       try {
@@ -1179,8 +1180,19 @@ const AlugarImovel = () => {
     };
 
     const savedFilters = loadFiltersFromStorage();
-    fetchImoveis(savedFilters || formValues);
-  }, []);
+    console.log("📋 savedFilters retornado:", savedFilters);
+
+    // 🔥 AGUARDA BAIRROS CARREGAREM
+    if (bairros.length > 0) {
+      console.log(
+        "🏁 Bairros carregados, iniciando busca com filtros:",
+        savedFilters,
+      );
+      fetchImoveis(savedFilters || formValues);
+    } else {
+      console.log("⏳ Aguardando bairros carregarem...");
+    }
+  }, [bairros]); // ← DEPENDE de bairros
 
   // Fechar dropdown ao clicar fora
   useEffect(() => {
@@ -1260,10 +1272,28 @@ const AlugarImovel = () => {
         }
       }
 
+      // FILTRO POR BAIRRO - COM DEBUG
       if (filtros.neighborhood && filtros.neighborhood !== "") {
+        console.log(
+          "🎯 ALUGAR - Tentando filtrar por bairro ID:",
+          filtros.neighborhood,
+        );
+        console.log("📋 ALUGAR - Bairros disponíveis:", bairros);
+
         const bairroObj = bairros.find((b) => b.id === filtros.neighborhood);
+        console.log("🔍 ALUGAR - Bairro encontrado:", bairroObj);
+
         if (bairroObj) {
           query = query.eq("bairro", bairroObj.nome);
+          console.log(
+            "✅ ALUGAR - Filtro aplicado para bairro:",
+            bairroObj.nome,
+          );
+        } else {
+          console.log(
+            "❌ ALUGAR - Bairro NÃO ENCONTRADO com ID:",
+            filtros.neighborhood,
+          );
         }
       }
 

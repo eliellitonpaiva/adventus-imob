@@ -124,12 +124,12 @@ const Cabecalho = () => {
                 <span>Home</span>
               </Link>
               <Link
-                to="/institucional"
+                to="/sobre-nos" // ← ALTERADO: de /institucional para /sobre-nos
                 className="nav-link text-gray-700 hover:text-[#D4A24D] transition-colors duration-300 text-sm font-medium flex items-center gap-2"
                 onClick={(e) => e.currentTarget.blur()}
               >
                 <i className="fas fa-building text-[#D4A24D]"></i>
-                <span>Institucional</span>
+                <span>Sobre Nós</span> {/* ← ALTERADO: texto */}
               </Link>
               <Link
                 to="/comprar"
@@ -231,7 +231,7 @@ const Cabecalho = () => {
               <span>Home</span>
             </Link>
             <Link
-              to="/institucional"
+              to="/sobre-nos"
               className="px-4 py-3 text-gray-700 hover:text-[#D4A24D] hover:bg-gray-50 rounded-lg transition-all duration-300 flex items-center gap-3 text-sm"
               onClick={(e) => {
                 e.currentTarget.blur();
@@ -239,7 +239,7 @@ const Cabecalho = () => {
               }}
             >
               <i className="fas fa-building w-4 text-[#D4A24D]"></i>
-              <span>Institucional</span>
+              <span>Sobre nós</span>
             </Link>
             <Link
               to="/contato"

@@ -14,8 +14,9 @@ import Login from "./pages/Login";
 // ========== Lazy loading das páginas do SITE NORMAL ==========
 const Home = lazy(() => import("./pages/Home"));
 const ComprarImovel = lazy(() => import("./pages/ComprarImovel"));
-const AlugarImovel = lazy(() => import("./pages/AlugarImovel")); // ← NOVO COMPONENTE
+const AlugarImovel = lazy(() => import("./pages/AlugarImovel"));
 const DetalheImovel = lazy(() => import("./pages/DetalheImovel"));
+const SobreNos = lazy(() => import("./pages/SobreNos")); // ← NOVO IMPORT
 
 // ========== Lazy loading das páginas do ADMIN ==========
 const AdminLayout = lazy(() => import("./componentes/admin/AdminLayout"));
@@ -63,17 +64,7 @@ const EditarUsuario = lazy(() => import("./pages/Admin/EditarUsuario"));
 // ========== 🆕 PÁGINA DE PERFIL DO USUÁRIO ==========
 const Perfil = lazy(() => import("./pages/Admin/Perfil"));
 
-// ========== Páginas simples ==========
-function Institucional() {
-  return (
-    <div style={{ padding: "40px", textAlign: "center" }}>
-      <h1>Sobre a Adventus</h1>
-      <p>Página institucional em construção</p>
-    </div>
-  );
-}
-
-// ❌ REMOVIDO: componente Alugar placeholder
+// ❌ REMOVIDO: componente Institucional (não será mais usado)
 
 function Contato() {
   return (
@@ -131,7 +122,6 @@ function AppRoutes() {
               }
             />
 
-            {/* 🔥🔥🔥 NOVA ROTA: Alugar com componente completo */}
             <Route
               path="/alugar"
               element={
@@ -151,11 +141,12 @@ function AppRoutes() {
               }
             />
 
+            {/* 🔥 NOVA ROTA: Sobre Nós (substitui Institucional) */}
             <Route
-              path="/institucional"
+              path="/sobre-nos" // ← ALTERADO: de /institucional para /sobre-nos
               element={
                 <Layout>
-                  <Institucional />
+                  <SobreNos /> {/* ← Usando o componente novo */}
                 </Layout>
               }
             />

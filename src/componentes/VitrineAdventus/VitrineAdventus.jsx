@@ -1,6 +1,6 @@
 // components/VitrineAdventus/VitrineAdventus.jsx
 import React, { useState, useEffect, useRef } from "react";
-import { Link } from "react-router-dom"; // 👈 NOVO IMPORT
+import { Link } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
 
 const VitrineAdventus = () => {
@@ -40,7 +40,7 @@ const VitrineAdventus = () => {
           etiquetas
         `,
           )
-          .in("status", ["disponivel", "reservado"]) // 🔥 FILTRO ADICIONADO!
+          .in("status", ["disponivel", "reservado"])
           .order("created_at", { ascending: false });
 
         const { data: imoveisData, error } = await query;
@@ -57,10 +57,10 @@ const VitrineAdventus = () => {
         const imoveisFiltrados = imoveisData.filter((imovel) => {
           const etiquetas = imovel.etiquetas || {};
           return (
-            etiquetas.novoSite === true ||
-            etiquetas.baixouPreco === true ||
-            etiquetas.destaqueSemana === true ||
-            etiquetas.financiável === true
+            etiquetas.novo_site === true ||
+            etiquetas.baixou_preco === true ||
+            etiquetas.destaque_semana === true ||
+            etiquetas.financiavel === true
           );
         });
 
@@ -69,6 +69,7 @@ const VitrineAdventus = () => {
           setLoading(false);
           return;
         }
+
         // Para cada imóvel, buscar sua foto de capa
         const imoveisComFotos = await Promise.all(
           imoveisFiltrados.map(async (imovel) => {
@@ -104,24 +105,24 @@ const VitrineAdventus = () => {
           const etiquetas = imovel.etiquetas || {};
 
           let badgeType = "new";
-          if (etiquetas.destaqueSemana === true) {
-            badgeType = "week";
-          } else if (etiquetas.novoSite === true) {
-            badgeType = "new";
-          } else if (etiquetas.baixouPreco === true) {
+          // Prioridade: baixou_preco > destaque_semana > novo_site
+          if (etiquetas.baixou_preco === true) {
             badgeType = "price-drop";
+          } else if (etiquetas.destaque_semana === true) {
+            badgeType = "week";
+          } else if (etiquetas.novo_site === true) {
+            badgeType = "new";
           }
 
           return {
             id: imovel.id,
             title: imovel.titulo,
-            slug: imovel.slug, // 👈 SLUG PARA A URL
+            slug: imovel.slug,
             location: `${imovel.bairro || ""}, ${imovel.cidade || "Açailândia"} - ${imovel.estado || "MA"}`,
             image: imovel.fotoCapa,
             badgeType: badgeType,
+            // 🔥 CORREÇÃO: Usar financiableReal baseado no campo financiado
             financiableReal: imovel.financiado === true,
-            etiquetaFinanciavel: etiquetas.financiável === true,
-            // 👇 WHATSAPP REMOVIDO DAQUI - AGORA VAI NA PÁGINA DE DETALHE
           };
         });
 
@@ -531,7 +532,7 @@ const VitrineAdventus = () => {
       className="relative overflow-hidden"
       id="vitrineAdventus"
       style={{
-        padding: "calc(5rem - 40px) 1rem 5rem 1rem", // Reduzi 40px do padding superior
+        padding: "calc(5rem - 40px) 1rem 5rem 1rem",
         backgroundColor: "#31353e",
       }}
     >
@@ -650,7 +651,7 @@ const VitrineAdventus = () => {
               {properties.map((property, index) => (
                 <Link
                   key={property.id}
-                  to={`/imovel/${property.slug || property.id}`} // 👈 AGORA VAI PARA A PÁGINA DE DETALHE
+                  to={`/imovel/${property.slug || property.id}`}
                   className="block no-underline relative mx-2"
                   style={{
                     flex: `0 0 calc(${window.innerWidth <= 768 ? "85%" : cardsPerView === 3 ? "33.333%" : cardsPerView === 2 ? "50%" : "85%"} - 1rem)`,
@@ -684,7 +685,8 @@ const VitrineAdventus = () => {
                     {renderBadge(property.badgeType)}
                   </div>
 
-                  {property.etiquetaFinanciavel && (
+                  {/* 🔥 CORREÇÃO: Usando financiableReal em vez de etiquetaFinanciavel */}
+                  {property.financiableReal && (
                     <div className="absolute top-[1.2rem] right-[1.2rem] z-30">
                       {renderFinanciableBadge((index % 3) + 1)}
                     </div>
