@@ -9,7 +9,7 @@ import Layout from "./componentes/Layout/Layout";
 import ProtectedRoute from "./routes/ProtectedRoute";
 
 // Página de Login
-import Login from "./pages/Login";
+import Login from "./pages/login";
 
 // ========== Lazy loading das páginas do SITE NORMAL ==========
 const Home = lazy(() => import("./pages/Home"));
