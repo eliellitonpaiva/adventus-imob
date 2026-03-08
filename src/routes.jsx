@@ -9,7 +9,7 @@ import Layout from "./componentes/Layout/Layout";
 import ProtectedRoute from "./routes/ProtectedRoute";
 
 // Página de Login
-import Login from "./pages/login";
+import Login from "./pages/Login.jsx";
 
 // ========== Lazy loading das páginas do SITE NORMAL ==========
 const Home = lazy(() => import("./pages/Home"));
@@ -17,18 +17,22 @@ const ComprarImovel = lazy(() => import("./pages/ComprarImovel"));
 const AlugarImovel = lazy(() => import("./pages/AlugarImovel"));
 const DetalheImovel = lazy(() => import("./pages/DetalheImovel"));
 const SobreNos = lazy(() => import("./pages/SobreNos"));
+const Contato = lazy(() => import("./pages/Contato")); // 🔥 CRIAR este arquivo
 
 // ========== Lazy loading das páginas do ADMIN ==========
 const AdminLayout = lazy(() => import("./componentes/admin/AdminLayout"));
-const AdminDashboard = lazy(() => import("./pages/Admin/admin"));
-const AdminImoveis = lazy(() => import("./pages/Admin/imoveis"));
-const AdminCorretores = lazy(() => import("./pages/Admin/corretores"));
-const AdminLeads = lazy(() => import("./pages/Admin/leads"));
-const AdminCandidatos = lazy(() => import("./pages/Admin/candidatos"));
-const AdminEstados = lazy(() => import("./pages/Admin/estados"));
-const AdminCidades = lazy(() => import("./pages/Admin/cidades"));
-const AdminBairros = lazy(() => import("./pages/Admin/bairros"));
-const AdminVisitas = lazy(() => import("./pages/Admin/visitas"));
+const AdminDashboard = lazy(() => import("./pages/Admin/Admin.jsx"));
+const AdminImoveis = lazy(() => import("./pages/Admin/Imoveis.jsx"));
+const AdminCorretores = lazy(() => import("./pages/Admin/Corretores.jsx"));
+const AdminLeads = lazy(() => import("./pages/Admin/Leads.jsx"));
+const AdminCandidatos = lazy(() => import("./pages/Admin/Candidatos.jsx"));
+
+// 🔥 CORRIGIDO: Imports com maiúscula (igual aos nomes dos arquivos)
+const AdminEstados = lazy(() => import("./pages/Admin/Estados")); // ✅
+const AdminCidades = lazy(() => import("./pages/Admin/Cidades")); // ✅
+const AdminBairros = lazy(() => import("./pages/Admin/Bairros")); // ✅
+
+const AdminVisitas = lazy(() => import("./pages/Admin/Visitas.jsx"));
 
 // ========== PÁGINAS DE CADASTRO ADMIN ==========
 const CadastrarImovel = lazy(() => import("./pages/Admin/CadastrarImovel"));
@@ -42,9 +46,9 @@ const EditarImovelPorCodigo = lazy(
 // 🔥 NOVA PÁGINA: Cadastrar Lead
 const NovoLead = lazy(() => import("./pages/Admin/NovoLead"));
 
-// 🔥 FIX: Import com caminho ABSOLUTO e extensão .jsx
+// 🔥 CORRIGIDO: Caminho relativo (removeu a / do início)
 const CadastrarEmpreendimento = lazy(
-  () => import("/src/pages/Admin/CadastrarEmpreendimento.jsx"),
+  () => import("./pages/Admin/CadastrarEmpreendimento.jsx"), // ✅
 );
 
 // ========== NOVA PÁGINA: LISTA DE EMPREENDIMENTOS ==========
@@ -57,21 +61,12 @@ const NovoCorretor = lazy(() => import("./pages/Admin/NovoCorretor"));
 const EditarCorretor = lazy(() => import("./pages/Admin/EditarCorretor"));
 
 // ========== PÁGINAS DE USUÁRIOS DO SISTEMA ==========
-const AdminUsuarios = lazy(() => import("./pages/Admin/usuarios"));
+const AdminUsuarios = lazy(() => import("./pages/Admin/Usuarios.jsx"));
 const NovoUsuario = lazy(() => import("./pages/Admin/NovoUsuario"));
 const EditarUsuario = lazy(() => import("./pages/Admin/EditarUsuario"));
 
 // ========== 🆕 PÁGINA DE PERFIL DO USUÁRIO ==========
 const Perfil = lazy(() => import("./pages/Admin/Perfil"));
-
-function Contato() {
-  return (
-    <div style={{ padding: "40px", textAlign: "center" }}>
-      <h1>Contato</h1>
-      <p>Página de contato em construção</p>
-    </div>
-  );
-}
 
 function AppRoutes() {
   return (
@@ -147,7 +142,7 @@ function AppRoutes() {
               path="/contato"
               element={
                 <Layout>
-                  <Contato />
+                  <Contato /> {/* ✅ Agora é lazy import */}
                 </Layout>
               }
             />
