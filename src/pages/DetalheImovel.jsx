@@ -707,7 +707,7 @@ const DetalheImovel = () => {
       destaque_semana: etiquetas.destaque_semana || false,
       novo_site: etiquetas.novo_site || false,
       baixou_preco: etiquetas.baixou_preco || false,
-      financiavel: etiquetas.financiavel || false,
+      financiavelEtiqueta: etiquetas.financiavel || false,
 
       destaqueSemana: etiquetas.destaqueSemana || false,
       financiavel: financiavel,

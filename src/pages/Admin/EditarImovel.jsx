@@ -930,7 +930,6 @@ const EditarImovel = () => {
     }
   };
 
-  // =============== ESTADO DO FORMULARIO ===============
   const [formData, setFormData] = useState({
     // Campos diretos
     codigo: "",
@@ -942,7 +941,6 @@ const EditarImovel = () => {
     proprietarioId: "",
     corretorId: "",
     ocultarPreco: false,
-    precoAnterior: "",
 
     // Finalidades (agora separadas, não objeto)
     finalidade_venda: false,
@@ -1035,7 +1033,7 @@ const EditarImovel = () => {
         proprietarioId: data.proprietario_id || "",
         corretorId: data.corretor_id || "",
         ocultarPreco: data.ocultar_preco || false,
-        precoAnterior: data.preco_anterior || "",
+        // precoAnterior: data.preco_anterior || "",  ← REMOVIDO DAQUI
 
         // Finalidades (serão preenchidas pela carregarFinalidades)
         finalidade_venda: false,
@@ -1097,6 +1095,7 @@ const EditarImovel = () => {
         descricao: data.descricao || "",
         observacoes: data.observacoes || "",
 
+        // ✅ ÚNICA APARIÇÃO (agora só esta)
         precoAnterior: data.preco_anterior || "",
       });
 
