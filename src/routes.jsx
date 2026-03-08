@@ -8,7 +8,7 @@ import Layout from "./componentes/Layout/Layout";
 // Proteção de rotas
 import ProtectedRoute from "./routes/ProtectedRoute";
 
-// Página de Login (import normal, não lazy)
+// Página de Login
 import Login from "./pages/Login";
 
 // ========== Lazy loading das páginas do SITE NORMAL ==========
@@ -17,7 +17,7 @@ const ComprarImovel = lazy(() => import("./pages/ComprarImovel"));
 const AlugarImovel = lazy(() => import("./pages/AlugarImovel"));
 const DetalheImovel = lazy(() => import("./pages/DetalheImovel"));
 const SobreNos = lazy(() => import("./pages/SobreNos"));
-// const Contato = lazy(() => import("./pages/Contato")); // Comentado - não usado no momento
+// const Contato = lazy(() => import("./pages/Contato")); // Comentado se não existir
 
 // ========== Lazy loading das páginas do ADMIN ==========
 const AdminLayout = lazy(() => import("./componentes/admin/AdminLayout"));
@@ -26,8 +26,6 @@ const AdminImoveis = lazy(() => import("./pages/Admin/Imoveis"));
 const AdminCorretores = lazy(() => import("./pages/Admin/Corretores"));
 const AdminLeads = lazy(() => import("./pages/Admin/Leads"));
 const AdminCandidatos = lazy(() => import("./pages/Admin/Candidatos"));
-
-// ========== Páginas de Localização (Estados/Cidades/Bairros) ==========
 const AdminEstados = lazy(() => import("./pages/Admin/Estados"));
 const AdminCidades = lazy(() => import("./pages/Admin/Cidades"));
 const AdminBairros = lazy(() => import("./pages/Admin/Bairros"));
@@ -36,16 +34,10 @@ const AdminVisitas = lazy(() => import("./pages/Admin/Visitas"));
 // ========== PÁGINAS DE CADASTRO ADMIN ==========
 const CadastrarImovel = lazy(() => import("./pages/Admin/CadastrarImovel"));
 const EditarImovel = lazy(() => import("./pages/Admin/EditarImovel"));
-
-// 🔥 NOVA PÁGINA: Visualizar/Editar Imóvel por Código
 const EditarImovelPorCodigo = lazy(
   () => import("./pages/Admin/EditarImovelPorCodigo"),
 );
-
-// 🔥 NOVA PÁGINA: Cadastrar Lead
 const NovoLead = lazy(() => import("./pages/Admin/NovoLead"));
-
-// ========== EMPREENDIMENTOS ==========
 const CadastrarEmpreendimento = lazy(
   () => import("./pages/Admin/CadastrarEmpreendimento"),
 );
@@ -62,7 +54,7 @@ const AdminUsuarios = lazy(() => import("./pages/Admin/Usuarios"));
 const NovoUsuario = lazy(() => import("./pages/Admin/NovoUsuario"));
 const EditarUsuario = lazy(() => import("./pages/Admin/EditarUsuario"));
 
-// ========== 🆕 PÁGINA DE PERFIL DO USUÁRIO ==========
+// ========== PÁGINA DE PERFIL ==========
 const Perfil = lazy(() => import("./pages/Admin/Perfil"));
 
 function AppRoutes() {
@@ -80,10 +72,12 @@ function AppRoutes() {
           }
         >
           <Routes>
-            {/* ============ LOGIN ============ */}
+            {/* ============ ROTAS PÚBLICAS (NÃO PRECISAM DE LOGIN) ============ */}
+
+            {/* Login - público */}
             <Route path="/login" element={<Login />} />
 
-            {/* ============ SITE PÚBLICO ============ */}
+            {/* Site público - todas as rotas do site NÃO têm proteção */}
             <Route
               path="/"
               element={
@@ -116,8 +110,6 @@ function AppRoutes() {
                 </Layout>
               }
             />
-
-            {/* 🔥🔥🔥 NOVA ROTA: DETALHE DO IMÓVEL COM SLUG + CÓDIGO */}
             <Route
               path="/imovel/:slug/:codigo"
               element={
@@ -126,7 +118,6 @@ function AppRoutes() {
                 </Layout>
               }
             />
-
             <Route
               path="/sobre-nos"
               element={
@@ -135,18 +126,11 @@ function AppRoutes() {
                 </Layout>
               }
             />
+            {/* <Route path="/contato" element={<Layout><Contato /></Layout>} /> */}
 
-            {/* Rota de Contato comentada - não usada no momento */}
-            {/* <Route
-              path="/contato"
-              element={
-                <Layout>
-                  <Contato />
-                </Layout>
-              }
-            /> */}
+            {/* ============ ROTAS PRIVADAS (PRECISAM DE LOGIN) ============ */}
 
-            {/* ============ ADMIN ============ */}
+            {/* Toda a área /admin é protegida */}
             <Route
               path="/admin"
               element={
