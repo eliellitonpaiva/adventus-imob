@@ -1893,6 +1893,7 @@ const AlugarImovel = () => {
                       key={imovel.id}
                       id={imovel.id}
                       slug={imovel.slug}
+                      codigo={imovel.codigo} // 🔥 NOVA LINHA!
                       status={getStatus(imovel)}
                       tipo={imovel.tipo?.toUpperCase() || "CASA"}
                       finalidade="ALUGUEL"

@@ -21,7 +21,8 @@ import { useNotifications } from "../contexts/NotificationContext";
 // COMPONENTE PRINCIPAL
 // ============================================================================
 const DetalheImovel = () => {
-  const { slug } = useParams();
+  // 🔥 AGORA RECEBE SLUG E CÓDIGO DA URL
+  const { slug, codigo } = useParams();
   const navigate = useNavigate();
   const { incrementarContador } = useNotifications();
 
@@ -29,7 +30,7 @@ const DetalheImovel = () => {
   // ESTADOS DO COMPONENTE
   // ==========================================================================
   const [imovel, setImovel] = useState(null);
-  const [finalidades, setFinalidades] = useState([]); // NOVO: armazenar finalidades
+  const [finalidades, setFinalidades] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [visualizacoes, setVisualizacoes] = useState(0);
@@ -1135,7 +1136,7 @@ const DetalheImovel = () => {
   );
 
   // ==========================================================================
-  // BUSCAR DADOS DO IMÓVEL (ATUALIZADO)
+  // BUSCAR DADOS DO IMÓVEL (ATUALIZADO PARA O NOVO FORMATO)
   // ==========================================================================
   useEffect(() => {
     let isMounted = true;
@@ -1144,12 +1145,28 @@ const DetalheImovel = () => {
       try {
         setLoading(true);
 
-        // Buscar imóvel
-        const { data: imovelData, error: imovelError } = await supabase
-          .from("imoveis")
-          .select("*")
-          .eq("slug", slug)
-          .maybeSingle();
+        console.log("🟡 CÓDIGO RECEBIDO:", codigo);
+        console.log("📌 SLUG RECEBIDO:", slug);
+
+        // 🔥 Busca pelo CÓDIGO (prioritário)
+        let query = supabase.from("imoveis").select("*");
+
+        if (codigo) {
+          console.log("🔎 Buscando por CÓDIGO:", codigo);
+          query = query.eq("codigo", codigo);
+        } else {
+          // Fallback para slug (caso alguém digite URL antiga)
+          console.log("🔎 Buscando por SLUG (fallback):", slug);
+          query = query.eq("slug", slug);
+        }
+
+        const { data: imovelData, error: imovelError } =
+          await query.maybeSingle();
+
+        console.log(
+          "📦 Resultado da busca:",
+          imovelData ? "Encontrado" : "Não encontrado",
+        );
 
         if (imovelError) throw imovelError;
         if (!imovelData) throw new Error("Imóvel não encontrado");
@@ -1178,7 +1195,7 @@ const DetalheImovel = () => {
 
         if (isMounted) {
           setImovel(imovelData);
-          setFinalidades(finalidadesData || []); // 🔥 Salvar finalidades
+          setFinalidades(finalidadesData || []);
 
           if (
             imovelData.status === "vendido" ||
@@ -1199,13 +1216,14 @@ const DetalheImovel = () => {
       }
     };
 
-    if (slug) fetchImovel();
+    if (slug || codigo) fetchImovel();
 
     return () => {
       isMounted = false;
     };
   }, [
     slug,
+    codigo,
     registrarVisualizacao,
     buscarVisualizacoes,
     carregarFotos,
@@ -1693,12 +1711,10 @@ const DetalheImovel = () => {
   }
 
   // ==========================================================================
-  // RENDERIZAÇÃO - MANTIDA IGUAL, APENAS OS PREÇOS SERÃO BUSCADOS CORRETAMENTE
+  // RENDERIZAÇÃO - MANTIDA IGUAL
   // ==========================================================================
   return (
     <>
-      {/* BREADCRUMB - REMOVIDO PARA NÃO INTERFERIR */}
-
       {/* =============== CARROSSEL DE FOTOS EM TELA CHEIA =============== */}
       <section className="relative w-full pt-[65px] md:pt-20">
         {/* Container do carrossel com altura responsiva */}
@@ -2399,7 +2415,7 @@ const DetalheImovel = () => {
       )}
 
       {/* ===== ESTILOS GLOBAIS ===== */}
-      <style jsx="true" global="true">{`
+      <style jsx="true" global={true}>{`
         @import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap");
         @import url("https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css");
 

@@ -559,6 +559,142 @@ const SecaoAcabamento = ({
   );
 };
 
+// ========== COMPONENTE PARA SELECT DE CIDADE ==========
+const SelectCidade = ({
+  value,
+  onChange,
+  required,
+  isDark,
+  getInputClasses,
+}) => {
+  const [cidades, setCidades] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchCidades = async () => {
+      setLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from("cidades")
+          .select("id, nome, uf")
+          .order("nome");
+
+        if (error) throw error;
+        setCidades(data || []);
+      } catch (error) {
+        console.error("Erro ao buscar cidades:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCidades();
+  }, []);
+
+  return (
+    <select
+      name="cidade"
+      value={value}
+      onChange={onChange}
+      required={required}
+      className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors duration-200 ${getInputClasses()}`}
+    >
+      <option value="" className={isDark ? "bg-gray-800" : "bg-white"}>
+        {loading ? "Carregando cidades..." : "Selecione a cidade"}
+      </option>
+      {cidades.map((cidade) => (
+        <option
+          key={cidade.id}
+          value={cidade.nome}
+          className={isDark ? "bg-gray-800" : "bg-white"}
+        >
+          {cidade.nome} - {cidade.uf}
+        </option>
+      ))}
+    </select>
+  );
+};
+
+// ========== COMPONENTE PARA SELECT DE BAIRRO ==========
+const SelectBairro = ({
+  value,
+  onChange,
+  cidadeSelecionada,
+  required,
+  isDark,
+  getInputClasses,
+}) => {
+  const [bairros, setBairros] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchBairros = async () => {
+      if (!cidadeSelecionada) {
+        setBairros([]);
+        return;
+      }
+
+      setLoading(true);
+      try {
+        // Buscar ID da cidade selecionada
+        const { data: cidadeData, error: cidadeError } = await supabase
+          .from("cidades")
+          .select("id")
+          .eq("nome", cidadeSelecionada)
+          .single();
+
+        if (cidadeError) throw cidadeError;
+
+        if (cidadeData) {
+          const { data, error } = await supabase
+            .from("bairros")
+            .select("id, nome")
+            .eq("cidade_id", cidadeData.id)
+            .order("nome");
+
+          if (error) throw error;
+          setBairros(data || []);
+        }
+      } catch (error) {
+        console.error("Erro ao buscar bairros:", error);
+        setBairros([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchBairros();
+  }, [cidadeSelecionada]);
+
+  return (
+    <select
+      name="bairro"
+      value={value}
+      onChange={onChange}
+      required={required}
+      className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors duration-200 ${getInputClasses()}`}
+      disabled={!cidadeSelecionada}
+    >
+      <option value="" className={isDark ? "bg-gray-800" : "bg-white"}>
+        {!cidadeSelecionada
+          ? "Selecione uma cidade primeiro"
+          : loading
+            ? "Carregando bairros..."
+            : "Selecione o bairro"}
+      </option>
+      {bairros.map((bairro) => (
+        <option
+          key={bairro.id}
+          value={bairro.nome}
+          className={isDark ? "bg-gray-800" : "bg-white"}
+        >
+          {bairro.nome}
+        </option>
+      ))}
+    </select>
+  );
+};
+
 // ========== COMPONENTE PRINCIPAL ==========
 const EditarImovel = () => {
   const navigate = useNavigate();
@@ -850,7 +986,7 @@ const EditarImovel = () => {
       destaque_semana: false,
       novo_site: false,
       baixou_preco: false,
-      financiavel: false, // ←
+      financiavel: false,
     },
 
     // JSONBs
@@ -1012,7 +1148,6 @@ const EditarImovel = () => {
       setFormData((prev) => ({
         ...prev,
         endereco: data.logradouro || "",
-        bairro: data.bairro || "",
         cidade: data.localidade || "",
         estado: data.uf || "",
         complemento: data.complemento || prev.complemento,
@@ -1121,11 +1256,7 @@ const EditarImovel = () => {
     const dadosParaSupabase = {
       codigo: formData.codigo,
       titulo: formData.titulo,
-      // ❌ REMOVER: finalidade_venda: formData.finalidade_venda,
-      // ❌ REMOVER: finalidade_aluguel: formData.finalidade_aluguel,
       tipo: formData.tipo,
-      // ❌ REMOVER: preco_venda: formData.finalidade_venda ? parseFloat(formData.preco_venda) : null,
-      // ❌ REMOVER: preco_aluguel: formData.finalidade_aluguel ? parseFloat(formData.preco_aluguel) : null,
       status: formData.status,
       financiado: formData.financiado,
       em_condominio: formData.emCondominio,
@@ -2442,16 +2573,14 @@ const EditarImovel = () => {
                 <label
                   className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
                 >
-                  Bairro *
+                  Cidade *
                 </label>
-                <input
-                  type="text"
-                  name="bairro"
-                  value={formData.bairro}
+                <SelectCidade
+                  value={formData.cidade}
                   onChange={handleChange}
                   required
-                  placeholder="Ex: Centro"
-                  className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors duration-200 ${getInputClasses()}`}
+                  isDark={isDark}
+                  getInputClasses={getInputClasses}
                 />
               </div>
 
@@ -2459,16 +2588,15 @@ const EditarImovel = () => {
                 <label
                   className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
                 >
-                  Cidade *
+                  Bairro *
                 </label>
-                <input
-                  type="text"
-                  name="cidade"
-                  value={formData.cidade}
+                <SelectBairro
+                  value={formData.bairro}
                   onChange={handleChange}
+                  cidadeSelecionada={formData.cidade}
                   required
-                  placeholder="Ex: Acailandia"
-                  className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] transition-colors duration-200 ${getInputClasses()}`}
+                  isDark={isDark}
+                  getInputClasses={getInputClasses}
                 />
               </div>
 
@@ -2594,7 +2722,7 @@ const EditarImovel = () => {
                 <input
                   type="checkbox"
                   name="etiquetas.baixou_preco"
-                  checked={formData.etiquetas.baixouPreco}
+                  checked={formData.etiquetas.baixou_preco}
                   onChange={handleChange}
                   className={getCheckboxClass()}
                 />
@@ -2615,8 +2743,8 @@ const EditarImovel = () => {
               >
                 <input
                   type="checkbox"
-                  name="etiquetas.financivel"
-                  checked={formData.etiquetas.financivel}
+                  name="etiquetas.financiavel"
+                  checked={formData.etiquetas.financiavel}
                   onChange={handleChange}
                   className={getCheckboxClass()}
                 />
@@ -2737,7 +2865,7 @@ const EditarImovel = () => {
                         📉 Baixou
                       </span>
                     )}
-                    {formData.etiquetas.financivel && (
+                    {formData.etiquetas.financiavel && (
                       <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded text-xs font-medium flex items-center gap-1">
                         💰 Financiavel
                       </span>

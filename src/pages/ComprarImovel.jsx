@@ -1148,6 +1148,7 @@ const ComprarImovel = () => {
 
   // Efeito para carregar filtros iniciais
   useEffect(() => {
+    let isMounted = true;
     const loadFiltersFromStorage = () => {
       try {
         const savedFilters = localStorage.getItem("hero_filters");
@@ -1194,8 +1195,20 @@ const ComprarImovel = () => {
     const savedFilters = loadFiltersFromStorage();
     console.log("📋 savedFilters retornado:", savedFilters);
 
-    fetchImoveis(savedFilters || formValues);
-  }, []);
+    // 🔥 AGUARDA BAIRROS CARREGAREM ANTES DE BUSCAR
+    if (bairros.length > 0) {
+      console.log("🏁 Bairros já carregados, buscando imóveis...");
+      fetchImoveis(savedFilters || formValues);
+    }
+  }, [bairros]); // ← AGORA DEPENDE de bairros
+
+  // 🔥 Quando os bairros carregarem, se já tiver filtros, busca novamente
+  useEffect(() => {
+    if (bairros.length > 0 && formValues.neighborhood) {
+      console.log("🔄 Bairros carregaram, refazendo busca com filtros...");
+      fetchImoveis(formValues);
+    }
+  }, [bairros]);
 
   // Fechar dropdown ao clicar fora
   useEffect(() => {
@@ -1223,16 +1236,19 @@ const ComprarImovel = () => {
 
   // Buscar imóveis para compra
   const fetchImoveis = async (filtros = formValues) => {
+    console.log("🚀 INÍCIO DA BUSCA com filtros:", filtros);
     setLoading(true);
     setError(null);
 
     try {
       // Primeiro, buscar os IDs dos imóveis que têm finalidade de venda ativa
+      console.log("1️⃣ Buscando finalidades de venda...");
       const { data: finalidadesData, error: finalidadesError } = await supabase
         .from("imovel_finalidades")
         .select("imovel_id, preco")
         .eq("tipo", "venda")
         .eq("status", "ativo");
+      console.log("2️⃣ Finalidades encontradas:", finalidadesData?.length || 0);
 
       if (finalidadesError) throw finalidadesError;
 
@@ -1246,7 +1262,7 @@ const ComprarImovel = () => {
       const imoveisIds = finalidadesData.map(
         (finalidade) => finalidade.imovel_id,
       );
-
+      console.log("3️⃣ IDs de imóveis encontrados:", imoveisIds);
       // Criar um mapa de preços por imóvel
       const precosMap = {};
       finalidadesData.forEach((finalidade) => {
@@ -1259,6 +1275,7 @@ const ComprarImovel = () => {
         .select("*")
         .in("id", imoveisIds)
         .in("status", ["disponivel", "reservado"]);
+      console.log("4️⃣ Query base construída");
 
       // Aplicar filtros
       if (filtros.city) {
@@ -1266,6 +1283,7 @@ const ComprarImovel = () => {
           (cidade) => cidade.id === filtros.city,
         );
         if (cidadeObj) {
+          console.log("5️⃣ Filtrando por cidade:", cidadeObj.label);
           query = query.eq("cidade", cidadeObj.label);
         }
       }
@@ -1281,11 +1299,11 @@ const ComprarImovel = () => {
 
       // Filtro por bairro
       if (filtros.neighborhood && filtros.neighborhood !== "") {
-        console.log("Buscando bairro com ID:", filtros.neighborhood);
-        console.log("Bairros disponíveis:", bairros);
+        console.log("7️⃣ Filtrando por bairro ID:", filtros.neighborhood);
+        console.log("7️⃣ Bairros disponíveis:", bairros);
 
         if (bairros.length === 0) {
-          console.log("Bairros ainda não carregaram, buscando diretamente...");
+          console.log("7️⃣ Bairros não carregados, buscando diretamente...");
           const { data: bairroData } = await supabase
             .from("bairros")
             .select("id, nome")
@@ -1293,7 +1311,7 @@ const ComprarImovel = () => {
             .single();
 
           if (bairroData) {
-            console.log("Bairro encontrado no banco:", bairroData);
+            console.log("7️⃣ Bairro encontrado no banco:", bairroData.nome);
             query = query.eq("bairro", bairroData.nome);
           }
         } else {
@@ -1303,16 +1321,18 @@ const ComprarImovel = () => {
           console.log("Bairro encontrado no estado:", bairroObj);
 
           if (bairroObj) {
+            console.log("7️⃣ Aplicando filtro para bairro:", bairroObj.nome);
             query = query.eq("bairro", bairroObj.nome);
           } else {
-            console.log("Bairro não encontrado no estado!");
+            console.log("7️⃣ Bairro não encontrado no estado!");
           }
         }
       }
-
+      console.log("8️⃣ Executando query...");
       const { data: imoveisData, error: supabaseError } = await query;
 
       if (supabaseError) throw supabaseError;
+      console.log("9️⃣ Imóveis encontrados na query:", imoveisData?.length || 0);
 
       // Adicionar o preço de venda a cada imóvel
       let imoveisComPreco = (imoveisData || []).map((imovel) => ({
@@ -1320,8 +1340,11 @@ const ComprarImovel = () => {
         preco: precosMap[imovel.id] || null,
       }));
 
+      console.log("🔟 Após adicionar preços:", imoveisComPreco.length);
+
       // Filtrar por preço
       if (filtros.priceRange && filtros.priceRange !== "") {
+        console.log("1️⃣1️⃣ Filtrando por faixa de preço:", filtros.priceRange);
         const opcao = priceRangeOptions.find(
           (opcao) => opcao.id === filtros.priceRange,
         );
@@ -1346,45 +1369,59 @@ const ComprarImovel = () => {
             }
           }
         }
+        console.log("1️⃣2️⃣ Após filtro de preço:", imoveisComPreco.length);
       }
 
       // Filtrar por quartos
       if (filtros.bedrooms && filtros.bedrooms !== "") {
+        console.log("1️⃣3️⃣ Filtrando por quartos:", filtros.bedrooms);
         const quartosMinimo = parseInt(filtros.bedrooms) || 0;
         imoveisComPreco = imoveisComPreco.filter((imovel) => {
           const quantidadeQuartos = parseInt(imovel.quartos || "0");
           return quantidadeQuartos >= quartosMinimo;
         });
+        console.log("1️⃣4️⃣ Após filtro de quartos:", imoveisComPreco.length);
       }
 
       // Filtrar por vagas
       if (filtros.garage && filtros.garage !== "") {
+        console.log("1️⃣5️⃣ Filtrando por vagas:", filtros.garage);
         const vagasMinimo = parseInt(filtros.garage) || 0;
         imoveisComPreco = imoveisComPreco.filter((imovel) => {
           const quantidadeVagas = parseInt(imovel.vagas || "0");
           return quantidadeVagas >= vagasMinimo;
         });
+        console.log("1️⃣6️⃣ Após filtro de vagas:", imoveisComPreco.length);
       }
 
       // Filtrar por banheiros
       if (filtros.bathrooms && filtros.bathrooms !== "") {
+        console.log("1️⃣7️⃣ Filtrando por banheiros:", filtros.bathrooms);
         const banheirosMinimo = parseInt(filtros.bathrooms) || 0;
         imoveisComPreco = imoveisComPreco.filter((imovel) => {
           const quantidadeBanheiros = parseInt(imovel.banheiros || "0");
           return quantidadeBanheiros >= banheirosMinimo;
         });
+        console.log("1️⃣8️⃣ Após filtro de banheiros:", imoveisComPreco.length);
       }
 
       // Filtrar por suítes
       if (filtros.suite && filtros.suite !== "") {
+        console.log("1️⃣9️⃣ Filtrando por suítes:", filtros.suite);
         const suitesMinimo = parseInt(filtros.suite) || 0;
         imoveisComPreco = imoveisComPreco.filter((imovel) => {
           const quantidadeSuites = parseInt(imovel.suites || "0");
           return quantidadeSuites >= suitesMinimo;
         });
+        console.log("2️⃣0️⃣ Após filtro de suítes:", imoveisComPreco.length);
       }
 
       // Buscar fotos de capa
+      console.log(
+        "2️⃣1️⃣ Buscando fotos para",
+        imoveisComPreco.length,
+        "imóveis",
+      );
       const imoveisComFotos = await Promise.all(
         imoveisComPreco.map(async (imovel) => {
           try {
@@ -1429,9 +1466,10 @@ const ComprarImovel = () => {
         return new Date(b.created_at) - new Date(a.created_at);
       });
 
+      console.log("2️⃣2️⃣ TOTAL FINAL de imóveis:", imoveisOrdenados.length);
       setImoveis(imoveisOrdenados);
     } catch (erro) {
-      console.error("Erro ao buscar imóveis para compra:", erro);
+      console.error("💥 Erro ao buscar imóveis para compra:", erro);
       setError("Erro ao carregar os imóveis. Tente novamente.");
       setImoveis([]);
     } finally {
@@ -1913,6 +1951,7 @@ const ComprarImovel = () => {
                       key={imovel.id}
                       id={imovel.id}
                       slug={imovel.slug}
+                      codigo={imovel.codigo} // 🔥 NOVA LINHA!
                       status={getStatus(imovel)}
                       tipo={imovel.tipo?.toUpperCase() || "CASA"}
                       finalidade="VENDA"
@@ -1935,7 +1974,7 @@ const ComprarImovel = () => {
                       bloco={imovel.bloco || ""}
                       imagem={
                         imovel.fotoCapa ||
-                        "https://images.unsplash.com/photo-1568605114967-8130f3a36994?auto=format&fit=crop&w=400&h=300&q=60"
+                        "https://images.unsplash.com/photo-1568605114967-8130f3a36994?auto=format&fit=crop&w=400&h=300&q=80"
                       }
                     />
                   );

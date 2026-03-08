@@ -16,7 +16,7 @@ const Home = lazy(() => import("./pages/Home"));
 const ComprarImovel = lazy(() => import("./pages/ComprarImovel"));
 const AlugarImovel = lazy(() => import("./pages/AlugarImovel"));
 const DetalheImovel = lazy(() => import("./pages/DetalheImovel"));
-const SobreNos = lazy(() => import("./pages/SobreNos")); // ← NOVO IMPORT
+const SobreNos = lazy(() => import("./pages/SobreNos"));
 
 // ========== Lazy loading das páginas do ADMIN ==========
 const AdminLayout = lazy(() => import("./componentes/admin/AdminLayout"));
@@ -64,8 +64,6 @@ const EditarUsuario = lazy(() => import("./pages/Admin/EditarUsuario"));
 // ========== 🆕 PÁGINA DE PERFIL DO USUÁRIO ==========
 const Perfil = lazy(() => import("./pages/Admin/Perfil"));
 
-// ❌ REMOVIDO: componente Institucional (não será mais usado)
-
 function Contato() {
   return (
     <div style={{ padding: "40px", textAlign: "center" }}>
@@ -78,7 +76,6 @@ function Contato() {
 function AppRoutes() {
   return (
     <BrowserRouter>
-      {/* AuthProvider envolve toda a aplicação */}
       <AuthProvider>
         <Suspense
           fallback={
@@ -91,7 +88,7 @@ function AppRoutes() {
           }
         >
           <Routes>
-            {/* ============ LOGIN (PÚBLICO) ============ */}
+            {/* ============ LOGIN ============ */}
             <Route path="/login" element={<Login />} />
 
             {/* ============ SITE PÚBLICO ============ */}
@@ -103,7 +100,6 @@ function AppRoutes() {
                 </Layout>
               }
             />
-
             <Route
               path="/home"
               element={
@@ -112,7 +108,6 @@ function AppRoutes() {
                 </Layout>
               }
             />
-
             <Route
               path="/comprar"
               element={
@@ -121,7 +116,6 @@ function AppRoutes() {
                 </Layout>
               }
             />
-
             <Route
               path="/alugar"
               element={
@@ -131,9 +125,9 @@ function AppRoutes() {
               }
             />
 
-            {/* 🔥🔥🔥 ROTA DO SITE: DETALHE DO IMÓVEL POR SLUG */}
+            {/* 🔥🔥🔥 NOVA ROTA: DETALHE DO IMÓVEL COM SLUG + CÓDIGO */}
             <Route
-              path="/imovel/:slug"
+              path="/imovel/:slug/:codigo"
               element={
                 <Layout>
                   <DetalheImovel />
@@ -141,16 +135,14 @@ function AppRoutes() {
               }
             />
 
-            {/* 🔥 NOVA ROTA: Sobre Nós (substitui Institucional) */}
             <Route
-              path="/sobre-nos" // ← ALTERADO: de /institucional para /sobre-nos
+              path="/sobre-nos"
               element={
                 <Layout>
-                  <SobreNos /> {/* ← Usando o componente novo */}
+                  <SobreNos />
                 </Layout>
               }
             />
-
             <Route
               path="/contato"
               element={
@@ -160,7 +152,7 @@ function AppRoutes() {
               }
             />
 
-            {/* ============ ADMIN (PROTEGIDO) ============ */}
+            {/* ============ ADMIN ============ */}
             <Route
               path="/admin"
               element={
@@ -170,19 +162,13 @@ function AppRoutes() {
               }
             >
               <Route index element={<AdminDashboard />} />
-
-              {/* ========== ROTAS DE IMÓVEIS ========== */}
               <Route path="imoveis" element={<AdminImoveis />} />
               <Route path="imoveis/novo" element={<CadastrarImovel />} />
               <Route path="imoveis/editar/:id" element={<EditarImovel />} />
-
-              {/* 🔥 NOVA ROTA: Editar imóvel por código */}
               <Route
                 path="imoveis/codigo/:codigo"
                 element={<EditarImovelPorCodigo />}
               />
-
-              {/* ========== ROTAS DE EMPREENDIMENTOS ========== */}
               <Route
                 path="empreendimentos"
                 element={<ListaEmpreendimentos />}
@@ -191,20 +177,14 @@ function AppRoutes() {
                 path="cadastrar-empreendimento"
                 element={<CadastrarEmpreendimento />}
               />
-
-              {/* ========== ROTAS DE LEADS ========== */}
               <Route path="leads" element={<AdminLeads />} />
               <Route path="leads/novo" element={<NovoLead />} />
-
-              {/* ========== ROTAS DE CORRETORES ========== */}
               <Route path="corretores" element={<AdminCorretores />} />
               <Route path="corretores/novo" element={<NovoCorretor />} />
               <Route
                 path="corretores/editar/:id"
                 element={<EditarCorretor />}
               />
-
-              {/* ========== ROTAS DE USUÁRIOS DO SISTEMA ========== */}
               <Route
                 path="usuarios"
                 element={
@@ -229,11 +209,7 @@ function AppRoutes() {
                   </ProtectedRoute>
                 }
               />
-
-              {/* ========== 🆕 ROTA DE PERFIL ========== */}
               <Route path="perfil" element={<Perfil />} />
-
-              {/* ========== OUTRAS ROTAS ADMIN ========== */}
               <Route path="candidatos" element={<AdminCandidatos />} />
               <Route path="estados" element={<AdminEstados />} />
               <Route path="cidades" element={<AdminCidades />} />

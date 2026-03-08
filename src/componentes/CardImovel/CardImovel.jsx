@@ -1,21 +1,73 @@
 import { Link } from "react-router-dom";
 
+// 🔥 FUNÇÃO PARA GERAR SLUG SEO (COLOQUE ANTES DO COMPONENTE)
+const gerarSlugSEO = (imovel) => {
+  if (!imovel) return "imovel";
+
+  const partes = [];
+
+  // 1. TIPO (casa, apto, etc)
+  if (imovel.tipo) partes.push(imovel.tipo.toLowerCase());
+
+  // 2. BAIRRO (se tiver)
+  if (imovel.bairro) partes.push(imovel.bairro.toLowerCase());
+
+  // 3. CIDADE (se tiver)
+  if (imovel.cidade) partes.push(imovel.cidade.toLowerCase());
+
+  // 4. QUARTOS (se tiver)
+  if (imovel.quartos && imovel.quartos > 0) {
+    partes.push(`${imovel.quartos}-quartos`);
+  }
+
+  // 5. ÁREA CONSTRUÍDA (se tiver)
+  if (imovel.areaConstruida && imovel.areaConstruida > 0) {
+    partes.push(`${imovel.areaConstruida}m`);
+  } else if (imovel.areaTotal && imovel.areaTotal > 0) {
+    partes.push(`${imovel.areaTotal}m`);
+  }
+
+  // Se não conseguiu montar nada, usa o título
+  if (partes.length === 0 && imovel.titulo) {
+    return imovel.titulo
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9\s-]/g, "")
+      .replace(/\s+/g, "-")
+      .replace(/-+/g, "-")
+      .trim();
+  }
+
+  // Junta tudo com hífen
+  return partes
+    .join("-")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9-]/g, "")
+    .replace(/-+/g, "-")
+    .trim();
+};
+
 const CardImovel = ({
   id,
   slug,
+  codigo,
   status = "available",
   tipo = "CASA",
   finalidade = "VENDA",
   preco = "R$ 850.000",
-  titulo = "Casa moderna em condomínio fechado", // ← AGORA RECEBE O TÍTULO AUTOMÁTICO!
+  titulo = "Casa moderna em condomínio fechado",
   localizacao = "Centro • Torres / RS",
-  bairro = "", // 🔥 NOVO!
-  cidade = "", // 🔥 NOVO!
-  estado = "", // 🔥 NOVO!
+  bairro = "",
+  cidade = "",
+  estado = "",
   quartos = 3,
   suites = 1,
   banheiros = 2,
   vagas = 2,
+  areaTotal = 0,
+  areaConstruida = 0,
   emCondominio = true,
   empreendimento = null,
   unidade = "",
@@ -58,6 +110,22 @@ const CardImovel = ({
 
   const unidadeCompleta = montarUnidadeCompleta();
 
+  // 🔥 GERAR O SLUG SEO COM OS DADOS DO IMÓVEL
+  const slugSEO = gerarSlugSEO({
+    tipo,
+    bairro,
+    cidade,
+    quartos,
+    areaConstruida,
+    areaTotal,
+    titulo,
+  });
+
+  // 🔥 NOVA URL: /imovel/[slug]/[codigo]
+  const urlImovel = codigo
+    ? `/imovel/${slugSEO}/${codigo}`
+    : `/imovel/${slug || id}`;
+
   return (
     <article className="bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 ease-in-out hover:-translate-y-2 flex flex-col relative md:min-h-[200px] md:flex-row group w-full max-w-sm mx-auto md:max-w-none">
       {/* STATUS BADGE */}
@@ -67,6 +135,15 @@ const CardImovel = ({
         <i className={`${statusData.icon} text-xs drop-shadow-md`}></i>
         {statusData.label}
       </div>
+
+      {/* CÓDIGO DO IMÓVEL */}
+      {codigo && (
+        <div className="absolute top-5 right-5 md:top-6 md:right-6 z-10">
+          <span className="bg-black/50 backdrop-blur-sm text-white px-3 py-1 rounded-full text-xs font-mono border border-white/20">
+            {codigo}
+          </span>
+        </div>
+      )}
 
       {/* IMAGEM */}
       <div className="relative h-56 overflow-hidden bg-white md:w-2/5 md:h-auto md:flex-shrink-0">
@@ -96,7 +173,7 @@ const CardImovel = ({
           {preco}
         </div>
 
-        {/* TÍTULO - AGORA MOSTRA O TÍTULO AUTOMÁTICO CORRETO! */}
+        {/* TÍTULO */}
         <h3 className="text-xl font-bold text-gray-800 leading-relaxed mb-2">
           {titulo}
         </h3>
@@ -145,7 +222,6 @@ const CardImovel = ({
 
         {/* FEATURES */}
         <div className="flex flex-wrap gap-4 mb-6 pt-4 border-t border-dashed border-gray-200">
-          {/* QUARTOS */}
           {quartos > 0 && (
             <div className="flex items-center gap-2 text-sm text-gray-700">
               <div className="w-4 flex items-center justify-center flex-shrink-0">
@@ -157,7 +233,6 @@ const CardImovel = ({
             </div>
           )}
 
-          {/* BANHEIROS */}
           {banheiros > 0 && (
             <div className="flex items-center gap-2 text-sm text-gray-700">
               <div className="w-4 flex items-center justify-center flex-shrink-0">
@@ -169,7 +244,6 @@ const CardImovel = ({
             </div>
           )}
 
-          {/* SUÍTES */}
           {suites > 0 && (
             <div className="flex items-center gap-2 text-sm text-gray-700">
               <div className="w-4 flex items-center justify-center flex-shrink-0">
@@ -181,7 +255,6 @@ const CardImovel = ({
             </div>
           )}
 
-          {/* VAGAS */}
           {vagas > 0 && (
             <div className="flex items-center gap-2 text-sm text-gray-700">
               <div className="w-4 flex items-center justify-center flex-shrink-0">
@@ -207,10 +280,11 @@ const CardImovel = ({
             )}
           </div>
 
-          {/* LINK COM SLUG */}
+          {/* 🔥 LINK NOVO FORMATO */}
           <Link
-            to={`/imovel/${slug || id}`}
+            to={urlImovel}
             className="bg-gray-800 text-white px-6 py-3 rounded-lg font-bold text-sm flex items-center gap-2 shadow-lg hover:shadow-2xl hover:-translate-y-1 transition-all duration-300"
+            title={codigo ? `Código: ${codigo}` : "Ver detalhes"}
           >
             <div className="w-4 flex items-center justify-center flex-shrink-0">
               <i className="fas fa-eye text-xs"></i>
