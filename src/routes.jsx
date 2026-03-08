@@ -17,7 +17,7 @@ const ComprarImovel = lazy(() => import("./pages/ComprarImovel"));
 const AlugarImovel = lazy(() => import("./pages/AlugarImovel"));
 const DetalheImovel = lazy(() => import("./pages/DetalheImovel"));
 const SobreNos = lazy(() => import("./pages/SobreNos"));
-const Contato = lazy(() => import("./pages/Contato"));
+// const Contato = lazy(() => import("./pages/Contato")); // Comentado - não usado no momento
 
 // ========== Lazy loading das páginas do ADMIN ==========
 const AdminLayout = lazy(() => import("./componentes/admin/AdminLayout"));
@@ -135,14 +135,16 @@ function AppRoutes() {
                 </Layout>
               }
             />
-            <Route
+
+            {/* Rota de Contato comentada - não usada no momento */}
+            {/* <Route
               path="/contato"
               element={
                 <Layout>
                   <Contato />
                 </Layout>
               }
-            />
+            /> */}
 
             {/* ============ ADMIN ============ */}
             <Route
