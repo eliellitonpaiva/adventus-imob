@@ -1696,8 +1696,7 @@ const Hero = () => {
           </div>
 
           <form onSubmit={handleSearch}>
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-2 md:gap-2 lg:gap-3">
-              {/* DROPDOWN CIDADE */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-2 md:gap-2 lg:gap-3">
               <div className="relative w-full md:col-span-1" ref={cityRef}>
                 <div
                   onClick={() => toggleDropdown("city")}
@@ -1755,7 +1754,6 @@ const Hero = () => {
                 )}
               </div>
 
-              {/* DROPDOWN TIPO */}
               <div className="relative w-full md:col-span-1" ref={propertyRef}>
                 <div
                   onClick={() => toggleDropdown("propertyType")}
@@ -1824,7 +1822,6 @@ const Hero = () => {
                 )}
               </div>
 
-              {/* DROPDOWN BAIRRO */}
               <div
                 className="relative w-full md:col-span-1"
                 ref={neighborhoodRef}
@@ -1907,79 +1904,6 @@ const Hero = () => {
                 )}
               </div>
 
-              {/* DROPDOWN FAIXA DE PREÇO - DINÂMICO */}
-              <div
-                className="relative w-full md:col-span-1"
-                ref={priceRangeRef}
-              >
-                <div
-                  onClick={() => toggleDropdown("priceRange")}
-                  className={`flex items-center w-full h-[56px] md:h-[60px] px-4 bg-white border ${
-                    openDropdown === "priceRange"
-                      ? "border-[#D4A24D] ring-2 ring-[#D4A24D]/20"
-                      : "border-gray-200 hover:border-gray-300"
-                  } rounded-xl cursor-pointer transition-all shadow-sm hover:shadow-md`}
-                >
-                  <i
-                    className={`fas fa-tag mr-2 text-sm ${formValues.priceRange ? "text-[#D4A24D]" : "text-gray-400"}`}
-                  />
-                  <span
-                    className={`flex-1 text-sm md:text-base font-semibold truncate ${
-                      formValues.priceRange ? "text-gray-800" : "text-gray-400"
-                    }`}
-                  >
-                    {formValues.priceRange
-                      ? currentPriceOptions.find(
-                          (opt) => opt.id === formValues.priceRange,
-                        )?.label
-                      : activeTab === "comprar"
-                        ? "Faixa de preço (compra)"
-                        : "Faixa de preço (aluguel)"}
-                  </span>
-                  <i
-                    className={`fas fa-chevron-down text-gray-400 text-xs transition-all duration-300 ${
-                      openDropdown === "priceRange"
-                        ? "rotate-180 text-[#D4A24D]"
-                        : ""
-                    }`}
-                  />
-                </div>
-
-                {openDropdown === "priceRange" && (
-                  <div className="absolute top-[105%] left-0 w-full bg-white rounded-xl shadow-2xl border border-gray-100 z-[100] overflow-hidden animate-dropdown">
-                    <div className="max-h-[200px] overflow-y-auto custom-scrollbar">
-                      {currentPriceOptions.map((opt) => (
-                        <div
-                          key={opt.id}
-                          onClick={() =>
-                            handleInputChange("priceRange", opt.id)
-                          }
-                          className={`flex items-center justify-between px-4 py-3 hover:bg-[#D4A24D]/10 cursor-pointer border-b border-gray-50 last:border-0 transition-colors ${
-                            formValues.priceRange === opt.id
-                              ? "bg-[#D4A24D]/5"
-                              : ""
-                          }`}
-                        >
-                          <span
-                            className={`text-sm md:text-base font-medium ${
-                              formValues.priceRange === opt.id
-                                ? "text-[#D4A24D] font-semibold"
-                                : "text-gray-700"
-                            }`}
-                          >
-                            {opt.label}
-                          </span>
-                          {formValues.priceRange === opt.id && (
-                            <i className="fas fa-check text-[#D4A24D] text-sm" />
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* BOTÃO MAIS FILTROS */}
               <button
                 type="button"
                 onClick={handleOpenFilters}
@@ -1990,10 +1914,21 @@ const Hero = () => {
                 <span className="sm:hidden">FILTROS</span>
               </button>
 
-              {/* BOTÃO BUSCAR */}
+              <div className="md:hidden w-full mt-2">
+                <button
+                  type="submit"
+                  className="w-full bg-[#D4A24D] text-white font-extrabold text-sm rounded-xl h-[56px] flex items-center justify-center gap-2 hover:bg-[#c0903d] transition-all shadow-lg active:scale-95 outline-none focus:outline-none"
+                >
+                  <i className="fas fa-search" />
+                  <span>BUSCAR</span>
+                </button>
+              </div>
+            </div>
+
+            <div className="hidden md:block mt-4">
               <button
                 type="submit"
-                className="w-full bg-[#D4A24D] text-white font-extrabold text-sm md:text-base rounded-xl h-[56px] md:h-[60px] flex items-center justify-center gap-2 hover:bg-[#c0903d] transition-all shadow-lg active:scale-95 outline-none focus:outline-none md:col-span-1"
+                className="w-full bg-[#D4A24D] text-white font-extrabold text-sm rounded-xl h-[56px] flex items-center justify-center gap-2 hover:bg-[#c0903d] transition-all shadow-lg active:scale-95 outline-none focus:outline-none"
               >
                 <i className="fas fa-search" />
                 <span>BUSCAR</span>
