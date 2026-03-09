@@ -15,9 +15,9 @@ const gerarSlugSEO = (imovel) => {
   // 3. CIDADE (se tiver)
   if (imovel.cidade) partes.push(imovel.cidade.toLowerCase());
 
-  // 4. QUARTOS (se tiver)
+  // 4. DORMITÓRIOS (se tiver)
   if (imovel.quartos && imovel.quartos > 0) {
-    partes.push(`${imovel.quartos}-quartos`);
+    partes.push(`${imovel.quartos}-dormitorios`);
   }
 
   // 5. ÁREA CONSTRUÍDA (se tiver)
@@ -220,7 +220,7 @@ const CardImovel = ({
           <span className="leading-tight">{localizacao}</span>
         </div>
 
-        {/* FEATURES */}
+        {/* FEATURES - 🔥 CORRIGIDO: "Quartos" para "Dormitórios" */}
         <div className="flex flex-wrap gap-4 mb-6 pt-4 border-t border-dashed border-gray-200">
           {quartos > 0 && (
             <div className="flex items-center gap-2 text-sm text-gray-700">
@@ -228,7 +228,7 @@ const CardImovel = ({
                 <i className="fas fa-bed text-amber-500 text-xs"></i>
               </div>
               <span>
-                {quartos} Quarto{quartos !== 1 ? "s" : ""}
+                {quartos} Dormitório{quartos !== 1 ? "s" : ""}
               </span>
             </div>
           )}
