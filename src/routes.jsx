@@ -110,6 +110,18 @@ function AppRoutes() {
                 </Layout>
               }
             />
+
+            {/* 🔥 ROTA PRINCIPAL COM SLUG (SEO) */}
+            <Route
+              path="/imovel/:slug"
+              element={
+                <Layout>
+                  <DetalheImovel />
+                </Layout>
+              }
+            />
+
+            {/* 🔥 ROTA ALTERNATIVA COM SLUG E CÓDIGO (COMPATIBILIDADE) */}
             <Route
               path="/imovel/:slug/:codigo"
               element={
@@ -118,6 +130,7 @@ function AppRoutes() {
                 </Layout>
               }
             />
+
             <Route
               path="/sobre-nos"
               element={

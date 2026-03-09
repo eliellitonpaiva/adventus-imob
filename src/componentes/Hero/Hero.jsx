@@ -815,6 +815,7 @@ const DesktopModal = React.memo(
 const Hero = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("comprar");
+  const [touchStart, setTouchStart] = useState(null);
   const [openDropdown, setOpenDropdown] = useState(null);
   const [showMoreFilters, setShowMoreFilters] = useState(false);
   const [formValues, setFormValues] = useState({
@@ -949,6 +950,17 @@ const Hero = () => {
     setOpenDropdown(openDropdown === name ? null : name);
   };
 
+  const handleTouchStart = (e) => setTouchStart(e.targetTouches[0].clientX);
+
+  const handleTouchEnd = (e) => {
+    if (!touchStart) return;
+    const touchEnd = e.changedTouches[0].clientX;
+    const swipeDistance = touchEnd - touchStart;
+    if (swipeDistance > 40) setActiveTab("alugar");
+    else if (swipeDistance < -40) setActiveTab("comprar");
+    setTouchStart(null);
+  };
+
   const handleTabChange = (tab) => {
     setActiveTab(tab);
     setFormValues((prev) => ({ ...prev, priceRange: "" }));
@@ -1031,7 +1043,11 @@ const Hero = () => {
         <div className="bg-white/90 backdrop-blur-md rounded-none md:rounded-2xl p-6 md:p-7 lg:p-8 border border-white/20 shadow-md w-screen relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] md:static md:w-full md:max-w-6xl md:mx-auto">
           <div className="mb-6 w-full px-0 md:px-0">
             <div className="max-w-[280px] md:max-w-[300px] mx-auto lg:mx-0">
-              <div className="relative bg-gray-900/95 rounded-full h-12 md:h-14 w-full p-1.5 flex items-center border border-gray-300 shadow-inner overflow-hidden">
+              <div
+                onTouchStart={handleTouchStart}
+                onTouchEnd={handleTouchEnd}
+                className="relative bg-gray-900/95 rounded-full h-12 md:h-14 w-full p-1.5 flex items-center border border-gray-300 shadow-inner overflow-hidden cursor-pointer touch-pan-x"
+              >
                 <div
                   className={`absolute h-[calc(100%-12px)] w-[calc(50%-6px)] bg-[#D4A24D] rounded-full shadow-md transition-all duration-300 ease-out z-0 ${
                     activeTab === "comprar"
