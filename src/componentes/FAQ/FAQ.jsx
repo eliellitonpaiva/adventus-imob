@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { ChatBubbleOvalLeftEllipsisIcon } from "@heroicons/react/24/solid";
 
-const FAQ = () => {
+const Faq = () => {
   const [openIndex, setOpenIndex] = useState(null);
 
   const toggleFAQ = (index) => {
@@ -532,4 +532,4 @@ const FAQ = () => {
   );
 };
 
-export default FAQ;
+export default Faq;
