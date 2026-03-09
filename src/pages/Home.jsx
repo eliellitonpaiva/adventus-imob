@@ -15,7 +15,7 @@ function Home() {
       <SejaCorretor />
       <NossosNumeros />
       <ServicosAdventus />
-      <FAQ />
+      <Faq />
     </>
   );
 }
