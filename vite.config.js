@@ -411,14 +411,14 @@ function gerarTodasRotas() {
 }
 
 // ==============================================
-// CONFIGURAÇÃO PRINCIPAL DO VITE
+// CONFIGURAÇÃO PRINCIPAL DO VITE (AGORA COM dynamicRoutes!)
 // ==============================================
 export default defineConfig({
   plugins: [
     react(),
     sitemap({
       hostname: imobiliariaData.site,
-      routes: gerarTodasRotas(),
+      dynamicRoutes: gerarTodasRotas(), // ← MUDOU AQUI!
       changefreq: "daily",
       priority: 0.7,
       lastmod: new Date().toISOString(),
