@@ -1,4 +1,3 @@
-// components/VitrineAdventus/VitrineAdventus.jsx
 import React, { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
@@ -37,6 +36,7 @@ const VitrineAdventus = () => {
           estado,
           financiado,
           slug,
+          codigo,
           etiquetas
         `,
           )
@@ -118,10 +118,10 @@ const VitrineAdventus = () => {
             id: imovel.id,
             title: imovel.titulo,
             slug: imovel.slug,
+            codigo: imovel.codigo,
             location: `${imovel.bairro || ""}, ${imovel.cidade || "Açailândia"} - ${imovel.estado || "MA"}`,
             image: imovel.fotoCapa,
             badgeType: badgeType,
-            // 🔥 CORREÇÃO: Usar financiableReal baseado no campo financiado
             financiableReal: imovel.financiado === true,
           };
         });
@@ -651,7 +651,7 @@ const VitrineAdventus = () => {
               {properties.map((property, index) => (
                 <Link
                   key={property.id}
-                  to={`/imovel/${property.slug || property.id}`}
+                  to={`/imovel/${property.slug}/${property.codigo}`}
                   className="block no-underline relative mx-2"
                   style={{
                     flex: `0 0 calc(${window.innerWidth <= 768 ? "85%" : cardsPerView === 3 ? "33.333%" : cardsPerView === 2 ? "50%" : "85%"} - 1rem)`,
@@ -685,7 +685,6 @@ const VitrineAdventus = () => {
                     {renderBadge(property.badgeType)}
                   </div>
 
-                  {/* 🔥 CORREÇÃO: Usando financiableReal em vez de etiquetaFinanciavel */}
                   {property.financiableReal && (
                     <div className="absolute top-[1.2rem] right-[1.2rem] z-30">
                       {renderFinanciableBadge((index % 3) + 1)}
