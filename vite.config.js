@@ -1,7 +1,6 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
-import prerenderStatic from "vite-plugin-prerender-static";
-import sitemap from "vite-plugin-sitemap"; // ← MUDOU AQUI: import padrão, não nomeado
+import sitemap from "vite-plugin-sitemap";
 
 // ==============================================
 // DADOS REAIS DA ADVENTUS IMOBILIÁRIA
@@ -348,344 +347,83 @@ const bairrosAcilandia = [
   },
 ];
 
-// Agrupamento por região
-const regioesAcilandia = {
-  central: bairrosAcilandia.filter((b) => b.regiao === "central"),
-  nobre: bairrosAcilandia.filter((b) => b.regiao === "nobre"),
-  novo: bairrosAcilandia.filter((b) => b.regiao === "novo"),
-  popular: bairrosAcilandia.filter((b) => b.regiao === "popular"),
-};
-
 // ==============================================
 // TIPOS DE IMÓVEIS
 // ==============================================
 const tiposImovel = [
-  { nome: "Casa", slug: "casa", plural: "casas", icone: "🏠" },
-  {
-    nome: "Apartamento",
-    slug: "apartamento",
-    plural: "apartamentos",
-    icone: "🏢",
-  },
-  { nome: "Terreno", slug: "terreno", plural: "terrenos", icone: "🌲" },
+  { nome: "Casa", slug: "casa", plural: "casas" },
+  { nome: "Apartamento", slug: "apartamento", plural: "apartamentos" },
+  { nome: "Terreno", slug: "terreno", plural: "terrenos" },
   {
     nome: "Ponto Comercial",
     slug: "ponto-comercial",
     plural: "pontos-comerciais",
-    icone: "🏪",
   },
-  { nome: "Sítio/Chácara", slug: "sitio", plural: "sítios", icone: "🌳" },
-  { nome: "Galpão", slug: "galpao", plural: "galpões", icone: "🏭" },
+  { nome: "Sítio/Chácara", slug: "sitio", plural: "sitios" },
+  { nome: "Galpão", slug: "galpao", plural: "galpoes" },
 ];
 
 // ==============================================
-// GERADOR DE SCHEMA
+// GERAR TODAS AS ROTAS PARA O SITEMAP
 // ==============================================
-function gerarSchemaImobiliaria() {
-  return {
-    "@context": "https://schema.org",
-    "@type": ["RealEstateAgent", "LocalBusiness", "Organization"],
-    name: imobiliariaData.nome,
-    description: imobiliariaData.slogan,
-    url: imobiliariaData.site,
-    telephone: imobiliariaData.telefone,
-    email: imobiliariaData.email,
-    openingHours: imobiliariaData.horarioFuncionamento,
-    priceRange: "$$",
-    address: {
-      "@type": "PostalAddress",
-      streetAddress: imobiliariaData.endereco.rua,
-      addressLocality: imobiliariaData.endereco.bairro,
-      addressRegion: imobiliariaData.endereco.estado,
-      postalCode: imobiliariaData.endereco.cep,
-      addressCountry: "BR",
-    },
-    geo: {
-      "@type": "GeoCoordinates",
-      latitude: imobiliariaData.coordenadas.lat,
-      longitude: imobiliariaData.coordenadas.lng,
-    },
-    sameAs: [
-      imobiliariaData.redesSociais.instagram,
-      imobiliariaData.redesSociais.facebook,
-      imobiliariaData.redesSociais.whatsapp,
-    ],
-    areaServed: [
-      "Açailândia",
-      ...bairrosAcilandia.map((b) => b.nome),
-      "Maranhão",
-    ],
-    keywords: baseKeywords.join(", "),
-    foundingDate: imobiliariaData.fundacao,
-    numberOfEmployees: imobiliariaData.corretores,
-  };
-}
-
-// ==============================================
-// ROTAS PRINCIPAIS
-// ==============================================
-function gerarRotasPrincipais() {
-  return [
-    {
-      path: "/casas-em-acailandia",
-      titulo: "Casas em Açailândia",
-      descricao: "casas para comprar e alugar",
-    },
-    {
-      path: "/apartamentos-em-acailandia",
-      titulo: "Apartamentos em Açailândia",
-      descricao: "apartamentos residenciais",
-    },
-    {
-      path: "/imoveis-em-acailandia",
-      titulo: "Imóveis em Açailândia",
-      descricao: "todos os tipos de imóveis",
-    },
-    {
-      path: "/terrenos-em-acailandia",
-      titulo: "Terrenos em Açailândia",
-      descricao: "lotes e áreas para construção",
-    },
-    {
-      path: "/aluguel-acailandia",
-      titulo: "Aluguel de Imóveis em Açailândia",
-      descricao: "imóveis para locação",
-    },
-    {
-      path: "/venda-acailandia",
-      titulo: "Imóveis à Venda em Açailândia",
-      descricao: "imóveis para comprar",
-    },
-    {
-      path: "/imoveis-comerciais-acailandia",
-      titulo: "Imóveis Comerciais em Açailândia",
-      descricao: "pontos comerciais, salas e galpões",
-    },
-    {
-      path: "/lancamentos-acailandia",
-      titulo: "Lançamentos Imobiliários em Açailândia",
-      descricao: "imóveis novos e na planta",
-    },
-  ];
-}
-
-// ==============================================
-// ROTAS POR REGIÃO
-// ==============================================
-function gerarRotasRegiao() {
-  const regioes = [
-    { slug: "nobre", nome: "Nobre", bairros: regioesAcilandia.nobre },
-    { slug: "central", nome: "Central", bairros: regioesAcilandia.central },
-    {
-      slug: "novos-loteamentos",
-      nome: "Novos Loteamentos",
-      bairros: regioesAcilandia.novo,
-    },
-    { slug: "populares", nome: "Populares", bairros: regioesAcilandia.popular },
+function gerarTodasRotas() {
+  const rotas = [
+    "/",
+    "/casas-em-acailandia",
+    "/apartamentos-em-acailandia",
+    "/imoveis-em-acailandia",
+    "/terrenos-em-acailandia",
+    "/aluguel-acailandia",
+    "/venda-acailandia",
+    "/imoveis-comerciais-acailandia",
+    "/lancamentos-acailandia",
+    "/casas",
+    "/apartamentos",
+    "/terrenos",
+    "/pontos-comerciais",
+    "/sitios",
+    "/galpoes",
   ];
 
-  return regioes.flatMap((regiao) => {
-    const rotas = [
-      {
-        path: `/imoveis-regiao-${regiao.slug}-acailandia`,
-        tags: {
-          title: `Imóveis na Região ${regiao.nome} de Açailândia | Adventus`,
-          description: `Encontre imóveis na região ${regiao.nome} de Açailândia: ${regiao.bairros.map((b) => b.nome).join(", ")}. Casas, apartamentos e terrenos com a Adventus.`,
-          keywords: [
-            `imóveis região ${regiao.nome} Açailândia`,
-            `região ${regiao.nome} Açailândia imóveis`,
-            ...regiao.bairros.flatMap((b) => [
-              `${b.nome} Açailândia`,
-              `imóveis ${b.nome}`,
-            ]),
-            ...baseKeywords,
-          ].join(", "),
-          canonical: `${imobiliariaData.site}/imoveis-regiao-${regiao.slug}-acailandia`,
-        },
-      },
-    ];
-
-    // Adiciona rotas por tipo + região
-    tiposImovel.forEach((tipo) => {
-      rotas.push({
-        path: `/${tipo.plural}-regiao-${regiao.slug}-acailandia`,
-        tags: {
-          title: `${tipo.plural} na Região ${regiao.nome} de Açailândia | Adventus`,
-          description: `Encontre ${tipo.plural} na região ${regiao.nome} de Açailândia. ${regiao.bairros.map((b) => b.nome).join(", ")}. Confira as opções com a Adventus.`,
-          keywords: [
-            `${tipo.plural} região ${regiao.nome} Açailândia`,
-            `${tipo.slug} ${regiao.slug} Açailândia`,
-            ...regiao.bairros.map((b) => `${tipo.slug} ${b.slug} Açailândia`),
-            ...baseKeywords,
-          ].join(", "),
-          canonical: `${imobiliariaData.site}/${tipo.plural}-regiao-${regiao.slug}-acailandia`,
-        },
-      });
-    });
-
-    return rotas;
+  // Páginas de bairros (41)
+  bairrosAcilandia.forEach((bairro) => {
+    rotas.push(`/imoveis-${bairro.slug}-acailandia`);
   });
+
+  // Páginas de tipo + bairro (41 * 6 = 246)
+  bairrosAcilandia.forEach((bairro) => {
+    tiposImovel.forEach((tipo) => {
+      rotas.push(`/${tipo.plural}-${bairro.slug}-acailandia`);
+    });
+  });
+
+  // Páginas de região
+  const regioes = ["nobre", "central", "novos-loteamentos", "populares"];
+  regioes.forEach((regiao) => {
+    rotas.push(`/imoveis-regiao-${regiao}-acailandia`);
+    tiposImovel.forEach((tipo) => {
+      rotas.push(`/${tipo.plural}-regiao-${regiao}-acailandia`);
+    });
+  });
+
+  console.log(`✅ Total de rotas geradas: ${rotas.length}`);
+  return rotas;
 }
 
 // ==============================================
-// CONFIGURAÇÃO PRINCIPAL
+// CONFIGURAÇÃO PRINCIPAL DO VITE
 // ==============================================
 export default defineConfig({
   plugins: [
     react(),
-    prerenderStatic({
-      routes: async () => {
-        // Gera todas as keywords semânticas
-        const locationKeywords = generateKeywords(baseKeywords, "Açailândia");
-
-        // ==============================================
-        // CONSTRUÇÃO DE TODAS AS ROTAS
-        // ==============================================
-        const rotas = [
-          // HOME PAGE
-          {
-            path: "/",
-            tags: {
-              title: `${imobiliariaData.nome} | Compra, Venda e Aluguel em Açailândia MA`,
-              description: `${imobiliariaData.slogan}. Encontre seu imóvel em Açailândia com a ${imobiliariaData.nome}. Casas, apartamentos, imóveis comerciais e terrenos em todos os bairros: ${bairrosAcilandia
-                .slice(0, 10)
-                .map((b) => b.nome)
-                .join(", ")} e mais.`,
-              keywords: [...baseKeywords, ...locationKeywords].join(", "),
-              author: imobiliariaData.nome,
-              url: imobiliariaData.site,
-              image:
-                "https://adventusimobiliaria.com.br/img/adventusimobiliaria.png",
-              canonical: imobiliariaData.site,
-              "geo.region": "BR-MA",
-              "geo.placename": "Açailândia",
-              "geo.position": `${imobiliariaData.coordenadas.lat};${imobiliariaData.coordenadas.lng}`,
-              ICBM: `${imobiliariaData.coordenadas.lat}, ${imobiliariaData.coordenadas.lng}`,
-              schema: gerarSchemaImobiliaria(),
-            },
-          },
-
-          // PÁGINAS PRINCIPAIS (8 páginas)
-          ...gerarRotasPrincipais().map((item) => ({
-            path: item.path,
-            tags: {
-              title: `${item.titulo} | ${imobiliariaData.nome}`,
-              description: `Encontre as melhores ${item.descricao} em Açailândia MA. Confira as opções disponíveis em todos os bairros com a ${imobiliariaData.nome} - Sua imobiliária no Centro de Açailândia.`,
-              keywords: [
-                item.path.replace(/\//g, "").replace(/-/g, " "),
-                `${item.titulo.toLowerCase()} MA`,
-                ...baseKeywords,
-              ].join(", "),
-              canonical: `${imobiliariaData.site}${item.path}`,
-            },
-          })),
-
-          // PÁGINAS DE TIPOS DE IMÓVEIS (6 páginas)
-          ...tiposImovel.map((tipo) => ({
-            path: `/${tipo.plural}`,
-            tags: {
-              title: `${tipo.nome}s em Açailândia | ${imobiliariaData.nome}`,
-              description: `Encontre ${tipo.nome.toLowerCase()}s em Açailândia MA. Diversas opções de ${tipo.nome.toLowerCase()}s para comprar ou alugar em todos os bairros com a ${imobiliariaData.nome}.`,
-              keywords: [
-                `${tipo.plural} Açailândia`,
-                `${tipo.nome.toLowerCase()} Açailândia`,
-                `comprar ${tipo.nome.toLowerCase()} Açailândia`,
-                `alugar ${tipo.nome.toLowerCase()} Açailândia`,
-                ...baseKeywords,
-              ].join(", "),
-              canonical: `${imobiliariaData.site}/${tipo.plural}`,
-            },
-          })),
-
-          // PÁGINAS DE BAIRROS (41 páginas)
-          ...bairrosAcilandia.map((bairro) => ({
-            path: `/imoveis-${bairro.slug}-acailandia`,
-            tags: {
-              title: `Imóveis no ${bairro.nome} - Açailândia | ${imobiliariaData.nome}`,
-              description: `Encontre casas, apartamentos e terrenos no ${bairro.nome}, ${bairro.descricao} em Açailândia MA. As melhores opções com a ${imobiliariaData.nome} - Sua imobiliária no Centro.`,
-              keywords: [
-                `imóveis ${bairro.nome} Açailândia`,
-                `${bairro.nome} Açailândia imóveis`,
-                `casa ${bairro.nome} Açailândia`,
-                `apartamento ${bairro.nome} Açailândia`,
-                `terreno ${bairro.nome} Açailândia`,
-                `comprar imóvel ${bairro.nome}`,
-                `alugar ${bairro.nome} Açailândia`,
-                ...baseKeywords,
-              ].join(", "),
-              canonical: `${imobiliariaData.site}/imoveis-${bairro.slug}-acailandia`,
-            },
-          })),
-
-          // PÁGINAS DE TIPO + BAIRRO (41 x 6 = 246 páginas)
-          ...bairrosAcilandia.flatMap((bairro) =>
-            tiposImovel.map((tipo) => ({
-              path: `/${tipo.plural}-${bairro.slug}-acailandia`,
-              tags: {
-                title: `${tipo.nome}s no ${bairro.nome} - Açailândia | ${imobiliariaData.nome}`,
-                description: `Encontre ${tipo.nome.toLowerCase()}s no ${bairro.nome}, ${bairro.descricao} em Açailândia. Confira as opções disponíveis com a ${imobiliariaData.nome}.`,
-                keywords: [
-                  `${tipo.plural} ${bairro.nome} Açailândia`,
-                  `${tipo.nome.toLowerCase()} ${bairro.slug} Açailândia`,
-                  `comprar ${tipo.nome.toLowerCase()} ${bairro.slug}`,
-                  `alugar ${tipo.nome.toLowerCase()} ${bairro.slug}`,
-                  `${tipo.plural} em Açailândia ${bairro.nome}`,
-                  ...baseKeywords,
-                ].join(", "),
-                canonical: `${imobiliariaData.site}/${tipo.plural}-${bairro.slug}-acailandia`,
-              },
-            })),
-          ),
-
-          // PÁGINAS POR REGIÃO (4 regiões + 24 subtipos = 28 páginas)
-          ...gerarRotasRegiao(),
-        ];
-
-        console.log(`✅ Total de páginas geradas: ${rotas.length}`);
-        console.log(`📊 Detalhamento:`);
-        console.log(`   - Home: 1`);
-        console.log(`   - Páginas principais: 8`);
-        console.log(`   - Tipos de imóveis: 6`);
-        console.log(`   - Bairros: 41`);
-        console.log(`   - Tipo + Bairro: 246`);
-        console.log(`   - Regiões: 28`);
-        console.log(`   - TOTAL: ${rotas.length} páginas`);
-
-        return rotas;
-      },
-    }),
-
-    // GERADOR DE SITEMAP - CORRIGIDO!
     sitemap({
       hostname: imobiliariaData.site,
-      routes: async () => {
-        const rotasBase = [
-          "/",
-          ...gerarRotasPrincipais().map((r) => r.path),
-          ...tiposImovel.map((t) => `/${t.plural}`),
-          ...bairrosAcilandia.map((b) => `/imoveis-${b.slug}-acailandia`),
-          ...bairrosAcilandia.flatMap((b) =>
-            tiposImovel.map((t) => `/${t.plural}-${b.slug}-acailandia`),
-          ),
-        ];
-
-        // Adiciona rotas de região
-        const regioes = ["nobre", "central", "novos-loteamentos", "populares"];
-        regioes.forEach((regiao) => {
-          rotasBase.push(`/imoveis-regiao-${regiao}-acailandia`);
-          tiposImovel.forEach((tipo) => {
-            rotasBase.push(`/${tipo.plural}-regiao-${regiao}-acailandia`);
-          });
-        });
-
-        return [...new Set(rotasBase)];
-      },
+      routes: gerarTodasRotas(),
       changefreq: "daily",
       priority: 0.7,
       lastmod: new Date().toISOString(),
     }),
   ],
-
   build: {
     rollupOptions: {
       output: {
