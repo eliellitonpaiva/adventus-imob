@@ -86,265 +86,64 @@ const baseKeywords = [
 // BAIRROS DE AÇAILÂNDIA (LISTA COMPLETA - 41 BAIRROS)
 // ==============================================
 const bairrosAcilandia = [
-  // Centro e região central (8 bairros)
-  {
-    nome: "Centro",
-    slug: "centro",
-    regiao: "central",
-    descricao: "área central com comércio e serviços",
-  },
-  {
-    nome: "Vila Ildemar",
-    slug: "vila-ildemar",
-    regiao: "central",
-    descricao: "bairro tradicional próximo ao centro",
-  },
-  {
-    nome: "Vila Sarney Filho",
-    slug: "vila-sarney-filho",
-    regiao: "central",
-    descricao: "região central consolidada",
-  },
-  {
-    nome: "João Paulo",
-    slug: "joao-paulo",
-    regiao: "central",
-    descricao: "área residencial próxima ao centro",
-  },
-  {
-    nome: "Entroncamento",
-    slug: "entroncamento",
-    regiao: "central",
-    descricao: "ponto estratégico da cidade",
-  },
-  {
-    nome: "Vila Maranhão",
-    slug: "vila-maranhao",
-    regiao: "central",
-    descricao: "comunidade estabelecida",
-  },
-  {
-    nome: "Vila Ipiranga",
-    slug: "vila-ipiranga",
-    regiao: "central",
-    descricao: "bairro tradicional",
-  },
-  {
-    nome: "Getat",
-    slug: "getat",
-    regiao: "central",
-    descricao: "área do grupo executivo",
-  },
-
-  // Jardins e áreas nobres (12 bairros)
-  {
-    nome: "Jardim América",
-    slug: "jardim-america",
-    regiao: "nobre",
-    descricao: "bairro nobre e residencial",
-  },
-  {
-    nome: "Jardim Glória",
-    slug: "jardim-gloria",
-    regiao: "nobre",
-    descricao: "área nobre em expansão",
-  },
-  {
-    nome: "Jardim Glória II",
-    slug: "jardim-gloria-ii",
-    regiao: "nobre",
-    descricao: "continuação do Jardim Glória",
-  },
-  {
-    nome: "Jardim Glória III",
-    slug: "jardim-gloria-iii",
-    regiao: "nobre",
-    descricao: "novo loteamento nobre",
-  },
-  {
-    nome: "Jardim de Alah",
-    slug: "jardim-de-alah",
-    regiao: "nobre",
-    descricao: "bairro planejado",
-  },
-  {
-    nome: "Jardim Brasil",
-    slug: "jardim-brasil",
-    regiao: "nobre",
-    descricao: "área residencial de qualidade",
-  },
-  {
-    nome: "Jardim Aulídia",
-    slug: "jardim-aulidia",
-    regiao: "nobre",
-    descricao: "bairro tranquilo e arborizado",
-  },
-  {
-    nome: "Park Jardins",
-    slug: "park-jardins",
-    regiao: "nobre",
-    descricao: "condomínio de alto padrão",
-  },
-  {
-    nome: "Parque Planalto",
-    slug: "parque-planalto",
-    regiao: "nobre",
-    descricao: "área nobre com infraestrutura",
-  },
-  {
-    nome: "Parque da Lagoa",
-    slug: "parque-da-lagoa",
-    regiao: "nobre",
-    descricao: "região valorizada",
-  },
-  {
-    nome: "Parque das Nações",
-    slug: "parque-das-nacoes",
-    regiao: "nobre",
-    descricao: "bairro planejado",
-  },
+  { nome: "Centro", slug: "centro", regiao: "central" },
+  { nome: "Vila Ildemar", slug: "vila-ildemar", regiao: "central" },
+  { nome: "Vila Sarney Filho", slug: "vila-sarney-filho", regiao: "central" },
+  { nome: "João Paulo", slug: "joao-paulo", regiao: "central" },
+  { nome: "Entroncamento", slug: "entroncamento", regiao: "central" },
+  { nome: "Vila Maranhão", slug: "vila-maranhao", regiao: "central" },
+  { nome: "Vila Ipiranga", slug: "vila-ipiranga", regiao: "central" },
+  { nome: "Getat", slug: "getat", regiao: "central" },
+  { nome: "Jardim América", slug: "jardim-america", regiao: "nobre" },
+  { nome: "Jardim Glória", slug: "jardim-gloria", regiao: "nobre" },
+  { nome: "Jardim Glória II", slug: "jardim-gloria-ii", regiao: "nobre" },
+  { nome: "Jardim Glória III", slug: "jardim-gloria-iii", regiao: "nobre" },
+  { nome: "Jardim de Alah", slug: "jardim-de-alah", regiao: "nobre" },
+  { nome: "Jardim Brasil", slug: "jardim-brasil", regiao: "nobre" },
+  { nome: "Jardim Aulídia", slug: "jardim-aulidia", regiao: "nobre" },
+  { nome: "Park Jardins", slug: "park-jardins", regiao: "nobre" },
+  { nome: "Parque Planalto", slug: "parque-planalto", regiao: "nobre" },
+  { nome: "Parque da Lagoa", slug: "parque-da-lagoa", regiao: "nobre" },
+  { nome: "Parque das Nações", slug: "parque-das-nacoes", regiao: "nobre" },
   {
     nome: "Parque Novo Horizonte",
     slug: "parque-novo-horizonte",
     regiao: "nobre",
-    descricao: "novo parque residencial",
   },
-
-  // Novos loteamentos e residenciais (11 bairros)
-  {
-    nome: "Nova Açailândia",
-    slug: "nova-acailandia",
-    regiao: "novo",
-    descricao: "bairro novo em crescimento",
-  },
-  {
-    nome: "Nova Açailândia II",
-    slug: "nova-acailandia-ii",
-    regiao: "novo",
-    descricao: "expansão da Nova Açailândia",
-  },
+  { nome: "Nova Açailândia", slug: "nova-acailandia", regiao: "novo" },
+  { nome: "Nova Açailândia II", slug: "nova-acailandia-ii", regiao: "novo" },
   {
     nome: "Residencial Tropical",
     slug: "residencial-tropical",
     regiao: "novo",
-    descricao: "condomínio residencial",
   },
   {
     nome: "Residencial Ouro Verde",
     slug: "residencial-ouro-verde",
     regiao: "novo",
-    descricao: "loteamento novo",
   },
-  {
-    nome: "Residencial Valle do Açaí",
-    slug: "valle-do-acai",
-    regiao: "novo",
-    descricao: "residencial planejado",
-  },
-  {
-    nome: "Colinas Park",
-    slug: "colinas-park",
-    regiao: "novo",
-    descricao: "loteamento em desenvolvimento",
-  },
-  {
-    nome: "Porto Seguro",
-    slug: "porto-seguro",
-    regiao: "novo",
-    descricao: "novo bairro residencial",
-  },
-  {
-    nome: "Porto Seguro II",
-    slug: "porto-seguro-ii",
-    regiao: "novo",
-    descricao: "ampliação do Porto Seguro",
-  },
-  {
-    nome: "Novo Bacabal",
-    slug: "novo-bacabal",
-    regiao: "novo",
-    descricao: "área em expansão",
-  },
-  {
-    nome: "Brasil Novo",
-    slug: "brasil-novo",
-    regiao: "novo",
-    descricao: "bairro em desenvolvimento",
-  },
-  {
-    nome: "Barra Azul",
-    slug: "barra-azul",
-    regiao: "novo",
-    descricao: "área residencial",
-  },
-
-  // Bairros populares e consolidados (10 bairros)
-  {
-    nome: "Jacu",
-    slug: "jacu",
-    regiao: "popular",
-    descricao: "bairro tradicional",
-  },
-  {
-    nome: "Piquiá",
-    slug: "piquia",
-    regiao: "popular",
-    descricao: "bairro operário",
-  },
-  {
-    nome: "Vila Bom Jardim",
-    slug: "vila-bom-jardim",
-    regiao: "popular",
-    descricao: "comunidade tradicional",
-  },
-  {
-    nome: "Bom Jardim",
-    slug: "bom-jardim",
-    regiao: "popular",
-    descricao: "bairro residencial",
-  },
-  {
-    nome: "Laranjeiras",
-    slug: "laranjeiras",
-    regiao: "popular",
-    descricao: "área residencial",
-  },
-  {
-    nome: "Vila São Francisco",
-    slug: "vila-sao-francisco",
-    regiao: "popular",
-    descricao: "bairro tradicional",
-  },
+  { nome: "Residencial Valle do Açaí", slug: "valle-do-acai", regiao: "novo" },
+  { nome: "Colinas Park", slug: "colinas-park", regiao: "novo" },
+  { nome: "Porto Seguro", slug: "porto-seguro", regiao: "novo" },
+  { nome: "Porto Seguro II", slug: "porto-seguro-ii", regiao: "novo" },
+  { nome: "Novo Bacabal", slug: "novo-bacabal", regiao: "novo" },
+  { nome: "Brasil Novo", slug: "brasil-novo", regiao: "novo" },
+  { nome: "Barra Azul", slug: "barra-azul", regiao: "novo" },
+  { nome: "Jacu", slug: "jacu", regiao: "popular" },
+  { nome: "Piquiá", slug: "piquia", regiao: "popular" },
+  { nome: "Vila Bom Jardim", slug: "vila-bom-jardim", regiao: "popular" },
+  { nome: "Bom Jardim", slug: "bom-jardim", regiao: "popular" },
+  { nome: "Laranjeiras", slug: "laranjeiras", regiao: "popular" },
+  { nome: "Vila São Francisco", slug: "vila-sao-francisco", regiao: "popular" },
   {
     nome: "Vila Tancredo Neves",
     slug: "vila-tancredo-neves",
     regiao: "popular",
-    descricao: "bairro tradicional",
   },
-  {
-    nome: "Capelosa",
-    slug: "capelosa",
-    regiao: "popular",
-    descricao: "comunidade tradicional",
-  },
-  {
-    nome: "Vila União",
-    slug: "vila-uniao",
-    regiao: "popular",
-    descricao: "bairro unido",
-  },
-  {
-    nome: "Massaranduba",
-    slug: "massaranduba",
-    regiao: "popular",
-    descricao: "área tradicional",
-  },
-  {
-    nome: "Plano da Serra",
-    slug: "plano-da-serra",
-    regiao: "popular",
-    descricao: "região serrana",
-  },
+  { nome: "Capelosa", slug: "capelosa", regiao: "popular" },
+  { nome: "Vila União", slug: "vila-uniao", regiao: "popular" },
+  { nome: "Massaranduba", slug: "massaranduba", regiao: "popular" },
+  { nome: "Plano da Serra", slug: "plano-da-serra", regiao: "popular" },
 ];
 
 // ==============================================
@@ -364,7 +163,7 @@ const tiposImovel = [
 ];
 
 // ==============================================
-// GERAR TODAS AS ROTAS PARA O SITEMAP
+// GERAR TODAS AS ROTAS (APENAS STRINGS!)
 // ==============================================
 function gerarTodasRotas() {
   const rotas = [
@@ -411,14 +210,14 @@ function gerarTodasRotas() {
 }
 
 // ==============================================
-// CONFIGURAÇÃO PRINCIPAL DO VITE (AGORA COM dynamicRoutes!)
+// CONFIGURAÇÃO PRINCIPAL (APENAS STRINGS!)
 // ==============================================
 export default defineConfig({
   plugins: [
     react(),
     sitemap({
       hostname: imobiliariaData.site,
-      dynamicRoutes: gerarTodasRotas(), // ← MUDOU AQUI!
+      dynamicRoutes: gerarTodasRotas(), // ← APENAS ARRAY DE STRINGS!
       changefreq: "daily",
       priority: 0.7,
       lastmod: new Date().toISOString(),
