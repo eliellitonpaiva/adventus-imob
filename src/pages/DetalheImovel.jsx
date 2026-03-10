@@ -1148,16 +1148,16 @@ const DetalheImovel = () => {
         console.log("🟡 CÓDIGO RECEBIDO:", codigo);
         console.log("📌 SLUG RECEBIDO:", slug);
 
-        // 🔥 Busca pelo CÓDIGO (prioritário)
+        // 🔥 Busca pelo SLUG (prioritário para SEO)
         let query = supabase.from("imoveis").select("*");
 
-        if (codigo) {
-          console.log("🔎 Buscando por CÓDIGO:", codigo);
-          query = query.eq("codigo", codigo);
-        } else {
-          // Fallback para slug (caso alguém digite URL antiga)
-          console.log("🔎 Buscando por SLUG (fallback):", slug);
+        if (slug) {
+          console.log("🔎 Buscando por SLUG:", slug);
           query = query.eq("slug", slug);
+        } else if (codigo) {
+          // Fallback para código (caso alguém digite URL com código)
+          console.log("🔎 Buscando por CÓDIGO (fallback):", codigo);
+          query = query.eq("codigo", codigo);
         }
 
         const { data: imovelData, error: imovelError } =
