@@ -8,7 +8,7 @@
     "build": "vite build && node gerar-sitemap.js",
     "vercel-build": "npm run build",
     "preview": "vite preview"
-  },  ← VÍRGULA AQUI! (estava faltando)
+  },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
