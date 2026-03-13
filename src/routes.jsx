@@ -111,9 +111,11 @@ function AppRoutes() {
               }
             />
 
-            {/* 🔥 ROTA PRINCIPAL COM SLUG (SEO) */}
+            {/* 🔥 ROTAS DO IMÓVEL - ORDEM CORRETA (MAIS ESPECÍFICA PRIMEIRO) */}
+
+            {/* 1º - Rota com slug E código (mais específica) */}
             <Route
-              path="/imovel/:slug"
+              path="/imovel/:slug/:codigo"
               element={
                 <Layout>
                   <DetalheImovel />
@@ -121,9 +123,9 @@ function AppRoutes() {
               }
             />
 
-            {/* 🔥 ROTA ALTERNATIVA COM SLUG E CÓDIGO (COMPATIBILIDADE) */}
+            {/* 2º - Rota apenas com slug (fallback para URLs antigas) */}
             <Route
-              path="/imovel/:slug/:codigo"
+              path="/imovel/:slug"
               element={
                 <Layout>
                   <DetalheImovel />

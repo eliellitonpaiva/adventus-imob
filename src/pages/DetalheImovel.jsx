@@ -1136,7 +1136,7 @@ const DetalheImovel = () => {
   );
 
   // ==========================================================================
-  // BUSCAR DADOS DO IMÓVEL (ATUALIZADO PARA O NOVO FORMATO)
+  // BUSCAR DADOS DO IMÓVEL (CORRIGIDO - USA SLUG E CÓDIGO)
   // ==========================================================================
   useEffect(() => {
     let isMounted = true;
@@ -1145,19 +1145,26 @@ const DetalheImovel = () => {
       try {
         setLoading(true);
 
+        console.log("🟡 SLUG RECEBIDO:", slug);
         console.log("🟡 CÓDIGO RECEBIDO:", codigo);
-        console.log("📌 SLUG RECEBIDO:", slug);
 
-        // 🔥 Busca pelo SLUG (prioritário para SEO)
+        // 🔥 NOVA LÓGICA: Busca combinando slug E código (quando ambos existem)
         let query = supabase.from("imoveis").select("*");
 
-        if (slug) {
-          console.log("🔎 Buscando por SLUG:", slug);
+        if (slug && codigo) {
+          // Caso 1: Temos slug E código na URL (formato ideal)
+          console.log("🔎 Buscando por SLUG + CÓDIGO:", { slug, codigo });
+          query = query.eq("slug", slug).eq("codigo", codigo);
+        } else if (slug) {
+          // Caso 2: Apenas slug (URL antiga)
+          console.log("🔎 Buscando apenas por SLUG:", slug);
           query = query.eq("slug", slug);
         } else if (codigo) {
-          // Fallback para código (caso alguém digite URL com código)
-          console.log("🔎 Buscando por CÓDIGO (fallback):", codigo);
+          // Caso 3: Apenas código (fallback)
+          console.log("🔎 Buscando apenas por CÓDIGO:", codigo);
           query = query.eq("codigo", codigo);
+        } else {
+          throw new Error("Parâmetros inválidos");
         }
 
         const { data: imovelData, error: imovelError } =
@@ -1170,6 +1177,15 @@ const DetalheImovel = () => {
 
         if (imovelError) throw imovelError;
         if (!imovelData) throw new Error("Imóvel não encontrado");
+
+        // 🔥 VERIFICAÇÃO DE SEGURANÇA: Se buscamos por slug+codigo, confere se o código bate
+        if (slug && codigo && imovelData.codigo !== codigo) {
+          console.warn("⚠️ Código não corresponde ao slug! Redirecionando...");
+          navigate(`/imovel/${imovelData.slug}/${imovelData.codigo}`, {
+            replace: true,
+          });
+          return;
+        }
 
         // 🔥 Buscar finalidades do imóvel
         const { data: finalidadesData, error: finalidadesError } =

@@ -1,57 +1,8 @@
 import { Link } from "react-router-dom";
 
-// 🔥 FUNÇÃO PARA GERAR SLUG SEO (COLOQUE ANTES DO COMPONENTE)
-const gerarSlugSEO = (imovel) => {
-  if (!imovel) return "imovel";
-
-  const partes = [];
-
-  // 1. TIPO (casa, apto, etc)
-  if (imovel.tipo) partes.push(imovel.tipo.toLowerCase());
-
-  // 2. BAIRRO (se tiver)
-  if (imovel.bairro) partes.push(imovel.bairro.toLowerCase());
-
-  // 3. CIDADE (se tiver)
-  if (imovel.cidade) partes.push(imovel.cidade.toLowerCase());
-
-  // 4. DORMITÓRIOS (se tiver)
-  if (imovel.quartos && imovel.quartos > 0) {
-    partes.push(`${imovel.quartos}-dormitorios`);
-  }
-
-  // 5. ÁREA CONSTRUÍDA (se tiver)
-  if (imovel.areaConstruida && imovel.areaConstruida > 0) {
-    partes.push(`${imovel.areaConstruida}m`);
-  } else if (imovel.areaTotal && imovel.areaTotal > 0) {
-    partes.push(`${imovel.areaTotal}m`);
-  }
-
-  // Se não conseguiu montar nada, usa o título
-  if (partes.length === 0 && imovel.titulo) {
-    return imovel.titulo
-      .toLowerCase()
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .replace(/[^a-z0-9\s-]/g, "")
-      .replace(/\s+/g, "-")
-      .replace(/-+/g, "-")
-      .trim();
-  }
-
-  // Junta tudo com hífen
-  return partes
-    .join("-")
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9-]/g, "")
-    .replace(/-+/g, "-")
-    .trim();
-};
-
 const CardImovel = ({
   id,
-  slug,
+  slug, // ⭐ AGORA USA O SLUG DO BANCO (igual à vitrine!)
   codigo,
   status = "available",
   tipo = "CASA",
@@ -110,21 +61,22 @@ const CardImovel = ({
 
   const unidadeCompleta = montarUnidadeCompleta();
 
-  // 🔥 GERAR O SLUG SEO COM OS DADOS DO IMÓVEL
-  const slugSEO = gerarSlugSEO({
-    tipo,
-    bairro,
-    cidade,
-    quartos,
-    areaConstruida,
-    areaTotal,
-    titulo,
-  });
+  // ⭐ CONSTRUIR URL IGUAL À VITRINE: /imovel/[slug]/[codigo]
+  const urlImovel =
+    codigo && slug
+      ? `/imovel/${slug}/${codigo}` // Formato principal: /imovel/slug/codigo
+      : slug
+        ? `/imovel/${slug}` // Fallback 1: só slug
+        : `/imovel/${id}`; // Fallback 2: só id
 
-  // 🔥 NOVA URL: /imovel/[slug]/[codigo]
-  const urlImovel = codigo
-    ? `/imovel/${slugSEO}/${codigo}`
-    : `/imovel/${slug || id}`;
+  // Log para debug (remover em produção)
+  console.log("🏠 CardImovel - URL gerada:", {
+    slug,
+    codigo,
+    urlImovel,
+    tipo,
+    finalidade,
+  });
 
   return (
     <article className="bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 ease-in-out hover:-translate-y-2 flex flex-col relative md:min-h-[200px] md:flex-row group w-full max-w-sm mx-auto md:max-w-none">
@@ -145,8 +97,11 @@ const CardImovel = ({
         </div>
       )}
 
-      {/* IMAGEM */}
-      <div className="relative h-56 overflow-hidden bg-white md:w-2/5 md:h-auto md:flex-shrink-0">
+      {/* IMAGEM COM LINK */}
+      <Link
+        to={urlImovel}
+        className="relative h-56 overflow-hidden bg-white md:w-2/5 md:h-auto md:flex-shrink-0 block"
+      >
         <div className="absolute inset-4 rounded-xl overflow-hidden shadow-lg bg-white">
           <img
             src={imagem}
@@ -154,7 +109,7 @@ const CardImovel = ({
             className="w-full h-full object-cover transition-transform duration-500 ease-in-out group-hover:scale-105"
           />
         </div>
-      </div>
+      </Link>
 
       {/* CONTEÚDO */}
       <div className="p-6 flex-grow flex flex-col relative md:w-3/5">
@@ -173,10 +128,12 @@ const CardImovel = ({
           {preco}
         </div>
 
-        {/* TÍTULO */}
-        <h3 className="text-xl font-bold text-gray-800 leading-relaxed mb-2">
-          {titulo}
-        </h3>
+        {/* TÍTULO COM LINK */}
+        <Link to={urlImovel} className="hover:opacity-80 transition-opacity">
+          <h3 className="text-xl font-bold text-gray-800 leading-relaxed mb-2">
+            {titulo}
+          </h3>
+        </Link>
 
         {/* UNIDADE */}
         {unidadeCompleta && (
@@ -220,7 +177,7 @@ const CardImovel = ({
           <span className="leading-tight">{localizacao}</span>
         </div>
 
-        {/* FEATURES - 🔥 CORRIGIDO: "Quartos" para "Dormitórios" */}
+        {/* FEATURES */}
         <div className="flex flex-wrap gap-4 mb-6 pt-4 border-t border-dashed border-gray-200">
           {quartos > 0 && (
             <div className="flex items-center gap-2 text-sm text-gray-700">
@@ -280,7 +237,7 @@ const CardImovel = ({
             )}
           </div>
 
-          {/* 🔥 LINK NOVO FORMATO */}
+          {/* 🔥 BOTÃO VER DETALHES - USA A MESMA URL */}
           <Link
             to={urlImovel}
             className="bg-gray-800 text-white px-6 py-3 rounded-lg font-bold text-sm flex items-center gap-2 shadow-lg hover:shadow-2xl hover:-translate-y-1 transition-all duration-300"
