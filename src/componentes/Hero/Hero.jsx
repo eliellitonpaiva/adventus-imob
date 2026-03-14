@@ -1265,17 +1265,18 @@ const Hero = () => {
         </div>
       </div>
 
-      {/* Desktop - Box do formulário */}
+      {/* Desktop - Box do formulário com fundo branco translúcido */}
       <div className="hidden md:block relative z-20 mx-auto max-w-7xl px-0 sm:px-6 lg:px-8">
-        <div className="absolute top-[120px] left-[40px] w-[400px] lg:w-[450px]">
-          <div className="bg-white/90 backdrop-blur-md rounded-2xl p-6 md:p-7 border border-white/20 shadow-md">
-            {/* Pílula */}
-            <div className="mb-6 w-full">
-              <div className="max-w-[280px] mx-auto md:mx-0">
+        {/* Box desceu 12 pixels para equilibrar visualmente */}
+        <div className="absolute top-[128px] left-[40px] w-[400px] lg:w-[450px]">
+          <div className="bg-white/50 backdrop-blur-xl rounded-2xl p-6 md:p-7 border border-white/30 shadow-2xl">
+            {/* Pílula - REDUZIDA, SEM BORDA E COM SOMBRA */}
+            <div className="mb-6 w-full flex justify-start">
+              <div className="w-[200px] md:w-[220px]">
                 <div
                   onTouchStart={handleTouchStart}
                   onTouchEnd={handleTouchEnd}
-                  className="relative bg-gray-900/95 rounded-full h-12 md:h-14 w-full p-1.5 flex items-center border border-gray-300 shadow-inner overflow-hidden cursor-pointer touch-pan-x"
+                  className="relative bg-gray-900/95 rounded-full h-12 md:h-14 w-full p-1.5 flex items-center shadow-lg overflow-hidden cursor-pointer touch-pan-x"
                 >
                   <div
                     className={`absolute h-[calc(100%-12px)] w-[calc(50%-6px)] bg-[#D4A24D] rounded-full shadow-md transition-all duration-300 ease-out z-0 ${
@@ -1303,19 +1304,23 @@ const Hero = () => {
               </div>
             </div>
 
-            {/* Formulário */}
+            {/* Formulário com campos */}
             <form onSubmit={handleSearch}>
               <div className="flex flex-col space-y-3">
                 <div className="relative w-full" ref={cityRef}>
                   <div
                     onClick={() => toggleDropdown("city")}
-                    className={`flex items-center w-full h-[56px] md:h-[60px] px-4 bg-white border ${openDropdown === "city" ? "border-[#D4A24D] ring-2 ring-[#D4A24D]/20" : "border-gray-200 hover:border-gray-300"} rounded-xl cursor-pointer transition-all shadow-sm hover:shadow-md`}
+                    className={`flex items-center w-full h-[56px] md:h-[60px] px-4 bg-white/30 backdrop-blur-sm border ${
+                      openDropdown === "city"
+                        ? "border-[#D4A24D] ring-2 ring-[#D4A24D]/20"
+                        : "border-gray-300 hover:border-gray-400"
+                    } rounded-xl cursor-pointer transition-all shadow-sm hover:shadow-md`}
                   >
                     <i
-                      className={`fas fa-map-marker-alt mr-3 text-sm ${formValues.city ? "text-[#D4A24D]" : "text-gray-400"}`}
+                      className={`fas fa-map-marker-alt mr-3 text-sm ${formValues.city ? "text-[#D4A24D]" : "text-gray-600"}`}
                     />
                     <span
-                      className={`flex-1 text-sm md:text-base font-semibold truncate ${formValues.city ? "text-gray-800" : "text-gray-400"}`}
+                      className={`flex-1 text-sm md:text-base font-semibold truncate ${formValues.city ? "text-gray-800" : "text-gray-600"}`}
                     >
                       {formValues.city
                         ? cityOptions.find((opt) => opt.id === formValues.city)
@@ -1323,16 +1328,16 @@ const Hero = () => {
                         : "Cidade"}
                     </span>
                     <i
-                      className={`fas fa-chevron-down text-gray-400 text-xs transition-all duration-300 ${openDropdown === "city" ? "rotate-180 text-[#D4A24D]" : ""}`}
+                      className={`fas fa-chevron-down text-gray-600 text-xs transition-all duration-300 ${openDropdown === "city" ? "rotate-180 text-[#D4A24D]" : ""}`}
                     />
                   </div>
                   {openDropdown === "city" && (
-                    <div className="absolute top-[105%] left-0 w-full bg-white rounded-xl shadow-2xl border border-gray-100 z-[100] overflow-hidden animate-dropdown">
+                    <div className="absolute top-[105%] left-0 w-full bg-white/90 backdrop-blur-md rounded-xl shadow-2xl border border-gray-200 z-[100] overflow-hidden animate-dropdown">
                       {cityOptions.map((opt) => (
                         <div
                           key={opt.id}
                           onClick={() => handleInputChange("city", opt.id)}
-                          className={`flex items-center justify-between px-4 py-3 hover:bg-[#D4A24D]/10 cursor-pointer border-b border-gray-50 last:border-0 transition-colors ${formValues.city === opt.id ? "bg-[#D4A24D]/5" : ""}`}
+                          className={`flex items-center justify-between px-4 py-3 hover:bg-[#D4A24D]/20 cursor-pointer border-b border-gray-100 last:border-0 transition-colors ${formValues.city === opt.id ? "bg-[#D4A24D]/10" : ""}`}
                         >
                           <span
                             className={`text-sm md:text-base font-medium ${formValues.city === opt.id ? "text-[#D4A24D] font-semibold" : "text-gray-700"}`}
@@ -1351,13 +1356,17 @@ const Hero = () => {
                 <div className="relative w-full" ref={propertyRef}>
                   <div
                     onClick={() => toggleDropdown("propertyType")}
-                    className={`flex items-center w-full h-[56px] md:h-[60px] px-4 bg-white border ${openDropdown === "propertyType" ? "border-[#D4A24D] ring-2 ring-[#D4A24D]/20" : "border-gray-200 hover:border-gray-300"} rounded-xl cursor-pointer transition-all shadow-sm hover:shadow-md`}
+                    className={`flex items-center w-full h-[56px] md:h-[60px] px-4 bg-white/30 backdrop-blur-sm border ${
+                      openDropdown === "propertyType"
+                        ? "border-[#D4A24D] ring-2 ring-[#D4A24D]/20"
+                        : "border-gray-300 hover:border-gray-400"
+                    } rounded-xl cursor-pointer transition-all shadow-sm hover:shadow-md`}
                   >
                     <i
-                      className={`fas fa-building mr-3 text-sm ${formValues.propertyType ? "text-[#D4A24D]" : "text-gray-400"}`}
+                      className={`fas fa-building mr-3 text-sm ${formValues.propertyType ? "text-[#D4A24D]" : "text-gray-600"}`}
                     />
                     <span
-                      className={`flex-1 text-sm md:text-base font-semibold truncate ${formValues.propertyType ? "text-gray-800" : "text-gray-400"}`}
+                      className={`flex-1 text-sm md:text-base font-semibold truncate ${formValues.propertyType ? "text-gray-800" : "text-gray-600"}`}
                     >
                       {formValues.propertyType
                         ? propertyOptions.find(
@@ -1366,11 +1375,11 @@ const Hero = () => {
                         : "Tipo"}
                     </span>
                     <i
-                      className={`fas fa-chevron-down text-gray-400 text-xs transition-all duration-300 ${openDropdown === "propertyType" ? "rotate-180 text-[#D4A24D]" : ""}`}
+                      className={`fas fa-chevron-down text-gray-600 text-xs transition-all duration-300 ${openDropdown === "propertyType" ? "rotate-180 text-[#D4A24D]" : ""}`}
                     />
                   </div>
                   {openDropdown === "propertyType" && (
-                    <div className="absolute top-[105%] left-0 w-full bg-white rounded-xl shadow-2xl border border-gray-100 z-[100] overflow-hidden animate-dropdown">
+                    <div className="absolute top-[105%] left-0 w-full bg-white/90 backdrop-blur-md rounded-xl shadow-2xl border border-gray-200 z-[100] overflow-hidden animate-dropdown">
                       <div className="max-h-[200px] overflow-y-auto custom-scrollbar">
                         {propertyOptions.map((opt) => (
                           <div
@@ -1378,7 +1387,7 @@ const Hero = () => {
                             onClick={() =>
                               handleInputChange("propertyType", opt.id)
                             }
-                            className={`flex items-center justify-between px-4 py-3 hover:bg-[#D4A24D]/10 cursor-pointer border-b border-gray-50 last:border-0 transition-colors ${formValues.propertyType === opt.id ? "bg-[#D4A24D]/5" : ""}`}
+                            className={`flex items-center justify-between px-4 py-3 hover:bg-[#D4A24D]/20 cursor-pointer border-b border-gray-100 last:border-0 transition-colors ${formValues.propertyType === opt.id ? "bg-[#D4A24D]/10" : ""}`}
                           >
                             <span
                               className={`text-sm md:text-base font-medium ${formValues.propertyType === opt.id ? "text-[#D4A24D] font-semibold" : "text-gray-700"}`}
@@ -1398,13 +1407,17 @@ const Hero = () => {
                 <div className="relative w-full" ref={neighborhoodRef}>
                   <div
                     onClick={() => toggleDropdown("neighborhood")}
-                    className={`flex items-center w-full h-[56px] md:h-[60px] px-4 bg-white border ${openDropdown === "neighborhood" ? "border-[#D4A24D] ring-2 ring-[#D4A24D]/20" : "border-gray-200 hover:border-gray-300"} rounded-xl cursor-pointer transition-all shadow-sm hover:shadow-md ${!formValues.city ? "opacity-50 cursor-not-allowed" : ""}`}
+                    className={`flex items-center w-full h-[56px] md:h-[60px] px-4 bg-white/30 backdrop-blur-sm border ${
+                      openDropdown === "neighborhood"
+                        ? "border-[#D4A24D] ring-2 ring-[#D4A24D]/20"
+                        : "border-gray-300 hover:border-gray-400"
+                    } rounded-xl cursor-pointer transition-all shadow-sm hover:shadow-md ${!formValues.city ? "opacity-50" : ""}`}
                   >
                     <i
-                      className={`fas fa-map-pin mr-3 text-sm ${formValues.neighborhood ? "text-[#D4A24D]" : "text-gray-400"}`}
+                      className={`fas fa-map-pin mr-3 text-sm ${formValues.neighborhood ? "text-[#D4A24D]" : "text-gray-600"}`}
                     />
                     <span
-                      className={`flex-1 text-sm md:text-base font-semibold truncate ${formValues.neighborhood ? "text-gray-800" : "text-gray-400"}`}
+                      className={`flex-1 text-sm md:text-base font-semibold truncate ${formValues.neighborhood ? "text-gray-800" : "text-gray-600"}`}
                     >
                       {formValues.neighborhood
                         ? bairros.find((b) => b.id === formValues.neighborhood)
@@ -1414,11 +1427,11 @@ const Hero = () => {
                           : "Bairro"}
                     </span>
                     <i
-                      className={`fas fa-chevron-down text-gray-400 text-xs transition-all duration-300 ${openDropdown === "neighborhood" ? "rotate-180 text-[#D4A24D]" : ""}`}
+                      className={`fas fa-chevron-down text-gray-600 text-xs transition-all duration-300 ${openDropdown === "neighborhood" ? "rotate-180 text-[#D4A24D]" : ""}`}
                     />
                   </div>
                   {openDropdown === "neighborhood" && (
-                    <div className="absolute top-[105%] left-0 w-full bg-white rounded-xl shadow-2xl border border-gray-100 z-[100] overflow-hidden animate-dropdown">
+                    <div className="absolute top-[105%] left-0 w-full bg-white/90 backdrop-blur-md rounded-xl shadow-2xl border border-gray-200 z-[100] overflow-hidden animate-dropdown">
                       <div className="max-h-[200px] overflow-y-auto custom-scrollbar">
                         {bairrosFiltrados.length > 0 ? (
                           bairrosFiltrados.map((bairro) => (
@@ -1427,7 +1440,7 @@ const Hero = () => {
                               onClick={() =>
                                 handleInputChange("neighborhood", bairro.id)
                               }
-                              className={`flex items-center justify-between px-4 py-3 hover:bg-[#D4A24D]/10 cursor-pointer border-b border-gray-50 last:border-0 transition-colors ${formValues.neighborhood === bairro.id ? "bg-[#D4A24D]/5" : ""}`}
+                              className={`flex items-center justify-between px-4 py-3 hover:bg-[#D4A24D]/20 cursor-pointer border-b border-gray-100 last:border-0 transition-colors ${formValues.neighborhood === bairro.id ? "bg-[#D4A24D]/10" : ""}`}
                             >
                               <span
                                 className={`text-sm font-medium ${formValues.neighborhood === bairro.id ? "text-[#D4A24D] font-semibold" : "text-gray-700"}`}
@@ -1455,7 +1468,7 @@ const Hero = () => {
                   <button
                     type="button"
                     onClick={() => setShowMoreFilters(true)}
-                    className="flex-1 bg-white border-2 border-[#D4A24D] text-[#D4A24D] font-extrabold text-sm md:text-base rounded-xl h-[56px] md:h-[60px] flex items-center justify-center gap-2 hover:bg-[#D4A24D] hover:text-white transition-all shadow-lg active:scale-95 outline-none focus:outline-none"
+                    className="flex-1 bg-white/30 backdrop-blur-sm border-2 border-gray-300 text-gray-700 font-extrabold text-sm md:text-base rounded-xl h-[56px] md:h-[60px] flex items-center justify-center gap-2 hover:bg-white/50 hover:border-gray-400 transition-all shadow-lg active:scale-95 outline-none focus:outline-none"
                   >
                     <i className="fas fa-sliders-h" />
                     <span>MAIS FILTROS</span>
@@ -1463,7 +1476,7 @@ const Hero = () => {
 
                   <button
                     type="submit"
-                    className="flex-1 bg-[#D4A24D] text-white font-extrabold text-sm rounded-xl h-[56px] md:h-[60px] flex items-center justify-center gap-2 hover:bg-[#c0903d] transition-all shadow-lg active:scale-95 outline-none focus:outline-none"
+                    className="flex-1 bg-[#D4A24D]/80 backdrop-blur-sm text-white font-extrabold text-sm rounded-xl h-[56px] md:h-[60px] flex items-center justify-center gap-2 hover:bg-[#D4A24D] transition-all shadow-lg active:scale-95 outline-none focus:outline-none"
                   >
                     <i className="fas fa-search" />
                     <span>BUSCAR</span>
@@ -1480,7 +1493,7 @@ const Hero = () => {
         </div>
       </div>
 
-      {/* Espaço vazio para a próxima seção - AJUSTADO: subi 15 pixels */}
+      {/* Espaço vazio para a próxima seção */}
       <div className="h-[250px] md:h-[585px] lg:h-[685px]" />
 
       {showMoreFilters && (
