@@ -1024,7 +1024,8 @@ const Hero = () => {
         .animate-dropdown { animation: dropdown 0.2s ease-out; }
       `}</style>
 
-      <div className="absolute top-0 left-0 w-full h-[400px] md:h-[500px] lg:h-[580px]">
+      {/* Imagem */}
+      <div className="absolute top-0 left-0 w-full h-[400px] md:h-[700px] lg:h-[800px]">
         <img
           src="https://adventusimobiliaria.com.br/img/banner/image/20/Equipe.jpg"
           alt="Equipe Adventus Imobiliária"
@@ -1033,7 +1034,8 @@ const Hero = () => {
         <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-[#31363E]"></div>
       </div>
 
-      <div className="relative top-[220px] md:top-[280px] lg:top-[330px] z-20 mx-auto max-w-7xl px-0 sm:px-6 lg:px-8">
+      {/* Mobile - EXATAMENTE COMO ESTAVA */}
+      <div className="relative top-[220px] md:hidden z-20 mx-auto max-w-7xl px-0 sm:px-6 lg:px-8">
         <div className="mb-3 md:mb-4 text-center px-4">
           <h1 className="text-[28px] md:text-[42px] lg:text-[48px] font-extrabold text-white drop-shadow-[0_4px_15px_rgba(0,0,0,0.9)] tracking-tight leading-tight">
             Encontre seu lar ideal
@@ -1263,7 +1265,223 @@ const Hero = () => {
         </div>
       </div>
 
-      <div className="h-[200px] md:h-[315px] lg:h-[375px]" />
+      {/* Desktop - Box do formulário */}
+      <div className="hidden md:block relative z-20 mx-auto max-w-7xl px-0 sm:px-6 lg:px-8">
+        <div className="absolute top-[120px] left-[40px] w-[400px] lg:w-[450px]">
+          <div className="bg-white/90 backdrop-blur-md rounded-2xl p-6 md:p-7 border border-white/20 shadow-md">
+            {/* Pílula */}
+            <div className="mb-6 w-full">
+              <div className="max-w-[280px] mx-auto md:mx-0">
+                <div
+                  onTouchStart={handleTouchStart}
+                  onTouchEnd={handleTouchEnd}
+                  className="relative bg-gray-900/95 rounded-full h-12 md:h-14 w-full p-1.5 flex items-center border border-gray-300 shadow-inner overflow-hidden cursor-pointer touch-pan-x"
+                >
+                  <div
+                    className={`absolute h-[calc(100%-12px)] w-[calc(50%-6px)] bg-[#D4A24D] rounded-full shadow-md transition-all duration-300 ease-out z-0 ${
+                      activeTab === "comprar"
+                        ? "translate-x-0"
+                        : "translate-x-full"
+                    }`}
+                    style={{ left: "6px" }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleTabChange("comprar")}
+                    className={`relative z-10 flex-1 h-full font-bold text-sm md:text-base transition-colors duration-300 flex items-center justify-center bg-transparent border-none outline-none ${activeTab === "comprar" ? "text-white" : "text-gray-300"}`}
+                  >
+                    Comprar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleTabChange("alugar")}
+                    className={`relative z-10 flex-1 h-full font-bold text-sm md:text-base transition-colors duration-300 flex items-center justify-center bg-transparent border-none outline-none ${activeTab === "alugar" ? "text-white" : "text-gray-300"}`}
+                  >
+                    Alugar
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Formulário */}
+            <form onSubmit={handleSearch}>
+              <div className="flex flex-col space-y-3">
+                <div className="relative w-full" ref={cityRef}>
+                  <div
+                    onClick={() => toggleDropdown("city")}
+                    className={`flex items-center w-full h-[56px] md:h-[60px] px-4 bg-white border ${openDropdown === "city" ? "border-[#D4A24D] ring-2 ring-[#D4A24D]/20" : "border-gray-200 hover:border-gray-300"} rounded-xl cursor-pointer transition-all shadow-sm hover:shadow-md`}
+                  >
+                    <i
+                      className={`fas fa-map-marker-alt mr-3 text-sm ${formValues.city ? "text-[#D4A24D]" : "text-gray-400"}`}
+                    />
+                    <span
+                      className={`flex-1 text-sm md:text-base font-semibold truncate ${formValues.city ? "text-gray-800" : "text-gray-400"}`}
+                    >
+                      {formValues.city
+                        ? cityOptions.find((opt) => opt.id === formValues.city)
+                            ?.label
+                        : "Cidade"}
+                    </span>
+                    <i
+                      className={`fas fa-chevron-down text-gray-400 text-xs transition-all duration-300 ${openDropdown === "city" ? "rotate-180 text-[#D4A24D]" : ""}`}
+                    />
+                  </div>
+                  {openDropdown === "city" && (
+                    <div className="absolute top-[105%] left-0 w-full bg-white rounded-xl shadow-2xl border border-gray-100 z-[100] overflow-hidden animate-dropdown">
+                      {cityOptions.map((opt) => (
+                        <div
+                          key={opt.id}
+                          onClick={() => handleInputChange("city", opt.id)}
+                          className={`flex items-center justify-between px-4 py-3 hover:bg-[#D4A24D]/10 cursor-pointer border-b border-gray-50 last:border-0 transition-colors ${formValues.city === opt.id ? "bg-[#D4A24D]/5" : ""}`}
+                        >
+                          <span
+                            className={`text-sm md:text-base font-medium ${formValues.city === opt.id ? "text-[#D4A24D] font-semibold" : "text-gray-700"}`}
+                          >
+                            {opt.label}
+                          </span>
+                          {formValues.city === opt.id && (
+                            <i className="fas fa-check text-[#D4A24D] text-sm" />
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="relative w-full" ref={propertyRef}>
+                  <div
+                    onClick={() => toggleDropdown("propertyType")}
+                    className={`flex items-center w-full h-[56px] md:h-[60px] px-4 bg-white border ${openDropdown === "propertyType" ? "border-[#D4A24D] ring-2 ring-[#D4A24D]/20" : "border-gray-200 hover:border-gray-300"} rounded-xl cursor-pointer transition-all shadow-sm hover:shadow-md`}
+                  >
+                    <i
+                      className={`fas fa-building mr-3 text-sm ${formValues.propertyType ? "text-[#D4A24D]" : "text-gray-400"}`}
+                    />
+                    <span
+                      className={`flex-1 text-sm md:text-base font-semibold truncate ${formValues.propertyType ? "text-gray-800" : "text-gray-400"}`}
+                    >
+                      {formValues.propertyType
+                        ? propertyOptions.find(
+                            (opt) => opt.id === formValues.propertyType,
+                          )?.label
+                        : "Tipo"}
+                    </span>
+                    <i
+                      className={`fas fa-chevron-down text-gray-400 text-xs transition-all duration-300 ${openDropdown === "propertyType" ? "rotate-180 text-[#D4A24D]" : ""}`}
+                    />
+                  </div>
+                  {openDropdown === "propertyType" && (
+                    <div className="absolute top-[105%] left-0 w-full bg-white rounded-xl shadow-2xl border border-gray-100 z-[100] overflow-hidden animate-dropdown">
+                      <div className="max-h-[200px] overflow-y-auto custom-scrollbar">
+                        {propertyOptions.map((opt) => (
+                          <div
+                            key={opt.id}
+                            onClick={() =>
+                              handleInputChange("propertyType", opt.id)
+                            }
+                            className={`flex items-center justify-between px-4 py-3 hover:bg-[#D4A24D]/10 cursor-pointer border-b border-gray-50 last:border-0 transition-colors ${formValues.propertyType === opt.id ? "bg-[#D4A24D]/5" : ""}`}
+                          >
+                            <span
+                              className={`text-sm md:text-base font-medium ${formValues.propertyType === opt.id ? "text-[#D4A24D] font-semibold" : "text-gray-700"}`}
+                            >
+                              {opt.label}
+                            </span>
+                            {formValues.propertyType === opt.id && (
+                              <i className="fas fa-check text-[#D4A24D] text-sm" />
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="relative w-full" ref={neighborhoodRef}>
+                  <div
+                    onClick={() => toggleDropdown("neighborhood")}
+                    className={`flex items-center w-full h-[56px] md:h-[60px] px-4 bg-white border ${openDropdown === "neighborhood" ? "border-[#D4A24D] ring-2 ring-[#D4A24D]/20" : "border-gray-200 hover:border-gray-300"} rounded-xl cursor-pointer transition-all shadow-sm hover:shadow-md ${!formValues.city ? "opacity-50 cursor-not-allowed" : ""}`}
+                  >
+                    <i
+                      className={`fas fa-map-pin mr-3 text-sm ${formValues.neighborhood ? "text-[#D4A24D]" : "text-gray-400"}`}
+                    />
+                    <span
+                      className={`flex-1 text-sm md:text-base font-semibold truncate ${formValues.neighborhood ? "text-gray-800" : "text-gray-400"}`}
+                    >
+                      {formValues.neighborhood
+                        ? bairros.find((b) => b.id === formValues.neighborhood)
+                            ?.nome
+                        : !formValues.city
+                          ? "Selecione uma cidade"
+                          : "Bairro"}
+                    </span>
+                    <i
+                      className={`fas fa-chevron-down text-gray-400 text-xs transition-all duration-300 ${openDropdown === "neighborhood" ? "rotate-180 text-[#D4A24D]" : ""}`}
+                    />
+                  </div>
+                  {openDropdown === "neighborhood" && (
+                    <div className="absolute top-[105%] left-0 w-full bg-white rounded-xl shadow-2xl border border-gray-100 z-[100] overflow-hidden animate-dropdown">
+                      <div className="max-h-[200px] overflow-y-auto custom-scrollbar">
+                        {bairrosFiltrados.length > 0 ? (
+                          bairrosFiltrados.map((bairro) => (
+                            <div
+                              key={bairro.id}
+                              onClick={() =>
+                                handleInputChange("neighborhood", bairro.id)
+                              }
+                              className={`flex items-center justify-between px-4 py-3 hover:bg-[#D4A24D]/10 cursor-pointer border-b border-gray-50 last:border-0 transition-colors ${formValues.neighborhood === bairro.id ? "bg-[#D4A24D]/5" : ""}`}
+                            >
+                              <span
+                                className={`text-sm font-medium ${formValues.neighborhood === bairro.id ? "text-[#D4A24D] font-semibold" : "text-gray-700"}`}
+                              >
+                                {bairro.nome}
+                              </span>
+                              {formValues.neighborhood === bairro.id && (
+                                <i className="fas fa-check text-[#D4A24D] text-sm" />
+                              )}
+                            </div>
+                          ))
+                        ) : (
+                          <div className="px-4 py-3 text-gray-500 text-sm">
+                            {!formValues.city
+                              ? "Selecione uma cidade primeiro"
+                              : "Nenhum bairro cadastrado para esta cidade"}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex flex-row gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowMoreFilters(true)}
+                    className="flex-1 bg-white border-2 border-[#D4A24D] text-[#D4A24D] font-extrabold text-sm md:text-base rounded-xl h-[56px] md:h-[60px] flex items-center justify-center gap-2 hover:bg-[#D4A24D] hover:text-white transition-all shadow-lg active:scale-95 outline-none focus:outline-none"
+                  >
+                    <i className="fas fa-sliders-h" />
+                    <span>MAIS FILTROS</span>
+                  </button>
+
+                  <button
+                    type="submit"
+                    className="flex-1 bg-[#D4A24D] text-white font-extrabold text-sm rounded-xl h-[56px] md:h-[60px] flex items-center justify-center gap-2 hover:bg-[#c0903d] transition-all shadow-lg active:scale-95 outline-none focus:outline-none"
+                  >
+                    <i className="fas fa-search" />
+                    <span>BUSCAR</span>
+                  </button>
+                </div>
+              </div>
+
+              <p className="text-sm md:text-base text-gray-700 text-center mt-6 flex items-center justify-center gap-2 font-light italic">
+                <i className="fas fa-check-circle text-[#D4A24D]" />
+                Mais de 500 imóveis disponíveis
+              </p>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      {/* Espaço vazio para a próxima seção - AJUSTADO: subi 15 pixels */}
+      <div className="h-[250px] md:h-[585px] lg:h-[685px]" />
 
       {showMoreFilters && (
         <BottomSheet
