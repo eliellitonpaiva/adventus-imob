@@ -498,6 +498,7 @@ const Configuracoes = () => {
               </h3>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* WhatsApp */}
                 <div>
                   <label className="block text-sm font-medium mb-1">
                     WhatsApp
@@ -505,27 +506,31 @@ const Configuracoes = () => {
                   <input
                     type="text"
                     name="whatsapp"
-                    value={configuracoes.whatsapp}
+                    value={configuracoes.whatsapp || ""}
                     onChange={handleChange}
                     placeholder="+5511999999999"
                     className={`
-                      w-full px-3 py-2 rounded-lg border
-                      ${
-                        isDark
-                          ? "bg-gray-700 border-gray-600 text-gray-200"
-                          : "bg-white border-gray-300 text-gray-900"
-                      }
-                      ${erros.whatsapp ? "border-red-500" : ""}
-                      focus:outline-none focus:ring-2 focus:ring-amber-500/30
-                    `}
+            w-full px-3 py-2 rounded-lg border
+            ${
+              isDark
+                ? "bg-gray-700 border-gray-600 text-gray-200"
+                : "bg-white border-gray-300 text-gray-900"
+            }
+            ${erros.whatsapp ? "border-red-500" : ""}
+            focus:outline-none focus:ring-2 focus:ring-amber-500/30
+          `}
                   />
                   {erros.whatsapp && (
                     <p className="mt-1 text-xs text-red-500">
                       {erros.whatsapp}
                     </p>
                   )}
+                  <p className="text-xs text-gray-500 mt-1">
+                    Formato: +5511999999999
+                  </p>
                 </div>
 
+                {/* Instagram */}
                 <div>
                   <label className="block text-sm font-medium mb-1">
                     Instagram
@@ -533,21 +538,22 @@ const Configuracoes = () => {
                   <input
                     type="url"
                     name="instagram"
-                    value={configuracoes.instagram}
+                    value={configuracoes.instagram || ""}
                     onChange={handleChange}
                     placeholder="https://instagram.com/seuperfil"
                     className={`
-                      w-full px-3 py-2 rounded-lg border
-                      ${
-                        isDark
-                          ? "bg-gray-700 border-gray-600 text-gray-200"
-                          : "bg-white border-gray-300 text-gray-900"
-                      }
-                      focus:outline-none focus:ring-2 focus:ring-amber-500/30
-                    `}
+            w-full px-3 py-2 rounded-lg border
+            ${
+              isDark
+                ? "bg-gray-700 border-gray-600 text-gray-200"
+                : "bg-white border-gray-300 text-gray-900"
+            }
+            focus:outline-none focus:ring-2 focus:ring-amber-500/30
+          `}
                   />
                 </div>
 
+                {/* Facebook */}
                 <div>
                   <label className="block text-sm font-medium mb-1">
                     Facebook
@@ -555,21 +561,22 @@ const Configuracoes = () => {
                   <input
                     type="url"
                     name="facebook"
-                    value={configuracoes.facebook}
+                    value={configuracoes.facebook || ""}
                     onChange={handleChange}
                     placeholder="https://facebook.com/seuperfil"
                     className={`
-                      w-full px-3 py-2 rounded-lg border
-                      ${
-                        isDark
-                          ? "bg-gray-700 border-gray-600 text-gray-200"
-                          : "bg-white border-gray-300 text-gray-900"
-                      }
-                      focus:outline-none focus:ring-2 focus:ring-amber-500/30
-                    `}
+            w-full px-3 py-2 rounded-lg border
+            ${
+              isDark
+                ? "bg-gray-700 border-gray-600 text-gray-200"
+                : "bg-white border-gray-300 text-gray-900"
+            }
+            focus:outline-none focus:ring-2 focus:ring-amber-500/30
+          `}
                   />
                 </div>
 
+                {/* E-mail de Contato */}
                 <div>
                   <label className="block text-sm font-medium mb-1">
                     E-mail de Contato
@@ -581,15 +588,15 @@ const Configuracoes = () => {
                     onChange={handleChange}
                     placeholder="contato@imobiliaria.com"
                     className={`
-                      w-full px-3 py-2 rounded-lg border
-                      ${
-                        isDark
-                          ? "bg-gray-700 border-gray-600 text-gray-200"
-                          : "bg-white border-gray-300 text-gray-900"
-                      }
-                      ${erros.email_contato ? "border-red-500" : ""}
-                      focus:outline-none focus:ring-2 focus:ring-amber-500/30
-                    `}
+            w-full px-3 py-2 rounded-lg border
+            ${
+              isDark
+                ? "bg-gray-700 border-gray-600 text-gray-200"
+                : "bg-white border-gray-300 text-gray-900"
+            }
+            ${erros.email_contato ? "border-red-500" : ""}
+            focus:outline-none focus:ring-2 focus:ring-amber-500/30
+          `}
                   />
                   {erros.email_contato && (
                     <p className="mt-1 text-xs text-red-500">
@@ -597,10 +604,80 @@ const Configuracoes = () => {
                     </p>
                   )}
                 </div>
+
+                {/* ========== NOVOS CAMPOS ========== */}
+
+                {/* Telefone Fixo */}
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    Telefone Fixo
+                  </label>
+                  <input
+                    type="text"
+                    name="telefone"
+                    value={configuracoes.telefone || ""}
+                    onChange={handleChange}
+                    placeholder="(99) 98808-7867"
+                    className={`
+            w-full px-3 py-2 rounded-lg border
+            ${
+              isDark
+                ? "bg-gray-700 border-gray-600 text-gray-200"
+                : "bg-white border-gray-300 text-gray-900"
+            }
+            focus:outline-none focus:ring-2 focus:ring-amber-500/30
+          `}
+                  />
+                </div>
+
+                {/* CRECI */}
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    CRECI
+                  </label>
+                  <input
+                    type="text"
+                    name="creci"
+                    value={configuracoes.creci || ""}
+                    onChange={handleChange}
+                    placeholder="MA 3716"
+                    className={`
+            w-full px-3 py-2 rounded-lg border
+            ${
+              isDark
+                ? "bg-gray-700 border-gray-600 text-gray-200"
+                : "bg-white border-gray-300 text-gray-900"
+            }
+            focus:outline-none focus:ring-2 focus:ring-amber-500/30
+          `}
+                  />
+                </div>
+
+                {/* Endereço - ocupa 2 colunas */}
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium mb-1">
+                    Endereço Completo
+                  </label>
+                  <input
+                    type="text"
+                    name="endereco"
+                    value={configuracoes.endereco || ""}
+                    onChange={handleChange}
+                    placeholder="Rua Fortaleza 1382-B, Centro, Açailândia - MA"
+                    className={`
+            w-full px-3 py-2 rounded-lg border
+            ${
+              isDark
+                ? "bg-gray-700 border-gray-600 text-gray-200"
+                : "bg-white border-gray-300 text-gray-900"
+            }
+            focus:outline-none focus:ring-2 focus:ring-amber-500/30
+          `}
+                  />
+                </div>
               </div>
             </div>
           )}
-
           {/* ========== ABA HERO (IMAGENS ROTATIVAS) ========== */}
           {activeTab === "hero" && (
             <div className="space-y-6">
