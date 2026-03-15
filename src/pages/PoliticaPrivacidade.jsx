@@ -1,8 +1,30 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import Cabecalho from "../componentes/Cabecalho/Cabecalho.jsx";
 import Rodape from "../componentes/Rodape/Rodape.jsx";
+import {
+  Building2,
+  Database,
+  Target,
+  Shield,
+  Lock,
+  Mail,
+  Phone,
+  MapPin,
+  Clock,
+  ChevronDown,
+  Check,
+  ArrowRight,
+  Calendar,
+  Home,
+  Users,
+  Cookie,
+  MessageSquare,
+  Gavel,
+} from "lucide-react";
 
 const PoliticaPrivacidade = () => {
+  const [openSection, setOpenSection] = useState(null);
+
   useEffect(() => {
     window.scrollTo({
       top: 0,
@@ -10,344 +32,569 @@ const PoliticaPrivacidade = () => {
     });
   }, []);
 
+  const toggleSection = (section) => {
+    setOpenSection(openSection === section ? null : section);
+  };
+
+  // Cor padrão da Adventus
+  const adventusYellow = "#D4A24D";
+
+  // Data atual
+  const dataAtual = "14 de março de 2026";
+
   return (
     <>
       <Cabecalho />
 
-      {/* CONTEÚDO DA POLÍTICA DE PRIVACIDADE */}
-      <section className="bg-white py-16 md:py-20 px-4">
+      {/* HERO SECTION */}
+      <section className="relative bg-gradient-to-br from-gray-900 via-gray-800 to-[#D4A24D]/40 py-20 md:py-24 px-4">
+        <div className="absolute inset-0">
+          <img
+            src="https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80"
+            alt="Arquitetura contemporânea de luxo"
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-gray-900/90 via-gray-900/85 to-[#D4A24D]/30"></div>
+        </div>
+
+        <div className="relative z-10 max-w-4xl mx-auto text-center px-4">
+          <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-6 tracking-wide">
+            Política de Privacidade
+          </h1>
+
+          <p className="text-base md:text-lg text-gray-300 max-w-2xl mx-auto leading-relaxed">
+            Na Adventus Imobiliária, sua privacidade é prioridade. Saiba como
+            protegemos e utilizamos suas informações com total transparência.
+          </p>
+
+          {/* BOX DE ATUALIZAÇÃO */}
+          <div className="flex justify-center mt-16">
+            <div className="inline-flex items-center gap-4 bg-white/10 backdrop-blur-md px-6 py-3 rounded-2xl border border-white/20">
+              <div className="w-10 h-10 bg-[#D4A24D]/20 rounded-xl flex items-center justify-center">
+                <Calendar
+                  className="w-5 h-5"
+                  style={{ color: adventusYellow }}
+                />
+              </div>
+              <div className="text-left">
+                <span
+                  className="text-sm font-medium block"
+                  style={{ color: adventusYellow }}
+                >
+                  Última atualização
+                </span>
+                <span className="text-white font-semibold text-base md:text-lg">
+                  {dataAtual}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* CONTEÚDO PRINCIPAL */}
+      <section className="bg-white py-20 px-4">
         <div className="max-w-7xl mx-auto">
-          {/* Cabeçalho da página */}
-          <div className="text-center mb-12 md:mb-16 mt-10 md:mt-16">
-            <h1 className="text-3xl md:text-4xl lg:text-5xl font-extrabold text-gray-900 mb-4">
-              Política de Privacidade
-            </h1>
-            <p className="text-base md:text-lg text-gray-600 max-w-2xl mx-auto leading-relaxed mt-6">
-              Proteção e transparência no tratamento dos seus dados pessoais
-            </p>
+          {/* GRID DE CARDS */}
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mb-20">
+            {/* Card 1 - Quem Somos */}
+            <div className="group bg-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 border border-gray-100 overflow-hidden">
+              <div className="h-2 bg-gradient-to-r from-[#D4A24D] to-[#D4A24D]/80"></div>
+              <div className="p-8">
+                <div className="w-16 h-16 bg-gradient-to-br from-amber-50 to-amber-100 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                  <Building2
+                    className="w-8 h-8"
+                    style={{ color: adventusYellow }}
+                  />
+                </div>
+                <h3 className="text-xl md:text-2xl font-bold text-gray-900 mb-3">
+                  Quem Somos
+                </h3>
+                <div className="space-y-2 text-gray-600">
+                  <p className="flex items-center gap-2">
+                    <span
+                      className="w-1.5 h-1.5 rounded-full"
+                      style={{ backgroundColor: adventusYellow }}
+                    ></span>
+                    Adventus Imobiliária
+                  </p>
+                  <p className="flex items-center gap-2">
+                    <span
+                      className="w-1.5 h-1.5 rounded-full"
+                      style={{ backgroundColor: adventusYellow }}
+                    ></span>
+                    CRECI MA 3716
+                  </p>
+                  <p className="flex items-start gap-2">
+                    <span
+                      className="w-1.5 h-1.5 rounded-full mt-2"
+                      style={{ backgroundColor: adventusYellow }}
+                    ></span>
+                    Rua Fortaleza 1382-B, Centro, Açailândia - MA
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Card 2 - Dados que Coletamos */}
+            <div className="group bg-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 border border-gray-100 overflow-hidden">
+              <div className="h-2 bg-gradient-to-r from-[#D4A24D] to-[#D4A24D]/80"></div>
+              <div className="p-8">
+                <div className="w-16 h-16 bg-gradient-to-br from-amber-50 to-amber-100 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                  <Database
+                    className="w-8 h-8"
+                    style={{ color: adventusYellow }}
+                  />
+                </div>
+                <h3 className="text-xl md:text-2xl font-bold text-gray-900 mb-3">
+                  Dados Coletados
+                </h3>
+                <p className="text-gray-500 text-sm mb-4">
+                  Apenas o necessário para atendê-lo
+                </p>
+                <ul className="space-y-3">
+                  <li className="flex items-center gap-3 text-gray-700">
+                    <Check
+                      className="w-5 h-5"
+                      style={{ color: adventusYellow }}
+                    />
+                    <span>Nome completo</span>
+                  </li>
+                  <li className="flex items-center gap-3 text-gray-700">
+                    <Check
+                      className="w-5 h-5"
+                      style={{ color: adventusYellow }}
+                    />
+                    <span>E-mail</span>
+                  </li>
+                  <li className="flex items-center gap-3 text-gray-700">
+                    <Check
+                      className="w-5 h-5"
+                      style={{ color: adventusYellow }}
+                    />
+                    <span>WhatsApp</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            {/* Card 3 - Como Usamos */}
+            <div className="group bg-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 border border-gray-100 overflow-hidden">
+              <div className="h-2 bg-gradient-to-r from-[#D4A24D] to-[#D4A24D]/80"></div>
+              <div className="p-8">
+                <div className="w-16 h-16 bg-gradient-to-br from-amber-50 to-amber-100 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                  <Target
+                    className="w-8 h-8"
+                    style={{ color: adventusYellow }}
+                  />
+                </div>
+                <h3 className="text-xl md:text-2xl font-bold text-gray-900 mb-3">
+                  Como Usamos
+                </h3>
+                <ul className="space-y-3">
+                  <li className="flex items-center gap-3 text-gray-700">
+                    <ArrowRight
+                      className="w-4 h-4"
+                      style={{ color: adventusYellow }}
+                    />
+                    <span>Apresentar imóveis</span>
+                  </li>
+                  <li className="flex items-center gap-3 text-gray-700">
+                    <ArrowRight
+                      className="w-4 h-4"
+                      style={{ color: adventusYellow }}
+                    />
+                    <span>Enviar propostas</span>
+                  </li>
+                  <li className="flex items-center gap-3 text-gray-700">
+                    <ArrowRight
+                      className="w-4 h-4"
+                      style={{ color: adventusYellow }}
+                    />
+                    <span>Agendar visitas</span>
+                  </li>
+                  <li className="flex items-center gap-3 text-gray-700">
+                    <ArrowRight
+                      className="w-4 h-4"
+                      style={{ color: adventusYellow }}
+                    />
+                    <span>Comunicações</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
           </div>
 
-          {/* Conteúdo principal */}
-          <div className="max-w-4xl mx-auto">
-            {/* Seção 1 - Introdução */}
-            <section className="mb-12">
-              <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-6 pb-3 border-b-2 border-gray-200">
-                1. Introdução
-              </h2>
-              <p className="text-gray-700 leading-relaxed mb-4">
-                A Adventus Imobiliária valoriza a privacidade e a segurança dos
-                dados dos nossos clientes, corretores parceiros e visitantes.
-                Esta Política de Privacidade explica como coletamos, usamos,
-                compartilhamos e protegemos suas informações pessoais no
-                contexto dos serviços imobiliários que prestamos.
-              </p>
-              <p className="text-gray-700 leading-relaxed">
-                Ao utilizar nossos serviços, sites, aplicativos ou interagir
-                conosco de qualquer forma, você concorda com os termos desta
-                Política de Privacidade.
-              </p>
-            </section>
+          {/* SEÇÃO DE COMPROMISSO - VERSÃO SIMPLIFICADA */}
+          <div className="relative bg-gradient-to-br from-[#D4A24D] to-[#D4A24D]/70 rounded-3xl overflow-hidden mb-20">
+            <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1600585154340-be6161a56a0c?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80')] bg-cover bg-center opacity-5"></div>
+            <div className="relative z-10 p-10 md:p-14">
+              <div className="grid md:grid-cols-3 gap-10 items-center">
+                {/* COLUNA DO TEXTO - OCUPA 2/3 */}
+                <div className="md:col-span-2">
+                  <h2 className="text-2xl md:text-3xl font-bold text-white mb-4">
+                    Seus dados estão{" "}
+                    <span className="text-white/90">seguros</span> conosco
+                  </h2>
 
-            {/* Seção 2 - Dados que Coletamos */}
-            <section className="mb-12">
-              <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-6 pb-3 border-b-2 border-gray-200">
-                2. Dados que Coletamos
-              </h2>
+                  <p className="text-white/90 text-base md:text-lg leading-relaxed max-w-2xl">
+                    Nunca vendemos seus dados para terceiros. Suas informações
+                    são utilizadas exclusivamente para oferecer o melhor
+                    atendimento imobiliário, seguindo rigorosamente a Lei Geral
+                    de Proteção de Dados (LGPD).
+                  </p>
+                </div>
 
-              <h3 className="text-lg md:text-xl font-semibold text-gray-800 mt-8 mb-4">
-                2.1. Informações que você nos fornece
-              </h3>
-              <p className="text-gray-700 leading-relaxed mb-4">
-                Quando você entra em contato conosco através do site, coletamos
-                apenas as informações necessárias para atendê-lo:
-              </p>
-              <ul className="list-disc pl-5 mb-6 space-y-2">
-                <li className="text-gray-700 leading-relaxed">
-                  <span className="font-semibold text-gray-900">
-                    Nome completo:
-                  </span>{" "}
-                  para identificação e atendimento personalizado
-                </li>
-                <li className="text-gray-700 leading-relaxed">
-                  <span className="font-semibold text-gray-900">E-mail:</span>{" "}
-                  para envio de informações sobre imóveis e comunicações
-                </li>
-                <li className="text-gray-700 leading-relaxed">
-                  <span className="font-semibold text-gray-900">WhatsApp:</span>{" "}
-                  para contato rápido e envio de propostas
-                </li>
-              </ul>
+                {/* COLUNA DO CADEADO - OCUPA 1/3 */}
+                <div className="flex justify-center md:justify-end">
+                  <div className="w-40 h-40 bg-white/10 backdrop-blur-md rounded-3xl flex items-center justify-center border border-white/20">
+                    <Lock className="w-20 h-20 text-white" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
 
-              <h3 className="text-lg md:text-xl font-semibold text-gray-800 mt-8 mb-4">
-                2.2. Informações Coletadas Automaticamente
-              </h3>
-              <p className="text-gray-700 leading-relaxed mb-4">
-                Quando você visita nosso site, podemos coletar:
-              </p>
-              <ul className="list-disc pl-5 mb-4 space-y-2">
-                <li className="text-gray-700 leading-relaxed">
-                  Endereço IP e informações do dispositivo
-                </li>
-                <li className="text-gray-700 leading-relaxed">
-                  Dados de navegação e interação com nosso site
-                </li>
-                <li className="text-gray-700 leading-relaxed">
-                  Cookies e tecnologias similares
-                </li>
-                <li className="text-gray-700 leading-relaxed">
-                  Imóveis visualizados e favoritados
-                </li>
-              </ul>
-            </section>
+          {/* SEÇÕES DETALHADAS EM ACCORDION */}
+          <div className="space-y-4">
+            {/* Introdução */}
+            <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden hover:shadow-lg transition-shadow">
+              <details
+                className="group"
+                open={openSection === "intro"}
+                onToggle={(e) => {
+                  if (e.target.open) {
+                    setOpenSection("intro");
+                  } else {
+                    setOpenSection(null);
+                  }
+                }}
+              >
+                <summary className="flex items-center justify-between p-6 cursor-pointer list-none">
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center">
+                      <Home
+                        className="w-5 h-5"
+                        style={{ color: adventusYellow }}
+                      />
+                    </div>
+                    <h3 className="text-lg md:text-xl font-bold text-gray-900">
+                      Introdução
+                    </h3>
+                  </div>
+                  <ChevronDown
+                    className="w-5 h-5 group-open:rotate-180 transition-transform"
+                    style={{ color: adventusYellow }}
+                  />
+                </summary>
+                <div className="px-6 pb-6 pl-20">
+                  <p className="text-gray-600 leading-relaxed">
+                    A Adventus Imobiliária valoriza a privacidade e a segurança
+                    dos dados dos nossos clientes, corretores parceiros e
+                    visitantes. Esta Política de Privacidade explica como
+                    coletamos, usamos, compartilhamos e protegemos suas
+                    informações pessoais no contexto dos serviços imobiliários
+                    que prestamos.
+                  </p>
+                  <p className="text-gray-600 leading-relaxed mt-4">
+                    Ao utilizar nossos serviços, sites, aplicativos ou interagir
+                    conosco de qualquer forma, você concorda com os termos desta
+                    Política de Privacidade.
+                  </p>
+                </div>
+              </details>
+            </div>
 
-            {/* Seção 3 - Como Usamos suas Informações */}
-            <section className="mb-12">
-              <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-6 pb-3 border-b-2 border-gray-200">
-                3. Como Usamos suas Informações
-              </h2>
-              <p className="text-gray-700 leading-relaxed mb-4">
-                Utilizamos seus dados pessoais para:
-              </p>
-              <ul className="list-disc pl-5 mb-4 space-y-2">
-                <li className="text-gray-700 leading-relaxed">
-                  Entrar em contato para apresentar imóveis de seu interesse
-                </li>
-                <li className="text-gray-700 leading-relaxed">
-                  Enviar propostas comerciais e oportunidades de imóveis
-                </li>
-                <li className="text-gray-700 leading-relaxed">
-                  Agendar visitas e avaliações de imóveis
-                </li>
-                <li className="text-gray-700 leading-relaxed">
-                  Enviar comunicados importantes sobre seus imóveis
-                </li>
-                <li className="text-gray-700 leading-relaxed">
-                  Melhorar nossos serviços e experiência do usuário
-                </li>
-                <li className="text-gray-700 leading-relaxed">
-                  Cumprir obrigações legais e regulatórias
-                </li>
-              </ul>
-            </section>
+            {/* Segurança */}
+            <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden hover:shadow-lg transition-shadow">
+              <details
+                className="group"
+                open={openSection === "seguranca"}
+                onToggle={(e) => {
+                  if (e.target.open) {
+                    setOpenSection("seguranca");
+                  } else {
+                    setOpenSection(null);
+                  }
+                }}
+              >
+                <summary className="flex items-center justify-between p-6 cursor-pointer list-none">
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center">
+                      <Shield
+                        className="w-5 h-5"
+                        style={{ color: adventusYellow }}
+                      />
+                    </div>
+                    <h3 className="text-lg md:text-xl font-bold text-gray-900">
+                      Segurança das Informações
+                    </h3>
+                  </div>
+                  <ChevronDown
+                    className="w-5 h-5 group-open:rotate-180 transition-transform"
+                    style={{ color: adventusYellow }}
+                  />
+                </summary>
+                <div className="px-6 pb-6 pl-20">
+                  <p className="text-gray-600 mb-4">
+                    Implementamos medidas técnicas e organizacionais:
+                  </p>
+                  <div className="grid sm:grid-cols-2 gap-3">
+                    <div className="flex items-center gap-2">
+                      <Check
+                        className="w-4 h-4"
+                        style={{ color: adventusYellow }}
+                      />
+                      <span className="text-gray-600">Criptografia</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Check
+                        className="w-4 h-4"
+                        style={{ color: adventusYellow }}
+                      />
+                      <span className="text-gray-600">Controle de acesso</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Check
+                        className="w-4 h-4"
+                        style={{ color: adventusYellow }}
+                      />
+                      <span className="text-gray-600">
+                        Monitoramento contínuo
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Check
+                        className="w-4 h-4"
+                        style={{ color: adventusYellow }}
+                      />
+                      <span className="text-gray-600">Backups regulares</span>
+                    </div>
+                  </div>
+                </div>
+              </details>
+            </div>
 
-            {/* Seção 4 - Compartilhamento de Dados */}
-            <section className="mb-12">
-              <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-6 pb-3 border-b-2 border-gray-200">
-                4. Compartilhamento de Dados
-              </h2>
-              <p className="text-gray-700 leading-relaxed mb-4">
-                Seus dados podem ser compartilhados apenas com:
-              </p>
-              <ul className="list-disc pl-5 mb-4 space-y-2">
-                <li className="text-gray-700 leading-relaxed">
-                  <span className="font-semibold text-gray-900">
-                    Corretores parceiros:
-                  </span>{" "}
-                  para apresentação de imóveis e negociações
-                </li>
-                <li className="text-gray-700 leading-relaxed">
-                  <span className="font-semibold text-gray-900">
-                    Prestadores de serviços:
-                  </span>{" "}
-                  empresas que nos auxiliam em nossas operações (apenas quando
-                  necessário)
-                </li>
-                <li className="text-gray-700 leading-relaxed">
-                  <span className="font-semibold text-gray-900">
-                    Autoridades competentes:
-                  </span>{" "}
-                  quando exigido por lei
-                </li>
-              </ul>
-              <p className="text-gray-700 leading-relaxed">
-                <span className="font-semibold text-gray-900">
-                  Nunca vendemos seus dados pessoais para terceiros.
-                </span>
-              </p>
-            </section>
+            {/* Seus Direitos */}
+            <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden hover:shadow-lg transition-shadow">
+              <details
+                className="group"
+                open={openSection === "direitos"}
+                onToggle={(e) => {
+                  if (e.target.open) {
+                    setOpenSection("direitos");
+                  } else {
+                    setOpenSection(null);
+                  }
+                }}
+              >
+                <summary className="flex items-center justify-between p-6 cursor-pointer list-none">
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center">
+                      <Users
+                        className="w-5 h-5"
+                        style={{ color: adventusYellow }}
+                      />
+                    </div>
+                    <h3 className="text-lg md:text-xl font-bold text-gray-900">
+                      Seus Direitos (LGPD)
+                    </h3>
+                  </div>
+                  <ChevronDown
+                    className="w-5 h-5 group-open:rotate-180 transition-transform"
+                    style={{ color: adventusYellow }}
+                  />
+                </summary>
+                <div className="px-6 pb-6 pl-20">
+                  <div className="grid sm:grid-cols-2 gap-3">
+                    <div className="flex items-center gap-2">
+                      <Check
+                        className="w-4 h-4"
+                        style={{ color: adventusYellow }}
+                      />
+                      <span className="text-gray-600">
+                        Confirmar existência de tratamento
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Check
+                        className="w-4 h-4"
+                        style={{ color: adventusYellow }}
+                      />
+                      <span className="text-gray-600">Acessar seus dados</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Check
+                        className="w-4 h-4"
+                        style={{ color: adventusYellow }}
+                      />
+                      <span className="text-gray-600">
+                        Corrigir dados incompletos
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Check
+                        className="w-4 h-4"
+                        style={{ color: adventusYellow }}
+                      />
+                      <span className="text-gray-600">
+                        Eliminar dados desnecessários
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Check
+                        className="w-4 h-4"
+                        style={{ color: adventusYellow }}
+                      />
+                      <span className="text-gray-600">
+                        Revogar consentimento
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Check
+                        className="w-4 h-4"
+                        style={{ color: adventusYellow }}
+                      />
+                      <span className="text-gray-600">Portabilidade</span>
+                    </div>
+                  </div>
+                </div>
+              </details>
+            </div>
 
-            {/* Seção 5 - Segurança das Informações */}
-            <section className="mb-12">
-              <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-6 pb-3 border-b-2 border-gray-200">
-                5. Segurança das Informações
-              </h2>
-              <p className="text-gray-700 leading-relaxed mb-4">
-                Implementamos medidas técnicas e organizacionais para proteger
-                seus dados contra acesso não autorizado, alteração, divulgação
-                ou destruição. Entre as medidas de segurança adotadas estão:
-              </p>
-              <ul className="list-disc pl-5 mb-4 space-y-2">
-                <li className="text-gray-700 leading-relaxed">
-                  Criptografia de dados sensíveis
-                </li>
-                <li className="text-gray-700 leading-relaxed">
-                  Controle de acesso baseado em função
-                </li>
-                <li className="text-gray-700 leading-relaxed">
-                  Monitoramento contínuo de segurança
-                </li>
-                <li className="text-gray-700 leading-relaxed">
-                  Backups regulares
-                </li>
-                <li className="text-gray-700 leading-relaxed">
-                  Treinamento de equipe em proteção de dados
-                </li>
-              </ul>
-            </section>
+            {/* Cookies */}
+            <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden hover:shadow-lg transition-shadow">
+              <details
+                className="group"
+                open={openSection === "cookies"}
+                onToggle={(e) => {
+                  if (e.target.open) {
+                    setOpenSection("cookies");
+                  } else {
+                    setOpenSection(null);
+                  }
+                }}
+              >
+                <summary className="flex items-center justify-between p-6 cursor-pointer list-none">
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center">
+                      <Cookie
+                        className="w-5 h-5"
+                        style={{ color: adventusYellow }}
+                      />
+                    </div>
+                    <h3 className="text-lg md:text-xl font-bold text-gray-900">
+                      Cookies
+                    </h3>
+                  </div>
+                  <ChevronDown
+                    className="w-5 h-5 group-open:rotate-180 transition-transform"
+                    style={{ color: adventusYellow }}
+                  />
+                </summary>
+                <div className="px-6 pb-6 pl-20">
+                  <p className="text-gray-600">
+                    Utilizamos cookies para melhorar sua experiência. Você pode
+                    controlar nas configurações do seu navegador.
+                  </p>
+                </div>
+              </details>
+            </div>
+          </div>
 
-            {/* Seção 6 - Seus Direitos */}
-            <section className="mb-12">
-              <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-6 pb-3 border-b-2 border-gray-200">
-                6. Seus Direitos
-              </h2>
-              <p className="text-gray-700 leading-relaxed mb-4">
-                De acordo com a Lei Geral de Proteção de Dados (LGPD), você tem
-                direito a:
-              </p>
-              <ul className="list-disc pl-5 mb-4 space-y-2">
-                <li className="text-gray-700 leading-relaxed">
-                  Confirmar a existência de tratamento dos seus dados
-                </li>
-                <li className="text-gray-700 leading-relaxed">
-                  Acessar seus dados pessoais
-                </li>
-                <li className="text-gray-700 leading-relaxed">
-                  Corrigir dados incompletos, inexatos ou desatualizados
-                </li>
-                <li className="text-gray-700 leading-relaxed">
-                  Anonimizar, bloquear ou eliminar dados desnecessários
-                </li>
-                <li className="text-gray-700 leading-relaxed">
-                  Eliminar dados tratados com seu consentimento
-                </li>
-                <li className="text-gray-700 leading-relaxed">
-                  Obter informações sobre compartilhamento com terceiros
-                </li>
-                <li className="text-gray-700 leading-relaxed">
-                  Revogar o consentimento a qualquer momento
-                </li>
-              </ul>
-            </section>
-
-            {/* Seção 7 - Retenção de Dados */}
-            <section className="mb-12">
-              <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-6 pb-3 border-b-2 border-gray-200">
-                7. Retenção de Dados
-              </h2>
-              <p className="text-gray-700 leading-relaxed mb-4">
-                Mantemos seus dados pessoais apenas pelo tempo necessário para
-                cumprir as finalidades para as quais foram coletados, incluindo
-                para fins de cumprimento de obrigações legais, regulatórias,
-                fiscais, contábeis ou de relatórios.
-              </p>
-              <p className="text-gray-700 leading-relaxed mb-4">
-                Os prazos de retenção são definidos com base nos seguintes
-                critérios:
-              </p>
-              <ul className="list-disc pl-5 mb-4 space-y-2">
-                <li className="text-gray-700 leading-relaxed">
-                  Exigências legais e regulatórias
-                </li>
-                <li className="text-gray-700 leading-relaxed">
-                  Necessidade operacional para prestação de serviços
-                </li>
-                <li className="text-gray-700 leading-relaxed">
-                  Consentimento do titular
-                </li>
-              </ul>
-            </section>
-
-            {/* Seção 8 - Cookies e Tecnologias Similares */}
-            <section className="mb-12">
-              <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-6 pb-3 border-b-2 border-gray-200">
-                8. Cookies e Tecnologias Similares
-              </h2>
-              <p className="text-gray-700 leading-relaxed mb-4">
-                Utilizamos cookies e tecnologias similares para melhorar sua
-                experiência em nosso site, personalizar conteúdo e anúncios,
-                fornecer recursos de mídia social e analisar nosso tráfego.
-              </p>
-              <p className="text-gray-700 leading-relaxed">
-                Você pode controlar o uso de cookies através das configurações
-                do seu navegador. No entanto, a desativação de cookies pode
-                afetar a funcionalidade de nosso site.
-              </p>
-            </section>
-
-            {/* Seção 9 - Alterações nesta Política */}
-            <section className="mb-12">
-              <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-6 pb-3 border-b-2 border-gray-200">
-                9. Alterações nesta Política
-              </h2>
-              <p className="text-gray-700 leading-relaxed mb-4">
-                Podemos atualizar esta Política de Privacidade periodicamente
-                para refletir mudanças em nossas práticas ou por outros motivos
-                operacionais, legais ou regulatórios.
-              </p>
-              <p className="text-gray-700 leading-relaxed">
-                Notificaremos você sobre mudanças materiais através de avisos em
-                nosso site ou por outros meios de comunicação. A data da última
-                atualização será indicada no início desta política.
-              </p>
-            </section>
-
-            {/* Seção 10 - Contato */}
-            <section className="mb-12">
-              <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-6 pb-3 border-b-2 border-gray-200">
-                10. Contato
-              </h2>
-              <p className="text-gray-700 leading-relaxed mb-4">
-                Se você tiver alguma dúvida, preocupação ou solicitação
-                relacionada a esta Política de Privacidade ou ao tratamento de
-                seus dados pessoais, entre em contato conosco:
-              </p>
-
-              <div className="bg-gray-50 p-6 md:p-8 rounded-xl mt-4 border-l-4 border-amber-500">
-                <h3 className="text-amber-600 font-bold text-xl mb-4">
+          {/* SEÇÃO DE CONTATO */}
+          <div className="mt-20 bg-gradient-to-br from-gray-50 to-white rounded-3xl border border-gray-200 p-10 shadow-xl">
+            <div className="grid md:grid-cols-2 gap-10">
+              <div>
+                <h3 className="text-xl md:text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+                  <MessageSquare
+                    className="w-6 h-6"
+                    style={{ color: adventusYellow }}
+                  />
                   Encarregado de Proteção de Dados (DPO)
                 </h3>
-                <p className="text-gray-700 mb-2">
-                  <span className="font-semibold text-gray-900">
-                    Adventus Imobiliária
-                  </span>
-                </p>
-                <p className="text-gray-700 mb-2">
-                  E-mail: adventusimobiliaria@gmail.com
-                </p>
-                <p className="text-gray-700 mb-2">Telefone: (99) 98808-7867</p>
-                <p className="text-gray-700 mb-2">
-                  Endereço: Rua Fortaleza 1382-B, Centro, Açailândia - MA
-                </p>
-                <p className="text-gray-700">
-                  Horário de atendimento: Segunda a Sexta, das 8h às 18h
+                <div className="space-y-4">
+                  <div className="flex items-center gap-4 p-4 bg-white rounded-xl shadow-sm">
+                    <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center">
+                      <Mail
+                        className="w-5 h-5"
+                        style={{ color: adventusYellow }}
+                      />
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">E-mail</p>
+                      <p className="text-gray-900 font-medium">
+                        adventusimobiliaria@gmail.com
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-4 p-4 bg-white rounded-xl shadow-sm">
+                    <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center">
+                      <Phone
+                        className="w-5 h-5"
+                        style={{ color: adventusYellow }}
+                      />
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Telefone</p>
+                      <p className="text-gray-900 font-medium">
+                        (99) 98808-7867
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-4 p-4 bg-white rounded-xl shadow-sm">
+                    <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center">
+                      <MapPin
+                        className="w-5 h-5"
+                        style={{ color: adventusYellow }}
+                      />
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Endereço</p>
+                      <p className="text-gray-900 font-medium">
+                        Rua Fortaleza 1382-B, Centro, Açailândia - MA
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-4 p-4 bg-white rounded-xl shadow-sm">
+                    <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center">
+                      <Clock
+                        className="w-5 h-5"
+                        style={{ color: adventusYellow }}
+                      />
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Horário</p>
+                      <p className="text-gray-900 font-medium">
+                        Segunda a Sexta, 8h às 18h
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* COLUNA DO ESCUDO - DESLOCADA 20px PARA DIREITA */}
+              <div className="flex flex-col items-center justify-center md:items-end md:pr-20">
+                <div className="w-48 h-48 bg-gradient-to-br from-[#D4A24D] to-[#D4A24D]/80 rounded-3xl flex items-center justify-center shadow-2xl mb-6">
+                  <Shield className="w-24 h-24 text-white" />
+                </div>
+                <p className="text-center text-gray-600 max-w-xs md:text-right">
+                  Seus dados tratados com responsabilidade e transparência
                 </p>
               </div>
-            </section>
+            </div>
+          </div>
 
-            {/* Seção 11 - Legislação Aplicável */}
-            <section className="mb-12">
-              <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-6 pb-3 border-b-2 border-gray-200">
-                11. Legislação Aplicável
-              </h2>
-              <p className="text-gray-700 leading-relaxed mb-4">
-                Esta Política de Privacidade é regida pelas leis da República
-                Federativa do Brasil, especialmente pela Lei nº 13.709/2018 (Lei
-                Geral de Proteção de Dados Pessoais - LGPD).
-              </p>
-              <p className="text-gray-700 leading-relaxed">
-                Quaisquer disputas oriundas desta política serão resolvidas no
-                foro da comarca de Açailândia/MA.
-              </p>
-            </section>
-
-            {/* Última atualização */}
-            <div className="mt-8">
-              <p className="text-gray-500 text-sm">
-                <span className="font-semibold text-gray-900">
-                  Última atualização:
-                </span>{" "}
-                18 de Janeiro de 2026
-              </p>
+          {/* LEGISLAÇÃO */}
+          <div className="mt-10 text-center">
+            <div className="inline-flex items-center gap-2 text-sm text-gray-500 bg-gray-50 px-6 py-3 rounded-full">
+              <Gavel className="w-4 h-4" style={{ color: adventusYellow }} />
+              <span>
+                Regido pela Lei nº 13.709/2018 (LGPD) - Foro: Açailândia/MA
+              </span>
             </div>
           </div>
         </div>
