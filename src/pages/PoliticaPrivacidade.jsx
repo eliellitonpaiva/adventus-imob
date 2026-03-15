@@ -17,7 +17,7 @@ const PoliticaPrivacidade = () => {
       {/* CONTEÚDO DA POLÍTICA DE PRIVACIDADE */}
       <section className="bg-white py-16 md:py-20 px-4">
         <div className="max-w-7xl mx-auto">
-          {/* Cabeçalho da página - COM MAIS ESPAÇO NO TOPO E SEM SUBLINHADO */}
+          {/* Cabeçalho da página */}
           <div className="text-center mb-12 md:mb-16 mt-10 md:mt-16">
             <h1 className="text-3xl md:text-4xl lg:text-5xl font-extrabold text-gray-900 mb-4">
               Política de Privacidade
@@ -55,42 +55,26 @@ const PoliticaPrivacidade = () => {
               </h2>
 
               <h3 className="text-lg md:text-xl font-semibold text-gray-800 mt-8 mb-4">
-                2.1. Informações Pessoais
+                2.1. Informações que você nos fornece
               </h3>
               <p className="text-gray-700 leading-relaxed mb-4">
-                Coletamos informações que você nos fornece diretamente, como:
+                Quando você entra em contato conosco através do site, coletamos
+                apenas as informações necessárias para atendê-lo:
               </p>
               <ul className="list-disc pl-5 mb-6 space-y-2">
                 <li className="text-gray-700 leading-relaxed">
                   <span className="font-semibold text-gray-900">
-                    Dados de identificação:
+                    Nome completo:
                   </span>{" "}
-                  nome completo, CPF, RG, data de nascimento
+                  para identificação e atendimento personalizado
                 </li>
                 <li className="text-gray-700 leading-relaxed">
-                  <span className="font-semibold text-gray-900">
-                    Informações de contato:
-                  </span>{" "}
-                  e-mail, telefone, endereço residencial
+                  <span className="font-semibold text-gray-900">E-mail:</span>{" "}
+                  para envio de informações sobre imóveis e comunicações
                 </li>
                 <li className="text-gray-700 leading-relaxed">
-                  <span className="font-semibold text-gray-900">
-                    Dados profissionais:
-                  </span>{" "}
-                  profissão, renda, vínculo empregatício (para análise de
-                  financiamento)
-                </li>
-                <li className="text-gray-700 leading-relaxed">
-                  <span className="font-semibold text-gray-900">
-                    Dados do imóvel:
-                  </span>{" "}
-                  endereço do imóvel, características, documentação
-                </li>
-                <li className="text-gray-700 leading-relaxed">
-                  <span className="font-semibold text-gray-900">
-                    Dados bancários:
-                  </span>{" "}
-                  para transações imobiliárias e pagamentos
+                  <span className="font-semibold text-gray-900">WhatsApp:</span>{" "}
+                  para contato rápido e envio de propostas
                 </li>
               </ul>
 
@@ -126,19 +110,13 @@ const PoliticaPrivacidade = () => {
               </p>
               <ul className="list-disc pl-5 mb-4 space-y-2">
                 <li className="text-gray-700 leading-relaxed">
-                  Cadastrar e gerenciar seu perfil em nossa plataforma
-                </li>
-                <li className="text-gray-700 leading-relaxed">
-                  Processar transações imobiliárias (compra, venda, locação)
+                  Entrar em contato para apresentar imóveis de seu interesse
                 </li>
                 <li className="text-gray-700 leading-relaxed">
                   Enviar propostas comerciais e oportunidades de imóveis
                 </li>
                 <li className="text-gray-700 leading-relaxed">
                   Agendar visitas e avaliações de imóveis
-                </li>
-                <li className="text-gray-700 leading-relaxed">
-                  Analisar crédito para financiamento habitacional
                 </li>
                 <li className="text-gray-700 leading-relaxed">
                   Enviar comunicados importantes sobre seus imóveis
@@ -158,7 +136,7 @@ const PoliticaPrivacidade = () => {
                 4. Compartilhamento de Dados
               </h2>
               <p className="text-gray-700 leading-relaxed mb-4">
-                Seus dados podem ser compartilhados com:
+                Seus dados podem ser compartilhados apenas com:
               </p>
               <ul className="list-disc pl-5 mb-4 space-y-2">
                 <li className="text-gray-700 leading-relaxed">
@@ -169,21 +147,10 @@ const PoliticaPrivacidade = () => {
                 </li>
                 <li className="text-gray-700 leading-relaxed">
                   <span className="font-semibold text-gray-900">
-                    Instituições financeiras:
-                  </span>{" "}
-                  para análise de crédito e financiamento
-                </li>
-                <li className="text-gray-700 leading-relaxed">
-                  <span className="font-semibold text-gray-900">
-                    Cartórios e registros:
-                  </span>{" "}
-                  para formalização de transações
-                </li>
-                <li className="text-gray-700 leading-relaxed">
-                  <span className="font-semibold text-gray-900">
                     Prestadores de serviços:
                   </span>{" "}
-                  empresas que nos auxiliam em nossas operações
+                  empresas que nos auxiliam em nossas operações (apenas quando
+                  necessário)
                 </li>
                 <li className="text-gray-700 leading-relaxed">
                   <span className="font-semibold text-gray-900">
@@ -280,9 +247,6 @@ const PoliticaPrivacidade = () => {
               <ul className="list-disc pl-5 mb-4 space-y-2">
                 <li className="text-gray-700 leading-relaxed">
                   Exigências legais e regulatórias
-                </li>
-                <li className="text-gray-700 leading-relaxed">
-                  Prazo prescricional de ações judiciais
                 </li>
                 <li className="text-gray-700 leading-relaxed">
                   Necessidade operacional para prestação de serviços
