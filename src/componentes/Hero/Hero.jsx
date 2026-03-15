@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "/src/lib/supabase";
+import { supabase } from "../../lib/supabase";
 import ReactDOM from "react-dom";
 
 const PRICE_RANGE_OPTIONS = {
@@ -133,7 +133,6 @@ const BottomSheet = React.memo(
           </div>
 
           <div className="p-6 space-y-4">
-            {/* FAIXA DE PREÇO */}
             <div
               className="relative"
               ref={localDropdownOpen === "priceRange" ? dropdownRef : null}
@@ -189,7 +188,6 @@ const BottomSheet = React.memo(
               )}
             </div>
 
-            {/* VAGAS */}
             <div
               className="relative"
               ref={localDropdownOpen === "garage" ? dropdownRef : null}
@@ -242,7 +240,6 @@ const BottomSheet = React.memo(
               )}
             </div>
 
-            {/* SUÍTES */}
             <div
               className="relative"
               ref={localDropdownOpen === "suite" ? dropdownRef : null}
@@ -294,7 +291,6 @@ const BottomSheet = React.memo(
               )}
             </div>
 
-            {/* BANHEIROS */}
             <div
               className="relative"
               ref={localDropdownOpen === "bathrooms" ? dropdownRef : null}
@@ -347,7 +343,6 @@ const BottomSheet = React.memo(
               )}
             </div>
 
-            {/* DORMITÓRIOS */}
             <div
               className="relative"
               ref={localDropdownOpen === "bedrooms" ? dropdownRef : null}
@@ -505,7 +500,6 @@ const DesktopModal = React.memo(
 
           <div className="p-6 max-h-[calc(95vh-80px)] overflow-y-auto">
             <div className="grid grid-cols-2 gap-4">
-              {/* FAIXA DE PREÇO */}
               <div
                 className="col-span-2 relative"
                 ref={
@@ -565,7 +559,6 @@ const DesktopModal = React.memo(
                 )}
               </div>
 
-              {/* VAGAS */}
               <div
                 className="relative"
                 ref={localDropdownOpen === "garageDesktop" ? dropdownRef : null}
@@ -618,7 +611,6 @@ const DesktopModal = React.memo(
                 )}
               </div>
 
-              {/* SUÍTES */}
               <div
                 className="relative"
                 ref={localDropdownOpen === "suiteDesktop" ? dropdownRef : null}
@@ -671,7 +663,6 @@ const DesktopModal = React.memo(
                 )}
               </div>
 
-              {/* BANHEIROS */}
               <div
                 className="relative"
                 ref={
@@ -729,7 +720,6 @@ const DesktopModal = React.memo(
                 )}
               </div>
 
-              {/* DORMITÓRIOS */}
               <div
                 className="relative"
                 ref={
@@ -819,7 +809,9 @@ const Hero = () => {
   const [openDropdown, setOpenDropdown] = useState(null);
   const [showMoreFilters, setShowMoreFilters] = useState(false);
 
-  // ========== ESTADO PARA IMAGEM DO HERO ==========
+  const [cidades, setCidades] = useState([]);
+  const [loadingCidades, setLoadingCidades] = useState(true);
+
   const [imagemHero, setImagemHero] = useState({
     url: null,
     titulo: null,
@@ -844,10 +836,12 @@ const Hero = () => {
 
   const currentPriceOptions = PRICE_RANGE_OPTIONS[activeTab];
 
-  const cityOptions = [
-    { id: "acailandia", label: "Açailândia" },
-    { id: "imperatriz", label: "Imperatriz" },
-  ];
+  const cityOptions = cidades.map((cidade) => ({
+    id: cidade.slug || cidade.nome.toLowerCase().replace(/\s+/g, "-"),
+    label: cidade.nome,
+    uf: cidade.estado,
+    originalId: cidade.id,
+  }));
 
   const propertyOptions = [
     { id: "apartamento", label: "Apartamento" },
@@ -890,10 +884,30 @@ const Hero = () => {
   const propertyRef = useRef(null);
   const neighborhoodRef = useRef(null);
 
-  // ========== BUSCAR IMAGEM DO HERO ==========
-  useEffect(() => {
-    buscarImagemHero();
-  }, []);
+  const fetchCidades = async () => {
+    try {
+      setLoadingCidades(true);
+      const { data, error } = await supabase
+        .from("cidades")
+        .select("*")
+        .eq("ativo", true)
+        .order("nome");
+
+      if (error) throw error;
+
+      const cidadesFormatadas = data.map((cidade) => ({
+        ...cidade,
+        estado: cidade.uf,
+      }));
+
+      console.log("✅ Cidades carregadas do banco:", cidadesFormatadas);
+      setCidades(cidadesFormatadas || []);
+    } catch (error) {
+      console.error("❌ Erro ao buscar cidades:", error);
+    } finally {
+      setLoadingCidades(false);
+    }
+  };
 
   const buscarImagemHero = async () => {
     try {
@@ -922,7 +936,6 @@ const Hero = () => {
         const imagem = data[0];
         console.log("🖼️ Imagem encontrada:", imagem);
 
-        // Gerar URL pública
         const {
           data: { publicUrl },
         } = supabase.storage.from("hero").getPublicUrl(imagem.image_path);
@@ -947,6 +960,11 @@ const Hero = () => {
       setImagemHero({ url: null, titulo: null, loading: false });
     }
   };
+
+  useEffect(() => {
+    buscarImagemHero();
+    fetchCidades();
+  }, []);
 
   useEffect(() => {
     const fetchBairros = async () => {
@@ -976,7 +994,7 @@ const Hero = () => {
     } else {
       setBairrosFiltrados([]);
     }
-  }, [formValues.city, bairros]);
+  }, [formValues.city, bairros, cityOptions]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -1090,7 +1108,6 @@ const Hero = () => {
         .animate-dropdown { animation: dropdown 0.2s ease-out; }
       `}</style>
 
-      {/* Imagem DINÂMICA do Hero */}
       <div className="absolute top-0 left-0 w-full h-[400px] md:h-[700px] lg:h-[800px]">
         <img
           src={
@@ -1103,7 +1120,6 @@ const Hero = () => {
         <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-[#31363E]"></div>
       </div>
 
-      {/* Mobile - EXATAMENTE COMO ESTAVA */}
       <div className="relative top-[220px] md:hidden z-20 mx-auto max-w-7xl px-0 sm:px-6 lg:px-8">
         <div className="mb-3 md:mb-4 text-center px-4">
           <h1 className="text-[28px] md:text-[42px] lg:text-[48px] font-extrabold text-white drop-shadow-[0_4px_15px_rgba(0,0,0,0.9)] tracking-tight leading-tight">
@@ -1158,10 +1174,14 @@ const Hero = () => {
                   <span
                     className={`flex-1 text-sm md:text-base font-semibold truncate ${formValues.city ? "text-gray-800" : "text-gray-400"}`}
                   >
-                    {formValues.city
-                      ? cityOptions.find((opt) => opt.id === formValues.city)
-                          ?.label
-                      : "Cidade"}
+                    {loadingCidades
+                      ? "Carregando cidades..."
+                      : formValues.city
+                        ? cityOptions.find((opt) => opt.id === formValues.city)
+                            ?.label
+                        : cidades.length > 0
+                          ? "Cidade"
+                          : "Nenhuma cidade cadastrada"}
                   </span>
                   <i
                     className={`fas fa-chevron-down text-gray-400 text-xs transition-all duration-300 ${openDropdown === "city" ? "rotate-180 text-[#D4A24D]" : ""}`}
@@ -1169,22 +1189,32 @@ const Hero = () => {
                 </div>
                 {openDropdown === "city" && (
                   <div className="absolute top-[105%] left-0 w-full bg-white rounded-xl shadow-2xl border border-gray-100 z-[100] overflow-hidden animate-dropdown">
-                    {cityOptions.map((opt) => (
-                      <div
-                        key={opt.id}
-                        onClick={() => handleInputChange("city", opt.id)}
-                        className={`flex items-center justify-between px-4 py-3 hover:bg-[#D4A24D]/10 cursor-pointer border-b border-gray-50 last:border-0 transition-colors ${formValues.city === opt.id ? "bg-[#D4A24D]/5" : ""}`}
-                      >
-                        <span
-                          className={`text-sm md:text-base font-medium ${formValues.city === opt.id ? "text-[#D4A24D] font-semibold" : "text-gray-700"}`}
-                        >
-                          {opt.label}
-                        </span>
-                        {formValues.city === opt.id && (
-                          <i className="fas fa-check text-[#D4A24D] text-sm" />
-                        )}
+                    {loadingCidades ? (
+                      <div className="px-4 py-3 text-gray-500 text-center">
+                        Carregando...
                       </div>
-                    ))}
+                    ) : cidades.length > 0 ? (
+                      cityOptions.map((opt) => (
+                        <div
+                          key={opt.id}
+                          onClick={() => handleInputChange("city", opt.id)}
+                          className={`flex items-center justify-between px-4 py-3 hover:bg-[#D4A24D]/10 cursor-pointer border-b border-gray-50 last:border-0 transition-colors ${formValues.city === opt.id ? "bg-[#D4A24D]/5" : ""}`}
+                        >
+                          <span
+                            className={`text-sm md:text-base font-medium ${formValues.city === opt.id ? "text-[#D4A24D] font-semibold" : "text-gray-700"}`}
+                          >
+                            {opt.label} {opt.uf ? `(${opt.uf})` : ""}
+                          </span>
+                          {formValues.city === opt.id && (
+                            <i className="fas fa-check text-[#D4A24D] text-sm" />
+                          )}
+                        </div>
+                      ))
+                    ) : (
+                      <div className="px-4 py-3 text-gray-500 text-center">
+                        Nenhuma cidade cadastrada
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -1334,12 +1364,9 @@ const Hero = () => {
         </div>
       </div>
 
-      {/* Desktop - Box do formulário com fundo branco translúcido */}
       <div className="hidden md:block relative z-20 mx-auto max-w-7xl px-0 sm:px-6 lg:px-8">
-        {/* Box desceu 12 pixels para equilibrar visualmente */}
         <div className="absolute top-[128px] left-[40px] w-[400px] lg:w-[450px]">
           <div className="bg-white/50 backdrop-blur-xl rounded-2xl p-6 md:p-7 border border-white/30 shadow-2xl">
-            {/* Pílula - REDUZIDA, SEM BORDA E COM SOMBRA */}
             <div className="mb-6 w-full flex justify-start">
               <div className="w-[200px] md:w-[220px]">
                 <div
@@ -1373,7 +1400,6 @@ const Hero = () => {
               </div>
             </div>
 
-            {/* Formulário com campos */}
             <form onSubmit={handleSearch}>
               <div className="flex flex-col space-y-3">
                 <div className="relative w-full" ref={cityRef}>
@@ -1391,10 +1417,15 @@ const Hero = () => {
                     <span
                       className={`flex-1 text-sm md:text-base font-semibold truncate ${formValues.city ? "text-gray-800" : "text-gray-600"}`}
                     >
-                      {formValues.city
-                        ? cityOptions.find((opt) => opt.id === formValues.city)
-                            ?.label
-                        : "Cidade"}
+                      {loadingCidades
+                        ? "Carregando cidades..."
+                        : formValues.city
+                          ? cityOptions.find(
+                              (opt) => opt.id === formValues.city,
+                            )?.label
+                          : cidades.length > 0
+                            ? "Cidade"
+                            : "Nenhuma cidade cadastrada"}
                     </span>
                     <i
                       className={`fas fa-chevron-down text-gray-600 text-xs transition-all duration-300 ${openDropdown === "city" ? "rotate-180 text-[#D4A24D]" : ""}`}
@@ -1402,22 +1433,32 @@ const Hero = () => {
                   </div>
                   {openDropdown === "city" && (
                     <div className="absolute top-[105%] left-0 w-full bg-white/90 backdrop-blur-md rounded-xl shadow-2xl border border-gray-200 z-[100] overflow-hidden animate-dropdown">
-                      {cityOptions.map((opt) => (
-                        <div
-                          key={opt.id}
-                          onClick={() => handleInputChange("city", opt.id)}
-                          className={`flex items-center justify-between px-4 py-3 hover:bg-[#D4A24D]/20 cursor-pointer border-b border-gray-100 last:border-0 transition-colors ${formValues.city === opt.id ? "bg-[#D4A24D]/10" : ""}`}
-                        >
-                          <span
-                            className={`text-sm md:text-base font-medium ${formValues.city === opt.id ? "text-[#D4A24D] font-semibold" : "text-gray-700"}`}
-                          >
-                            {opt.label}
-                          </span>
-                          {formValues.city === opt.id && (
-                            <i className="fas fa-check text-[#D4A24D] text-sm" />
-                          )}
+                      {loadingCidades ? (
+                        <div className="px-4 py-3 text-gray-500 text-center">
+                          Carregando...
                         </div>
-                      ))}
+                      ) : cidades.length > 0 ? (
+                        cityOptions.map((opt) => (
+                          <div
+                            key={opt.id}
+                            onClick={() => handleInputChange("city", opt.id)}
+                            className={`flex items-center justify-between px-4 py-3 hover:bg-[#D4A24D]/20 cursor-pointer border-b border-gray-100 last:border-0 transition-colors ${formValues.city === opt.id ? "bg-[#D4A24D]/10" : ""}`}
+                          >
+                            <span
+                              className={`text-sm md:text-base font-medium ${formValues.city === opt.id ? "text-[#D4A24D] font-semibold" : "text-gray-700"}`}
+                            >
+                              {opt.label} {opt.uf ? `(${opt.uf})` : ""}
+                            </span>
+                            {formValues.city === opt.id && (
+                              <i className="fas fa-check text-[#D4A24D] text-sm" />
+                            )}
+                          </div>
+                        ))
+                      ) : (
+                        <div className="px-4 py-3 text-gray-500 text-center">
+                          Nenhuma cidade cadastrada
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -1562,7 +1603,6 @@ const Hero = () => {
         </div>
       </div>
 
-      {/* Espaço vazio para a próxima seção */}
       <div className="h-[250px] md:h-[585px] lg:h-[685px]" />
 
       {showMoreFilters && (
