@@ -19,6 +19,9 @@ const DetalheImovel = lazy(() => import("./pages/DetalheImovel"));
 const SobreNos = lazy(() => import("./pages/SobreNos"));
 // const Contato = lazy(() => import("./pages/Contato")); // Comentado se não existir
 
+// ========== 🆕 PÁGINA DE POLÍTICA DE PRIVACIDADE ==========
+const PoliticaPrivacidade = lazy(() => import("./pages/PoliticaPrivacidade"));
+
 // ========== Lazy loading das páginas do ADMIN ==========
 const AdminLayout = lazy(() => import("./componentes/admin/AdminLayout"));
 const AdminDashboard = lazy(() => import("./pages/Admin/Admin"));
@@ -144,6 +147,14 @@ function AppRoutes() {
                 </Layout>
               }
             />
+
+            {/* ========== 🆕 ROTA DA POLÍTICA DE PRIVACIDADE ========== */}
+            {/* ESSA ROTA NÃO USA LAYOUT PORQUE JÁ TEM CABEÇALHO E RODAPÉ PRÓPRIOS */}
+            <Route
+              path="/politica-de-privacidade"
+              element={<PoliticaPrivacidade />} // ← SEM LAYOUT!
+            />
+
             {/* <Route path="/contato" element={<Layout><Contato /></Layout>} /> */}
 
             {/* ============ ROTAS PRIVADAS (PRECISAM DE LOGIN) ============ */}
