@@ -818,6 +818,14 @@ const Hero = () => {
   const [touchStart, setTouchStart] = useState(null);
   const [openDropdown, setOpenDropdown] = useState(null);
   const [showMoreFilters, setShowMoreFilters] = useState(false);
+
+  // ========== ESTADO PARA IMAGEM DO HERO ==========
+  const [imagemHero, setImagemHero] = useState({
+    url: null,
+    titulo: null,
+    loading: true,
+  });
+
   const [formValues, setFormValues] = useState({
     city: "",
     propertyType: "",
@@ -881,6 +889,64 @@ const Hero = () => {
   const cityRef = useRef(null);
   const propertyRef = useRef(null);
   const neighborhoodRef = useRef(null);
+
+  // ========== BUSCAR IMAGEM DO HERO ==========
+  useEffect(() => {
+    buscarImagemHero();
+  }, []);
+
+  const buscarImagemHero = async () => {
+    try {
+      console.log("🔍 Iniciando busca de imagem do hero...");
+
+      const hoje = new Date().toISOString().split("T")[0];
+      console.log("📅 Data de hoje:", hoje);
+
+      const { data, error } = await supabase
+        .from("hero_images")
+        .select("*")
+        .eq("ativo", true)
+        .lte("data_inicio", hoje)
+        .gte("data_fim", hoje)
+        .order("ordem")
+        .limit(1);
+
+      if (error) {
+        console.error("❌ Erro na busca:", error);
+        throw error;
+      }
+
+      console.log("📦 Dados retornados:", data);
+
+      if (data && data.length > 0) {
+        const imagem = data[0];
+        console.log("🖼️ Imagem encontrada:", imagem);
+
+        // Gerar URL pública
+        const {
+          data: { publicUrl },
+        } = supabase.storage.from("hero").getPublicUrl(imagem.image_path);
+
+        console.log("🔗 URL gerada:", publicUrl);
+
+        setImagemHero({
+          url: publicUrl,
+          titulo: imagem.titulo,
+          loading: false,
+        });
+      } else {
+        console.log("⚠️ Nenhuma imagem ativa encontrada para a data", hoje);
+        setImagemHero({
+          url: null,
+          titulo: null,
+          loading: false,
+        });
+      }
+    } catch (error) {
+      console.error("❌ Erro ao buscar imagem do hero:", error);
+      setImagemHero({ url: null, titulo: null, loading: false });
+    }
+  };
 
   useEffect(() => {
     const fetchBairros = async () => {
@@ -1024,12 +1090,15 @@ const Hero = () => {
         .animate-dropdown { animation: dropdown 0.2s ease-out; }
       `}</style>
 
-      {/* Imagem */}
+      {/* Imagem DINÂMICA do Hero */}
       <div className="absolute top-0 left-0 w-full h-[400px] md:h-[700px] lg:h-[800px]">
         <img
-          src="https://adventusimobiliaria.com.br/img/banner/image/20/Equipe.jpg"
-          alt="Equipe Adventus Imobiliária"
-          className="w-full h-full object-cover object-center"
+          src={
+            imagemHero.url ||
+            "https://adventusimobiliaria.com.br/img/banner/image/20/Equipe.jpg"
+          }
+          alt="Hero"
+          className="w-full h-full object-cover object-center transition-opacity duration-1000"
         />
         <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-[#31363E]"></div>
       </div>
@@ -1038,7 +1107,7 @@ const Hero = () => {
       <div className="relative top-[220px] md:hidden z-20 mx-auto max-w-7xl px-0 sm:px-6 lg:px-8">
         <div className="mb-3 md:mb-4 text-center px-4">
           <h1 className="text-[28px] md:text-[42px] lg:text-[48px] font-extrabold text-white drop-shadow-[0_4px_15px_rgba(0,0,0,0.9)] tracking-tight leading-tight">
-            Encontre seu lar ideal
+            {imagemHero.titulo || "Encontre seu lar ideal"}
           </h1>
         </div>
 

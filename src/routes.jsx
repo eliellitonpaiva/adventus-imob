@@ -57,6 +57,9 @@ const EditarUsuario = lazy(() => import("./pages/Admin/EditarUsuario"));
 // ========== PÁGINA DE PERFIL ==========
 const Perfil = lazy(() => import("./pages/Admin/Perfil"));
 
+// ========== 🆕 CONFIGURAÇÕES DO SISTEMA ==========
+const Configuracoes = lazy(() => import("./pages/Admin/Configuracoes"));
+
 function AppRoutes() {
   return (
     <BrowserRouter>
@@ -202,6 +205,10 @@ function AppRoutes() {
                   </ProtectedRoute>
                 }
               />
+
+              {/* 🆕 CONFIGURAÇÕES - após usuários, antes do perfil */}
+              <Route path="configuracoes" element={<Configuracoes />} />
+
               <Route path="perfil" element={<Perfil />} />
               <Route path="candidatos" element={<AdminCandidatos />} />
               <Route path="estados" element={<AdminEstados />} />
