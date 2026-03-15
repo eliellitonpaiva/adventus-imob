@@ -62,11 +62,13 @@ const Configuracoes = () => {
   const [heroImages, setHeroImages] = useState([]);
   const [showHeroImageModal, setShowHeroImageModal] = useState(false);
   const [editingHeroImage, setEditingHeroImage] = useState(null);
+  // ========== ADICIONADO CAMPO ordem NO ESTADO ==========
   const [heroImageForm, setHeroImageForm] = useState({
     titulo: "",
     data_inicio: "",
     data_fim: "",
     imagem: null,
+    ordem: 0, // 👈 CAMPO ADICIONADO
   });
   const [heroImagePreview, setHeroImagePreview] = useState("");
 
@@ -125,12 +127,13 @@ const Configuracoes = () => {
         imagePath = await uploadHeroImage(heroImageForm.imagem);
       }
 
+      // ========== ADICIONADO CAMPO ordem NO imageData ==========
       const imageData = {
         titulo: heroImageForm.titulo || null,
         image_path: imagePath,
         data_inicio: heroImageForm.data_inicio,
         data_fim: heroImageForm.data_fim,
-        ordem: heroImages.length,
+        ordem: heroImageForm.ordem, // 👈 CAMPO ADICIONADO
       };
 
       if (editingHeroImage) {
@@ -161,6 +164,7 @@ const Configuracoes = () => {
         data_inicio: "",
         data_fim: "",
         imagem: null,
+        ordem: 0, // 👈 RESETA O CAMPO
       });
       setHeroImagePreview("");
     } catch (error) {
@@ -196,6 +200,7 @@ const Configuracoes = () => {
       data_inicio: imagem.data_inicio,
       data_fim: imagem.data_fim,
       imagem: null,
+      ordem: imagem.ordem || 0, // 👈 CARREGA A ORDEM EXISTENTE
     });
     setHeroImagePreview(imagem.url);
     setShowHeroImageModal(true);
@@ -695,6 +700,7 @@ const Configuracoes = () => {
                         data_inicio: "",
                         data_fim: "",
                         imagem: null,
+                        ordem: 0, // 👈 RESETA O CAMPO
                       });
                       setHeroImagePreview("");
                       setShowHeroImageModal(true);
@@ -752,6 +758,10 @@ const Configuracoes = () => {
                                 <p className="text-sm text-gray-500">
                                   {formatarData(imagem.data_inicio)} até{" "}
                                   {formatarData(imagem.data_fim)}
+                                </p>
+                                {/* ========== EXIBE A ORDEM (OPCIONAL) ========== */}
+                                <p className="text-xs text-gray-400 mt-1">
+                                  Ordem: {imagem.ordem || 0}
                                 </p>
                               </div>
 
@@ -1131,6 +1141,36 @@ const Configuracoes = () => {
                 />
               </div>
 
+              {/* ========== NOVO CAMPO: ORDEM ========== */}
+              <div>
+                <label className="block text-sm font-medium mb-1">
+                  Ordem de Prioridade{" "}
+                  <span className="text-xs text-gray-500">
+                    (menor número = mais importante)
+                  </span>
+                </label>
+                <input
+                  type="number"
+                  value={heroImageForm.ordem}
+                  onChange={(e) =>
+                    setHeroImageForm({
+                      ...heroImageForm,
+                      ordem: parseInt(e.target.value) || 0,
+                    })
+                  }
+                  min="0"
+                  max="999"
+                  className={`w-full p-2 border rounded ${
+                    isDark
+                      ? "bg-gray-700 border-gray-600 text-gray-200"
+                      : "bg-white border-gray-300"
+                  }`}
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Campanhas: 0-10 | Imagem padrão: 999
+                </p>
+              </div>
+
               {/* DATAS DE INÍCIO E FIM */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -1191,6 +1231,7 @@ const Configuracoes = () => {
                       data_inicio: "",
                       data_fim: "",
                       imagem: null,
+                      ordem: 0, // 👈 RESETA O CAMPO
                     });
                     setHeroImagePreview("");
                   }}
