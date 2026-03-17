@@ -1,3 +1,4 @@
+// src/componentes/Cabecalho/Cabecalho.jsx
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 
@@ -22,13 +23,6 @@ const Cabecalho = () => {
     ) {
       e.preventDefault(); // Previne comportamento padrão se necessário
     }
-  };
-
-  // Função para links que devem navegar
-  const handleNavigation = (e, path) => {
-    e.currentTarget.blur(); // Remove o foco
-    closeMenu();
-    // Navegação será feita pelo Link do React Router
   };
 
   const toggleMenu = () => {
@@ -123,14 +117,17 @@ const Cabecalho = () => {
                 <i className="fas fa-home text-[#D4A24D]"></i>
                 <span>Home</span>
               </Link>
-              <Link
-                to="/sobre-nos" // ← ALTERADO: de /institucional para /sobre-nos
+
+              {/* 👇 ALTERADO PARA <a href> TEMPORARIAMENTE */}
+              <a
+                href="/sobre-nos"
                 className="nav-link text-gray-700 hover:text-[#D4A24D] transition-colors duration-300 text-sm font-medium flex items-center gap-2"
                 onClick={(e) => e.currentTarget.blur()}
               >
                 <i className="fas fa-building text-[#D4A24D]"></i>
-                <span>Sobre Nós</span> {/* ← ALTERADO: texto */}
-              </Link>
+                <span>Sobre Nós</span>
+              </a>
+
               <Link
                 to="/comprar"
                 className="nav-link text-gray-700 hover:text-[#D4A24D] transition-colors duration-300 text-sm font-medium flex items-center gap-2"
@@ -146,14 +143,6 @@ const Cabecalho = () => {
               >
                 <i className="fas fa-key text-[#D4A24D]"></i>
                 <span>Alugar</span>
-              </Link>
-              <Link
-                to="/contato"
-                className="nav-link text-gray-700 hover:text-[#D4A24D] transition-colors duration-300 text-sm font-medium flex items-center gap-2"
-                onClick={(e) => e.currentTarget.blur()}
-              >
-                <i className="fas fa-headset text-[#D4A24D]"></i>
-                <span>Contato</span>
               </Link>
             </div>
           </nav>
@@ -230,8 +219,10 @@ const Cabecalho = () => {
               <i className="fas fa-home w-4 text-[#D4A24D]"></i>
               <span>Home</span>
             </Link>
-            <Link
-              to="/sobre-nos"
+
+            {/* 👇 ALTERADO PARA <a href> TEMPORARIAMENTE */}
+            <a
+              href="/sobre-nos"
               className="px-4 py-3 text-gray-700 hover:text-[#D4A24D] hover:bg-gray-50 rounded-lg transition-all duration-300 flex items-center gap-3 text-sm"
               onClick={(e) => {
                 e.currentTarget.blur();
@@ -240,17 +231,29 @@ const Cabecalho = () => {
             >
               <i className="fas fa-building w-4 text-[#D4A24D]"></i>
               <span>Sobre nós</span>
-            </Link>
+            </a>
+
             <Link
-              to="/contato"
+              to="/comprar"
               className="px-4 py-3 text-gray-700 hover:text-[#D4A24D] hover:bg-gray-50 rounded-lg transition-all duration-300 flex items-center gap-3 text-sm"
               onClick={(e) => {
                 e.currentTarget.blur();
                 closeMenu();
               }}
             >
-              <i className="fas fa-headset w-4 text-[#D4A24D]"></i>
-              <span>Contato</span>
+              <i className="fas fa-hand-holding-usd w-4 text-[#D4A24D]"></i>
+              <span>Comprar</span>
+            </Link>
+            <Link
+              to="/alugar"
+              className="px-4 py-3 text-gray-700 hover:text-[#D4A24D] hover:bg-gray-50 rounded-lg transition-all duration-300 flex items-center gap-3 text-sm"
+              onClick={(e) => {
+                e.currentTarget.blur();
+                closeMenu();
+              }}
+            >
+              <i className="fas fa-key w-4 text-[#D4A24D]"></i>
+              <span>Alugar</span>
             </Link>
 
             {/* Redes Sociais Mobile */}
