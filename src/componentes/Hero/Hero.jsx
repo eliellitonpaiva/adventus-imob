@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
 import ReactDOM from "react-dom";
@@ -883,6 +883,7 @@ const Hero = () => {
   const cityRef = useRef(null);
   const propertyRef = useRef(null);
   const neighborhoodRef = useRef(null);
+  const overflowRef = useRef(null);
 
   const fetchCidades = async () => {
     try {
@@ -990,9 +991,13 @@ const Hero = () => {
       const filtrados = bairros.filter(
         (bairro) => bairro.cidades?.nome === cidadeSelecionada,
       );
-      setBairrosFiltrados(filtrados);
+      if (JSON.stringify(bairrosFiltrados) !== JSON.stringify(filtrados)) {
+        setBairrosFiltrados(filtrados);
+      }
     } else {
-      setBairrosFiltrados([]);
+      if (bairrosFiltrados.length > 0) {
+        setBairrosFiltrados([]);
+      }
     }
   }, [formValues.city, bairros, cityOptions]);
 
@@ -1018,11 +1023,18 @@ const Hero = () => {
   }, [openDropdown, showMoreFilters]);
 
   useEffect(() => {
+    if (overflowRef.current === showMoreFilters) return;
+    overflowRef.current = showMoreFilters;
+
     if (showMoreFilters) {
       document.body.style.overflow = "hidden";
     } else {
       document.body.style.overflow = "unset";
     }
+
+    return () => {
+      document.body.style.overflow = "unset";
+    };
   }, [showMoreFilters]);
 
   const handleInputChange = (field, value) => {

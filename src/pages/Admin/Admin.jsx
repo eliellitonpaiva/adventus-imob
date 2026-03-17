@@ -1710,7 +1710,6 @@ const Dashboard = () => {
               ? (vendasCorretor.length / leadsCorretor.length) * 100
               : 0;
 
-          // Calcular comissões do corretor
           const comissaoGerada = vendasCorretor.reduce(
             (acc, v) => acc + (v.comissao || 0),
             0,
@@ -1834,7 +1833,7 @@ const Dashboard = () => {
       setDataAtualizacao(new Date());
       setLoading(false);
     }, 500);
-  }, [data]);
+  }, []); // ← MUDANÇA AQUI: de [data] para []
 
   // ===== ORDENAÇÃO =====
   const ordenarImoveis = (imoveis) => {

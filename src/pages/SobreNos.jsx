@@ -215,6 +215,20 @@ const SobreNos = () => {
 
   return (
     <div className="antialiased">
+      {/* CSS para animações - SEM O ATRIBUTO jsx */}
+      <style>{`
+        @keyframes fadeUp {
+          from {
+            opacity: 0;
+            transform: translateY(30px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+      `}</style>
+
       {/* HERO SECTION */}
       <section className="relative h-screen flex items-center justify-center overflow-hidden">
         {/* Overlay gradiente mais suave */}
@@ -287,7 +301,7 @@ const SobreNos = () => {
                 </div>
               </div>
 
-              {/* Texto à direita - AGORA COM MESMO TAMANHO DOS CARDS DE MISSÃO/VISÃO/VALORES */}
+              {/* Texto à direita */}
               <div className="lg:w-1/2 space-y-6">
                 <p className="text-gray-700 text-base md:text-lg leading-relaxed">
                   A Adventus Imobiliária presta serviços no ramo imobiliário,
@@ -514,7 +528,7 @@ const SobreNos = () => {
         </div>
       </section>
 
-      {/* FAQ Interativo - CÓPIA EXATA DA HOMEPAGE */}
+      {/* FAQ Interativo */}
       <section
         style={{ backgroundColor: "#F9FAFB", padding: "4.5rem 0 5rem 0" }}
       >
@@ -554,17 +568,18 @@ const SobreNos = () => {
                   FREQUENTES
                 </span>
 
+                {/* CSS interno - SEM O ATRIBUTO jsx */}
                 <style>{`
-            @media (max-width: 767px) {
-              h2 span {
-                display: block !important;
-                margin-left: 0 !important;
-              }
-              h2 span:first-child {
-                margin-bottom: 0.25rem;
-              }
-            }
-          `}</style>
+                  @media (max-width: 767px) {
+                    h2 span {
+                      display: block !important;
+                      margin-left: 0 !important;
+                    }
+                    h2 span:first-child {
+                      margin-bottom: 0.25rem;
+                    }
+                  }
+                `}</style>
               </h2>
             </div>
 
@@ -757,20 +772,6 @@ const SobreNos = () => {
           </div>
         </div>
       </section>
-
-      {/* CSS para animações */}
-      <style jsx>{`
-        @keyframes fadeUp {
-          from {
-            opacity: 0;
-            transform: translateY(30px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-      `}</style>
     </div>
   );
 };
