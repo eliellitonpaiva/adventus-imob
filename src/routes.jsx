@@ -1,3 +1,4 @@
+// src/routes/AppRoutes.jsx
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { lazy, Suspense } from "react";
 import { AuthProvider } from "./contexts/AuthContext";
@@ -17,9 +18,8 @@ const ComprarImovel = lazy(() => import("./pages/ComprarImovel"));
 const AlugarImovel = lazy(() => import("./pages/AlugarImovel"));
 const DetalheImovel = lazy(() => import("./pages/DetalheImovel"));
 const SobreNos = lazy(() => import("./pages/SobreNos"));
-// const Contato = lazy(() => import("./pages/Contato")); // Comentado se não existir
 
-// ========== 🆕 PÁGINA DE POLÍTICA DE PRIVACIDADE ==========
+// ========== PÁGINA DE POLÍTICA DE PRIVACIDADE ==========
 const PoliticaPrivacidade = lazy(() => import("./pages/PoliticaPrivacidade"));
 
 // ========== Lazy loading das páginas do ADMIN ==========
@@ -60,7 +60,7 @@ const EditarUsuario = lazy(() => import("./pages/Admin/EditarUsuario"));
 // ========== PÁGINA DE PERFIL ==========
 const Perfil = lazy(() => import("./pages/Admin/Perfil"));
 
-// ========== 🆕 CONFIGURAÇÕES DO SISTEMA ==========
+// ========== CONFIGURAÇÕES DO SISTEMA ==========
 const Configuracoes = lazy(() => import("./pages/Admin/Configuracoes"));
 
 function AppRoutes() {
@@ -117,9 +117,7 @@ function AppRoutes() {
               }
             />
 
-            {/* 🔥 ROTAS DO IMÓVEL - ORDEM CORRETA (MAIS ESPECÍFICA PRIMEIRO) */}
-
-            {/* 1º - Rota com slug E código (mais específica) */}
+            {/* ROTAS DO IMÓVEL - ORDEM CORRETA (MAIS ESPECÍFICA PRIMEIRO) */}
             <Route
               path="/imovel/:slug/:codigo"
               element={
@@ -128,8 +126,6 @@ function AppRoutes() {
                 </Layout>
               }
             />
-
-            {/* 2º - Rota apenas com slug (fallback para URLs antigas) */}
             <Route
               path="/imovel/:slug"
               element={
@@ -148,18 +144,15 @@ function AppRoutes() {
               }
             />
 
-            {/* ========== 🆕 ROTA DA POLÍTICA DE PRIVACIDADE ========== */}
-            {/* ESSA ROTA NÃO USA LAYOUT PORQUE JÁ TEM CABEÇALHO E RODAPÉ PRÓPRIOS */}
+            {/* ROTA DA POLÍTICA DE PRIVACIDADE - SEM LAYOUT */}
             <Route
               path="/politica-de-privacidade"
-              element={<PoliticaPrivacidade />} // ← SEM LAYOUT!
+              element={<PoliticaPrivacidade />}
             />
-
-            {/* <Route path="/contato" element={<Layout><Contato /></Layout>} /> */}
 
             {/* ============ ROTAS PRIVADAS (PRECISAM DE LOGIN) ============ */}
 
-            {/* Toda a área /admin é protegida */}
+            {/* Toda a área /admin é protegida - verifica apenas autenticação */}
             <Route
               path="/admin"
               element={
@@ -168,30 +161,160 @@ function AppRoutes() {
                 </ProtectedRoute>
               }
             >
-              <Route index element={<AdminDashboard />} />
-              <Route path="imoveis" element={<AdminImoveis />} />
-              <Route path="imoveis/novo" element={<CadastrarImovel />} />
-              <Route path="imoveis/editar/:id" element={<EditarImovel />} />
+              {/* ===== DASHBOARD ===== */}
+              {/* Apenas administrativos (não corretores) */}
               <Route
-                path="imoveis/codigo/:codigo"
-                element={<EditarImovelPorCodigo />}
+                index
+                element={
+                  <ProtectedRoute
+                    allowedPerfis={[
+                      "master",
+                      "admin",
+                      "gerente",
+                      "financeiro",
+                      "marketing",
+                    ]}
+                  >
+                    <AdminDashboard />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* ===== IMÓVEIS ===== */}
+              {/* Todos podem ver (incluindo corretores) */}
+              <Route
+                path="imoveis"
+                element={
+                  <ProtectedRoute
+                    allowedPerfis={[
+                      "master",
+                      "admin",
+                      "gerente",
+                      "financeiro",
+                      "marketing",
+                      "corretor",
+                    ]}
+                  >
+                    <AdminImoveis />
+                  </ProtectedRoute>
+                }
               />
               <Route
+                path="imoveis/novo"
+                element={
+                  <ProtectedRoute
+                    allowedPerfis={["master", "admin", "gerente", "corretor"]}
+                  >
+                    <CadastrarImovel />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="imoveis/editar/:id"
+                element={
+                  <ProtectedRoute
+                    allowedPerfis={["master", "admin", "gerente", "corretor"]}
+                  >
+                    <EditarImovel />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="imoveis/codigo/:codigo"
+                element={
+                  <ProtectedRoute
+                    allowedPerfis={["master", "admin", "gerente", "corretor"]}
+                  >
+                    <EditarImovelPorCodigo />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* ===== EMPREENDIMENTOS ===== */}
+              <Route
                 path="empreendimentos"
-                element={<ListaEmpreendimentos />}
+                element={
+                  <ProtectedRoute
+                    allowedPerfis={["master", "admin", "gerente", "marketing"]}
+                  >
+                    <ListaEmpreendimentos />
+                  </ProtectedRoute>
+                }
               />
               <Route
                 path="cadastrar-empreendimento"
-                element={<CadastrarEmpreendimento />}
+                element={
+                  <ProtectedRoute
+                    allowedPerfis={["master", "admin", "gerente", "marketing"]}
+                  >
+                    <CadastrarEmpreendimento />
+                  </ProtectedRoute>
+                }
               />
-              <Route path="leads" element={<AdminLeads />} />
-              <Route path="leads/novo" element={<NovoLead />} />
-              <Route path="corretores" element={<AdminCorretores />} />
-              <Route path="corretores/novo" element={<NovoCorretor />} />
+
+              {/* ===== LEADS ===== */}
+              <Route
+                path="leads"
+                element={
+                  <ProtectedRoute
+                    allowedPerfis={["master", "admin", "gerente", "corretor"]}
+                  >
+                    <AdminLeads />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="leads/novo"
+                element={
+                  <ProtectedRoute
+                    allowedPerfis={["master", "admin", "gerente", "corretor"]}
+                  >
+                    <NovoLead />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* ===== CORRETORES (GESTÃO) ===== */}
+              {/* Apenas administrativos - corretores NÃO veem esta área */}
+              <Route
+                path="corretores"
+                element={
+                  <ProtectedRoute
+                    allowedPerfis={[
+                      "master",
+                      "admin",
+                      "gerente",
+                      "financeiro",
+                      "marketing",
+                    ]}
+                  >
+                    <AdminCorretores />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="corretores/novo"
+                element={
+                  <ProtectedRoute
+                    allowedPerfis={["master", "admin", "gerente"]}
+                  >
+                    <NovoCorretor />
+                  </ProtectedRoute>
+                }
+              />
               <Route
                 path="corretores/editar/:id"
-                element={<EditarCorretor />}
+                element={
+                  <ProtectedRoute
+                    allowedPerfis={["master", "admin", "gerente"]}
+                  >
+                    <EditarCorretor />
+                  </ProtectedRoute>
+                }
               />
+
+              {/* ===== USUÁRIOS DO SISTEMA ===== */}
+              {/* Apenas master tem acesso */}
               <Route
                 path="usuarios"
                 element={
@@ -217,15 +340,76 @@ function AppRoutes() {
                 }
               />
 
-              {/* 🆕 CONFIGURAÇÕES - após usuários, antes do perfil */}
-              <Route path="configuracoes" element={<Configuracoes />} />
+              {/* ===== CONFIGURAÇÕES ===== */}
+              {/* Apenas master */}
+              <Route
+                path="configuracoes"
+                element={
+                  <ProtectedRoute allowedPerfis={["master"]}>
+                    <Configuracoes />
+                  </ProtectedRoute>
+                }
+              />
 
+              {/* ===== PERFIL ===== */}
+              {/* Todos podem ver seu próprio perfil */}
               <Route path="perfil" element={<Perfil />} />
-              <Route path="candidatos" element={<AdminCandidatos />} />
-              <Route path="estados" element={<AdminEstados />} />
-              <Route path="cidades" element={<AdminCidades />} />
-              <Route path="bairros" element={<AdminBairros />} />
-              <Route path="visitas" element={<AdminVisitas />} />
+
+              {/* ===== CANDIDATOS ===== */}
+              <Route
+                path="candidatos"
+                element={
+                  <ProtectedRoute
+                    allowedPerfis={["master", "admin", "gerente"]}
+                  >
+                    <AdminCandidatos />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* ===== LOCALIDADES ===== */}
+              <Route
+                path="estados"
+                element={
+                  <ProtectedRoute
+                    allowedPerfis={["master", "admin", "gerente"]}
+                  >
+                    <AdminEstados />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="cidades"
+                element={
+                  <ProtectedRoute
+                    allowedPerfis={["master", "admin", "gerente"]}
+                  >
+                    <AdminCidades />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="bairros"
+                element={
+                  <ProtectedRoute
+                    allowedPerfis={["master", "admin", "gerente"]}
+                  >
+                    <AdminBairros />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* ===== VISITAS ===== */}
+              <Route
+                path="visitas"
+                element={
+                  <ProtectedRoute
+                    allowedPerfis={["master", "admin", "gerente", "corretor"]}
+                  >
+                    <AdminVisitas />
+                  </ProtectedRoute>
+                }
+              />
             </Route>
 
             {/* ============ 404 ============ */}

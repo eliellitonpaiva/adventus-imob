@@ -3,17 +3,10 @@ import React from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 
-const ProtectedRoute = ({ children }) => {
+const ProtectedRoute = ({ children, allowedPerfis = [] }) => {
   const { isAuthenticated, loading, user } = useAuth();
 
-  // 🔎 DEBUG CONTROLADO (pode remover depois)
-  console.log("ProtectedRoute state:", {
-    loading,
-    isAuthenticated,
-    user,
-  });
-
-  // ⏳ Enquanto valida sessão
+  // ⏳ Loading
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-[#D4A24D] to-[#31353E]">
@@ -26,11 +19,28 @@ const ProtectedRoute = ({ children }) => {
   }
 
   // 🔐 Não autenticado
-  if (!isAuthenticated) {
+  if (!isAuthenticated || !user) {
     return <Navigate to="/login" replace />;
   }
 
-  // ✅ Autenticado
+  // 👤 Pega o perfil do usuário
+  const perfilUsuario = user.role || user.tipo;
+
+  // 🚫 VERIFICAÇÃO DE PERMISSÃO
+  if (allowedPerfis.length > 0) {
+    // Se não tem permissão
+    if (!allowedPerfis.includes(perfilUsuario)) {
+      // 🎯 REDIRECIONAMENTO INTELIGENTE:
+      // Se for corretor, manda pra imóveis
+      if (perfilUsuario === "corretor") {
+        return <Navigate to="/admin/imoveis" replace />;
+      }
+      // Qualquer outro perfil sem acesso vai pro dashboard (página inicial do admin)
+      return <Navigate to="/admin" replace />;
+    }
+  }
+
+  // ✅ Tudo OK!
   return <>{children}</>;
 };
 
