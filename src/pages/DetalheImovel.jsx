@@ -1295,7 +1295,144 @@ const DetalheImovel = () => {
     carregarFotos,
     navigate,
   ]);
+  // ==========================================================================
+  // EFEITO PARA GARANTIR QUE AS META TAGS SEJAM ESCRITAS NO DOM (CORREÇÃO FACEBOOK)
+  // ==========================================================================
+  useEffect(() => {
+    // Só executa quando os dados do imóvel (dados) estiverem prontos
+    if (dados) {
+      console.log("🔥 Escrevendo meta tags diretamente no DOM...");
 
+      // --- Funções para gerar o conteúdo das tags ---
+      const gerarTituloParaMeta = () => {
+        const emoji = dados.tipo?.toLowerCase().includes("casa") ? "🏠" : "🏢";
+        let titulo = `${emoji} ${dados.tipo || "Imóvel"}`;
+        if (dados.bairro) titulo += ` no ${dados.bairro}`;
+        if (dados.preco) {
+          const preco = new Intl.NumberFormat("pt-BR", {
+            style: "currency",
+            currency: "BRL",
+            minimumFractionDigits: 0,
+          }).format(dados.preco);
+          titulo += ` - ${preco}`;
+        }
+        return `${titulo} | Adventus Imobiliária`;
+      };
+
+      const gerarDescricaoParaMeta = () => {
+        const caracs = [];
+        if (dados.quartos)
+          caracs.push(`${dados.quartos} quarto${dados.quartos > 1 ? "s" : ""}`);
+        if (dados.suites)
+          caracs.push(`${dados.suites} suíte${dados.suites > 1 ? "s" : ""}`);
+        if (dados.vagas)
+          caracs.push(`${dados.vagas} vaga${dados.vagas > 1 ? "s" : ""}`);
+        if (dados.area_construida)
+          caracs.push(`${dados.area_construida}m² construídos`);
+        let desc = caracs.join(" • ");
+        desc += ` no ${dados.bairro || "Colinas Park"}, Açailândia.`;
+        return desc;
+      };
+
+      const tituloCompleto = gerarTituloParaMeta();
+      const descricaoCompleta = gerarDescricaoParaMeta();
+
+      // --- Função auxiliar para criar ou atualizar meta tags ---
+      const setMetaTag = (selector, attributes) => {
+        let tag = document.querySelector(selector);
+        if (!tag) {
+          tag = document.createElement("meta");
+          for (let [key, value] of Object.entries(attributes)) {
+            tag.setAttribute(key, value);
+          }
+          document.head.appendChild(tag);
+        } else {
+          for (let [key, value] of Object.entries(attributes)) {
+            tag.setAttribute(key, value);
+          }
+        }
+      };
+
+      // --- URL da imagem ---
+      let imagemUrl =
+        "https://adventus-imob-vdlz.vercel.app/img/adventusimobiliaria.png";
+      if (fotos && fotos.length > 0) {
+        if (typeof fotos[0] === "string") {
+          imagemUrl = fotos[0];
+        } else if (fotos[0]?.url) {
+          imagemUrl = fotos[0].url;
+        }
+      }
+
+      // --- Atualizar TÍTULO da página ---
+      document.title = tituloCompleto;
+
+      // --- Atualizar meta description padrão ---
+      setMetaTag('meta[name="description"]', {
+        name: "description",
+        content: descricaoCompleta,
+      });
+
+      // --- Atualizar todas as tags Open Graph ---
+      setMetaTag('meta[property="og:title"]', {
+        property: "og:title",
+        content: tituloCompleto,
+      });
+      setMetaTag('meta[property="og:description"]', {
+        property: "og:description",
+        content: descricaoCompleta,
+      });
+      setMetaTag('meta[property="og:image"]', {
+        property: "og:image",
+        content: imagemUrl,
+      });
+      setMetaTag('meta[property="og:image:width"]', {
+        property: "og:image:width",
+        content: "1200",
+      });
+      setMetaTag('meta[property="og:image:height"]', {
+        property: "og:image:height",
+        content: "630",
+      });
+      setMetaTag('meta[property="og:url"]', {
+        property: "og:url",
+        content: window.location.href,
+      });
+      setMetaTag('meta[property="og:type"]', {
+        property: "og:type",
+        content: "website",
+      });
+      setMetaTag('meta[property="og:locale"]', {
+        property: "og:locale",
+        content: "pt_BR",
+      });
+      setMetaTag('meta[property="og:site_name"]', {
+        property: "og:site_name",
+        content: "Adventus Imobiliária",
+      });
+
+      // --- Atualizar todas as tags Twitter ---
+      setMetaTag('meta[name="twitter:card"]', {
+        name: "twitter:card",
+        content: "summary_large_image",
+      });
+      setMetaTag('meta[name="twitter:title"]', {
+        name: "twitter:title",
+        content: tituloCompleto,
+      });
+      setMetaTag('meta[name="twitter:description"]', {
+        name: "twitter:description",
+        content: descricaoCompleta,
+      });
+      setMetaTag('meta[name="twitter:image"]', {
+        name: "twitter:image",
+        content: imagemUrl,
+      });
+
+      console.log("✅ Meta tags escritas no DOM com sucesso!");
+      console.log("📸 Imagem usada:", imagemUrl);
+    }
+  }, [dados, fotos]);
   // ==========================================================================
   // DADOS PROCESSADOS
   // ==========================================================================
