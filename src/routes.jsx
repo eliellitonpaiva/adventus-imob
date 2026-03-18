@@ -22,6 +22,7 @@ const AdminLeads = lazy(() => import("./pages/Admin/Leads"));
 const AdminNovoLead = lazy(() => import("./pages/Admin/NovoLead"));
 const AdminVisitas = lazy(() => import("./pages/Admin/Visitas"));
 const CadastrarImovel = lazy(() => import("./pages/Admin/CadastrarImovel"));
+const EditarImovel = lazy(() => import("./pages/Admin/EditarImovel")); // <-- ADICIONADO
 const Perfil = lazy(() => import("./pages/Admin/Perfil"));
 
 // ========== NOVAS PÁGINAS ADMIN ==========
@@ -104,22 +105,20 @@ function AppRoutes() {
                 </ProtectedRoute>
               }
             />
-
             {/* 2. Rotas de Imóveis */}
             <Route path="imoveis" element={<AdminImoveis />} />
             <Route path="imoveis/novo" element={<CadastrarImovel />} />
-
+            <Route path="imoveis/editar/:id" element={<EditarImovel />} />{" "}
+            {/* <-- ADICIONADO */}
             {/* 3. Rotas de Empreendimentos */}
             <Route path="empreendimentos" element={<ListaEmpreendimentos />} />
             <Route
               path="empreendimentos/novo"
               element={<CadastrarEmpreendimento />}
             />
-
             {/* 4. Rotas de Leads */}
             <Route path="leads" element={<AdminLeads />} />
             <Route path="leads/novo" element={<AdminNovoLead />} />
-
             {/* 5. Rotas de Corretores */}
             <Route
               path="corretores"
@@ -145,7 +144,6 @@ function AppRoutes() {
                 </ProtectedRoute>
               }
             />
-
             {/* 6. Rotas de Usuários */}
             <Route
               path="usuarios"
@@ -163,16 +161,13 @@ function AppRoutes() {
                 </ProtectedRoute>
               }
             />
-
             {/* 7. Outras Rotas */}
             <Route path="visitas" element={<AdminVisitas />} />
             <Route path="perfil" element={<Perfil />} />
-
             {/* 8. Rotas de Localização */}
             <Route path="estados" element={<AdminEstados />} />
             <Route path="cidades" element={<AdminCidades />} />
             <Route path="bairros" element={<AdminBairros />} />
-
             {/* 9. Configurações */}
             <Route path="configuracoes" element={<AdminConfiguracoes />} />
           </Route>
