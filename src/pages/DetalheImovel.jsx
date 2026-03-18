@@ -16,6 +16,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "/src/lib/supabase";
 import { visitasService } from "../lib/visitasService";
 import { useNotifications } from "../contexts/NotificationContext";
+import ImovelMetaTags from "../componentes/ImovelMetaTags/ImovelMetaTags.jsx";
 
 // ============================================================================
 // COMPONENTE PRINCIPAL
@@ -1731,6 +1732,8 @@ const DetalheImovel = () => {
   // ==========================================================================
   return (
     <>
+      <ImovelMetaTags imovel={dados} />
+
       {/* =============== CARROSSEL DE FOTOS EM TELA CHEIA =============== */}
       <section className="relative w-full pt-[65px] md:pt-20">
         {/* Container do carrossel com altura responsiva */}
@@ -1745,7 +1748,6 @@ const DetalheImovel = () => {
               }`}
             />
           ))}
-
           {/* Overlay escuro sutil para melhor contraste */}
           <div className="absolute inset-0 bg-black/10"></div>
 
