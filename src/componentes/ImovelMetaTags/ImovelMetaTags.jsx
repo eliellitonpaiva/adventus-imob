@@ -1,5 +1,6 @@
 // src/componentes/ImovelMetaTags/ImovelMetaTags.jsx
 import { Helmet } from "react-helmet-async";
+import { useEffect } from "react";
 
 function ImovelMetaTags({ imovel, fotos }) {
   if (!imovel) return null;
@@ -7,7 +8,7 @@ function ImovelMetaTags({ imovel, fotos }) {
   const siteUrl = "https://adventus-imob-vdlz.vercel.app";
 
   // ==========================================================================
-  // FUNÇÃO PARA GERAR O TÍTULO (igual)
+  // FUNÇÃO PARA GERAR O TÍTULO
   // ==========================================================================
   const gerarTitulo = () => {
     const emoji = imovel.tipo?.toLowerCase().includes("casa") ? "🏠" : "🏢";
@@ -31,7 +32,7 @@ function ImovelMetaTags({ imovel, fotos }) {
   };
 
   // ==========================================================================
-  // FUNÇÃO PARA GERAR A DESCRIÇÃO (igual)
+  // FUNÇÃO PARA GERAR A DESCRIÇÃO
   // ==========================================================================
   const gerarDescricao = () => {
     const caracteristicas = [];
@@ -71,29 +72,18 @@ function ImovelMetaTags({ imovel, fotos }) {
   };
 
   // ==========================================================================
-  // 🔥 CORREÇÃO: PEGAR A IMAGEM CORRETAMENTE
+  // SELECIONAR A IMAGEM CORRETA
   // ==========================================================================
   let imagemUrl = siteUrl + "/img/adventusimobiliaria.png"; // padrão
 
-  console.log("📸 Verificando fotos:", fotos);
-
   if (fotos && fotos.length > 0) {
-    // A foto já vem como string direta? Ou como objeto?
     const primeiraFoto = fotos[0];
-    console.log("🔍 Tipo da primeira foto:", typeof primeiraFoto);
-    console.log("🔍 Conteúdo:", primeiraFoto);
 
-    // Se for string (URL direta)
     if (typeof primeiraFoto === "string") {
       imagemUrl = primeiraFoto;
-    }
-    // Se for objeto com propriedade url
-    else if (primeiraFoto && primeiraFoto.url) {
+    } else if (primeiraFoto && primeiraFoto.url) {
       imagemUrl = primeiraFoto.url;
-    }
-    // Se for objeto e a URL estiver em outro campo
-    else if (primeiraFoto && typeof primeiraFoto === "object") {
-      // Tenta encontrar qualquer campo que pareça uma URL
+    } else if (primeiraFoto && typeof primeiraFoto === "object") {
       const possiveisCampos = [
         "url",
         "imagem",
@@ -113,14 +103,95 @@ function ImovelMetaTags({ imovel, fotos }) {
         }
       }
     }
-
-    console.log("✅ URL da imagem selecionada:", imagemUrl);
-  } else {
-    console.log("⚠️ Nenhuma foto encontrada, usando imagem padrão");
   }
 
   // ==========================================================================
-  // RENDERIZAÇÃO
+  // 🔥 FORÇAR ATUALIZAÇÃO IMEDIATA NO DOM (PARA O FACEBOOK)
+  // ==========================================================================
+  useEffect(() => {
+    if (imovel) {
+      console.log("🔥 Forçando atualização das meta tags no DOM...");
+
+      // Atualiza title
+      document.title = gerarTitulo();
+
+      // Atualiza meta description
+      let metaDesc = document.querySelector('meta[name="description"]');
+      if (metaDesc) {
+        metaDesc.setAttribute("content", gerarDescricao());
+      } else {
+        metaDesc = document.createElement("meta");
+        metaDesc.name = "description";
+        metaDesc.content = gerarDescricao();
+        document.head.appendChild(metaDesc);
+      }
+
+      // Atualiza og:title
+      let ogTitle = document.querySelector('meta[property="og:title"]');
+      if (ogTitle) {
+        ogTitle.setAttribute("content", gerarTitulo());
+      } else {
+        ogTitle = document.createElement("meta");
+        ogTitle.setAttribute("property", "og:title");
+        ogTitle.content = gerarTitulo();
+        document.head.appendChild(ogTitle);
+      }
+
+      // Atualiza og:description
+      let ogDesc = document.querySelector('meta[property="og:description"]');
+      if (ogDesc) {
+        ogDesc.setAttribute("content", gerarDescricao());
+      } else {
+        ogDesc = document.createElement("meta");
+        ogDesc.setAttribute("property", "og:description");
+        ogDesc.content = gerarDescricao();
+        document.head.appendChild(ogDesc);
+      }
+
+      // Atualiza og:image
+      let ogImage = document.querySelector('meta[property="og:image"]');
+      if (ogImage) {
+        ogImage.setAttribute("content", imagemUrl);
+      } else {
+        ogImage = document.createElement("meta");
+        ogImage.setAttribute("property", "og:image");
+        ogImage.content = imagemUrl;
+        document.head.appendChild(ogImage);
+      }
+
+      // Atualiza og:image:width
+      let ogWidth = document.querySelector('meta[property="og:image:width"]');
+      if (!ogWidth) {
+        ogWidth = document.createElement("meta");
+        ogWidth.setAttribute("property", "og:image:width");
+        ogWidth.content = "1200";
+        document.head.appendChild(ogWidth);
+      }
+
+      // Atualiza og:image:height
+      let ogHeight = document.querySelector('meta[property="og:image:height"]');
+      if (!ogHeight) {
+        ogHeight = document.createElement("meta");
+        ogHeight.setAttribute("property", "og:image:height");
+        ogHeight.content = "630";
+        document.head.appendChild(ogHeight);
+      }
+
+      // Atualiza og:url
+      let ogUrl = document.querySelector('meta[property="og:url"]');
+      if (!ogUrl) {
+        ogUrl = document.createElement("meta");
+        ogUrl.setAttribute("property", "og:url");
+        ogUrl.content = window.location.href;
+        document.head.appendChild(ogUrl);
+      }
+
+      console.log("✅ Meta tags atualizadas manualmente!");
+    }
+  }, [imovel, fotos]);
+
+  // ==========================================================================
+  // RENDERIZAÇÃO DO HELMET (BACKUP)
   // ==========================================================================
   return (
     <Helmet>
