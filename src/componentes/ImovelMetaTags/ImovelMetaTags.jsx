@@ -4,8 +4,7 @@ import { Helmet } from "react-helmet-async";
 function ImovelMetaTags({ imovel, fotos }) {
   if (!imovel) return null;
 
-  const siteUrl =
-    "https://adventus-imob-vdlz-atcbo9e5z-eliellitonpaivas-projects.vercel.app";
+  const siteUrl = "https://adventus-imob-vdlz.vercel.app";
 
   // ==========================================================================
   // FUNÇÃO PARA GERAR O TÍTULO (igual)

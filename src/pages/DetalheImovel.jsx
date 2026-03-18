@@ -1146,48 +1146,71 @@ const DetalheImovel = () => {
       try {
         setLoading(true);
 
+        console.log("🔵 [1] Iniciando fetchImovel");
         console.log("🟡 SLUG RECEBIDO:", slug);
         console.log("🟡 CÓDIGO RECEBIDO:", codigo);
 
         // 🔥 NOVA LÓGICA: Busca combinando slug E código (quando ambos existem)
         let query = supabase.from("imoveis").select("*");
+        console.log("🔵 [2] Query criada");
 
         if (slug && codigo) {
           // Caso 1: Temos slug E código na URL (formato ideal)
-          console.log("🔎 Buscando por SLUG + CÓDIGO:", { slug, codigo });
+          console.log("🔎 [3] Buscando por SLUG + CÓDIGO:", { slug, codigo });
           query = query.eq("slug", slug).eq("codigo", codigo);
         } else if (slug) {
           // Caso 2: Apenas slug (URL antiga)
-          console.log("🔎 Buscando apenas por SLUG:", slug);
+          console.log("🔎 [3] Buscando apenas por SLUG:", slug);
           query = query.eq("slug", slug);
         } else if (codigo) {
           // Caso 3: Apenas código (fallback)
-          console.log("🔎 Buscando apenas por CÓDIGO:", codigo);
+          console.log("🔎 [3] Buscando apenas por CÓDIGO:", codigo);
           query = query.eq("codigo", codigo);
         } else {
           throw new Error("Parâmetros inválidos");
         }
 
+        console.log("🔵 [4] Executando query no Supabase...");
         const { data: imovelData, error: imovelError } =
           await query.maybeSingle();
+        console.log("🔵 [5] Query executada");
 
         console.log(
-          "📦 Resultado da busca:",
+          "📦 [6] Resultado da busca:",
           imovelData ? "Encontrado" : "Não encontrado",
         );
 
-        if (imovelError) throw imovelError;
-        if (!imovelData) throw new Error("Imóvel não encontrado");
+        if (imovelError) {
+          console.error("🔴 [7] Erro na query:", imovelError);
+          throw imovelError;
+        }
+
+        if (!imovelData) {
+          console.warn("🟡 [8] Imóvel não encontrado");
+          throw new Error("Imóvel não encontrado");
+        }
+
+        console.log("🟢 [9] Imóvel encontrado, ID:", imovelData.id);
+        console.log("🟢 [9.1] Dados do imóvel:", {
+          id: imovelData.id,
+          titulo: imovelData.titulo,
+          tipo: imovelData.tipo,
+          slug: imovelData.slug,
+          codigo: imovelData.codigo,
+        });
 
         // 🔥 VERIFICAÇÃO DE SEGURANÇA: Se buscamos por slug+codigo, confere se o código bate
         if (slug && codigo && imovelData.codigo !== codigo) {
-          console.warn("⚠️ Código não corresponde ao slug! Redirecionando...");
+          console.warn(
+            "⚠️ [10] Código não corresponde ao slug! Redirecionando...",
+          );
           navigate(`/imovel/${imovelData.slug}/${imovelData.codigo}`, {
             replace: true,
           });
           return;
         }
 
+        console.log("🟢 [11] Buscando finalidades do imóvel...");
         // 🔥 Buscar finalidades do imóvel
         const { data: finalidadesData, error: finalidadesError } =
           await supabase
@@ -1196,9 +1219,21 @@ const DetalheImovel = () => {
             .eq("imovel_id", imovelData.id)
             .eq("status", "ativo");
 
-        if (finalidadesError) throw finalidadesError;
+        if (finalidadesError) {
+          console.error(
+            "🔴 [12] Erro ao buscar finalidades:",
+            finalidadesError,
+          );
+          throw finalidadesError;
+        }
+
+        console.log(
+          "🟢 [13] Finalidades carregadas:",
+          finalidadesData?.length || 0,
+        );
 
         if (imovelData.id_edificios && isMounted) {
+          console.log("🟢 [14] Buscando dados do edifício...");
           const { data: edificioData } = await supabase
             .from("edificios")
             .select("id, nome, tipo")
@@ -1207,10 +1242,12 @@ const DetalheImovel = () => {
 
           if (edificioData) {
             imovelData.edificios = edificioData;
+            console.log("🟢 [15] Edifício encontrado:", edificioData.nome);
           }
         }
 
         if (isMounted) {
+          console.log("🟢 [16] Atualizando estados...");
           setImovel(imovelData);
           setFinalidades(finalidadesData || []);
 
@@ -1218,18 +1255,30 @@ const DetalheImovel = () => {
             imovelData.status === "vendido" ||
             imovelData.status === "alugado"
           ) {
+            console.log("🟡 [17] Imóvel vendido/alugado, redirecionando...");
             navigate("/comprar");
             return;
           }
+
+          console.log("🟢 [18] Carregando fotos...");
           await carregarFotos(imovelData.id);
+
+          console.log("🟢 [19] Registrando visualização...");
           await registrarVisualizacao(imovelData.id);
+
+          console.log("🟢 [20] Buscando estatísticas...");
           await buscarVisualizacoes(imovelData.id);
+
+          console.log("🟢 [21] TUDO CARREGADO COM SUCESSO!");
         }
       } catch (err) {
-        console.error("❌ Erro:", err);
+        console.error("🔴 [ERRO] Detalhado:", err);
         if (isMounted) setError(err.message);
       } finally {
-        if (isMounted) setLoading(false);
+        if (isMounted) {
+          console.log("🟢 [22] Finalizando loading");
+          setLoading(false);
+        }
       }
     };
 
