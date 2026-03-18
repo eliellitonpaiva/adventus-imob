@@ -31,9 +31,17 @@ const AdminBairros = lazy(() => import("./pages/Admin/Bairros"));
 const AdminUsuarios = lazy(() => import("./pages/Admin/Usuarios"));
 const AdminConfiguracoes = lazy(() => import("./pages/Admin/Configuracoes"));
 
+// ========== EMPREENDIMENTOS ==========
+const ListaEmpreendimentos = lazy(
+  () => import("./pages/Admin/ListaEmpreendimentos"),
+);
+const CadastrarEmpreendimento = lazy(
+  () => import("./pages/Admin/CadastrarEmpreendimento"),
+);
+
 // ========== PÁGINAS DE CADASTRO E EDIÇÃO ==========
 const AdminNovoCorretor = lazy(() => import("./pages/Admin/NovoCorretor"));
-const AdminEditarCorretor = lazy(() => import("./pages/Admin/EditarCorretor")); // <-- ADICIONADO
+const AdminEditarCorretor = lazy(() => import("./pages/Admin/EditarCorretor"));
 const AdminNovoUsuario = lazy(() => import("./pages/Admin/NovoUsuario"));
 
 function Loader() {
@@ -101,11 +109,18 @@ function AppRoutes() {
             <Route path="imoveis" element={<AdminImoveis />} />
             <Route path="imoveis/novo" element={<CadastrarImovel />} />
 
-            {/* 3. Rotas de Leads */}
+            {/* 3. Rotas de Empreendimentos */}
+            <Route path="empreendimentos" element={<ListaEmpreendimentos />} />
+            <Route
+              path="empreendimentos/novo"
+              element={<CadastrarEmpreendimento />}
+            />
+
+            {/* 4. Rotas de Leads */}
             <Route path="leads" element={<AdminLeads />} />
             <Route path="leads/novo" element={<AdminNovoLead />} />
 
-            {/* 4. Rotas de Corretores */}
+            {/* 5. Rotas de Corretores */}
             <Route
               path="corretores"
               element={
@@ -122,7 +137,6 @@ function AppRoutes() {
                 </ProtectedRoute>
               }
             />
-            {/* 🆕 NOVA ROTA: Editar Corretor */}
             <Route
               path="corretores/editar/:id"
               element={
@@ -132,7 +146,7 @@ function AppRoutes() {
               }
             />
 
-            {/* 5. Rotas de Usuários */}
+            {/* 6. Rotas de Usuários */}
             <Route
               path="usuarios"
               element={
@@ -150,16 +164,16 @@ function AppRoutes() {
               }
             />
 
-            {/* 6. Outras Rotas */}
+            {/* 7. Outras Rotas */}
             <Route path="visitas" element={<AdminVisitas />} />
             <Route path="perfil" element={<Perfil />} />
 
-            {/* 7. Rotas de Localização */}
+            {/* 8. Rotas de Localização */}
             <Route path="estados" element={<AdminEstados />} />
             <Route path="cidades" element={<AdminCidades />} />
             <Route path="bairros" element={<AdminBairros />} />
 
-            {/* 8. Configurações */}
+            {/* 9. Configurações */}
             <Route path="configuracoes" element={<AdminConfiguracoes />} />
           </Route>
 

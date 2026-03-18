@@ -226,7 +226,7 @@ const ListaEmpreendimentos = () => {
             </div>
             <Button
               variant="primary"
-              onClick={() => navigate("/admin/cadastrar-empreendimento")}
+              onClick={() => navigate("/admin/empreendimentos/novo")} // <-- CORRIGIDO
             >
               <PlusIcon className="w-5 h-5 mr-2" />
               Novo Empreendimento
@@ -235,7 +235,7 @@ const ListaEmpreendimentos = () => {
         </div>
       </div>
 
-      {/* CONTEÚDO PRINCIPAL */}
+      {/* CONTEÚDO PRINCIPAL - O RESTO DO CÓDIGO PERMANECE IGUAL */}
       <div className="px-6 py-8">
         {/* BARRA DE FILTROS */}
         <div className="mb-6">
@@ -369,7 +369,7 @@ const ListaEmpreendimentos = () => {
               {empreendimentos.length === 0 && (
                 <Button
                   variant="primary"
-                  onClick={() => navigate("/admin/cadastrar-empreendimento")}
+                  onClick={() => navigate("/admin/empreendimentos/novo")} // <-- CORRIGIDO
                 >
                   <PlusIcon className="w-5 h-5 mr-2" />
                   Cadastrar Primeiro Empreendimento
@@ -379,7 +379,7 @@ const ListaEmpreendimentos = () => {
           </div>
         ) : (
           <>
-            {/* GRID DE CARDS */}
+            {/* GRID DE CARDS - O RESTO DO CÓDIGO PERMANECE IGUAL */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {empreendimentosPaginados.map((empreendimento) => {
                 const TipoIcon = getTipoIcon(empreendimento.tipo);
@@ -418,7 +418,7 @@ const ListaEmpreendimentos = () => {
                             <span
                               className={`text-xs ${getTextSecondaryClass()}`}
                             >
-                              ID: {empreendimento.id}
+                              ID: {empreendimento.id.slice(0, 8)}...
                             </span>
                             <h3
                               className={`font-semibold text-lg ${getTextClass()}`}
