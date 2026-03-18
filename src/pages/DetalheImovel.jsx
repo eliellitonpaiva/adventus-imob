@@ -16,7 +16,6 @@ import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "/src/lib/supabase";
 import { visitasService } from "../lib/visitasService";
 import { useNotifications } from "../contexts/NotificationContext";
-import ImovelMetaTags from "../componentes/ImovelMetaTags/ImovelMetaTags.jsx";
 
 // ============================================================================
 // COMPONENTE PRINCIPAL
@@ -412,16 +411,37 @@ const DetalheImovel = () => {
     return partes.join(" ");
   }, []);
 
+  // ==========================================================================
+  // 🔥 FUNÇÃO CORRIGIDA - EXATAMENTE COMO VOCÊ PEDIU
+  // ==========================================================================
   const gerarSlugSEO = useCallback(
     (dados) => {
       if (!dados) return "imovel";
 
       const partes = [];
 
-      if (dados.tipo) partes.push(dados.tipo.toLowerCase());
-      if (dados.quartos > 0) partes.push(`${dados.quartos}-dormitorios`);
+      // Bairro (sem o "casa-" porque já vem do tipo)
+      if (dados.bairro) {
+        const bairroLimpo = dados.bairro.toLowerCase().replace(/\s+/g, "-");
+        partes.push(bairroLimpo);
+      }
 
-      // 🔥 Usar finalidades carregadas
+      // Quartos (sempre)
+      if (dados.quartos > 0) {
+        partes.push(`${dados.quartos}-dormitorios`);
+      }
+
+      // Vagas (sempre)
+      if (dados.vagas > 0) {
+        partes.push(`${dados.vagas}-vaga${dados.vagas > 1 ? "s" : ""}`);
+      }
+
+      // Área construída (sempre)
+      if (dados.areaConstruida > 0) {
+        partes.push(`${dados.areaConstruida}-m`);
+      }
+
+      // Finalidade
       const temVenda = finalidades.some((f) => f.tipo === "venda");
       const temAluguel = finalidades.some((f) => f.tipo === "aluguel");
 
@@ -432,12 +452,6 @@ const DetalheImovel = () => {
       } else if (temVenda && temAluguel) {
         partes.push("venda-aluguel");
       }
-
-      if (dados.bairro)
-        partes.push(dados.bairro.toLowerCase().replace(/\s+/g, "-"));
-      if (dados.cidade)
-        partes.push(dados.cidade.toLowerCase().replace(/\s+/g, "-"));
-      if (dados.estado) partes.push(dados.estado.toLowerCase());
 
       return partes.join("-");
     },
@@ -1146,71 +1160,44 @@ const DetalheImovel = () => {
       try {
         setLoading(true);
 
-        console.log("🔵 [1] Iniciando fetchImovel");
         console.log("🟡 SLUG RECEBIDO:", slug);
         console.log("🟡 CÓDIGO RECEBIDO:", codigo);
 
         // 🔥 NOVA LÓGICA: Busca combinando slug E código (quando ambos existem)
         let query = supabase.from("imoveis").select("*");
-        console.log("🔵 [2] Query criada");
 
-        if (slug && codigo) {
-          // Caso 1: Temos slug E código na URL (formato ideal)
-          console.log("🔎 [3] Buscando por SLUG + CÓDIGO:", { slug, codigo });
-          query = query.eq("slug", slug).eq("codigo", codigo);
-        } else if (slug) {
-          // Caso 2: Apenas slug (URL antiga)
-          console.log("🔎 [3] Buscando apenas por SLUG:", slug);
-          query = query.eq("slug", slug);
-        } else if (codigo) {
-          // Caso 3: Apenas código (fallback)
-          console.log("🔎 [3] Buscando apenas por CÓDIGO:", codigo);
+        // 🔥 NOVA LÓGICA: Primeiro tenta pelo CÓDIGO (é único)
+        if (codigo) {
+          console.log("🔎 Buscando por CÓDIGO:", codigo);
           query = query.eq("codigo", codigo);
+        }
+        // Se não tem código, tenta pelo slug
+        else if (slug) {
+          console.log("🔎 Buscando por SLUG:", slug);
+          query = query.eq("slug", slug);
         } else {
           throw new Error("Parâmetros inválidos");
         }
-
-        console.log("🔵 [4] Executando query no Supabase...");
         const { data: imovelData, error: imovelError } =
           await query.maybeSingle();
-        console.log("🔵 [5] Query executada");
 
         console.log(
-          "📦 [6] Resultado da busca:",
+          "📦 Resultado da busca:",
           imovelData ? "Encontrado" : "Não encontrado",
         );
 
-        if (imovelError) {
-          console.error("🔴 [7] Erro na query:", imovelError);
-          throw imovelError;
-        }
-
-        if (!imovelData) {
-          console.warn("🟡 [8] Imóvel não encontrado");
-          throw new Error("Imóvel não encontrado");
-        }
-
-        console.log("🟢 [9] Imóvel encontrado, ID:", imovelData.id);
-        console.log("🟢 [9.1] Dados do imóvel:", {
-          id: imovelData.id,
-          titulo: imovelData.titulo,
-          tipo: imovelData.tipo,
-          slug: imovelData.slug,
-          codigo: imovelData.codigo,
-        });
+        if (imovelError) throw imovelError;
+        if (!imovelData) throw new Error("Imóvel não encontrado");
 
         // 🔥 VERIFICAÇÃO DE SEGURANÇA: Se buscamos por slug+codigo, confere se o código bate
         if (slug && codigo && imovelData.codigo !== codigo) {
-          console.warn(
-            "⚠️ [10] Código não corresponde ao slug! Redirecionando...",
-          );
+          console.warn("⚠️ Código não corresponde ao slug! Redirecionando...");
           navigate(`/imovel/${imovelData.slug}/${imovelData.codigo}`, {
             replace: true,
           });
           return;
         }
 
-        console.log("🟢 [11] Buscando finalidades do imóvel...");
         // 🔥 Buscar finalidades do imóvel
         const { data: finalidadesData, error: finalidadesError } =
           await supabase
@@ -1219,21 +1206,9 @@ const DetalheImovel = () => {
             .eq("imovel_id", imovelData.id)
             .eq("status", "ativo");
 
-        if (finalidadesError) {
-          console.error(
-            "🔴 [12] Erro ao buscar finalidades:",
-            finalidadesError,
-          );
-          throw finalidadesError;
-        }
-
-        console.log(
-          "🟢 [13] Finalidades carregadas:",
-          finalidadesData?.length || 0,
-        );
+        if (finalidadesError) throw finalidadesError;
 
         if (imovelData.id_edificios && isMounted) {
-          console.log("🟢 [14] Buscando dados do edifício...");
           const { data: edificioData } = await supabase
             .from("edificios")
             .select("id, nome, tipo")
@@ -1242,12 +1217,10 @@ const DetalheImovel = () => {
 
           if (edificioData) {
             imovelData.edificios = edificioData;
-            console.log("🟢 [15] Edifício encontrado:", edificioData.nome);
           }
         }
 
         if (isMounted) {
-          console.log("🟢 [16] Atualizando estados...");
           setImovel(imovelData);
           setFinalidades(finalidadesData || []);
 
@@ -1255,30 +1228,18 @@ const DetalheImovel = () => {
             imovelData.status === "vendido" ||
             imovelData.status === "alugado"
           ) {
-            console.log("🟡 [17] Imóvel vendido/alugado, redirecionando...");
             navigate("/comprar");
             return;
           }
-
-          console.log("🟢 [18] Carregando fotos...");
           await carregarFotos(imovelData.id);
-
-          console.log("🟢 [19] Registrando visualização...");
           await registrarVisualizacao(imovelData.id);
-
-          console.log("🟢 [20] Buscando estatísticas...");
           await buscarVisualizacoes(imovelData.id);
-
-          console.log("🟢 [21] TUDO CARREGADO COM SUCESSO!");
         }
       } catch (err) {
-        console.error("🔴 [ERRO] Detalhado:", err);
+        console.error("❌ Erro:", err);
         if (isMounted) setError(err.message);
       } finally {
-        if (isMounted) {
-          console.log("🟢 [22] Finalizando loading");
-          setLoading(false);
-        }
+        if (isMounted) setLoading(false);
       }
     };
 
@@ -1738,173 +1699,14 @@ const DetalheImovel = () => {
   );
 
   // ==========================================================================
-  // NOVO EFEITO PARA GARANTIR QUE AS META TAGS SEJAM ESCRITAS NO DOM
+  // REDIRECIONAR PARA URL CORRETA COM SLUG COMPLETO
   // ==========================================================================
   useEffect(() => {
-    if (dados && dados.id) {
-      console.log("🔥 Escrevendo meta tags diretamente no DOM...");
-
-      // --- Gerar o conteúdo das tags ---
-      const gerarTituloParaMeta = () => {
-        try {
-          const emoji = dados.tipo?.toLowerCase().includes("casa")
-            ? "🏠"
-            : "🏢";
-          let titulo = `${emoji} ${dados.tipo || "Imóvel"}`;
-          if (dados.bairro) titulo += ` no ${dados.bairro}`;
-          if (dados.preco) {
-            const preco = new Intl.NumberFormat("pt-BR", {
-              style: "currency",
-              currency: "BRL",
-              minimumFractionDigits: 0,
-            }).format(dados.preco);
-            titulo += ` - ${preco}`;
-          }
-          return `${titulo} | Adventus Imobiliária`;
-        } catch (e) {
-          console.error("Erro ao gerar título:", e);
-          return "Imóvel | Adventus Imobiliária";
-        }
-      };
-
-      const gerarDescricaoParaMeta = () => {
-        try {
-          const caracs = [];
-          if (dados.quartos)
-            caracs.push(
-              `${dados.quartos} quarto${dados.quartos > 1 ? "s" : ""}`,
-            );
-          if (dados.suites)
-            caracs.push(`${dados.suites} suíte${dados.suites > 1 ? "s" : ""}`);
-          if (dados.vagas)
-            caracs.push(`${dados.vagas} vaga${dados.vagas > 1 ? "s" : ""}`);
-          if (dados.banheiros)
-            caracs.push(
-              `${dados.banheiros} banheiro${dados.banheiros > 1 ? "s" : ""}`,
-            );
-          if (dados.area_construida)
-            caracs.push(`${dados.area_construida}m² construídos`);
-          let desc = caracs.join(" • ");
-          desc += ` no ${dados.bairro || "Colinas Park"}, Açailândia.`;
-          return desc;
-        } catch (e) {
-          console.error("Erro ao gerar descrição:", e);
-          return "Imóvel em Açailândia. Agende sua visita!";
-        }
-      };
-
-      const tituloCompleto = gerarTituloParaMeta();
-      const descricaoCompleta = gerarDescricaoParaMeta();
-
-      // --- Função auxiliar para criar ou atualizar meta tags ---
-      const setMetaTag = (selector, attributes) => {
-        try {
-          let tag = document.querySelector(selector);
-          if (!tag) {
-            tag = document.createElement("meta");
-            for (let [key, value] of Object.entries(attributes)) {
-              tag.setAttribute(key, value);
-            }
-            document.head.appendChild(tag);
-          } else {
-            for (let [key, value] of Object.entries(attributes)) {
-              tag.setAttribute(key, value);
-            }
-          }
-        } catch (e) {
-          console.error(`Erro ao definir tag ${selector}:`, e);
-        }
-      };
-
-      // --- URL da imagem ---
-      let imagemUrl =
-        "https://adventus-imob-vdlz.vercel.app/img/adventusimobiliaria.png";
-      try {
-        if (fotos && fotos.length > 0) {
-          if (typeof fotos[0] === "string") {
-            imagemUrl = fotos[0];
-            console.log("📸 Imagem string:", imagemUrl);
-          } else if (fotos[0]?.url) {
-            imagemUrl = fotos[0].url;
-            console.log("📸 Imagem objeto.url:", imagemUrl);
-          }
-        }
-      } catch (e) {
-        console.error("Erro ao processar imagem:", e);
-      }
-
-      console.log("📝 Título:", tituloCompleto);
-      console.log("📝 Descrição:", descricaoCompleta);
-      console.log("📸 Imagem:", imagemUrl);
-
-      // --- Atualizar TÍTULO da página ---
-      document.title = tituloCompleto;
-
-      // --- Atualizar meta description padrão ---
-      setMetaTag('meta[name="description"]', {
-        name: "description",
-        content: descricaoCompleta,
-      });
-
-      // --- Atualizar todas as tags Open Graph ---
-      setMetaTag('meta[property="og:title"]', {
-        property: "og:title",
-        content: tituloCompleto,
-      });
-      setMetaTag('meta[property="og:description"]', {
-        property: "og:description",
-        content: descricaoCompleta,
-      });
-      setMetaTag('meta[property="og:image"]', {
-        property: "og:image",
-        content: imagemUrl,
-      });
-      setMetaTag('meta[property="og:image:width"]', {
-        property: "og:image:width",
-        content: "1200",
-      });
-      setMetaTag('meta[property="og:image:height"]', {
-        property: "og:image:height",
-        content: "630",
-      });
-      setMetaTag('meta[property="og:url"]', {
-        property: "og:url",
-        content: window.location.href,
-      });
-      setMetaTag('meta[property="og:type"]', {
-        property: "og:type",
-        content: "website",
-      });
-      setMetaTag('meta[property="og:locale"]', {
-        property: "og:locale",
-        content: "pt_BR",
-      });
-      setMetaTag('meta[property="og:site_name"]', {
-        property: "og:site_name",
-        content: "Adventus Imobiliária",
-      });
-
-      // --- Atualizar todas as tags Twitter ---
-      setMetaTag('meta[name="twitter:card"]', {
-        name: "twitter:card",
-        content: "summary_large_image",
-      });
-      setMetaTag('meta[name="twitter:title"]', {
-        name: "twitter:title",
-        content: tituloCompleto,
-      });
-      setMetaTag('meta[name="twitter:description"]', {
-        name: "twitter:description",
-        content: descricaoCompleta,
-      });
-      setMetaTag('meta[name="twitter:image"]', {
-        name: "twitter:image",
-        content: imagemUrl,
-      });
-
-      console.log("✅ Meta tags escritas no DOM com sucesso!");
+    if (dados?.slugSEO && dados?.slugSEO !== slug) {
+      console.log("🔄 Redirecionando para URL correta:", dados.slugSEO);
+      navigate(`/imovel/${dados.slugSEO}/${dados.codigo}`, { replace: true });
     }
-  }, [dados, fotos]);
+  }, [dados, slug, codigo, navigate]);
 
   // ==========================================================================
   // LOADING STATE
@@ -1950,9 +1752,6 @@ const DetalheImovel = () => {
   // ==========================================================================
   return (
     <>
-      {/* PASSA O IMOVEL E AS FOTOS */}
-      <ImovelMetaTags imovel={dados} fotos={fotos} />
-
       {/* =============== CARROSSEL DE FOTOS EM TELA CHEIA =============== */}
       <section className="relative w-full pt-[65px] md:pt-20">
         {/* Container do carrossel com altura responsiva */}
@@ -1967,6 +1766,7 @@ const DetalheImovel = () => {
               }`}
             />
           ))}
+
           {/* Overlay escuro sutil para melhor contraste */}
           <div className="absolute inset-0 bg-black/10"></div>
 
@@ -2652,7 +2452,7 @@ const DetalheImovel = () => {
       )}
 
       {/* ===== ESTILOS GLOBAIS ===== */}
-      <style jsx="true" global={true}>{`
+      <style jsx="true" global="true">{`
         @import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap");
         @import url("https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css");
 
