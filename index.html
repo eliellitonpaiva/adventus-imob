@@ -2,74 +2,40 @@
 <html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
-
-    <!-- Configuração de responsividade e acessibilidade -->
     <meta
       name="viewport"
       content="width=device-width, initial-scale=1.0, maximum-scale=5.0"
     />
 
-    <!-- Título otimizado para SEO (máximo 60 caracteres) -->
-    <title>Adventus Imobiliária | Compra, Venda e Aluguel em Açailândia</title>
+    <title>Adventus Imobiliária | Conquiste sua casa hoje</title>
 
-    <!-- Descrição para mecanismos de busca (máximo 160 caracteres) -->
     <meta
       name="description"
-      content="Encontre seu imóvel em Açailândia com a Adventus Imobiliária. Compra, venda e aluguel de casas, apartamentos e imóveis comerciais."
+      content="Realize o sonho da casa própria com a Adventus Imobiliária. As melhores opções de compra, venda e aluguel em Açailândia."
     />
 
-    <!-- Palavras-chave estratégicas -->
     <meta
       name="keywords"
       content="imobiliária Açailândia, comprar imóvel Açailândia, alugar casa, venda apartamento, Adventus Imobiliária, corretor imóveis"
     />
 
-    <!-- Autor e direitos autorais -->
     <meta name="author" content="Adventus Imobiliária" />
-    <meta name="copyright" content="© 2025 Adventus Imobiliária" />
+    <meta name="copyright" content="© 2026 Adventus Imobiliária" />
 
-    <!-- ===== OPEN GRAPH TAGS COMENTADAS ===== -->
-    <!-- ELAS SERÃO GERADAS DINAMICAMENTE PELO REACT -->
-    <!-- 
-    <meta property="og:title" content="Adventus Imobiliária | Seu imóvel em Açailândia" />
-    <meta property="og:description" content="Compra, venda e aluguel de imóveis em Açailândia. Atendimento especializado e transparência garantida." />
-    <meta property="og:image" content="https://adventusimobiliaria.com.br/img/adventusimobiliaria.png" />
-    <meta property="og:image:width" content="1200" />
-    <meta property="og:image:height" content="630" />
-    <meta property="og:url" content="https://adventusimobiliaria.com.br" />
-    <meta property="og:type" content="website" />
-    <meta property="og:locale" content="pt_BR" />
-    <meta property="og:site_name" content="Adventus Imobiliária" />
-    -->
-
-    <!-- ===== TWITTER CARDS TAGS COMENTADAS ===== -->
-    <!-- ELAS SERÃO GERADAS DINAMICAMENTE PELO REACT -->
-    <!-- 
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Adventus Imobiliária | Imóveis em Açailândia" />
-    <meta name="twitter:description" content="Encontre o imóvel ideal para você em Açailândia." />
-    <meta name="twitter:image" content="https://adventusimobiliaria.com.br/img/adventusimobiliaria.png" />
-    -->
-
-    <!-- Canonical URL para evitar conteúdo duplicado -->
     <link rel="canonical" href="https://adventusimobiliaria.com.br" />
 
-    <!-- Ícone do site (favicon) -->
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon" />
 
-    <!-- Preconnect para melhor performance -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="preconnect" href="https://cdnjs.cloudflare.com" />
 
-    <!-- Fonte Montserrat - Otimizada -->
     <link
       href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
 
-    <!-- Font Awesome 6.5.0 -->
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
@@ -77,10 +43,22 @@
       referrerpolicy="no-referrer"
     />
 
-    <!-- Tailwind CSS para utilitários -->
+    <!-- Google tag (gtag.js) -->
+    <script
+      async
+      src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXX"
+    ></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() {
+        dataLayer.push(arguments);
+      }
+      gtag("js", new Date());
+      gtag("config", "G-XXXXXXX");
+    </script>
+
     <script src="https://cdn.tailwindcss.com"></script>
 
-    <!-- Configuração CRÍTICA do Tailwind com Montserrat -->
     <script>
       tailwind.config = {
         theme: {
@@ -99,14 +77,11 @@
       };
     </script>
 
-    <!-- CSS CRÍTICO para separar fontes de texto e ícones -->
     <style>
-      /* FORÇAR Montserrat para todos os textos */
       * {
         font-family: "Montserrat", sans-serif !important;
       }
 
-      /* EXCEÇÃO: Ícones usam Font Awesome */
       .fa,
       .fas,
       .far,
@@ -119,7 +94,6 @@
         font-family: "Font Awesome 6 Free", "Font Awesome 6 Brands" !important;
       }
 
-      /* Garantir elementos específicos */
       body,
       div,
       p,
@@ -144,14 +118,12 @@
         font-family: "Montserrat", sans-serif !important;
       }
 
-      /* Aplicar peso de fonte adequado para melhor legibilidade */
       body {
         font-weight: 400;
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
       }
 
-      /* Garantir que títulos tenham peso correto */
       h1,
       h2,
       h3,
@@ -164,21 +136,7 @@
   </head>
 
   <body class="font-sans">
-    <!-- Container principal da aplicação React -->
     <div id="root"></div>
-
-    <!-- Arquivo principal do React (Vite) -->
     <script type="module" src="/src/main.jsx"></script>
-
-    <!-- Google Analytics (opcional - para produção) -->
-    <!--
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXX"></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-      gtag('config', 'G-XXXXXXX');
-    </script>
-    -->
   </body>
 </html>
