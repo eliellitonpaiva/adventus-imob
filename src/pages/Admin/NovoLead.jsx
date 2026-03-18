@@ -27,7 +27,7 @@ const NovoLead = () => {
   const [submitMessage, setSubmitMessage] = useState({ type: "", text: "" });
   const [imovelEncontrado, setImovelEncontrado] = useState(null);
 
-  // Estado do formulário
+  // Estado do formulário - CORRIGIDO: observacoes_iniciais
   const [formData, setFormData] = useState({
     nome: "",
     telefone: "",
@@ -39,7 +39,7 @@ const NovoLead = () => {
     status: "novo",
     melhor_dia: "",
     melhor_horario: "",
-    observacoes: "",
+    observacoes_iniciais: "", // <-- ALTERADO DE observacoes PARA observacoes_iniciais
   });
 
   // =============== BUSCAR IMÓVEL PELO CÓDIGO ===============
@@ -527,7 +527,7 @@ const NovoLead = () => {
               {/* Espaço reservado */}
               <div></div>
 
-              {/* Observações */}
+              {/* Observações - CORRIGIDO: name="observacoes_iniciais" */}
               <div className="lg:col-span-3">
                 <label
                   className={`block text-sm font-medium mb-2 transition-colors ${getLabelClass()}`}
@@ -541,8 +541,8 @@ const NovoLead = () => {
                     />
                   </div>
                   <textarea
-                    name="observacoes"
-                    value={formData.observacoes}
+                    name="observacoes_iniciais" // <-- ALTERADO DE observacoes PARA observacoes_iniciais
+                    value={formData.observacoes_iniciais}
                     onChange={handleChange}
                     rows="5"
                     placeholder="Informações adicionais sobre o lead..."

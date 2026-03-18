@@ -32,6 +32,7 @@ const EditarCorretor = () => {
     telefone: "",
     creci: "",
     creci_validade: "",
+    genero: "masculino", // 🆕 NOVO CAMPO!
     creci_desde: "",
     experiencia_anos: "",
     formacao: "",
@@ -50,7 +51,7 @@ const EditarCorretor = () => {
     senha: "",
     periodoExperiencia: false,
     treinamento_conclusao: "",
-    data_ativacao: "", // 🆕 CAMPO ADICIONADO
+    data_ativacao: "",
     data_experiencia_fim: "",
   });
 
@@ -404,6 +405,33 @@ const EditarCorretor = () => {
                 )}
               </div>
 
+              {/* 🆕 NOVO CAMPO: Gênero */}
+              <div>
+                <label className="block text-sm font-medium mb-1">
+                  Gênero <span className="text-red-500">*</span>
+                </label>
+                <select
+                  name="genero"
+                  value={formData.genero || "masculino"}
+                  onChange={handleChange}
+                  className={`
+                    w-full px-3 py-2 rounded-lg border
+                    ${
+                      isDark
+                        ? "bg-gray-700 border-gray-600 text-gray-200"
+                        : "bg-white border-gray-300 text-gray-900"
+                    }
+                    focus:outline-none focus:ring-2 focus:ring-amber-500/30
+                  `}
+                >
+                  <option value="masculino">Masculino</option>
+                  <option value="feminino">Feminino</option>
+                </select>
+                <p className="text-xs mt-1 opacity-60">
+                  Usado para exibir "Corretor" ou "Corretora"
+                </p>
+              </div>
+
               <div>
                 <label className="block text-sm font-medium mb-1">
                   Validade do CRECI
@@ -699,7 +727,7 @@ const EditarCorretor = () => {
                   />
                 </div>
 
-                {/* 🆕 NOVO CAMPO: Data de Ativação */}
+                {/* Data de Ativação */}
                 <div>
                   <label className="block text-sm font-medium mb-1">
                     Data de Ativação

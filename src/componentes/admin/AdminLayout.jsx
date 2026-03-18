@@ -8,29 +8,54 @@ import { useAuth } from "../../contexts/AuthContext";
 const AdminLayout = () => {
   const location = useLocation();
   const { toggleTheme, isDark } = useTheme();
-  const { logout, user } = useAuth(); // ✅ PEGA O USUÁRIO LOGADO
+  const { logout, user } = useAuth();
 
   const hasWideContent =
     location.pathname.includes("/admin/leads") ||
     location.pathname.includes("/admin/imoveis");
 
-  // Define nome e função baseado no usuário logado
-  const userName = user?.name || "Adventus Imobiliária";
+  const userName = user?.nome || user?.name || "Adventus Imobiliária";
 
-  // Formata a função baseado no perfil
+  // 🔥 FUNÇÃO ATUALIZADA COM GÊNERO
   const getUserRole = () => {
     if (!user) return "Administrador";
 
+    // Se for corretor, usa o gênero para definir o título
+    if (user.role === "corretor") {
+      return user.genero === "feminino"
+        ? "Corretora de Imóveis"
+        : "Corretor de Imóveis";
+    }
+
+    // Para outros perfis
     const roles = {
       master: "Administrador Master",
       gerente: "Gerente",
       rh: "RH",
       marketing: "Marketing",
       financeiro: "Financeiro",
-      corretor: "Corretor",
     };
 
     return roles[user.role] || user.role || "Administrador";
+  };
+
+  // 🔥 FUNÇÃO PARA ÍCONE BASEADO NO GÊNERO
+  const getUserIcon = () => {
+    if (!user) return "👤";
+
+    if (user.role === "corretor") {
+      return user.genero === "feminino" ? "👩‍💼" : "👨‍💼";
+    }
+
+    const icons = {
+      master: "👑",
+      gerente: "📊",
+      rh: "🤝",
+      marketing: "📈",
+      financeiro: "💰",
+    };
+
+    return icons[user.role] || "👤";
   };
 
   return (
@@ -46,6 +71,7 @@ const AdminLayout = () => {
         <Header
           userName={userName}
           userRole={getUserRole()}
+          userIcon={getUserIcon()}
           onToggleTheme={toggleTheme}
           isDarkMode={isDark}
           onLogout={logout}

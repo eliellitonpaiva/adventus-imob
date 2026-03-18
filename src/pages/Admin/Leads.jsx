@@ -1,5 +1,6 @@
 // src/pages/Admin/Leads.jsx
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   PlusIcon,
   FunnelIcon,
@@ -21,6 +22,7 @@ import { useTheme } from "../../contexts/ThemeContext";
 import { supabase } from "../../lib/supabase";
 
 const Leads = () => {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("todos");
   const [leads, setLeads] = useState([]);
@@ -37,7 +39,6 @@ const Leads = () => {
   const [localReuniao, setLocalReuniao] = useState("");
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const [statusSelecionado, setStatusSelecionado] = useState(null);
-  // Removido tipoAgendamentoSelecionado pois não precisamos mais
 
   // =============== BUSCAR LEADS DO SUPABASE ===============
   useEffect(() => {
@@ -68,32 +69,44 @@ const Leads = () => {
     try {
       setUpdatingStatus(true);
 
+      // Pega o valor das observações e remove espaços extras
+      const observacaoParaSalvar = observacoes?.trim() || "";
+
+      // Prepara o objeto de atualização
       const updates = {
         status: novoStatus,
         updated_at: new Date().toISOString(),
       };
 
-      if (observacoes.trim()) {
-        updates.ultima_observacao = observacoes;
+      // Só adiciona as observações se tiver conteúdo
+      if (observacaoParaSalvar) {
+        updates.ultima_observacao = observacaoParaSalvar;
         updates.ultimo_contato = new Date().toISOString();
       }
 
-      const { error } = await supabase
+      // Faz a atualização no Supabase
+      const { error, data } = await supabase
         .from("leads")
         .update(updates)
-        .eq("id", id);
+        .eq("id", id)
+        .select();
 
       if (error) throw error;
 
-      const leadsAtualizados = leads.map((lead) =>
-        lead.id === id ? { ...lead, ...updates } : lead,
-      );
-      setLeads(leadsAtualizados);
+      // Atualiza a lista local com os dados retornados
+      if (data && data.length > 0) {
+        const leadsAtualizados = leads.map((lead) =>
+          lead.id === id ? data[0] : lead,
+        );
+        setLeads(leadsAtualizados);
+        setSelectedLead(data[0]);
+      }
 
-      const leadAtualizado = leadsAtualizados.find((lead) => lead.id === id);
-      setSelectedLead(leadAtualizado);
       setStatusSelecionado(novoStatus);
-      setObservacoes("");
+      setObservacoes(""); // Limpa as observações após salvar
+
+      // Fecha o modal após atualizar
+      fecharModal();
     } catch (err) {
       console.error("Erro ao atualizar status:", err);
       alert("Erro ao atualizar status. Tente novamente.");
@@ -155,7 +168,7 @@ const Leads = () => {
     return `https://wa.me/${numeroFormatado}?text=${mensagem}`;
   };
 
-  // =============== OPÇÕES DE STATUS ATUALIZADAS ===============
+  // =============== OPÇÕES DE STATUS ===============
   const statusOptions = [
     { value: "todos", label: "Todos", color: "gray" },
     { value: "novo", label: "Novo", color: "blue" },
@@ -291,14 +304,14 @@ const Leads = () => {
         <Button
           variant="primary"
           className="mt-4 sm:mt-0"
-          onClick={() => (window.location.href = "/admin/leads/novo")}
+          onClick={() => navigate("/admin/leads/novo")}
         >
           <PlusIcon className="w-4 h-4 mr-2" />
           Novo Lead
         </Button>
       </div>
 
-      {/* Stats - ATUALIZADO */}
+      {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-7 gap-3 mb-6">
         {/* Total */}
         <div
@@ -748,7 +761,7 @@ const Leads = () => {
                       </span>
                     </td>
 
-                    {/* Status - ATUALIZADO */}
+                    {/* Status */}
                     <td
                       className={`px-4 py-3 text-center border-r ${isDark ? "border-gray-700" : "border-gray-300"}`}
                     >
@@ -873,7 +886,7 @@ const Leads = () => {
                       </span>
                     </td>
 
-                    {/* Ações - SIMPLIFICADO */}
+                    {/* Ações */}
                     <td className="px-4 py-3 text-center">
                       <div className="flex items-center justify-center gap-2">
                         <button
@@ -933,7 +946,7 @@ const Leads = () => {
         </div>
       </div>
 
-      {/* MODAL DE DETALHES - ATUALIZADO */}
+      {/* MODAL DE DETALHES */}
       {modalOpen && selectedLead && (
         <div className="fixed inset-0 z-50 overflow-y-auto">
           <div
@@ -1057,6 +1070,112 @@ const Leads = () => {
                   </div>
                 </div>
 
+                {/* PREFERÊNCIAS DE CONTATO */}
+                {(selectedLead.melhor_dia ||
+                  selectedLead.melhor_horario ||
+                  selectedLead.observacoes_iniciais) && (
+                  <div
+                    className={`rounded-xl overflow-hidden border-2 ${isDark ? "bg-gray-700/30 border-gray-700" : "bg-gray-50 border-gray-200"}`}
+                  >
+                    <div
+                      className={`px-4 py-2 flex items-center gap-2 border-b ${isDark ? "bg-gray-700/50 border-gray-700" : "bg-gray-100 border-gray-200"}`}
+                    >
+                      <div className="p-1 rounded-md bg-[#D4A24D]/20">
+                        <ClockIcon className="w-4 h-4 text-[#D4A24D]" />
+                      </div>
+                      <span
+                        className={`text-sm font-semibold ${isDark ? "text-gray-300" : "text-gray-700"}`}
+                      >
+                        PREFERÊNCIAS DE CONTATO
+                      </span>
+                    </div>
+                    <div className="p-4 space-y-3">
+                      {selectedLead.melhor_dia && (
+                        <div className="flex items-start gap-3">
+                          <div className="p-2 rounded-lg bg-green-100 dark:bg-green-900/30">
+                            <CalendarIcon className="w-4 h-4 text-green-600 dark:text-green-400" />
+                          </div>
+                          <div>
+                            <p
+                              className={`text-xs ${isDark ? "text-gray-400" : "text-gray-500"}`}
+                            >
+                              Melhor dia
+                            </p>
+                            <p
+                              className={`text-sm font-medium ${isDark ? "text-gray-200" : "text-gray-900"}`}
+                            >
+                              {selectedLead.melhor_dia === "segunda" &&
+                                "Segunda-feira"}
+                              {selectedLead.melhor_dia === "terca" &&
+                                "Terça-feira"}
+                              {selectedLead.melhor_dia === "quarta" &&
+                                "Quarta-feira"}
+                              {selectedLead.melhor_dia === "quinta" &&
+                                "Quinta-feira"}
+                              {selectedLead.melhor_dia === "sexta" &&
+                                "Sexta-feira"}
+                              {![
+                                "segunda",
+                                "terca",
+                                "quarta",
+                                "quinta",
+                                "sexta",
+                              ].includes(selectedLead.melhor_dia) &&
+                                selectedLead.melhor_dia}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+
+                      {selectedLead.melhor_horario && (
+                        <div className="flex items-start gap-3">
+                          <div className="p-2 rounded-lg bg-purple-100 dark:bg-purple-900/30">
+                            <ClockIcon className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                          </div>
+                          <div>
+                            <p
+                              className={`text-xs ${isDark ? "text-gray-400" : "text-gray-500"}`}
+                            >
+                              Melhor horário
+                            </p>
+                            <p
+                              className={`text-sm font-medium ${isDark ? "text-gray-200" : "text-gray-900"}`}
+                            >
+                              {selectedLead.melhor_horario === "manha" &&
+                                "Manhã (8h às 12h)"}
+                              {selectedLead.melhor_horario === "tarde" &&
+                                "Tarde (14h às 18h)"}
+                              {!["manha", "tarde"].includes(
+                                selectedLead.melhor_horario,
+                              ) && selectedLead.melhor_horario}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+
+                      {selectedLead.observacoes_iniciais && (
+                        <div className="flex items-start gap-3">
+                          <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/30">
+                            <ChatBubbleLeftIcon className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                          </div>
+                          <div className="flex-1">
+                            <p
+                              className={`text-xs ${isDark ? "text-gray-400" : "text-gray-500"}`}
+                            >
+                              Observações iniciais
+                            </p>
+                            <p
+                              className={`text-sm ${isDark ? "text-gray-300" : "text-gray-700"} whitespace-pre-wrap`}
+                            >
+                              {selectedLead.observacoes_iniciais}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
                 {/* IMÓVEL DE INTERESSE */}
                 {selectedLead.imovel_codigo && (
                   <div
@@ -1112,7 +1231,7 @@ const Leads = () => {
                   </div>
                 )}
 
-                {/* STATUS ATUAL - ATUALIZADO */}
+                {/* STATUS ATUAL */}
                 <div
                   className={`rounded-xl overflow-hidden border-2 relative ${isDark ? "bg-gray-700/30 border-gray-700" : "bg-gray-50 border-gray-200"}`}
                 >
@@ -1246,7 +1365,41 @@ const Leads = () => {
                   </div>
                 </div>
 
-                {/* BOTÕES DE STATUS - ATUALIZADO */}
+                {/* ÚLTIMA OBSERVAÇÃO */}
+                {selectedLead.ultima_observacao && (
+                  <div
+                    className={`rounded-xl overflow-hidden border-2 ${isDark ? "bg-gray-700/30 border-gray-700" : "bg-gray-50 border-gray-200"}`}
+                  >
+                    <div
+                      className={`px-4 py-2 flex items-center gap-2 border-b ${isDark ? "bg-gray-700/50 border-gray-700" : "bg-gray-100 border-gray-200"}`}
+                    >
+                      <div className="p-1 rounded-md bg-[#D4A24D]/20">
+                        <ChatBubbleLeftIcon className="w-4 h-4 text-[#D4A24D]" />
+                      </div>
+                      <span
+                        className={`text-sm font-semibold ${isDark ? "text-gray-300" : "text-gray-700"}`}
+                      >
+                        ÚLTIMA OBSERVAÇÃO
+                      </span>
+                      {selectedLead.ultimo_contato && (
+                        <span
+                          className={`text-xs ml-auto ${isDark ? "text-gray-400" : "text-gray-500"}`}
+                        >
+                          {formatarDataCompleta(selectedLead.ultimo_contato)}
+                        </span>
+                      )}
+                    </div>
+                    <div className="p-4">
+                      <p
+                        className={`text-sm whitespace-pre-wrap ${isDark ? "text-gray-300" : "text-gray-700"}`}
+                      >
+                        {selectedLead.ultima_observacao}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* BOTÕES DE STATUS */}
                 <div
                   className={`rounded-xl overflow-hidden border-2 ${isDark ? "bg-gray-700/30 border-gray-700" : "bg-gray-50 border-gray-200"}`}
                 >
@@ -1279,12 +1432,16 @@ const Leads = () => {
                     <div className="grid grid-cols-3 gap-2">
                       {/* Novo */}
                       <button
-                        onClick={() => {
-                          setStatusSelecionado("novo");
-                          atualizarStatus(selectedLead.id, "novo");
-                        }}
+                        type="button"
+                        onClick={() => setStatusSelecionado("novo")}
                         disabled={updatingStatus}
-                        className={`relative py-3 px-2 rounded-lg transition-all duration-200 flex flex-col items-center gap-1.5 font-medium text-xs ${statusSelecionado === "novo" ? "bg-blue-500 text-white shadow-sm" : isDark ? "bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-700" : "bg-white text-gray-700 hover:bg-gray-50 border border-gray-200"} ${updatingStatus ? "opacity-50 cursor-not-allowed" : "hover:scale-[1.02]"}`}
+                        className={`relative py-3 px-2 rounded-lg transition-all duration-200 flex flex-col items-center gap-1.5 font-medium text-xs ${
+                          statusSelecionado === "novo"
+                            ? "bg-blue-500 text-white shadow-sm ring-2 ring-blue-300"
+                            : isDark
+                              ? "bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-700"
+                              : "bg-white text-gray-700 hover:bg-gray-50 border border-gray-200"
+                        } ${updatingStatus ? "opacity-50 cursor-not-allowed" : "hover:scale-[1.02]"}`}
                       >
                         <svg
                           className="w-5 h-5"
@@ -1301,18 +1458,22 @@ const Leads = () => {
                         </svg>
                         <span>Novo</span>
                         {statusSelecionado === "novo" && (
-                          <span className="absolute -top-1 -right-1 w-2 h-2 bg-blue-300 rounded-full"></span>
+                          <span className="absolute -top-1 -right-1 w-3 h-3 bg-blue-400 rounded-full animate-pulse"></span>
                         )}
                       </button>
 
                       {/* Em Contato */}
                       <button
-                        onClick={() => {
-                          setStatusSelecionado("em contato");
-                          atualizarStatus(selectedLead.id, "em contato");
-                        }}
+                        type="button"
+                        onClick={() => setStatusSelecionado("em contato")}
                         disabled={updatingStatus}
-                        className={`relative py-3 px-2 rounded-lg transition-all duration-200 flex flex-col items-center gap-1.5 font-medium text-xs ${statusSelecionado === "em contato" ? "bg-yellow-500 text-white shadow-sm" : isDark ? "bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-700" : "bg-white text-gray-700 hover:bg-gray-50 border border-gray-200"} ${updatingStatus ? "opacity-50 cursor-not-allowed" : "hover:scale-[1.02]"}`}
+                        className={`relative py-3 px-2 rounded-lg transition-all duration-200 flex flex-col items-center gap-1.5 font-medium text-xs ${
+                          statusSelecionado === "em contato"
+                            ? "bg-yellow-500 text-white shadow-sm ring-2 ring-yellow-300"
+                            : isDark
+                              ? "bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-700"
+                              : "bg-white text-gray-700 hover:bg-gray-50 border border-gray-200"
+                        } ${updatingStatus ? "opacity-50 cursor-not-allowed" : "hover:scale-[1.02]"}`}
                       >
                         <svg
                           className="w-5 h-5"
@@ -1329,18 +1490,22 @@ const Leads = () => {
                         </svg>
                         <span>Contato</span>
                         {statusSelecionado === "em contato" && (
-                          <span className="absolute -top-1 -right-1 w-2 h-2 bg-yellow-300 rounded-full"></span>
+                          <span className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-400 rounded-full animate-pulse"></span>
                         )}
                       </button>
 
                       {/* Qualificado */}
                       <button
-                        onClick={() => {
-                          setStatusSelecionado("qualificado");
-                          atualizarStatus(selectedLead.id, "qualificado");
-                        }}
+                        type="button"
+                        onClick={() => setStatusSelecionado("qualificado")}
                         disabled={updatingStatus}
-                        className={`relative py-3 px-2 rounded-lg transition-all duration-200 flex flex-col items-center gap-1.5 font-medium text-xs ${statusSelecionado === "qualificado" ? "bg-purple-500 text-white shadow-sm" : isDark ? "bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-700" : "bg-white text-gray-700 hover:bg-gray-50 border border-gray-200"} ${updatingStatus ? "opacity-50 cursor-not-allowed" : "hover:scale-[1.02]"}`}
+                        className={`relative py-3 px-2 rounded-lg transition-all duration-200 flex flex-col items-center gap-1.5 font-medium text-xs ${
+                          statusSelecionado === "qualificado"
+                            ? "bg-purple-500 text-white shadow-sm ring-2 ring-purple-300"
+                            : isDark
+                              ? "bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-700"
+                              : "bg-white text-gray-700 hover:bg-gray-50 border border-gray-200"
+                        } ${updatingStatus ? "opacity-50 cursor-not-allowed" : "hover:scale-[1.02]"}`}
                       >
                         <svg
                           className="w-5 h-5"
@@ -1357,18 +1522,22 @@ const Leads = () => {
                         </svg>
                         <span>Qualificado</span>
                         {statusSelecionado === "qualificado" && (
-                          <span className="absolute -top-1 -right-1 w-2 h-2 bg-purple-300 rounded-full"></span>
+                          <span className="absolute -top-1 -right-1 w-3 h-3 bg-purple-400 rounded-full animate-pulse"></span>
                         )}
                       </button>
 
                       {/* Proposta */}
                       <button
-                        onClick={() => {
-                          setStatusSelecionado("proposta");
-                          atualizarStatus(selectedLead.id, "proposta");
-                        }}
+                        type="button"
+                        onClick={() => setStatusSelecionado("proposta")}
                         disabled={updatingStatus}
-                        className={`relative py-3 px-2 rounded-lg transition-all duration-200 flex flex-col items-center gap-1.5 font-medium text-xs ${statusSelecionado === "proposta" ? "bg-indigo-500 text-white shadow-sm" : isDark ? "bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-700" : "bg-white text-gray-700 hover:bg-gray-50 border border-gray-200"} ${updatingStatus ? "opacity-50 cursor-not-allowed" : "hover:scale-[1.02]"}`}
+                        className={`relative py-3 px-2 rounded-lg transition-all duration-200 flex flex-col items-center gap-1.5 font-medium text-xs ${
+                          statusSelecionado === "proposta"
+                            ? "bg-indigo-500 text-white shadow-sm ring-2 ring-indigo-300"
+                            : isDark
+                              ? "bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-700"
+                              : "bg-white text-gray-700 hover:bg-gray-50 border border-gray-200"
+                        } ${updatingStatus ? "opacity-50 cursor-not-allowed" : "hover:scale-[1.02]"}`}
                       >
                         <svg
                           className="w-5 h-5"
@@ -1385,18 +1554,22 @@ const Leads = () => {
                         </svg>
                         <span>Proposta</span>
                         {statusSelecionado === "proposta" && (
-                          <span className="absolute -top-1 -right-1 w-2 h-2 bg-indigo-300 rounded-full"></span>
+                          <span className="absolute -top-1 -right-1 w-3 h-3 bg-indigo-400 rounded-full animate-pulse"></span>
                         )}
                       </button>
 
                       {/* Fechado */}
                       <button
-                        onClick={() => {
-                          setStatusSelecionado("fechado");
-                          atualizarStatus(selectedLead.id, "fechado");
-                        }}
+                        type="button"
+                        onClick={() => setStatusSelecionado("fechado")}
                         disabled={updatingStatus}
-                        className={`relative py-3 px-2 rounded-lg transition-all duration-200 flex flex-col items-center gap-1.5 font-medium text-xs ${statusSelecionado === "fechado" ? "bg-green-500 text-white shadow-sm" : isDark ? "bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-700" : "bg-white text-gray-700 hover:bg-gray-50 border border-gray-200"} ${updatingStatus ? "opacity-50 cursor-not-allowed" : "hover:scale-[1.02]"}`}
+                        className={`relative py-3 px-2 rounded-lg transition-all duration-200 flex flex-col items-center gap-1.5 font-medium text-xs ${
+                          statusSelecionado === "fechado"
+                            ? "bg-green-500 text-white shadow-sm ring-2 ring-green-300"
+                            : isDark
+                              ? "bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-700"
+                              : "bg-white text-gray-700 hover:bg-gray-50 border border-gray-200"
+                        } ${updatingStatus ? "opacity-50 cursor-not-allowed" : "hover:scale-[1.02]"}`}
                       >
                         <svg
                           className="w-5 h-5"
@@ -1413,18 +1586,22 @@ const Leads = () => {
                         </svg>
                         <span>Fechado</span>
                         {statusSelecionado === "fechado" && (
-                          <span className="absolute -top-1 -right-1 w-2 h-2 bg-green-300 rounded-full"></span>
+                          <span className="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full animate-pulse"></span>
                         )}
                       </button>
 
                       {/* Perdido */}
                       <button
-                        onClick={() => {
-                          setStatusSelecionado("perdido");
-                          atualizarStatus(selectedLead.id, "perdido");
-                        }}
+                        type="button"
+                        onClick={() => setStatusSelecionado("perdido")}
                         disabled={updatingStatus}
-                        className={`relative py-3 px-2 rounded-lg transition-all duration-200 flex flex-col items-center gap-1.5 font-medium text-xs ${statusSelecionado === "perdido" ? "bg-red-500 text-white shadow-sm" : isDark ? "bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-700" : "bg-white text-gray-700 hover:bg-gray-50 border border-gray-200"} ${updatingStatus ? "opacity-50 cursor-not-allowed" : "hover:scale-[1.02]"}`}
+                        className={`relative py-3 px-2 rounded-lg transition-all duration-200 flex flex-col items-center gap-1.5 font-medium text-xs ${
+                          statusSelecionado === "perdido"
+                            ? "bg-red-500 text-white shadow-sm ring-2 ring-red-300"
+                            : isDark
+                              ? "bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-700"
+                              : "bg-white text-gray-700 hover:bg-gray-50 border border-gray-200"
+                        } ${updatingStatus ? "opacity-50 cursor-not-allowed" : "hover:scale-[1.02]"}`}
                       >
                         <svg
                           className="w-5 h-5"
@@ -1441,7 +1618,7 @@ const Leads = () => {
                         </svg>
                         <span>Perdido</span>
                         {statusSelecionado === "perdido" && (
-                          <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-300 rounded-full"></span>
+                          <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-400 rounded-full animate-pulse"></span>
                         )}
                       </button>
                     </div>
@@ -1450,38 +1627,67 @@ const Leads = () => {
                     <div className="mt-4">
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
                         <ChatBubbleLeftIcon className="w-4 h-4 text-[#D4A24D]" />
-                        Observações
+                        Nova observação para este status
                       </label>
                       <textarea
                         value={observacoes}
                         onChange={(e) => setObservacoes(e.target.value)}
-                        rows="3"
+                        rows="4"
                         className={`w-full px-3 py-2 text-sm rounded-lg border-2 transition-all focus:ring-2 focus:ring-[#D4A24D] focus:border-[#D4A24D] ${isDark ? "bg-gray-700 border-gray-600 text-gray-200 placeholder-gray-400" : "bg-white border-gray-300 text-gray-900 placeholder-gray-400"}`}
-                        placeholder="Digite observações sobre este contato..."
+                        placeholder="Digite as observações sobre este contato. Ex: Cliente vai receber FGTS, aguardando liberação, etc..."
                       />
+                      {statusSelecionado &&
+                        statusSelecionado !== selectedLead?.status && (
+                          <p className="mt-2 text-xs text-[#D4A24D] flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 bg-[#D4A24D] rounded-full animate-pulse"></span>
+                            Status será alterado de{" "}
+                            <span className="font-semibold">
+                              {selectedLead?.status}
+                            </span>{" "}
+                            para{" "}
+                            <span className="font-semibold">
+                              {statusSelecionado}
+                            </span>
+                            {observacoes.trim() && " com observação"}
+                          </p>
+                        )}
                     </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Footer */}
-              <div
-                className={`p-4 border-t rounded-b-xl flex justify-end gap-3 ${isDark ? "border-gray-700 bg-gray-800" : "border-gray-200 bg-white"}`}
-              >
-                <button
-                  onClick={fecharModal}
-                  disabled={updatingStatus}
-                  className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${isDark ? "bg-gray-700 text-gray-300 hover:bg-gray-600" : "bg-gray-100 text-gray-700 hover:bg-gray-200"} ${updatingStatus ? "opacity-50 cursor-not-allowed" : ""}`}
+                {/* Footer */}
+                <div
+                  className={`p-4 border-t rounded-b-xl flex justify-end gap-3 ${isDark ? "border-gray-700 bg-gray-800" : "border-gray-200 bg-white"}`}
                 >
-                  Cancelar
-                </button>
-                <button
-                  onClick={fecharModal}
-                  disabled={updatingStatus}
-                  className={`px-4 py-2 text-sm font-medium rounded-lg transition-all bg-[#D4A24D] text-white hover:bg-[#C19137] shadow-lg shadow-[#D4A24D]/30 ${updatingStatus ? "opacity-50 cursor-not-allowed" : ""}`}
-                >
-                  {updatingStatus ? "Processando..." : "Concluído"}
-                </button>
+                  <button
+                    onClick={fecharModal}
+                    disabled={updatingStatus}
+                    className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${isDark ? "bg-gray-700 text-gray-300 hover:bg-gray-600" : "bg-gray-100 text-gray-700 hover:bg-gray-200"} ${updatingStatus ? "opacity-50 cursor-not-allowed" : ""}`}
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (
+                        statusSelecionado &&
+                        statusSelecionado !== selectedLead?.status
+                      ) {
+                        atualizarStatus(selectedLead.id, statusSelecionado);
+                      } else {
+                        fecharModal();
+                      }
+                    }}
+                    disabled={updatingStatus}
+                    className={`px-4 py-2 text-sm font-medium rounded-lg transition-all bg-[#D4A24D] text-white hover:bg-[#C19137] shadow-lg shadow-[#D4A24D]/30 ${updatingStatus ? "opacity-50 cursor-not-allowed" : ""}`}
+                  >
+                    {updatingStatus
+                      ? "Processando..."
+                      : statusSelecionado &&
+                          statusSelecionado !== selectedLead?.status
+                        ? "Confirmar Alteração"
+                        : "Concluído"}
+                  </button>
+                </div>
               </div>
             </div>
           </div>

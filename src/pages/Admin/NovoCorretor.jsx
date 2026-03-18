@@ -31,6 +31,7 @@ const NovoCorretor = () => {
     telefone: "",
     creci: "",
     creci_validade: "",
+    genero: "masculino", // 🆕 NOVO CAMPO!
 
     // Campos profissionais
     creci_desde: "",
@@ -45,7 +46,7 @@ const NovoCorretor = () => {
     nivel_experiencia: "pleno",
     especialidades: [],
     comissao_base: "",
-    data_ativacao: "", // 🆕 NOVO CAMPO!
+    data_ativacao: "",
 
     // Perfil de acesso
     perfil: "corretor",
@@ -102,7 +103,6 @@ const NovoCorretor = () => {
       if (formData.experiencia_anos && formData.experiencia_anos < 0) {
         novosErros.experiencia_anos = "Anos de experiência inválidos";
       }
-      // 🆕 VALIDAÇÃO: Data de ativação é obrigatória para corretor direto
       if (!formData.data_ativacao) {
         novosErros.data_ativacao = "Data de ativação é obrigatória";
       }
@@ -141,6 +141,7 @@ const NovoCorretor = () => {
             perfil: formData.perfil,
             telefone: formData.telefone,
             creci: formData.creci,
+            genero: formData.genero, // 🆕 ENVIA GÊNERO
             tipo_cadastro: tipoCadastro,
             ...(tipoCadastro === "direto" && {
               nivel_experiencia: formData.nivel_experiencia,
@@ -160,7 +161,6 @@ const NovoCorretor = () => {
       if (tipoCadastro === "direto" && authData.user) {
         console.log("8️⃣ atualizando etapa para corretor direto");
 
-        // 🆕 USA A DATA DO FORMULÁRIO OU HOJE COMO FALLBACK
         const dataAtivacao =
           formData.data_ativacao || new Date().toISOString().split("T")[0];
         console.log("📅 Data de ativação:", dataAtivacao);
@@ -169,8 +169,8 @@ const NovoCorretor = () => {
           .from("corretores")
           .update({
             etapa: "ativos",
-            periodoExperiencia: false, // Já ativo direto
-            data_ativacao: dataAtivacao, // 👈 SALVA A DATA INFORMADA
+            periodoExperiencia: false,
+            data_ativacao: dataAtivacao,
             imoveis: 0,
             leads: 0,
             vendas_mes: 0,
@@ -464,6 +464,33 @@ const NovoCorretor = () => {
                 {erros.creci && (
                   <p className="mt-1 text-xs text-red-500">{erros.creci}</p>
                 )}
+              </div>
+
+              {/* 🆕 NOVO CAMPO: Gênero */}
+              <div>
+                <label className="block text-sm font-medium mb-1">
+                  Gênero <span className="text-red-500">*</span>
+                </label>
+                <select
+                  name="genero"
+                  value={formData.genero}
+                  onChange={handleChange}
+                  className={`
+                    w-full px-3 py-2 rounded-lg border
+                    ${
+                      isDark
+                        ? "bg-gray-700 border-gray-600 text-gray-200"
+                        : "bg-white border-gray-300 text-gray-900"
+                    }
+                    focus:outline-none focus:ring-2 focus:ring-amber-500/30
+                  `}
+                >
+                  <option value="masculino">Masculino</option>
+                  <option value="feminino">Feminino</option>
+                </select>
+                <p className="text-xs mt-1 opacity-60">
+                  Usado para exibir "Corretor" ou "Corretora"
+                </p>
               </div>
 
               <div>
@@ -760,7 +787,6 @@ const NovoCorretor = () => {
                   />
                 </div>
 
-                {/* 🆕 NOVO CAMPO: Data de Ativação */}
                 <div>
                   <label className="block text-sm font-medium mb-1">
                     Data de Ativação <span className="text-red-500">*</span>
