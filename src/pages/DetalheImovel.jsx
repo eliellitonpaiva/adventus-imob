@@ -1732,7 +1732,8 @@ const DetalheImovel = () => {
   // ==========================================================================
   return (
     <>
-      <ImovelMetaTags imovel={dados} />
+      {/* PASSA O IMOVEL E AS FOTOS */}
+      <ImovelMetaTags imovel={dados} fotos={fotos} />
 
       {/* =============== CARROSSEL DE FOTOS EM TELA CHEIA =============== */}
       <section className="relative w-full pt-[65px] md:pt-20">
