@@ -1835,7 +1835,12 @@ const DetalheImovel = () => {
       {/* =============== CARROSSEL DE FOTOS EM TELA CHEIA =============== */}
       <section className="relative w-full pt-[65px] md:pt-20">
         {/* Container do carrossel com altura responsiva */}
-        <div className="relative w-full h-[50vh] md:h-[calc(100vh-80px)] overflow-hidden bg-gray-900">
+        <div
+          className="relative w-full h-[50vh] md:h-[calc(100vh-80px)] overflow-hidden bg-gray-900"
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+        >
           {imagens.map((img, index) => (
             <img
               key={index}
@@ -1851,7 +1856,7 @@ const DetalheImovel = () => {
           <div className="absolute inset-0 bg-black/10"></div>
 
           {/* CONTADOR - ajustado para mobile */}
-          <div className="absolute top-4 left-4 md:top-28 md:left-8 z-20 backdrop-blur-md rounded-full bg-black/40">
+          <div className="absolute top-4 left-4 md:top-8 md:left-8 z-20 backdrop-blur-md rounded-full bg-black/40">
             <div className="flex items-center justify-center px-2 py-1 md:px-4 md:py-2 space-x-1 md:space-x-2">
               <i className="fas fa-camera text-[#D4A24D] text-[10px] md:text-xs"></i>
               <span className="text-white font-medium text-xs md:text-sm">
