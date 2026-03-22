@@ -35,6 +35,7 @@ const DetalheImovel = () => {
   const [error, setError] = useState(null);
   const [visualizacoes, setVisualizacoes] = useState(0);
   const [seoAplicado, setSeoAplicado] = useState(false);
+  const [finalidadeAtual, setFinalidadeAtual] = useState(null); // 'venda' ou 'aluguel'
 
   // =============== NOVO ESTADO PARA FOTOS ===============
   const [fotos, setFotos] = useState([]);
@@ -1257,6 +1258,40 @@ const DetalheImovel = () => {
     navigate,
   ]);
 
+  // Detecta a finalidade atual baseada na URL
+  useEffect(() => {
+    if (!finalidades.length) return;
+
+    // Tenta pegar da URL primeiro
+    const params = new URLSearchParams(window.location.search);
+    const finalidadeParam = params.get("finalidade");
+
+    if (finalidadeParam === "aluguel") {
+      setFinalidadeAtual("aluguel");
+    } else if (finalidadeParam === "venda") {
+      setFinalidadeAtual("venda");
+    } else {
+      // Tenta pegar do sessionStorage
+      const finalidadeSalva = sessionStorage.getItem("finalidade_selecionada");
+      if (finalidadeSalva === "aluguel") {
+        setFinalidadeAtual("aluguel");
+      } else if (finalidadeSalva === "venda") {
+        setFinalidadeAtual("venda");
+      } else {
+        // Padrão: se tem as duas, prioriza venda
+        const temVenda = finalidades.some((f) => f.tipo === "venda");
+        const temAluguel = finalidades.some((f) => f.tipo === "aluguel");
+
+        if (temVenda && temAluguel) {
+          setFinalidadeAtual("venda");
+        } else if (temVenda) {
+          setFinalidadeAtual("venda");
+        } else if (temAluguel) {
+          setFinalidadeAtual("aluguel");
+        }
+      }
+    }
+  }, [finalidades]);
   // ==========================================================================
   // DADOS PROCESSADOS
   // ==========================================================================
@@ -1266,6 +1301,51 @@ const DetalheImovel = () => {
     [dados, gerarDadosAcordeao],
   );
   const imagens = useMemo(() => dados?.imagens || [], [dados]);
+
+  //FUNÇÃO getPrecoDestaque AQUI
+  const getPrecoDestaque = useCallback(() => {
+    if (!dados) return null;
+
+    const temVenda = dados.finalidade_venda;
+    const temAluguel = dados.finalidade_aluguel;
+
+    // Se só tem venda
+    if (temVenda && !temAluguel) {
+      return {
+        tipo: "venda",
+        preco: dados.preco,
+        formatado: dados.precoFormatado,
+      };
+    }
+
+    // Se só tem aluguel
+    if (!temVenda && temAluguel) {
+      return {
+        tipo: "aluguel",
+        preco: dados.precoAluguel,
+        formatado: dados.precoAluguelFormatado,
+      };
+    }
+
+    // Se tem as duas finalidades, usa a finalidadeAtual
+    if (temVenda && temAluguel) {
+      if (finalidadeAtual === "aluguel") {
+        return {
+          tipo: "aluguel",
+          preco: dados.precoAluguel,
+          formatado: dados.precoAluguelFormatado,
+        };
+      } else {
+        return {
+          tipo: "venda",
+          preco: dados.preco,
+          formatado: dados.precoFormatado,
+        };
+      }
+    }
+
+    return null;
+  }, [dados, finalidadeAtual]);
 
   // ==========================================================================
   // FUNÇÕES PARA PROTEÇÃO CONTRA ENVIOS DUPLICADOS
@@ -1922,77 +2002,118 @@ const DetalheImovel = () => {
               {/* LINHA DIVISÓRIA */}
               <div className="w-full h-px bg-gradient-to-r from-transparent via-[#D4A24D]/30 to-transparent my-2"></div>
 
-              {/* PREÇO */}
+              {/* PREÇO - CORRIGIDO */}
               <div className="mb-6">
-                {dados.baixou_preco === true &&
-                dados.precoAnterior &&
-                dados.precoAnterior > 0 ? (
-                  // CASO 1: Imóvel com desconto (baixou o preço)
-                  <div className="flex flex-col">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-gray-400 line-through text-lg md:text-xl">
-                        {dados.precoAnteriorFormatado}
-                      </span>
-                      <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
-                        -{calcularDesconto(dados.precoAnterior, dados.preco)}%
-                        OFF
-                      </span>
-                    </div>
-                    <div className="text-3xl md:text-4xl font-black text-white">
-                      {dados.precoFormatado}
-                    </div>
-                    <p className="text-green-400 text-xs md:text-sm mt-2">
-                      🎉 Você economiza{" "}
-                      {formatPrice(dados.precoAnterior - dados.preco)}!
-                    </p>
-                  </div>
-                ) : (
-                  <>
-                    {/* CASO 2: Apenas venda - mostra apenas o preço de venda */}
-                    {dados.finalidade_venda &&
-                      !dados.finalidade_aluguel &&
-                      !dados.ocultarPreco && (
-                        <div className="text-3xl md:text-4xl font-black text-white">
-                          {dados.precoFormatado}
+                {(() => {
+                  const precoDestaque = getPrecoDestaque();
+
+                  // Verifica se tem desconto (apenas para venda)
+                  const temDescontoVenda =
+                    dados.baixou_preco === true &&
+                    dados.precoAnterior &&
+                    dados.precoAnterior > 0 &&
+                    precoDestaque?.tipo === "venda";
+
+                  if (temDescontoVenda) {
+                    // CASO COM DESCONTO (apenas para venda)
+                    return (
+                      <div className="flex flex-col">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-gray-400 line-through text-lg md:text-xl">
+                            {dados.precoAnteriorFormatado}
+                          </span>
+                          <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                            -
+                            {calcularDesconto(dados.precoAnterior, dados.preco)}
+                            % OFF
+                          </span>
                         </div>
-                      )}
-
-                    {/* CASO 3: Apenas aluguel - mostra apenas o preço do aluguel com /mês */}
-                    {!dados.finalidade_venda &&
-                      dados.finalidade_aluguel &&
-                      !dados.ocultarPreco && (
                         <div className="text-3xl md:text-4xl font-black text-white">
-                          {dados.precoAluguelFormatado}/mês
+                          {precoDestaque.formatado}
                         </div>
-                      )}
-
-                    {/* CASO 4: Venda e aluguel - mostra o preço de venda e o de aluguel como opção */}
-                    {dados.finalidade_venda &&
-                      dados.finalidade_aluguel &&
-                      !dados.ocultarPreco && (
-                        <>
-                          <div className="text-3xl md:text-4xl font-black text-white">
-                            {dados.precoFormatado}
-                          </div>
-                          <div className="text-lg md:text-xl text-gray-300 mt-3">
-                            ou{" "}
-                            <span className="font-bold text-white">
-                              {dados.precoAluguelFormatado}/mês
-                            </span>{" "}
-                            para aluguel
-                          </div>
-                        </>
-                      )}
-
-                    {/* CASO 5: Preço oculto ou nenhum preço definido - mostra "Preço sob consulta" */}
-                    {(dados.ocultarPreco ||
-                      (!dados.preco && !dados.precoAluguel)) && (
-                      <div className="text-3xl md:text-4xl font-black text-white">
-                        Preço sob consulta
+                        <p className="text-green-400 text-xs md:text-sm mt-2">
+                          🎉 Você economiza{" "}
+                          {formatPrice(dados.precoAnterior - dados.preco)}!
+                        </p>
                       </div>
-                    )}
-                  </>
-                )}
+                    );
+                  }
+
+                  // Se tem as duas finalidades
+                  if (
+                    dados.finalidade_venda &&
+                    dados.finalidade_aluguel &&
+                    !dados.ocultarPreco
+                  ) {
+                    const precoVenda = dados.precoFormatado;
+                    const precoAluguel = dados.precoAluguelFormatado;
+                    const isAluguelDestaque = finalidadeAtual === "aluguel";
+
+                    return (
+                      <>
+                        {/* Mostra o preço em destaque baseado na finalidade atual */}
+                        <div className="text-3xl md:text-4xl font-black text-white">
+                          {isAluguelDestaque ? precoAluguel : precoVenda}
+                          {isAluguelDestaque && "/mês"}
+                        </div>
+
+                        {/* Mostra o preço alternativo como opção */}
+                        <div className="text-lg md:text-xl text-gray-300 mt-3">
+                          {isAluguelDestaque ? (
+                            <>
+                              ou{" "}
+                              <span className="font-bold text-white">
+                                {precoVenda}
+                              </span>{" "}
+                              para compra
+                            </>
+                          ) : (
+                            <>
+                              ou{" "}
+                              <span className="font-bold text-white">
+                                {precoAluguel}/mês
+                              </span>{" "}
+                              para aluguel
+                            </>
+                          )}
+                        </div>
+                      </>
+                    );
+                  }
+
+                  // Caso apenas venda
+                  if (
+                    dados.finalidade_venda &&
+                    !dados.finalidade_aluguel &&
+                    !dados.ocultarPreco
+                  ) {
+                    return (
+                      <div className="text-3xl md:text-4xl font-black text-white">
+                        {precoDestaque?.formatado}
+                      </div>
+                    );
+                  }
+
+                  // Caso apenas aluguel
+                  if (
+                    !dados.finalidade_venda &&
+                    dados.finalidade_aluguel &&
+                    !dados.ocultarPreco
+                  ) {
+                    return (
+                      <div className="text-3xl md:text-4xl font-black text-white">
+                        {precoDestaque?.formatado}/mês
+                      </div>
+                    );
+                  }
+
+                  // Caso preço oculto ou sem preço
+                  return (
+                    <div className="text-3xl md:text-4xl font-black text-white">
+                      Preço sob consulta
+                    </div>
+                  );
+                })()}
               </div>
 
               {/* ÍCONES DE CARACTERÍSTICAS */}

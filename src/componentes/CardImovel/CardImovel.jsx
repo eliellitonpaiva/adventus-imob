@@ -61,13 +61,18 @@ const CardImovel = ({
 
   const unidadeCompleta = montarUnidadeCompleta();
 
-  // ⭐ CONSTRUIR URL IGUAL À VITRINE: /imovel/[slug]/[codigo]
+  // ⭐ CONSTRUIR URL COM FINALIDADE
+  const finalidadeParam = finalidade === "ALUGUEL" ? "aluguel" : "venda";
+
+  // Salva no sessionStorage para fallback
+  sessionStorage.setItem("finalidade_selecionada", finalidadeParam);
+
   const urlImovel =
     codigo && slug
-      ? `/imovel/${slug}/${codigo}` // Formato principal: /imovel/slug/codigo
+      ? `/imovel/${slug}/${codigo}?finalidade=${finalidadeParam}`
       : slug
-        ? `/imovel/${slug}` // Fallback 1: só slug
-        : `/imovel/${id}`; // Fallback 2: só id
+        ? `/imovel/${slug}?finalidade=${finalidadeParam}`
+        : `/imovel/${id}?finalidade=${finalidadeParam}`;
 
   // Log para debug (remover em produção)
   console.log("🏠 CardImovel - URL gerada:", {
