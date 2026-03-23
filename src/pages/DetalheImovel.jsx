@@ -35,12 +35,10 @@ const DetalheImovel = () => {
   const [error, setError] = useState(null);
   const [visualizacoes, setVisualizacoes] = useState(0);
   const [seoAplicado, setSeoAplicado] = useState(false);
-  const [finalidadeAtual, setFinalidadeAtual] = useState(null); // 'venda' ou 'aluguel'
+  const [finalidadeAtual, setFinalidadeAtual] = useState(null);
 
-  // =============== NOVO ESTADO PARA FOTOS ===============
   const [fotos, setFotos] = useState([]);
 
-  // Estados do carrossel e modal
   const [imagemAtual, setImagemAtual] = useState(0);
   const [modalAberto, setModalAberto] = useState(false);
   const [formData, setFormData] = useState({
@@ -54,27 +52,17 @@ const DetalheImovel = () => {
   const [enviando, setEnviando] = useState(false);
   const [enviado, setEnviado] = useState(false);
 
-  // ==========================================================================
-  // NOVOS ESTADOS PARA PROTEÇÃO CONTRA DUPLICIDADE
-  // ==========================================================================
   const [ultimoEnvio, setUltimoEnvio] = useState(null);
   const [mostrarAvisoDuplicado, setMostrarAvisoDuplicado] = useState(false);
   const [dadosDuplicados, setDadosDuplicados] = useState(null);
 
-  // Estado para controle dos acordeões
   const [acordeoesAbertos, setAcordeoesAbertos] = useState({});
 
-  // Refs
   const modalRef = useRef(null);
   const overlayRef = useRef(null);
   const seoAplicadoRef = useRef(false);
 
-  // Constantes
   const whatsappNumber = "5599988087867";
-
-  // ==========================================================================
-  // FUNÇÕES DE RASTREAMENTO
-  // ==========================================================================
 
   const registrarVisualizacao = useCallback(async (imovelId) => {
     try {
@@ -236,9 +224,6 @@ const DetalheImovel = () => {
     [],
   );
 
-  // ==========================================================================
-  // FUNÇÕES PARA DESLIZE NO MOBILE
-  // ==========================================================================
   const touchStartX = useRef(0);
   const touchEndX = useRef(0);
 
@@ -268,9 +253,6 @@ const DetalheImovel = () => {
     touchEndX.current = 0;
   };
 
-  // ==========================================================================
-  // FUNÇÃO PARA CARREGAR FOTOS DO IMÓVEL
-  // ==========================================================================
   const carregarFotos = useCallback(async (imovelId) => {
     try {
       const { data, error } = await supabase
@@ -299,10 +281,6 @@ const DetalheImovel = () => {
       ]);
     }
   }, []);
-
-  // ==========================================================================
-  // FUNÇÕES DE FORMATAÇÃO
-  // ==========================================================================
 
   const formatPrice = useCallback((price) => {
     if (!price || price === "0" || price === "0.00")
@@ -336,7 +314,6 @@ const DetalheImovel = () => {
     return Math.round(desconto);
   };
 
-  // 🔥 NOVA FUNÇÃO: determinar finalidade baseada nas finalidades carregadas
   const formatarFinalidade = useCallback(() => {
     const temVenda = finalidades.some((f) => f.tipo === "venda");
     const temAluguel = finalidades.some((f) => f.tipo === "aluguel");
@@ -347,13 +324,11 @@ const DetalheImovel = () => {
     return "Venda";
   }, [finalidades]);
 
-  // 🔥 NOVA FUNÇÃO: obter preço de venda
   const getPrecoVenda = useCallback(() => {
     const venda = finalidades.find((f) => f.tipo === "venda");
     return venda?.preco || null;
   }, [finalidades]);
 
-  // 🔥 NOVA FUNÇÃO: obter preço de aluguel
   const getPrecoAluguel = useCallback(() => {
     const aluguel = finalidades.find((f) => f.tipo === "aluguel");
     return aluguel?.preco || null;
@@ -412,37 +387,29 @@ const DetalheImovel = () => {
     return partes.join(" ");
   }, []);
 
-  // ==========================================================================
-  // 🔥 FUNÇÃO CORRIGIDA - EXATAMENTE COMO VOCÊ PEDIU
-  // ==========================================================================
   const gerarSlugSEO = useCallback(
     (dados) => {
       if (!dados) return "imovel";
 
       const partes = [];
 
-      // Bairro (sem o "casa-" porque já vem do tipo)
       if (dados.bairro) {
         const bairroLimpo = dados.bairro.toLowerCase().replace(/\s+/g, "-");
         partes.push(bairroLimpo);
       }
 
-      // Quartos (sempre)
       if (dados.quartos > 0) {
         partes.push(`${dados.quartos}-dormitorios`);
       }
 
-      // Vagas (sempre)
       if (dados.vagas > 0) {
         partes.push(`${dados.vagas}-vaga${dados.vagas > 1 ? "s" : ""}`);
       }
 
-      // Área construída (sempre)
       if (dados.areaConstruida > 0) {
         partes.push(`${dados.areaConstruida}-m`);
       }
 
-      // Finalidade
       const temVenda = finalidades.some((f) => f.tipo === "venda");
       const temAluguel = finalidades.some((f) => f.tipo === "aluguel");
 
@@ -486,7 +453,6 @@ const DetalheImovel = () => {
 
       descricao.push(`no ${localParts.join(" - ")}`);
 
-      // 🔥 Usar preços das finalidades
       const precoVenda = getPrecoVenda();
       const precoAluguel = getPrecoAluguel();
       const temVenda = finalidades.some((f) => f.tipo === "venda");
@@ -531,9 +497,6 @@ const DetalheImovel = () => {
     return `${tipo} do ${dados.tipo || "imóvel"} com ${dados.quartos || 0} quartos no ${dados.bairro || ""} em ${dados.cidade || "Açailândia"} - Adventus Imóveis`;
   }, []);
 
-  // ==========================================================================
-  // FUNÇÃO DE SEO - MANIPULAÇÃO DIRETA DO DOM
-  // ==========================================================================
   const atualizarTagsSEO = useCallback((dados) => {
     if (!dados || seoAplicadoRef.current) return;
 
@@ -632,9 +595,6 @@ const DetalheImovel = () => {
     setSeoAplicado(true);
   }, []);
 
-  // ==========================================================================
-  // FUNÇÃO DE EXTRAÇÃO DE DADOS (ATUALIZADA)
-  // ==========================================================================
   const getImovelData = useCallback(() => {
     if (!imovel) return null;
 
@@ -648,7 +608,6 @@ const DetalheImovel = () => {
     const diferenciais = imovel.diferenciais || {};
     const etiquetas = imovel.etiquetas || {};
 
-    // 🔥 Obter preços das finalidades
     const precoVenda = getPrecoVenda();
     const precoAluguel = getPrecoAluguel();
     const temVenda = finalidades.some((f) => f.tipo === "venda");
@@ -656,7 +615,6 @@ const DetalheImovel = () => {
 
     let financiavel = false;
 
-    // Prioridade 1: Campo financiado
     if (imovel.financiado !== undefined && imovel.financiado !== null) {
       if (typeof imovel.financiado === "boolean") {
         financiavel = imovel.financiado;
@@ -686,7 +644,6 @@ const DetalheImovel = () => {
       slug: imovel.slug,
       codigo: imovel.codigo || "Sem código",
       titulo: imovel.titulo || "Imóvel em Açailândia",
-      // 🔥 Usar preços das finalidades
       preco: precoVenda,
       precoFormatado: formatPrice(precoVenda),
       etiquetas: imovel.etiquetas || {},
@@ -697,7 +654,6 @@ const DetalheImovel = () => {
       finalidade: formatarFinalidade(),
       status: imovel.status,
       tipo: imovel.tipo,
-      // 🔥 Usar finalidades carregadas
       finalidade_venda: temVenda,
       finalidade_aluguel: temAluguel,
       empreendimento: imovel.edificios || null,
@@ -711,7 +667,6 @@ const DetalheImovel = () => {
       localizacaoCompleta: `${imovel.bairro || ""}, ${imovel.cidade || "Açailândia"}${imovel.estado ? ` - ${imovel.estado}` : ""}`,
       enderecoCompleto: `${imovel.endereco || ""}${imovel.numero ? `, ${imovel.numero}` : ""}${imovel.complemento ? ` - ${imovel.complemento}` : ""}`,
 
-      // 🔥 CORREÇÃO: Usar os campos diretos do imóvel
       quartos: imovel.quartos || 0,
       suites: imovel.suites || 0,
       banheiros: imovel.banheiros || 0,
@@ -719,7 +674,6 @@ const DetalheImovel = () => {
       areaTotal: imovel.area_total || 0,
       areaConstruida: imovel.area_construida || 0,
 
-      // 🔥 ADICIONAR ESTAS LINHAS AQUI
       destaque_semana: etiquetas.destaque_semana || false,
       novo_site: etiquetas.novo_site || false,
       baixou_preco: etiquetas.baixou_preco || false,
@@ -763,80 +717,121 @@ const DetalheImovel = () => {
     getPrecoAluguel,
   ]);
 
-  // ==========================================================================
-  // FUNÇÃO PARA GERAR OS ACORDEÕES
-  // ==========================================================================
   const gerarDadosAcordeao = useCallback(
     (dados) => {
       if (!dados || !imovel) return [];
 
       const acordeoes = [];
 
-      /// ===== 1. CARACTERÍSTICAS DO IMÓVEL =====
+      // ===== 1. CARACTERÍSTICAS DO IMÓVEL =====
       const itensCaracteristicas = [];
       const caracteristicas = dados.caracteristicas || {};
-      const dependencias = dados.dependencias || {};
 
-      if (caracteristicas.frenteTerreno) {
-        itensCaracteristicas.push(
-          `Frente do terreno: ${caracteristicas.frenteTerreno}`,
-        );
-      }
-      if (caracteristicas.fundo) {
-        itensCaracteristicas.push(`Fundo: ${caracteristicas.fundo}`);
-      }
-      if (caracteristicas.lateralEsquerda) {
-        itensCaracteristicas.push(
-          `Lateral esquerda: ${caracteristicas.lateralEsquerda}`,
-        );
-      }
-      if (caracteristicas.lateralDireita) {
-        itensCaracteristicas.push(
-          `Lateral direita: ${caracteristicas.lateralDireita}`,
-        );
-      }
-      if (caracteristicas.peDireito) {
-        itensCaracteristicas.push(`Pé direito: ${caracteristicas.peDireito}`);
-      }
-      if (caracteristicas.topografia) {
+      // Função para extrair apenas o número de um valor (ex: "10 metros" -> 10)
+      const extrairNumero = (valor) => {
+        if (!valor) return null;
+        const match = valor.toString().match(/\d+([,.]\d+)?/);
+        return match ? match[0].replace(",", ".") : null;
+      };
+
+      // Mapeamento dos campos com exibição limpa
+      const camposTexto = [
+        { chave: "frente_terreno", label: "Frente", unidade: "m" },
+        { chave: "fundo", label: "Fundo", unidade: "m" },
+        { chave: "lateral_esquerda", label: "Lateral esquerda", unidade: "m" },
+        { chave: "lateral_direita", label: "Lateral direita", unidade: "m" },
+        { chave: "pe_direito", label: "Pé direito", unidade: "m" },
+        { chave: "area_util", label: "Área útil", unidade: "m²" },
+      ];
+
+      camposTexto.forEach((campo) => {
+        const valor = caracteristicas[campo.chave];
+        if (valor && valor !== "") {
+          const numero = extrairNumero(valor);
+          if (numero) {
+            // Exibe como: "Frente: 10m"
+            itensCaracteristicas.push(
+              `${campo.label}: ${numero}${campo.unidade}`,
+            );
+          } else {
+            // Se não conseguir extrair número, exibe o valor original
+            itensCaracteristicas.push(`${campo.label}: ${valor}`);
+          }
+        }
+      });
+
+      if (caracteristicas.topografia && caracteristicas.topografia !== "") {
         itensCaracteristicas.push(`Topografia: ${caracteristicas.topografia}`);
       }
-      if (caracteristicas.esquinaInfo) {
+
+      if (caracteristicas.esquina) {
         itensCaracteristicas.push(`Esquina: Sim`);
       }
-      if (caracteristicas.tipoConstrucao) {
+
+      if (
+        caracteristicas.tipo_construcao &&
+        caracteristicas.tipo_construcao !== ""
+      ) {
+        const labelsConstrucao = {
+          alvenaria_estrutural: "Alvenaria Estrutural",
+          concreto_armado: "Concreto Armado",
+          steel_frame: "Steel Frame",
+          wood_frame: "Wood Frame",
+          container: "Container",
+          madeira: "Madeira",
+          taipa: "Taipa",
+        };
         itensCaracteristicas.push(
-          `Tipo de construção: ${caracteristicas.tipoConstrucao}`,
+          `Tipo de construção: ${labelsConstrucao[caracteristicas.tipo_construcao] || caracteristicas.tipo_construcao}`,
         );
       }
-      if (caracteristicas.anoConstrucao) {
+
+      if (
+        caracteristicas.ano_construcao &&
+        caracteristicas.ano_construcao !== ""
+      ) {
+        const numero = extrairNumero(caracteristicas.ano_construcao);
         itensCaracteristicas.push(
-          `Ano de construção: ${caracteristicas.anoConstrucao}`,
+          `Ano de construção: ${numero || caracteristicas.ano_construcao}`,
         );
       }
-      if (caracteristicas.reformadoRecentemente) {
+
+      if (caracteristicas.reformado_recentemente) {
         itensCaracteristicas.push(`Reformado recentemente`);
       }
-      if (caracteristicas.imovelAverbado) {
+
+      if (caracteristicas.imovel_averbado) {
         itensCaracteristicas.push(`Imóvel averbado`);
       }
-      if (caracteristicas.aceitaPermuta) {
+
+      if (caracteristicas.aceita_permuta) {
         itensCaracteristicas.push(`Aceita permuta`);
       }
-      if (caracteristicas.tipoIluminacao) {
+
+      if (
+        caracteristicas.tipo_iluminacao &&
+        caracteristicas.tipo_iluminacao !== ""
+      ) {
         itensCaracteristicas.push(
-          `Iluminação: ${caracteristicas.tipoIluminacao}`,
+          `Iluminação: ${caracteristicas.tipo_iluminacao}`,
         );
       }
-      if (caracteristicas.tipoTelhado) {
-        itensCaracteristicas.push(`Telhado: ${caracteristicas.tipoTelhado}`);
+
+      if (caracteristicas.tipo_telhado && caracteristicas.tipo_telhado !== "") {
+        itensCaracteristicas.push(`Telhado: ${caracteristicas.tipo_telhado}`);
       }
-      if (caracteristicas.caixaDAgua) {
+
+      if (caracteristicas.caixa_dagua && caracteristicas.caixa_dagua !== "") {
+        const numero = extrairNumero(caracteristicas.caixa_dagua);
         itensCaracteristicas.push(
-          `Caixa d'água: ${caracteristicas.caixaDAgua} litros`,
+          `Caixa d'água: ${numero || caracteristicas.caixa_dagua} litros`,
         );
       }
-      if (caracteristicas.sistemaEsgoto) {
+
+      if (
+        caracteristicas.sistema_esgoto &&
+        caracteristicas.sistema_esgoto !== ""
+      ) {
         const labelsEsgoto = {
           rede_publica: "Rede Pública",
           fossa_septica: "Fossa Séptica",
@@ -846,10 +841,14 @@ const DetalheImovel = () => {
           inexistente: "Inexistente",
         };
         itensCaracteristicas.push(
-          `Sistema de esgoto: ${labelsEsgoto[caracteristicas.sistemaEsgoto] || caracteristicas.sistemaEsgoto}`,
+          `Sistema de esgoto: ${labelsEsgoto[caracteristicas.sistema_esgoto] || caracteristicas.sistema_esgoto}`,
         );
       }
-      if (caracteristicas.aquecimentoAgua) {
+
+      if (
+        caracteristicas.aquecimento_agua &&
+        caracteristicas.aquecimento_agua !== ""
+      ) {
         const labelsAquecimento = {
           gas: "Gás",
           solar: "Solar",
@@ -858,7 +857,7 @@ const DetalheImovel = () => {
           lenha: "Lenha",
         };
         itensCaracteristicas.push(
-          `Aquecimento de água: ${labelsAquecimento[caracteristicas.aquecimentoAgua] || caracteristicas.aquecimentoAgua}`,
+          `Aquecimento de água: ${labelsAquecimento[caracteristicas.aquecimento_agua] || caracteristicas.aquecimento_agua}`,
         );
       }
 
@@ -871,79 +870,142 @@ const DetalheImovel = () => {
       }
 
       // ===== 2. ACABAMENTOS =====
-      const itensAcabamentos = [];
       const acabamentos = dados.acabamentos || {};
 
-      const labelsAcabamentos = {
-        pisoPorcelanato: "Piso porcelanato",
-        pisoCeramica: "Piso cerâmica",
-        pisoLaminado: "Piso laminado",
-        pisoMadeira: "Piso de madeira",
-        revestimentoAzulejo: "Revestimento em azulejo",
-        revestimentoPastilha: "Revestimento em pastilha",
-        revestimentoPedra: "Revestimento em pedra",
-        tetoGessoRebaixado: "Teto em gesso rebaixado",
-        tetoForroMadeira: "Forro de madeira",
-        bancadaGranito: "Bancada de granito",
-        bancadaMarmore: "Bancada de mármore",
-        bancadaQuartzo: "Bancada de quartzo",
-        armariosPlanejados: "Armários planejados",
-        pinturaAcoramento: "Pintura acrílica",
-        esquadriasAluminio: "Esquadrias de alumínio",
-        vidrosTemperados: "Vidros temperados",
+      const extrairItensComPersonalizados = (subsecao, labelsMap) => {
+        const itens = [];
+        if (subsecao && typeof subsecao === "object") {
+          Object.entries(subsecao)
+            .filter(
+              ([key, value]) =>
+                value === true &&
+                key !== "personalizados" &&
+                !key.startsWith("custom-"),
+            )
+            .forEach(([key]) => {
+              const label =
+                labelsMap[key] ||
+                key
+                  .replace(/([A-Z])/g, " $1")
+                  .replace(/^./, (str) => str.toUpperCase());
+              itens.push(label);
+            });
+
+          if (
+            subsecao.personalizados &&
+            Array.isArray(subsecao.personalizados)
+          ) {
+            subsecao.personalizados.forEach((item) => {
+              if (item.name) {
+                itens.push(item.name);
+              }
+            });
+          }
+        }
+        return itens;
       };
 
-      Object.entries(acabamentos)
-        .filter(([_, value]) => value === true)
-        .forEach(([key]) => {
-          itensAcabamentos.push(
-            labelsAcabamentos[key] ||
-              key
-                .replace(/([A-Z])/g, " $1")
-                .replace(/^./, (str) => str.toUpperCase()),
-          );
-        });
+      const labelsPisos = {
+        piso_porcelanato: "Piso porcelanato",
+        piso_ceramica: "Piso cerâmica",
+        piso_laminado: "Piso laminado",
+        piso_vinilico: "Piso vinílico",
+        piso_madeira_macica: "Piso madeira maciça",
+        piso_taco: "Piso taco",
+        piso_cimento_queimado: "Piso cimento queimado",
+        piso_marmore: "Piso mármore",
+        piso_granito: "Piso granito",
+        piso_frio: "Piso frio",
+      };
 
-      if (itensAcabamentos.length > 0) {
+      const labelsRevestimentos = {
+        revestimento_azulejo: "Revestimento azulejo",
+        revestimento_pastilha: "Revestimento pastilha",
+        revestimento_porcelanato: "Revestimento porcelanato",
+        revestimento_pedra_natural: "Revestimento pedra natural",
+        revestimento_papel_parede: "Papel de parede",
+        revestimento_3d: "Revestimento 3D",
+      };
+
+      const labelsTeto = {
+        teto_gesso_rebaixado: "Teto gesso rebaixado",
+        teto_sanca_gesso: "Sanca de gesso",
+        teto_forro_pvc: "Forro de PVC",
+        teto_laje: "Teto laje",
+      };
+
+      const labelsEsquadrias = {
+        porta_madeira_macica: "Porta de madeira maciça",
+        porta_laqueada: "Porta laqueada",
+        esquadria_aluminio: "Esquadrias de alumínio",
+        esquadria_pvc: "Esquadrias de PVC",
+        porta_pivotante: "Porta pivotante",
+      };
+
+      const labelsBancadas = {
+        bancada_granito: "Bancada granito",
+        bancada_marmore: "Bancada mármore",
+        bancada_quartzo: "Bancada quartzo",
+        bancada_nanoglass: "Bancada nanoglass",
+      };
+
+      const itensPisos = extrairItensComPersonalizados(
+        acabamentos.pisos,
+        labelsPisos,
+      );
+      const itensRevestimentos = extrairItensComPersonalizados(
+        acabamentos.revestimentos,
+        labelsRevestimentos,
+      );
+      const itensTeto = extrairItensComPersonalizados(
+        acabamentos.teto,
+        labelsTeto,
+      );
+      const itensEsquadrias = extrairItensComPersonalizados(
+        acabamentos.esquadrias,
+        labelsEsquadrias,
+      );
+      const itensBancadas = extrairItensComPersonalizados(
+        acabamentos.bancadas,
+        labelsBancadas,
+      );
+
+      const todosItensAcabamentos = [
+        ...itensPisos,
+        ...itensRevestimentos,
+        ...itensTeto,
+        ...itensEsquadrias,
+        ...itensBancadas,
+      ];
+
+      if (todosItensAcabamentos.length > 0) {
         acordeoes.push({
           titulo: "Acabamentos",
           icone: "fas fa-paint-roller",
-          itens: itensAcabamentos,
+          itens: todosItensAcabamentos,
         });
       }
 
       // ===== 3. ÁREA DE LAZER =====
-      const itensAreaLazer = [];
       const areaLazer = dados.areaLazer || {};
-
-      const labelsAreaLazer = {
+      const itensAreaLazer = extrairItensComPersonalizados(areaLazer, {
         piscina: "Piscina",
         churrasqueira: "Churrasqueira",
-        fornoPizza: "Forno a lenha",
-        espacoGourmet: "Espaço gourmet",
-        salaoFestas: "Salão de festas",
+        espaco_gourmet: "Espaço gourmet",
+        salao_festas: "Salão de festas",
+        salao_jogos: "Salão de jogos",
         academia: "Academia",
         playground: "Playground",
-        quadraPoliesportiva: "Quadra poliesportiva",
-        quadraTenis: "Quadra de tênis",
-        campoFutebol: "Campo de futebol",
-        sauna: "Sauna",
-        espacoKids: "Espaço kids",
+        quadra_poliesportiva: "Quadra poliesportiva",
+        campo_society: "Campo society",
+        area_verde: "Área verde",
         jardim: "Jardim",
-        horta: "Horta",
-        pomar: "Pomar",
-      };
-
-      Object.entries(areaLazer)
-        .filter(([_, value]) => value === true)
-        .forEach(([key]) => {
-          itensAreaLazer.push(
-            labelsAreaLazer[key] ||
-              key
-                .replace(/([A-Z])/g, " $1")
-                .replace(/^./, (str) => str.toUpperCase()),
-          );
-        });
+        deck: "Deck",
+        rooftop: "Rooftop",
+        sauna: "Sauna",
+        espaco_pet: "Espaço pet",
+        brinquedoteca: "Brinquedoteca",
+      });
 
       if (itensAreaLazer.length > 0) {
         acordeoes.push({
@@ -954,35 +1016,22 @@ const DetalheImovel = () => {
       }
 
       // ===== 4. LOCALIZAÇÃO E VIZINHANÇA =====
-      const itensLocalizacao = [];
       const localizacao = dados.localizacaoVizinhanca || {};
-
-      const labelsLocalizacao = {
-        proximoCentro: "Próximo ao centro",
-        proximoSupermercado: "Próximo a supermercado",
-        proximoEscola: "Próximo a escola",
-        proximoHospital: "Próximo a hospital",
-        proximoFarmacia: "Próximo a farmácia",
-        proximoBanco: "Próximo a banco",
-        proximoTransporte: "Próximo a transporte público",
-        bairroResidencial: "Bairro residencial",
-        bairroComercial: "Bairro comercial",
-        ruaAsfaltada: "Rua asfaltada",
-        ruaArborizada: "Rua arborizada",
-        vistaPanoramica: "Vista panorâmica",
-        regiaoValorizada: "Região valorizada",
-      };
-
-      Object.entries(localizacao)
-        .filter(([_, value]) => value === true)
-        .forEach(([key]) => {
-          itensLocalizacao.push(
-            labelsLocalizacao[key] ||
-              key
-                .replace(/([A-Z])/g, " $1")
-                .replace(/^./, (str) => str.toUpperCase()),
-          );
-        });
+      const itensLocalizacao = extrairItensComPersonalizados(localizacao, {
+        proximo_centro: "Próximo ao centro",
+        proximo_supermercado: "Próximo a supermercado",
+        proximo_escola: "Próximo a escola",
+        proximo_hospital: "Próximo a hospital",
+        proximo_farmacia: "Próximo a farmácia",
+        proximo_onibus: "Próximo a ponto de ônibus",
+        proximo_shopping: "Próximo a shopping",
+        proximo_faculdade: "Próximo a faculdade",
+        bairro_residencial: "Bairro residencial",
+        bairro_comercial: "Bairro comercial",
+        rua_asfaltada: "Rua asfaltada",
+        rua_tranquila: "Rua tranquila",
+        regiao_valorizada: "Região valorizada",
+      });
 
       if (itensLocalizacao.length > 0) {
         acordeoes.push({
@@ -993,33 +1042,20 @@ const DetalheImovel = () => {
       }
 
       // ===== 5. SEGURANÇA =====
-      const itensSeguranca = [];
       const seguranca = dados.seguranca || {};
-
-      const labelsSeguranca = {
-        portaoEletronico: "Portão eletrônico",
+      const itensSeguranca = extrairItensComPersonalizados(seguranca, {
+        portao_eletronico: "Portão eletrônico",
         interfone: "Interfone",
-        cercaEletrica: "Cerca elétrica",
-        sistemaCameras: "Sistema de câmeras",
+        cerca_eletrica: "Cerca elétrica",
+        sistema_cameras: "Sistema de câmeras",
         alarme: "Alarme",
-        portaria24h: "Portaria 24h",
-        vigilanciaNoturna: "Vigilância noturna",
-        circuitoFechado: "Circuito fechado",
-        sensoresMovimento: "Sensores de movimento",
-        gradeProtecao: "Grade de proteção",
-        condominioFechado: "Condomínio fechado",
-      };
-
-      Object.entries(seguranca)
-        .filter(([_, value]) => value === true)
-        .forEach(([key]) => {
-          itensSeguranca.push(
-            labelsSeguranca[key] ||
-              key
-                .replace(/([A-Z])/g, " $1")
-                .replace(/^./, (str) => str.toUpperCase()),
-          );
-        });
+        portaria_24h: "Portaria 24h",
+        vigilancia_24h: "Vigilância 24h",
+        controle_acesso: "Controle de acesso",
+        fechadura_digital: "Fechadura digital",
+        condominio_fechado: "Condomínio fechado",
+        muros_altos: "Muros altos",
+      });
 
       if (itensSeguranca.length > 0) {
         acordeoes.push({
@@ -1030,33 +1066,18 @@ const DetalheImovel = () => {
       }
 
       // ===== 6. ARMÁRIOS E ARMAZENAMENTO =====
-      const itensArmarios = [];
       const armarios = dados.armariosArmazenamento || {};
-
-      const labelsArmarios = {
-        armarioCozinhaPlanejado: "Cozinha planejada",
-        armariosEmbutidos: "Armários embutidos",
+      const itensArmarios = extrairItensComPersonalizados(armarios, {
+        armario_cozinha_planejado: "Cozinha planejada",
+        armarios_embutidos: "Armários embutidos",
+        armarios_quarto: "Armários no quarto",
+        armarios_banheiro: "Armários no banheiro",
         closet: "Closet",
         despensa: "Despensa",
-        armarioLavanderia: "Armário na lavanderia",
-        prateleiras: "Prateleiras",
-        estantes: "Estantes",
         deposito: "Depósito",
-        adega: "Adega",
-        armarioQuarto: "Armário no quarto",
-        armarioBanheiro: "Armário no banheiro",
-      };
-
-      Object.entries(armarios)
-        .filter(([_, value]) => value === true)
-        .forEach(([key]) => {
-          itensArmarios.push(
-            labelsArmarios[key] ||
-              key
-                .replace(/([A-Z])/g, " $1")
-                .replace(/^./, (str) => str.toUpperCase()),
-          );
-        });
+        roupeiro: "Roupeiro",
+        maleiro: "Maleiro",
+      });
 
       if (itensArmarios.length > 0) {
         acordeoes.push({
@@ -1067,32 +1088,22 @@ const DetalheImovel = () => {
       }
 
       // ===== 7. SERVIÇOS E UTILIDADES =====
-      const itensServicos = [];
       const servicos = dados.servicosUtilidades || {};
-
-      const labelsServicos = {
-        aguaEncanada: "Água encanada",
-        energiaEletrica: "Energia elétrica",
-        esgotoSanitario: "Esgoto sanitário",
-        gasEncanado: "Gás encanado",
-        internetFibra: "Internet fibra óptica",
-        coletaLixo: "Coleta de lixo",
-        iluminacaoPublica: "Iluminação pública",
-        transportePublico: "Transporte público próximo",
-        pavimentacao: "Pavimentação",
-        calçada: "Calçada",
-      };
-
-      Object.entries(servicos)
-        .filter(([_, value]) => value === true)
-        .forEach(([key]) => {
-          itensServicos.push(
-            labelsServicos[key] ||
-              key
-                .replace(/([A-Z])/g, " $1")
-                .replace(/^./, (str) => str.toUpperCase()),
-          );
-        });
+      const itensServicos = extrairItensComPersonalizados(servicos, {
+        agua_encanada: "Água encanada",
+        energia_eletrica: "Energia elétrica",
+        poco_artesiano: "Poço artesiano",
+        aquecimento_gas: "Aquecimento a gás",
+        aquecimento_solar: "Aquecimento solar",
+        gas_encanado: "Gás encanado",
+        ar_condicionado_instalado: "Ar-condicionado instalado",
+        infra_ar_condicionado: "Infra para ar-condicionado",
+        internet_fibra: "Internet fibra disponível",
+        iluminacao_led: "Iluminação em LED",
+        energia_solar: "Sistema de energia solar",
+        elevador: "Elevador",
+        coleta_lixo: "Coleta de lixo regular",
+      });
 
       if (itensServicos.length > 0) {
         acordeoes.push({
@@ -1103,40 +1114,19 @@ const DetalheImovel = () => {
       }
 
       // ===== 8. DIFERENCIAIS DO IMÓVEL =====
-      const itensDiferenciais = [];
       const diferenciais = dados.diferenciais || {};
-
-      const labelsDiferenciais = {
+      const itensDiferenciais = extrairItensComPersonalizados(diferenciais, {
         varanda: "Varanda",
         sacada: "Sacada",
         lavabo: "Lavabo",
         banheira: "Banheira",
+        box_vidro: "Box de vidro",
+        dependencia_empregada: "Dependência de empregada",
         escritorio: "Escritório / Home office",
-        closetMaster: "Closet master",
-        lareira: "Lareira",
-        aquecimentoCentral: "Aquecimento central",
-        arCondicionado: "Ar condicionado central",
-        painelSolar: "Painel solar",
-        geradorEnergia: "Gerador de energia",
-        automacaoResidencial: "Automação residencial",
-        elevadorSocial: "Elevador social",
-        elevadorServico: "Elevador de serviço",
-        vistaMar: "Vista para o mar",
-        vistaMontanha: "Vista para montanha",
-        vistaCidade: "Vista para a cidade",
-        frentePraia: "Frente para a praia",
-      };
-
-      Object.entries(diferenciais)
-        .filter(([_, value]) => value === true)
-        .forEach(([key]) => {
-          itensDiferenciais.push(
-            labelsDiferenciais[key] ||
-              key
-                .replace(/([A-Z])/g, " $1")
-                .replace(/^./, (str) => str.toUpperCase()),
-          );
-        });
+        pe_direito_duplo: "Pé direito duplo",
+        mezanino: "Mezanino",
+        vista_panoramica: "Vista panorâmica",
+      });
 
       if (itensDiferenciais.length > 0) {
         acordeoes.push({
@@ -1150,10 +1140,6 @@ const DetalheImovel = () => {
     },
     [imovel],
   );
-
-  // ==========================================================================
-  // BUSCAR DADOS DO IMÓVEL (CORRIGIDO - USA SLUG E CÓDIGO)
-  // ==========================================================================
   useEffect(() => {
     let isMounted = true;
 
@@ -1164,16 +1150,12 @@ const DetalheImovel = () => {
         console.log("🟡 SLUG RECEBIDO:", slug);
         console.log("🟡 CÓDIGO RECEBIDO:", codigo);
 
-        // 🔥 NOVA LÓGICA: Busca combinando slug E código (quando ambos existem)
         let query = supabase.from("imoveis").select("*");
 
-        // 🔥 NOVA LÓGICA: Primeiro tenta pelo CÓDIGO (é único)
         if (codigo) {
           console.log("🔎 Buscando por CÓDIGO:", codigo);
           query = query.eq("codigo", codigo);
-        }
-        // Se não tem código, tenta pelo slug
-        else if (slug) {
+        } else if (slug) {
           console.log("🔎 Buscando por SLUG:", slug);
           query = query.eq("slug", slug);
         } else {
@@ -1190,7 +1172,6 @@ const DetalheImovel = () => {
         if (imovelError) throw imovelError;
         if (!imovelData) throw new Error("Imóvel não encontrado");
 
-        // 🔥 VERIFICAÇÃO DE SEGURANÇA: Se buscamos por slug+codigo, confere se o código bate
         if (slug && codigo && imovelData.codigo !== codigo) {
           console.warn("⚠️ Código não corresponde ao slug! Redirecionando...");
           navigate(`/imovel/${imovelData.slug}/${imovelData.codigo}`, {
@@ -1199,7 +1180,6 @@ const DetalheImovel = () => {
           return;
         }
 
-        // 🔥 Buscar finalidades do imóvel
         const { data: finalidadesData, error: finalidadesError } =
           await supabase
             .from("imovel_finalidades")
@@ -1258,11 +1238,9 @@ const DetalheImovel = () => {
     navigate,
   ]);
 
-  // Detecta a finalidade atual baseada na URL
   useEffect(() => {
     if (!finalidades.length) return;
 
-    // Tenta pegar da URL primeiro
     const params = new URLSearchParams(window.location.search);
     const finalidadeParam = params.get("finalidade");
 
@@ -1271,14 +1249,12 @@ const DetalheImovel = () => {
     } else if (finalidadeParam === "venda") {
       setFinalidadeAtual("venda");
     } else {
-      // Tenta pegar do sessionStorage
       const finalidadeSalva = sessionStorage.getItem("finalidade_selecionada");
       if (finalidadeSalva === "aluguel") {
         setFinalidadeAtual("aluguel");
       } else if (finalidadeSalva === "venda") {
         setFinalidadeAtual("venda");
       } else {
-        // Padrão: se tem as duas, prioriza venda
         const temVenda = finalidades.some((f) => f.tipo === "venda");
         const temAluguel = finalidades.some((f) => f.tipo === "aluguel");
 
@@ -1292,9 +1268,7 @@ const DetalheImovel = () => {
       }
     }
   }, [finalidades]);
-  // ==========================================================================
-  // DADOS PROCESSADOS
-  // ==========================================================================
+
   const dados = useMemo(() => getImovelData(), [getImovelData]);
   const dadosAcordeao = useMemo(
     () => (dados ? gerarDadosAcordeao(dados) : []),
@@ -1302,14 +1276,12 @@ const DetalheImovel = () => {
   );
   const imagens = useMemo(() => dados?.imagens || [], [dados]);
 
-  //FUNÇÃO getPrecoDestaque AQUI
   const getPrecoDestaque = useCallback(() => {
     if (!dados) return null;
 
     const temVenda = dados.finalidade_venda;
     const temAluguel = dados.finalidade_aluguel;
 
-    // Se só tem venda
     if (temVenda && !temAluguel) {
       return {
         tipo: "venda",
@@ -1318,7 +1290,6 @@ const DetalheImovel = () => {
       };
     }
 
-    // Se só tem aluguel
     if (!temVenda && temAluguel) {
       return {
         tipo: "aluguel",
@@ -1327,7 +1298,6 @@ const DetalheImovel = () => {
       };
     }
 
-    // Se tem as duas finalidades, usa a finalidadeAtual
     if (temVenda && temAluguel) {
       if (finalidadeAtual === "aluguel") {
         return {
@@ -1347,36 +1317,23 @@ const DetalheImovel = () => {
     return null;
   }, [dados, finalidadeAtual]);
 
-  // ==========================================================================
-  // FUNÇÕES PARA PROTEÇÃO CONTRA ENVIOS DUPLICADOS
-  // ==========================================================================
-  // ⚠️ IMPORTANTE: Estas funções devem vir DEPOIS da declaração de 'dados'
-
-  /**
-   * Verifica se o envio atual é duplicado
-   * @param {Object} novosDados - Dados do formulário atual
-   * @returns {boolean} - true se for duplicado, false caso contrário
-   */
   const isEnvioDuplicado = useCallback(
     (novosDados) => {
-      // Se não tem dados do imóvel ainda, não pode ser duplicado
       if (!dados?.id) {
         return false;
       }
 
       try {
-        // Recupera o último envio do localStorage para este imóvel
         const ultimoEnvioStorage = localStorage.getItem(
           `ultimo_envio_${dados.id}`,
         );
 
         if (!ultimoEnvioStorage) {
-          return false; // Primeiro envio para este imóvel
+          return false;
         }
 
         const ultimoEnvio = JSON.parse(ultimoEnvioStorage);
 
-        // Verifica se os dados do lead são os mesmos
         const mesmoLead =
           ultimoEnvio.nome?.trim().toLowerCase() ===
             novosDados.nome?.trim().toLowerCase() &&
@@ -1385,40 +1342,32 @@ const DetalheImovel = () => {
           ultimoEnvio.telefone?.trim() === novosDados.telefone?.trim();
 
         if (!mesmoLead) {
-          return false; // Lead diferente, permite novo envio
+          return false;
         }
 
-        // Verifica se o envio foi há menos de 24 horas
         const agora = Date.now();
         const diferencaHoras =
           (agora - ultimoEnvio.timestamp) / (1000 * 60 * 60);
 
         if (diferencaHoras < 24) {
-          // Guarda os dados do envio duplicado para exibir no aviso
           setDadosDuplicados({
             ...ultimoEnvio,
             diferencaHoras: Math.round(diferencaHoras * 10) / 10,
           });
-          return true; // É duplicado (mesmo lead, mesmo imóvel, menos de 24h)
+          return true;
         }
 
-        // Se passou mais de 24h, permite novo envio
         return false;
       } catch (error) {
         console.error("❌ Erro ao verificar duplicidade:", error);
-        return false; // Em caso de erro, permite o envio
+        return false;
       }
     },
     [dados?.id],
   );
 
-  /**
-   * Salva os dados do envio no localStorage
-   * @param {Object} dadosEnvio - Dados do envio realizado
-   */
   const salvarEnvio = useCallback(
     (dadosEnvio) => {
-      // Se não tem dados do imóvel ainda, não salva
       if (!dados?.id) {
         console.warn(
           "⚠️ Não foi possível salvar envio: dados do imóvel não disponíveis",
@@ -1450,30 +1399,23 @@ const DetalheImovel = () => {
     [dados?.id, dados?.codigo],
   );
 
-  /**
-   * Limpa envios antigos do localStorage (mais de 7 dias)
-   */
   const limparEnviosAntigos = useCallback(() => {
     try {
       const agora = Date.now();
-      const limite = 7 * 24 * 60 * 60 * 1000; // 7 dias em milissegundos
+      const limite = 7 * 24 * 60 * 60 * 1000;
 
-      // Percorre todas as chaves do localStorage
       for (let i = 0; i < localStorage.length; i++) {
         const chave = localStorage.key(i);
 
-        // Verifica se é uma chave de envio (começa com "ultimo_envio_")
         if (chave?.startsWith("ultimo_envio_")) {
           try {
             const dados = JSON.parse(localStorage.getItem(chave));
 
-            // Se o envio for mais antigo que o limite, remove
             if (dados.timestamp && agora - dados.timestamp > limite) {
               localStorage.removeItem(chave);
               console.log(`🗑️ Envio antigo removido: ${chave}`);
             }
           } catch (e) {
-            // Se não conseguir parsear, remove
             localStorage.removeItem(chave);
           }
         }
@@ -1483,11 +1425,7 @@ const DetalheImovel = () => {
     }
   }, []);
 
-  /**
-   * Verifica se já existe um envio para este imóvel ao abrir o modal
-   */
   const verificarEnvioExistenteAoAbrirModal = useCallback(() => {
-    // Se não tem dados do imóvel ainda, não faz nada
     if (!dados?.id) {
       return;
     }
@@ -1504,7 +1442,6 @@ const DetalheImovel = () => {
           (agora - ultimoEnvio.timestamp) / (1000 * 60 * 60);
 
         if (diferencaHoras < 24) {
-          // Pré-preencher o formulário com os dados do último envio
           setFormData((prev) => ({
             ...prev,
             nome: ultimoEnvio.nome || "",
@@ -1512,7 +1449,6 @@ const DetalheImovel = () => {
             telefone: ultimoEnvio.telefone || "",
           }));
 
-          // Guarda info para mostrar aviso se tentar enviar novamente
           setDadosDuplicados({
             ...ultimoEnvio,
             diferencaHoras: Math.round(diferencaHoras * 10) / 10,
@@ -1524,9 +1460,6 @@ const DetalheImovel = () => {
     }
   }, [dados?.id]);
 
-  // ==========================================================================
-  // APLICAR SEO (UMA ÚNICA VEZ)
-  // ==========================================================================
   useEffect(() => {
     if (dados && !seoAplicadoRef.current) {
       const timer = setTimeout(() => {
@@ -1537,16 +1470,10 @@ const DetalheImovel = () => {
     }
   }, [dados, atualizarTagsSEO]);
 
-  // ==========================================================================
-  // LIMPAR ENVIOS ANTIGOS AO INICIAR
-  // ==========================================================================
   useEffect(() => {
     limparEnviosAntigos();
   }, [limparEnviosAntigos]);
 
-  // ==========================================================================
-  // ATUALIZAR MENSAGEM DO MODAL
-  // ==========================================================================
   useEffect(() => {
     if (dados && !formData.mensagem) {
       setFormData((prev) => ({
@@ -1556,9 +1483,6 @@ const DetalheImovel = () => {
     }
   }, [dados, formData.mensagem]);
 
-  // ==========================================================================
-  // CONTROLES DO MODAL
-  // ==========================================================================
   useEffect(() => {
     document.body.style.overflow = modalAberto ? "hidden" : "unset";
   }, [modalAberto]);
@@ -1579,9 +1503,6 @@ const DetalheImovel = () => {
     };
   }, [modalAberto]);
 
-  // ==========================================================================
-  // AUTO-PLAY DO CARROSSEL
-  // ==========================================================================
   useEffect(() => {
     if (!imagens.length) return;
 
@@ -1630,9 +1551,6 @@ const DetalheImovel = () => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   }, []);
 
-  // ==========================================================================
-  // FUNÇÃO DO ACORDEÃO - SEM SALTO
-  // ==========================================================================
   const toggleAcordeao = useCallback((index, event) => {
     if (event) {
       event.preventDefault();
@@ -1667,25 +1585,9 @@ const DetalheImovel = () => {
     }, 100);
   }, []);
 
-  // ==========================================================================
-  // HANDLE SUBMIT DO MODAL
-  // ==========================================================================
   const handleSubmit = useCallback(
     async (e) => {
       e.preventDefault();
-
-      // 🚫 BLOQUEIO DESATIVADO TEMPORARIAMENTE
-      // Verifica se é um envio duplicado ANTES de tentar enviar
-      // if (isEnvioDuplicado(formData)) {
-      //   setMostrarAvisoDuplicado(true);
-      //   // Rola o modal para mostrar o aviso
-      //   setTimeout(() => {
-      //     if (modalRef.current) {
-      //       modalRef.current.scrollTop = 0;
-      //     }
-      //   }, 100);
-      //   return; // Interrompe o envio
-      // }
 
       setEnviando(true);
       setMostrarAvisoDuplicado(false);
@@ -1704,9 +1606,6 @@ const DetalheImovel = () => {
         const dataVisita = new Date();
         dataVisita.setDate(dataVisita.getDate() + 7);
 
-        // ==========================================================================
-        // 1️⃣ PRIMEIRO: CRIAR O LEAD
-        // ==========================================================================
         const { data: leadData, error: leadError } = await supabase
           .from("leads")
           .insert({
@@ -1725,9 +1624,6 @@ const DetalheImovel = () => {
 
         if (leadError) throw leadError;
 
-        // ==========================================================================
-        // 2️⃣ DEPOIS: CRIAR A VISITA (VINCULADA AO LEAD)
-        // ==========================================================================
         const { data, error } = await visitasService.criarVisita({
           imovel_id: dados.id,
           lead_id: leadData.id,
@@ -1754,7 +1650,6 @@ const DetalheImovel = () => {
           );
         }
 
-        // Salva os dados do envio no localStorage
         salvarEnvio(formData);
 
         incrementarContador("visitas");
@@ -1778,9 +1673,6 @@ const DetalheImovel = () => {
     ],
   );
 
-  // ==========================================================================
-  // REDIRECIONAR PARA URL CORRETA COM SLUG COMPLETO
-  // ==========================================================================
   useEffect(() => {
     if (dados?.slugSEO && dados?.slugSEO !== slug) {
       console.log("🔄 Redirecionando para URL correta:", dados.slugSEO);
@@ -1788,9 +1680,6 @@ const DetalheImovel = () => {
     }
   }, [dados, slug, codigo, navigate]);
 
-  // ==========================================================================
-  // LOADING STATE
-  // ==========================================================================
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -1802,9 +1691,6 @@ const DetalheImovel = () => {
     );
   }
 
-  // ==========================================================================
-  // ERROR STATE
-  // ==========================================================================
   if (error || !dados) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -1827,14 +1713,9 @@ const DetalheImovel = () => {
     );
   }
 
-  // ==========================================================================
-  // RENDERIZAÇÃO - MANTIDA IGUAL
-  // ==========================================================================
   return (
     <>
-      {/* =============== CARROSSEL DE FOTOS EM TELA CHEIA =============== */}
       <section className="relative w-full pt-[65px] md:pt-20">
-        {/* Container do carrossel com altura responsiva */}
         <div
           className="relative w-full h-[50vh] md:h-[calc(100vh-80px)] overflow-hidden bg-gray-900"
           onTouchStart={handleTouchStart}
@@ -1851,11 +1732,7 @@ const DetalheImovel = () => {
               }`}
             />
           ))}
-
-          {/* Overlay escuro sutil para melhor contraste */}
           <div className="absolute inset-0 bg-black/10"></div>
-
-          {/* CONTADOR - ajustado para mobile */}
           <div className="absolute top-4 left-4 md:top-8 md:left-8 z-20 backdrop-blur-md rounded-full bg-black/40">
             <div className="flex items-center justify-center px-2 py-1 md:px-4 md:py-2 space-x-1 md:space-x-2">
               <i className="fas fa-camera text-[#D4A24D] text-[10px] md:text-xs"></i>
@@ -1864,8 +1741,6 @@ const DetalheImovel = () => {
               </span>
             </div>
           </div>
-
-          {/* PONTINHOS - ajustado para mobile */}
           <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-1.5 md:space-x-2 z-20">
             {imagens.map((_, index) => (
               <button
@@ -1890,8 +1765,6 @@ const DetalheImovel = () => {
               />
             ))}
           </div>
-
-          {/* SETAS (APENAS DESKTOP) */}
           {imagens.length > 1 && (
             <>
               <button
@@ -1916,27 +1789,18 @@ const DetalheImovel = () => {
               </button>
             </>
           )}
-
-          {/* SCROLL INDICATOR PREMIUM - TEXTO COM GRADIENTE E BORDA ANIMADA */}
           <div className="absolute bottom-12 md:bottom-8 left-1/2 transform -translate-x-1/2 z-30">
             <div className="relative group cursor-pointer">
-              {/* Borda animada com glow - escondida no mobile */}
               <div className="hidden md:block absolute -inset-4 bg-gradient-to-r from-[#D4A24D]/0 via-[#D4A24D]/50 to-[#D4A24D]/0 rounded-full blur-md opacity-0 group-hover:opacity-100 transition-opacity duration-1000 animate-pulse"></div>
-
-              {/* Círculo externo animado - reduzido no mobile */}
               <div className="relative flex items-center justify-center">
                 <div className="absolute w-8 h-8 md:w-12 md:h-12 border border-white/20 rounded-full animate-ping"></div>
                 <div className="absolute w-7 h-7 md:w-10 md:h-10 border border-white/30 rounded-full animate-pulse"></div>
-
-                {/* Círculo interno com ícone - reduzido no mobile */}
                 <div className="relative w-10 h-10 md:w-14 md:h-14 bg-white/10 backdrop-blur-md rounded-full flex items-center justify-center border border-white/30 hover:border-[#D4A24D] transition-colors duration-500 group">
                   <div className="flex flex-col items-center">
                     <i className="fas fa-chevron-down text-white text-sm md:text-lg animate-bounce"></i>
                   </div>
                 </div>
               </div>
-
-              {/* Texto com gradiente - APENAS NO DESKTOP */}
               <div className="absolute -bottom-8 md:-bottom-8 left-1/2 transform -translate-x-1/2 whitespace-nowrap">
                 <span className="text-white md:text-transparent md:bg-clip-text md:bg-gradient-to-r md:from-white md:via-[#D4A24D] md:to-white text-[10px] md:text-[10px] font-medium md:font-light tracking-[0.2em] md:tracking-[0.3em] uppercase drop-shadow-lg">
                   Role para ver detalhes
@@ -1948,12 +1812,10 @@ const DetalheImovel = () => {
         </div>
       </section>
 
-      {/* CABEÇALHO DO IMÓVEL - AJUSTADO NO MOBILE */}
       <section className="bg-[#31353E] text-white pt-5 md:pt-10 md:pb-14 pb-8">
         <div className="max-w-7xl mx-auto px-4">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
             <div className="flex flex-col justify-center">
-              {/* DESTAQUE SEMANA */}
               {dados.destaqueSemana && (
                 <div className="self-start mb-6">
                   <div className="inline-flex items-center bg-gradient-to-r from-[#D4A24D] to-[#E6B85C] text-white px-3 py-1 rounded-full text-xs font-semibold shadow-md">
@@ -1964,8 +1826,6 @@ const DetalheImovel = () => {
                   </div>
                 </div>
               )}
-
-              {/* EMPREENDIMENTO */}
               {dados.empreendimento?.nome && (
                 <div className="self-start mb-4">
                   <div className="inline-flex items-center bg-[#D4A24D]/20 text-[#D4A24D] border border-[#D4A24D]/30 px-4 py-2 rounded-full text-sm font-semibold">
@@ -1974,13 +1834,9 @@ const DetalheImovel = () => {
                   </div>
                 </div>
               )}
-
-              {/* TÍTULO */}
               <h1 className="text-[22px] md:text-2xl font-bold mb-3 text-white">
                 {dados.tituloSEO}
               </h1>
-
-              {/* CÓDIGO + FINANCIÁVEL */}
               <div className="flex items-center gap-3 mb-1">
                 <div className="text-xs text-gray-300">
                   Código: {dados.codigo}
@@ -1992,8 +1848,6 @@ const DetalheImovel = () => {
                   </div>
                 )}
               </div>
-
-              {/* ENDEREÇO */}
               {dados.exibir_endereco_site && dados.endereco && (
                 <div className="flex items-center space-x-2 text-white mb-1">
                   <i className="fas fa-map-marker-alt text-[#D4A24D] text-sm"></i>
@@ -2003,16 +1857,10 @@ const DetalheImovel = () => {
                   </span>
                 </div>
               )}
-
-              {/* LINHA DIVISÓRIA */}
               <div className="w-full h-px bg-gradient-to-r from-transparent via-[#D4A24D]/30 to-transparent my-2"></div>
-
-              {/* PREÇO - CORRIGIDO */}
               <div className="mb-6">
                 {(() => {
                   const precoDestaque = getPrecoDestaque();
-
-                  // Verifica se tem desconto (apenas para venda)
                   const temDescontoVenda =
                     dados.baixou_preco === true &&
                     dados.precoAnterior &&
@@ -2020,7 +1868,6 @@ const DetalheImovel = () => {
                     precoDestaque?.tipo === "venda";
 
                   if (temDescontoVenda) {
-                    // CASO COM DESCONTO (apenas para venda)
                     return (
                       <div className="flex flex-col">
                         <div className="flex items-center gap-2 mb-1">
@@ -2044,7 +1891,6 @@ const DetalheImovel = () => {
                     );
                   }
 
-                  // Se tem as duas finalidades
                   if (
                     dados.finalidade_venda &&
                     dados.finalidade_aluguel &&
@@ -2056,13 +1902,10 @@ const DetalheImovel = () => {
 
                     return (
                       <>
-                        {/* Mostra o preço em destaque baseado na finalidade atual */}
                         <div className="text-3xl md:text-4xl font-black text-white">
                           {isAluguelDestaque ? precoAluguel : precoVenda}
                           {isAluguelDestaque && "/mês"}
                         </div>
-
-                        {/* Mostra o preço alternativo como opção */}
                         <div className="text-lg md:text-xl text-gray-300 mt-3">
                           {isAluguelDestaque ? (
                             <>
@@ -2086,7 +1929,6 @@ const DetalheImovel = () => {
                     );
                   }
 
-                  // Caso apenas venda
                   if (
                     dados.finalidade_venda &&
                     !dados.finalidade_aluguel &&
@@ -2099,7 +1941,6 @@ const DetalheImovel = () => {
                     );
                   }
 
-                  // Caso apenas aluguel
                   if (
                     !dados.finalidade_venda &&
                     dados.finalidade_aluguel &&
@@ -2112,7 +1953,6 @@ const DetalheImovel = () => {
                     );
                   }
 
-                  // Caso preço oculto ou sem preço
                   return (
                     <div className="text-3xl md:text-4xl font-black text-white">
                       Preço sob consulta
@@ -2120,8 +1960,6 @@ const DetalheImovel = () => {
                   );
                 })()}
               </div>
-
-              {/* ÍCONES DE CARACTERÍSTICAS */}
               <div className="grid grid-cols-3 md:flex md:flex-wrap justify-center md:justify-start gap-3 md:gap-4 text-white">
                 {dados.quartos > 0 && (
                   <div className="flex flex-col items-center">
@@ -2195,7 +2033,6 @@ const DetalheImovel = () => {
               </div>
             </div>
 
-            {/* COLUNA VISUALIZAÇÕES + BOTÃO */}
             <div className="relative flex items-center justify-center">
               <div className="hidden lg:block absolute -left-6 top-0 bottom-0 w-px">
                 <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/10 to-transparent"></div>
@@ -2218,8 +2055,6 @@ const DetalheImovel = () => {
                   </div>
                 </div>
                 <div className="w-full h-px bg-gradient-to-r from-transparent via-[#D4A24D] to-transparent my-4"></div>
-
-                {/* BOTÃO SOLICITAR VISITA - AUMENTADO NO MOBILE */}
                 <button
                   onClick={abrirModal}
                   className="w-full py-4 px-5 md:py-3 md:px-4 bg-gradient-to-r from-[#D4A24D] to-[#E6B85C] hover:from-[#C4933E] hover:to-[#D4A24D] text-white font-semibold rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center gap-2 text-base md:text-sm relative overflow-hidden group"
@@ -2234,10 +2069,8 @@ const DetalheImovel = () => {
         </div>
       </section>
 
-      {/* ESPAÇAMENTO ENTRE CABEÇALHO E ACORDEÕES - AJUSTADO +3px */}
       <div className="py-5 md:py-8"></div>
 
-      {/* ACORDEÕES */}
       <section className="max-w-7xl mx-auto px-4">
         <div className="w-full bg-white rounded-2xl overflow-hidden border border-gray-200 shadow-sm">
           {dadosAcordeao.length > 0 ? (
@@ -2330,17 +2163,14 @@ const DetalheImovel = () => {
         </div>
       </section>
 
-      {/* ESPAÇAMENTO ENTRE ACORDEÕES E CTA - AJUSTADO +3px */}
       <div className="py-5 md:py-8"></div>
 
-      {/* CALL-TO-ACTION */}
       <section className="max-w-7xl mx-auto px-4">
         <div className="bg-[#31353E] text-white rounded-xl shadow-xl relative overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-br from-transparent via-[#D4A24D]/5 to-transparent"></div>
           <div className="relative z-10">
             <div className="p-10 md:p-14">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-y-0 lg:gap-x-12">
-                {/* COLUNA ESQUERDA - WHATSAPP */}
                 <div className="flex flex-col items-center text-center pb-12 lg:pb-0 border-b border-gray-500/60 lg:border-b-0 lg:border-r lg:border-gray-600/50 lg:pr-12">
                   <h2 className="text-2xl md:text-3xl font-bold mb-1 text-[#D4A24D]">
                     Dúvida rápida?
@@ -2365,7 +2195,6 @@ const DetalheImovel = () => {
                   </div>
                 </div>
 
-                {/* COLUNA DIREITA - VISITA */}
                 <div className="flex flex-col items-center text-center pt-12 lg:pt-0">
                   <h2 className="text-2xl md:text-3xl font-bold mb-1 text-white">
                     Atendimento personalizado
@@ -2401,10 +2230,8 @@ const DetalheImovel = () => {
         </div>
       </section>
 
-      {/* ESPAÇAMENTO FINAL - AJUSTADO +3px */}
       <div className="py-5 md:py-8"></div>
 
-      {/* MODAL DE VISITA - COM PROTEÇÃO CONTRA DUPLICIDADE */}
       {modalAberto && (
         <>
           <div
@@ -2449,7 +2276,6 @@ const DetalheImovel = () => {
                     </div>
                   ) : (
                     <form onSubmit={handleSubmit} className="space-y-4">
-                      {/* AVISO DE ENVIO DUPLICADO */}
                       {mostrarAvisoDuplicado && dadosDuplicados && (
                         <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-lg mb-4">
                           <div className="flex">
@@ -2577,7 +2403,6 @@ const DetalheImovel = () => {
         </>
       )}
 
-      {/* ===== ESTILOS GLOBAIS ===== */}
       <style jsx="true" global="true">{`
         @import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap");
         @import url("https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css");
@@ -2703,7 +2528,6 @@ const DetalheImovel = () => {
           }
         }
 
-        /* ===== ANIMAÇÕES PREMIUM DO SCROLL INDICATOR ===== */
         @keyframes gradientFlow {
           0%,
           100% {

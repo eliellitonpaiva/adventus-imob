@@ -1,4 +1,3 @@
-// src/pages/CadastrarImovel.jsx
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ExclamationTriangleIcon } from "@heroicons/react/24/outline";
@@ -34,7 +33,6 @@ import { useTheme } from "../../contexts/ThemeContext";
 import { supabase } from "../../lib/supabase";
 import { slugify } from "../../lib/slugify";
 
-// Componentes de drag-and-drop
 import {
   DndContext,
   closestCenter,
@@ -52,17 +50,10 @@ import {
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
-// ========== COMPONENTE DE MÁSCARA DE PREÇO ==========
 const formatPriceWithSeparators = (value) => {
   if (!value) return "";
-
-  // Remove tudo que não for número
   const numbers = value.replace(/\D/g, "");
-
-  // Converte para número e formata
   if (numbers.length === 0) return "";
-
-  // Formata com separadores de milhar e decimal
   const amount = (parseInt(numbers, 10) / 100).toFixed(2);
   return new Intl.NumberFormat("pt-BR", {
     style: "currency",
@@ -72,7 +63,6 @@ const formatPriceWithSeparators = (value) => {
   }).format(amount);
 };
 
-// ========== COMPONENTE DE CHECKBOX PERSONALIZADO ==========
 const CustomCheckboxGroup = ({
   title,
   icon: Icon,
@@ -86,29 +76,25 @@ const CustomCheckboxGroup = ({
   getTextClass,
   getCheckboxClass,
 }) => {
-  // 🔍 LOGS PARA DEBUG
-  console.log(`========== [${title}] ==========`);
-  console.log("Items recebidos:", items);
-  console.log(
-    "Items inválidos:",
-    items?.filter((item) => !item || !item.key),
-  );
-  console.log("Section:", section);
-  console.log("formData[section]:", formData[section]);
-  console.log("=================================");
-
   const [searchTerm, setSearchTerm] = useState("");
   const [customItems, setCustomItems] = useState([]);
   const [showAddForm, setShowAddForm] = useState(false);
   const [newItemName, setNewItemName] = useState("");
 
-  // Combinar itens padrão com personalizados
+  useEffect(() => {
+    if (
+      formData[section]?.personalizados &&
+      Array.isArray(formData[section].personalizados)
+    ) {
+      setCustomItems(formData[section].personalizados);
+    }
+  }, [formData[section]]);
+
   const allItems = [
     ...items,
     ...customItems.map((c) => ({ key: c.id, label: c.name })),
   ];
 
-  // Filtrar itens baseado na busca
   const filteredItems = allItems.filter((item) =>
     item.label.toLowerCase().includes(searchTerm.toLowerCase()),
   );
@@ -124,40 +110,94 @@ const CustomCheckboxGroup = ({
   };
 
   const handleAddCustomItem = () => {
-    if (!newItemName.trim()) return;
+    if (!newItemName.trim()) {
+      console.log("❌ Nome vazio, não adiciona");
+      return;
+    }
+
+    // Evita adicionar duplicado
+    const nomeLower = newItemName.trim().toLowerCase();
+    const sectionData = getNestedValue(formData, section) || {};
+    const currentPersonalizados = sectionData.personalizados || [];
+
+    // Verifica se já existe um item com o mesmo nome
+    const jaExiste = currentPersonalizados.some(
+      (item) => item.name.toLowerCase() === nomeLower,
+    );
+
+    if (jaExiste) {
+      console.log(
+        `⚠️ Item "${newItemName}" já existe, não adicionando duplicado`,
+      );
+      setNewItemName("");
+      setShowAddForm(false);
+      return;
+    }
+
+    console.log("=== ADICIONANDO ITEM ===");
+    console.log("Nome:", newItemName);
+    console.log("Section:", section);
 
     const newItemId = `custom-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    const newItem = {
-      id: newItemId,
-      name: newItemName.trim(),
-    };
+    const newItem = { id: newItemId, name: newItemName.trim() };
 
-    setCustomItems([...customItems, newItem]);
+    const updatedCustomItems = [...currentPersonalizados, newItem];
+    console.log("updatedCustomItems:", updatedCustomItems);
 
-    // Inicializar o checkbox do novo item como false
-    setFormData((prev) => ({
-      ...prev,
-      [section]: {
-        ...prev[section],
-        [newItemId]: false,
-      },
-    }));
+    setCustomItems(updatedCustomItems);
+
+    setFormData((prev) => {
+      const parts = section.split(".");
+      if (parts.length === 2) {
+        const [parent, child] = parts;
+        return {
+          ...prev,
+          [parent]: {
+            ...prev[parent],
+            [child]: {
+              ...prev[parent]?.[child],
+              [newItemId]: false,
+              personalizados: updatedCustomItems,
+            },
+          },
+        };
+      } else if (parts.length === 3) {
+        const [parent, child1, child2] = parts;
+        return {
+          ...prev,
+          [parent]: {
+            ...prev[parent],
+            [child1]: {
+              ...prev[parent]?.[child1],
+              [child2]: {
+                ...prev[parent]?.[child1]?.[child2],
+                [newItemId]: false,
+                personalizados: updatedCustomItems,
+              },
+            },
+          },
+        };
+      }
+      return prev;
+    });
 
     setNewItemName("");
     setShowAddForm(false);
   };
 
-  const handleRemoveCustomItem = (itemId, e) => {
-    e.stopPropagation();
-    setCustomItems(customItems.filter((item) => item.id !== itemId));
+  const handleRemoveCustomItem = (itemId) => {
+    const updatedCustomItems = customItems.filter((item) => item.id !== itemId);
+    setCustomItems(updatedCustomItems);
 
-    // Remover também do estado de valores
     setFormData((prev) => {
       const newSection = { ...prev[section] };
       delete newSection[itemId];
       return {
         ...prev,
-        [section]: newSection,
+        [section]: {
+          ...newSection,
+          personalizados: updatedCustomItems,
+        },
       };
     });
   };
@@ -187,7 +227,6 @@ const CustomCheckboxGroup = ({
         </button>
       </div>
 
-      {/* Campo de busca */}
       <div className="relative">
         <input
           type="text"
@@ -202,7 +241,6 @@ const CustomCheckboxGroup = ({
         />
       </div>
 
-      {/* Formulário para adicionar novo item */}
       {showAddForm && (
         <div
           className={`p-4 border rounded-lg ${isDark ? "bg-gray-800 border-gray-700" : "bg-gray-50 border-gray-200"}`}
@@ -242,52 +280,49 @@ const CustomCheckboxGroup = ({
         </div>
       )}
 
-      {/* Grid de checkboxes */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-96 overflow-y-auto p-1">
-        {filteredItems
-          .filter((item) => item && item.key) // Remove itens inválidos
-          .map((item) => {
-            const isCustom = item.key.toString().startsWith("custom-");
-            const isChecked = formData[section]?.[item.key] || false;
+        {filteredItems.map((item) => {
+          const isCustom = item.key.toString().startsWith("custom-");
+          const isChecked = formData[section]?.[item.key] || false;
 
-            return (
-              <div key={item.key} className="relative group">
-                <label
-                  className={`flex items-center space-x-3 p-3 border rounded-lg cursor-pointer transition-all duration-200 ${getBorderClass()} ${getHoverBgClass()}`}
+          return (
+            <div key={item.key} className="relative group">
+              <label
+                className={`flex items-center space-x-3 p-3 border rounded-lg cursor-pointer transition-all duration-200 ${getBorderClass()} ${getHoverBgClass()}`}
+              >
+                <input
+                  type="checkbox"
+                  checked={isChecked}
+                  onChange={(e) =>
+                    handleCheckboxChange(item.key, e.target.checked)
+                  }
+                  className={getCheckboxClass()}
+                />
+                <span className={`transition-colors flex-1 ${getTextClass()}`}>
+                  {item.label}
+                </span>
+              </label>
+
+              {isCustom && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleRemoveCustomItem(item.key);
+                  }}
+                  className={`absolute -top-2 -right-2 p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity ${
+                    isDark
+                      ? "bg-red-600 hover:bg-red-700"
+                      : "bg-red-500 hover:bg-red-600"
+                  } text-white`}
+                  title="Remover item"
                 >
-                  <input
-                    type="checkbox"
-                    checked={isChecked}
-                    onChange={(e) =>
-                      handleCheckboxChange(item.key, e.target.checked)
-                    }
-                    className={getCheckboxClass()}
-                  />
-                  <span
-                    className={`transition-colors flex-1 ${getTextClass()}`}
-                  >
-                    {item.label}
-                  </span>
-                </label>
-
-                {/* Botão de remover para itens personalizados */}
-                {isCustom && (
-                  <button
-                    type="button"
-                    onClick={(e) => handleRemoveCustomItem(item.key, e)}
-                    className={`absolute -top-2 -right-2 p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity ${
-                      isDark
-                        ? "bg-red-600 hover:bg-red-700"
-                        : "bg-red-500 hover:bg-red-600"
-                    } text-white`}
-                    title="Remover item"
-                  >
-                    <XMarkIcon className="w-4 h-4" />
-                  </button>
-                )}
-              </div>
-            );
-          })}
+                  <XMarkIcon className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+          );
+        })}
 
         {filteredItems.length === 0 && (
           <div
@@ -312,9 +347,8 @@ const CustomCheckboxGroup = ({
   );
 };
 
-// ========== COMPONENTE DE INPUT DE PREÇO COM MÁSCARA ==========
 const PriceInput = ({
-  name, // ← ADICIONE ESTA LINHA
+  name,
   value,
   onChange,
   label,
@@ -325,13 +359,6 @@ const PriceInput = ({
   const [displayValue, setDisplayValue] = useState("");
 
   useEffect(() => {
-    console.log(
-      "📥 PriceInput - valor RECEBIDO do form:",
-      value,
-      "tipo:",
-      typeof value,
-    );
-
     if (value && !isNaN(parseFloat(value)) && parseFloat(value) > 0) {
       const formatted = new Intl.NumberFormat("pt-BR", {
         style: "currency",
@@ -346,13 +373,9 @@ const PriceInput = ({
   }, [value]);
 
   const handlePriceChange = (e) => {
-    console.log("🖊️ PriceInput - onChange DISPARADO", e.target.value);
-
     const rawValue = e.target.value.replace(/\D/g, "");
-    console.log("🔢 PriceInput - rawValue (só números):", rawValue);
 
     if (rawValue === "") {
-      console.log("⚠️ PriceInput - campo vazio");
       setDisplayValue("");
       const syntheticEvent = {
         target: {
@@ -361,21 +384,17 @@ const PriceInput = ({
           type: "text",
         },
       };
-      console.log("📤 PriceInput - enviando evento VAZIO:", syntheticEvent);
       onChange(syntheticEvent);
       return;
     }
 
     const numericValue = parseFloat(rawValue) / 100;
-    console.log("💰 PriceInput - numericValue:", numericValue);
-
     const formatted = new Intl.NumberFormat("pt-BR", {
       style: "currency",
       currency: "BRL",
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     }).format(numericValue);
-    console.log("💵 PriceInput - valor formatado:", formatted);
 
     setDisplayValue(formatted);
 
@@ -386,7 +405,6 @@ const PriceInput = ({
         type: "number",
       },
     };
-    console.log("📤 PriceInput - enviando evento COM VALOR:", syntheticEvent);
     onChange(syntheticEvent);
   };
 
@@ -412,7 +430,6 @@ const PriceInput = ({
   );
 };
 
-// ========== COMPONENTE SORTABLE ITEM (FOTOS) ==========
 const SortableItem = ({
   id,
   url,
@@ -439,7 +456,6 @@ const SortableItem = ({
   };
 
   const getBorderClass = () => (isDark ? "border-gray-700" : "border-gray-200");
-  const getBgClass = () => (isDark ? "bg-gray-800" : "bg-white");
 
   return (
     <div
@@ -510,7 +526,7 @@ const SortableItem = ({
     </div>
   );
 };
-// ========== COMPONENTE DE CHECKBOX COM BOTÃO ADICIONAR ==========
+
 const CheckboxAccordion = ({
   title,
   subtitle,
@@ -537,24 +553,51 @@ const CheckboxAccordion = ({
   const [newItemName, setNewItemName] = useState("");
   const [customItems, setCustomItems] = useState([]);
 
+  useEffect(() => {
+    if (
+      formData[section]?.personalizados &&
+      Array.isArray(formData[section].personalizados)
+    ) {
+      setCustomItems(formData[section].personalizados);
+    }
+  }, [formData[section]]);
+
   const handleAddCustomItem = () => {
     if (!newItemName.trim()) return;
+
     const newItemId = `custom-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    setCustomItems([...customItems, { id: newItemId, name: newItemName }]);
+    const newItem = { id: newItemId, name: newItemName.trim() };
+
+    const updatedCustomItems = [...customItems, newItem];
+    setCustomItems(updatedCustomItems);
+
     setFormData((prev) => ({
       ...prev,
-      [section]: { ...prev[section], [newItemId]: false },
+      [section]: {
+        ...prev[section],
+        [newItemId]: false,
+        personalizados: updatedCustomItems,
+      },
     }));
+
     setNewItemName("");
     setShowAddForm(false);
   };
 
   const handleRemoveCustomItem = (itemId) => {
-    setCustomItems(customItems.filter((item) => item.id !== itemId));
+    const updatedCustomItems = customItems.filter((item) => item.id !== itemId);
+    setCustomItems(updatedCustomItems);
+
     setFormData((prev) => {
       const newSection = { ...prev[section] };
       delete newSection[itemId];
-      return { ...prev, [section]: newSection };
+      return {
+        ...prev,
+        [section]: {
+          ...newSection,
+          personalizados: updatedCustomItems,
+        },
+      };
     });
   };
 
@@ -700,7 +743,6 @@ const CheckboxAccordion = ({
   );
 };
 
-// ========== COMPONENTE PARA SEÇÕES DE ACABAMENTO ==========
 const SecaoAcabamento = ({
   titulo,
   section,
@@ -718,24 +760,128 @@ const SecaoAcabamento = ({
   const [newItemName, setNewItemName] = useState("");
   const [customItems, setCustomItems] = useState([]);
 
+  const getNestedValue = (obj, path) => {
+    return path.split(".").reduce((current, key) => current?.[key], obj);
+  };
+
+  useEffect(() => {
+    const sectionData = getNestedValue(formData, section);
+    console.log(`[${titulo}] useEffect - sectionData:`, sectionData);
+    console.log(`[${titulo}] personalizados:`, sectionData?.personalizados);
+
+    if (
+      sectionData?.personalizados &&
+      Array.isArray(sectionData.personalizados)
+    ) {
+      console.log(`[${titulo}] Carregando itens:`, sectionData.personalizados);
+      setCustomItems(sectionData.personalizados);
+    } else {
+      console.log(`[${titulo}] Nenhum item personalizado`);
+      setCustomItems([]);
+    }
+  }, [formData, section]);
+
   const handleAddCustomItem = () => {
     if (!newItemName.trim()) return;
+
     const newItemId = `custom-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    setCustomItems([...customItems, { id: newItemId, name: newItemName }]);
-    setFormData((prev) => ({
-      ...prev,
-      [section]: { ...prev[section], [newItemId]: false },
-    }));
+    const newItem = { id: newItemId, name: newItemName.trim() };
+
+    console.log(`[${titulo}] ADICIONANDO ITEM:`, newItem);
+
+    const sectionData = getNestedValue(formData, section) || {};
+    const currentPersonalizados = sectionData.personalizados || [];
+    const updatedCustomItems = [...currentPersonalizados, newItem];
+
+    console.log(`[${titulo}] updatedCustomItems:`, updatedCustomItems);
+
+    setCustomItems(updatedCustomItems);
+
+    setFormData((prev) => {
+      const parts = section.split(".");
+      if (parts.length === 2) {
+        const [parent, child] = parts;
+        return {
+          ...prev,
+          [parent]: {
+            ...prev[parent],
+            [child]: {
+              ...prev[parent]?.[child],
+              [newItemId]: false,
+              personalizados: updatedCustomItems,
+            },
+          },
+        };
+      } else if (parts.length === 3) {
+        const [parent, child1, child2] = parts;
+        return {
+          ...prev,
+          [parent]: {
+            ...prev[parent],
+            [child1]: {
+              ...prev[parent]?.[child1],
+              [child2]: {
+                ...prev[parent]?.[child1]?.[child2],
+                [newItemId]: false,
+                personalizados: updatedCustomItems,
+              },
+            },
+          },
+        };
+      }
+      return prev;
+    });
+
     setNewItemName("");
     setShowAddForm(false);
   };
 
   const handleRemoveCustomItem = (itemId) => {
-    setCustomItems(customItems.filter((item) => item.id !== itemId));
+    console.log(`[${titulo}] REMOVENDO ITEM:`, itemId);
+
+    const updatedCustomItems = customItems.filter((item) => item.id !== itemId);
+    console.log(
+      `[${titulo}] updatedCustomItems após remover:`,
+      updatedCustomItems,
+    );
+
+    setCustomItems(updatedCustomItems);
+
     setFormData((prev) => {
-      const newSection = { ...prev[section] };
-      delete newSection[itemId];
-      return { ...prev, [section]: newSection };
+      const parts = section.split(".");
+      if (parts.length === 2) {
+        const [parent, child] = parts;
+        const newSection = { ...prev[parent]?.[child] };
+        delete newSection[itemId];
+        return {
+          ...prev,
+          [parent]: {
+            ...prev[parent],
+            [child]: {
+              ...newSection,
+              personalizados: updatedCustomItems,
+            },
+          },
+        };
+      } else if (parts.length === 3) {
+        const [parent, child1, child2] = parts;
+        const newSection = { ...prev[parent]?.[child1]?.[child2] };
+        delete newSection[itemId];
+        return {
+          ...prev,
+          [parent]: {
+            ...prev[parent],
+            [child1]: {
+              ...prev[parent]?.[child1],
+              [child2]: {
+                ...newSection,
+                personalizados: updatedCustomItems,
+              },
+            },
+          },
+        };
+      }
+      return prev;
     });
   };
 
@@ -764,15 +910,17 @@ const SecaoAcabamento = ({
               onChange={(e) => setNewItemName(e.target.value)}
               placeholder="Nome do item"
               className="flex-1 px-3 py-2 border rounded-lg"
-              onKeyPress={(e) => e.key === "Enter" && handleAddCustomItem()}
+              onKeyDown={(e) => e.key === "Enter" && handleAddCustomItem()}
             />
             <button
+              type="button"
               onClick={handleAddCustomItem}
               className="px-3 py-2 bg-[#D4A24D] text-white rounded-lg"
             >
               OK
             </button>
             <button
+              type="button"
               onClick={() => setShowAddForm(false)}
               className="px-3 py-2 bg-gray-500 text-white rounded-lg"
             >
@@ -783,50 +931,61 @@ const SecaoAcabamento = ({
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-        {items.map(({ key, label }) => (
-          <label
-            key={key}
-            className={`flex items-center space-x-3 p-3 border rounded-lg cursor-pointer ${getBorderClass()} ${getHoverBgClass()}`}
-          >
-            <input
-              type="checkbox"
-              name={`${section}.${key}`}
-              checked={formData[section]?.[key] || false}
-              onChange={handleChange}
-              className={getCheckboxClass()}
-            />
-            <span className={getTextClass()}>{label}</span>
-          </label>
-        ))}
+        {items.map(({ key, label }) => {
+          const sectionData = getNestedValue(formData, section) || {};
+          const isChecked = sectionData[key] || false;
 
-        {customItems.map((item) => (
-          <div key={item.id} className="relative group">
+          return (
             <label
+              key={key}
               className={`flex items-center space-x-3 p-3 border rounded-lg cursor-pointer ${getBorderClass()} ${getHoverBgClass()}`}
             >
               <input
                 type="checkbox"
-                name={`${section}.${item.id}`}
-                checked={formData[section]?.[item.id] || false}
+                name={`${section}.${key}`}
+                checked={isChecked}
                 onChange={handleChange}
                 className={getCheckboxClass()}
               />
-              <span className={getTextClass()}>{item.name}</span>
+              <span className={getTextClass()}>{label}</span>
             </label>
-            <button
-              onClick={() => handleRemoveCustomItem(item.id)}
-              className="absolute -top-2 -right-2 p-1 rounded-full bg-red-500 text-white opacity-0 group-hover:opacity-100"
-            >
-              <XMarkIcon className="w-4 h-4" />
-            </button>
-          </div>
-        ))}
+          );
+        })}
+
+        {customItems.map((item) => {
+          console.log(`[${titulo}] Renderizando item:`, item);
+          const sectionData = getNestedValue(formData, section) || {};
+          const isChecked = sectionData[item.id] || false;
+
+          return (
+            <div key={item.id} className="relative group">
+              <label
+                className={`flex items-center space-x-3 p-3 border rounded-lg cursor-pointer ${getBorderClass()} ${getHoverBgClass()}`}
+              >
+                <input
+                  type="checkbox"
+                  name={`${section}.${item.id}`}
+                  checked={isChecked}
+                  onChange={handleChange}
+                  className={getCheckboxClass()}
+                />
+                <span className={getTextClass()}>{item.name}</span>
+              </label>
+              <button
+                type="button"
+                onClick={() => handleRemoveCustomItem(item.id)}
+                className="absolute -top-2 -right-2 p-1 rounded-full bg-red-500 text-white opacity-0 group-hover:opacity-100"
+              >
+                <XMarkIcon className="w-4 h-4" />
+              </button>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
 };
 
-// ========== COMPONENTE PARA SELECT DE CIDADE ==========
 const SelectCidade = ({
   value,
   onChange,
@@ -882,7 +1041,6 @@ const SelectCidade = ({
   );
 };
 
-// ========== COMPONENTE PARA SELECT DE BAIRRO ==========
 const SelectBairro = ({
   value,
   onChange,
@@ -903,7 +1061,6 @@ const SelectBairro = ({
 
       setLoading(true);
       try {
-        // Buscar ID da cidade selecionada
         const { data: cidadeData, error: cidadeError } = await supabase
           .from("cidades")
           .select("id")
@@ -962,19 +1119,16 @@ const SelectBairro = ({
   );
 };
 
-// ========== COMPONENTE PRINCIPAL ==========
 const CadastrarImovel = () => {
   const navigate = useNavigate();
   const { isDark } = useTheme();
   const [loading, setLoading] = useState(false);
   const [submitMessage, setSubmitMessage] = useState({ type: "", text: "" });
 
-  // =============== ESTADO DAS FOTOS ===============
   const [fotos, setFotos] = useState([]);
   const [uploadingFotos, setUploadingFotos] = useState(false);
   const [fotosError, setFotosError] = useState("");
 
-  // Configuração dos sensores para drag-and-drop
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
@@ -986,7 +1140,6 @@ const CadastrarImovel = () => {
     }),
   );
 
-  // =============== FUNÇÕES DO GERENCIADOR DE FOTOS ===============
   const handleDragEnd = (event) => {
     const { active, over } = event;
 
@@ -1099,7 +1252,6 @@ const CadastrarImovel = () => {
     }
   };
 
-  // =============== BUSCAR EMPREENDIMENTOS ===============
   const [empreendimentos, setEmpreendimentos] = useState([]);
 
   useEffect(() => {
@@ -1113,7 +1265,6 @@ const CadastrarImovel = () => {
     fetchEmpreendimentos();
   }, []);
 
-  // =============== BUSCAR CORRETORES REAIS ===============
   const [corretoresReais, setCorretoresReais] = useState([]);
   const [loadingCorretores, setLoadingCorretores] = useState(false);
 
@@ -1139,7 +1290,6 @@ const CadastrarImovel = () => {
     fetchCorretores();
   }, []);
 
-  // =============== FUNÇÃO PARA GERAR CÓDIGO AUTOMÁTICO ===============
   const gerarCodigoAutomatico = async (tipoSelecionado) => {
     if (!tipoSelecionado) return "";
 
@@ -1186,7 +1336,6 @@ const CadastrarImovel = () => {
     }
   };
 
-  // =============== FUNÇÃO PARA GERAR SLUG ===============
   const gerarSlug = (formData) => {
     let slugBase = "";
 
@@ -1201,38 +1350,7 @@ const CadastrarImovel = () => {
     return slugify(slugBase);
   };
 
-  // =============== TESTE DE CONEXÃO ===============
-  useEffect(() => {
-    console.log("🔍 Testando conexão com Supabase...");
-
-    const testarConexao = async () => {
-      try {
-        const { data, error } = await supabase
-          .from("imoveis")
-          .select("count", { count: "exact", head: true });
-
-        if (error) {
-          if (error.code === "42P01") {
-            console.log(
-              "✅ CONEXÃO COM SUPABASE OK! Tabela 'imoveis' ainda não criada.",
-            );
-          } else {
-            console.error("❌ Erro na conexão:", error.message);
-          }
-        } else {
-          console.log("✅✅ Conexão perfeita!");
-        }
-      } catch (err) {
-        console.error("❌ Erro inesperado:", err);
-      }
-    };
-
-    testarConexao();
-  }, []);
-
-  // =============== ESTADO DO FORMULÁRIO (ALINHADO COM O BANCO) ===============
   const [formData, setFormData] = useState({
-    // Campos diretos da tabela imoveis
     codigo: "",
     titulo: "",
     slug: "",
@@ -1244,13 +1362,11 @@ const CadastrarImovel = () => {
     corretor_id: "",
     ocultar_preco: false,
 
-    // Finalidades (serão inseridas na tabela imovel_finalidades)
     finalidade_venda: false,
     finalidade_aluguel: false,
     preco_venda: "",
     preco_aluguel: "",
 
-    // Relacionamento com edificios
     id_edificios: "",
     unidade: "",
     andar: "",
@@ -1258,7 +1374,6 @@ const CadastrarImovel = () => {
     bloco: "",
     quadra: "",
 
-    // Dependências (colunas diretas)
     quartos: 0,
     suites: 0,
     banheiros: 0,
@@ -1267,11 +1382,9 @@ const CadastrarImovel = () => {
     area_construida: 0,
     area_privativa: 0,
 
-    // Custos
     condominio_mensal: 0,
     iptu_anual: 0,
 
-    // Localização
     cep: "",
     endereco: "",
     numero: "",
@@ -1281,11 +1394,9 @@ const CadastrarImovel = () => {
     estado: "",
     exibir_endereco_site: false,
 
-    // Textos
     descricao: "",
     observacoes: "",
 
-    // JSONB - Etiquetas da vitrine
     etiquetas: {
       destaque_semana: false,
       novo_site: false,
@@ -1293,9 +1404,7 @@ const CadastrarImovel = () => {
       financiavel: false,
     },
 
-    // JSONB - Características técnicas
     caracteristicas: {
-      // Medidas
       area_util: "",
       frente_terreno: "",
       fundo: "",
@@ -1305,7 +1414,6 @@ const CadastrarImovel = () => {
       topografia: "",
       esquina: false,
 
-      // Estrutura
       tipo_construcao: "",
       ano_construcao: "",
       numero_pavimentos: "",
@@ -1314,7 +1422,6 @@ const CadastrarImovel = () => {
       financiavel: false,
       aceita_permuta: false,
 
-      // Infraestrutura interna
       tipo_iluminacao: "",
       tipo_telhado: "",
       forro_laje: false,
@@ -1323,14 +1430,12 @@ const CadastrarImovel = () => {
       sistema_esgoto: "",
       aquecimento_agua: "",
 
-      // Estratégicas
       posicao_solar: "",
       ventilacao_cruzada: false,
       vista_livre: false,
       vista_permanente: false,
       rua_sem_saida: false,
 
-      // Rurais (opcionais)
       area_total_hectares: "",
       area_agricultavel_hectares: "",
       area_preservacao_hectares: "",
@@ -1364,7 +1469,6 @@ const CadastrarImovel = () => {
       atividades_complementares: "",
     },
 
-    // JSONB - Infraestrutura
     infraestrutura: {
       agua: false,
       energia: false,
@@ -1373,54 +1477,53 @@ const CadastrarImovel = () => {
       gas: false,
     },
 
-    // JSONB - Acabamentos (com suporte para personalizados)
     acabamentos: {
-      // Pisos (fixos)
-      piso_porcelanato: false,
-      piso_ceramica: false,
-      piso_laminado: false,
-      piso_vinilico: false,
-      piso_madeira_macica: false,
-      piso_taco: false,
-      piso_cimento_queimado: false,
-      piso_marmore: false,
-      piso_granito: false,
-      piso_frio: false,
-
-      // Revestimentos (fixos)
-      revestimento_azulejo: false,
-      revestimento_pastilha: false,
-      revestimento_porcelanato: false,
-      revestimento_pedra_natural: false,
-      revestimento_papel_parede: false,
-      revestimento_3d: false,
-
-      // Teto (fixos)
-      teto_gesso_rebaixado: false,
-      teto_sanca_gesso: false,
-      teto_forro_pvc: false,
-      teto_laje: false,
-
-      // Esquadrias (fixos)
-      porta_madeira_macica: false,
-      porta_laqueada: false,
-      esquadria_aluminio: false,
-      esquadria_pvc: false,
-      porta_pivotante: false,
-
-      // Bancadas (fixos)
-      bancada_granito: false,
-      bancada_marmore: false,
-      bancada_quartzo: false,
-      bancada_nanoglass: false,
-
-      // Personalizados (array)
-      personalizados: [],
+      pisos: {
+        piso_porcelanato: false,
+        piso_ceramica: false,
+        piso_laminado: false,
+        piso_vinilico: false,
+        piso_madeira_macica: false,
+        piso_taco: false,
+        piso_cimento_queimado: false,
+        piso_marmore: false,
+        piso_granito: false,
+        piso_frio: false,
+        personalizados: [],
+      },
+      revestimentos: {
+        revestimento_azulejo: false,
+        revestimento_pastilha: false,
+        revestimento_porcelanato: false,
+        revestimento_pedra_natural: false,
+        revestimento_papel_parede: false,
+        revestimento_3d: false,
+        personalizados: [],
+      },
+      teto: {
+        teto_gesso_rebaixado: false,
+        teto_sanca_gesso: false,
+        teto_forro_pvc: false,
+        teto_laje: false,
+        personalizados: [],
+      },
+      esquadrias: {
+        porta_madeira_macica: false,
+        porta_laqueada: false,
+        esquadria_aluminio: false,
+        esquadria_pvc: false,
+        porta_pivotante: false,
+        personalizados: [],
+      },
+      bancadas: {
+        bancada_granito: false,
+        bancada_marmore: false,
+        bancada_quartzo: false,
+        bancada_nanoglass: false,
+        personalizados: [],
+      },
     },
-
-    // JSONB - Área de Lazer
     area_lazer: {
-      // Fixos
       piscina: false,
       churrasqueira: false,
       espaco_gourmet: false,
@@ -1438,11 +1541,9 @@ const CadastrarImovel = () => {
       espaco_pet: false,
       brinquedoteca: false,
 
-      // Personalizados
       personalizados: [],
     },
 
-    // JSONB - Localização e Vizinhança
     localizacao_vizinhanca: {
       proximo_centro: false,
       proximo_supermercado: false,
@@ -1461,7 +1562,6 @@ const CadastrarImovel = () => {
       personalizados: [],
     },
 
-    // JSONB - Segurança
     seguranca: {
       portao_eletronico: false,
       interfone: false,
@@ -1478,7 +1578,6 @@ const CadastrarImovel = () => {
       personalizados: [],
     },
 
-    // JSONB - Armários e Armazenamento
     armarios_armazenamento: {
       armario_cozinha_planejado: false,
       armarios_embutidos: false,
@@ -1493,7 +1592,6 @@ const CadastrarImovel = () => {
       personalizados: [],
     },
 
-    // JSONB - Serviços e Utilidades
     servicos_utilidades: {
       agua_encanada: false,
       energia_eletrica: false,
@@ -1504,7 +1602,6 @@ const CadastrarImovel = () => {
       ar_condicionado_instalado: false,
       infra_ar_condicionado: false,
       internet_fibra: false,
-      iluminacao_led: false,
       energia_solar: false,
       elevador: false,
       coleta_lixo: false,
@@ -1512,7 +1609,6 @@ const CadastrarImovel = () => {
       personalizados: [],
     },
 
-    // JSONB - Diferenciais
     diferenciais: {
       varanda: false,
       sacada: false,
@@ -1528,6 +1624,27 @@ const CadastrarImovel = () => {
       personalizados: [],
     },
   });
+
+  useEffect(() => {
+    // Limpar os personalizados quando a página de cadastro é carregada
+    setFormData((prev) => {
+      const newAcabamentos = { ...prev.acabamentos };
+
+      // Limpar personalizados de todas as subseções de acabamentos
+      if (newAcabamentos.pisos) newAcabamentos.pisos.personalizados = [];
+      if (newAcabamentos.revestimentos)
+        newAcabamentos.revestimentos.personalizados = [];
+      if (newAcabamentos.teto) newAcabamentos.teto.personalizados = [];
+      if (newAcabamentos.esquadrias)
+        newAcabamentos.esquadrias.personalizados = [];
+      if (newAcabamentos.bancadas) newAcabamentos.bancadas.personalizados = [];
+
+      return {
+        ...prev,
+        acabamentos: newAcabamentos,
+      };
+    });
+  }, []);
 
   const [isRural, setIsRural] = useState(false);
   const [showRuralFields, setShowRuralFields] = useState(false);
@@ -1600,30 +1717,6 @@ const CadastrarImovel = () => {
     { value: "taipa", label: "Taipa" },
   ];
 
-  const sistemaEsgotoOpcoes = [
-    { value: "rede_publica", label: "Rede Pública" },
-    { value: "fossa_septica", label: "Fossa Séptica" },
-    { value: "fossa_filtro", label: "Fossa e Filtro" },
-    { value: "sumidouro", label: "Sumidouro" },
-    { value: "fossa_ecologica", label: "Fossa Ecológica/Biodigestor" },
-    { value: "inexistente", label: "Inexistente" },
-  ];
-
-  const aquecimentoAguaOpcoes = [
-    { value: "gas", label: "Gás" },
-    { value: "solar", label: "Solar" },
-    { value: "eletrico", label: "Elétrico" },
-    { value: "central", label: "Central" },
-    { value: "lenha", label: "Lenha" },
-  ];
-
-  const posicaoSolarOpcoes = [
-    { value: "nascente", label: "Nascente" },
-    { value: "poente", label: "Poente" },
-    { value: "norte", label: "Norte" },
-    { value: "sul", label: "Sul" },
-  ];
-
   const proprietarios = [
     { id: "1", nome: "Maria Silva" },
     { id: "2", nome: "João Santos" },
@@ -1689,7 +1782,14 @@ const CadastrarImovel = () => {
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
 
-    // Se for campo de preço, converte para número
+    // LOG PARA DEBUG
+    console.log("=== handleChange ===");
+    console.log("name:", name);
+    console.log("type:", type);
+    console.log("checked:", checked);
+    console.log("value:", value);
+    // FIM DO LOG
+
     if (name === "preco_venda" || name === "preco_aluguel") {
       const numericValue = value === "" ? "" : Number(value);
       setFormData((prev) => ({
@@ -1699,26 +1799,53 @@ const CadastrarImovel = () => {
       return;
     }
 
-    // Campos aninhados (ex: caracteristicas.area_util)
     if (name.includes(".")) {
-      const [parent, child] = name.split(".");
-      setFormData((prev) => ({
-        ...prev,
-        [parent]: {
-          ...prev[parent],
-          [child]: type === "checkbox" ? checked : value,
-        },
-      }));
-    }
-    // Campos diretos
-    else {
+      const parts = name.split(".");
+      console.log("parts:", parts);
+      console.log("parts.length:", parts.length);
+
+      if (parts.length === 2) {
+        const [parent, child] = parts;
+        console.log("2 níveis - parent:", parent, "child:", child);
+        setFormData((prev) => ({
+          ...prev,
+          [parent]: {
+            ...prev[parent],
+            [child]: type === "checkbox" ? checked : value,
+          },
+        }));
+      } else if (parts.length === 3) {
+        const [parent, child1, child2] = parts;
+        console.log(
+          "3 níveis - parent:",
+          parent,
+          "child1:",
+          child1,
+          "child2:",
+          child2,
+        );
+        setFormData((prev) => {
+          const newData = {
+            ...prev,
+            [parent]: {
+              ...prev[parent],
+              [child1]: {
+                ...prev[parent]?.[child1],
+                [child2]: type === "checkbox" ? checked : value,
+              },
+            },
+          };
+          console.log("Novo formData após update:", newData);
+          return newData;
+        });
+      }
+    } else {
       setFormData((prev) => ({
         ...prev,
         [name]: type === "checkbox" ? checked : value,
       }));
     }
   };
-
   const handleCounterChange = (field, increment) => {
     setFormData((prev) => ({
       ...prev,
@@ -1733,7 +1860,6 @@ const CadastrarImovel = () => {
     }));
   };
 
-  // =============== FUNÇÃO DE SUBMIT MODIFICADA PARA O BANCO ===============
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -1780,12 +1906,18 @@ const CadastrarImovel = () => {
       }
     }
 
-    // Gerar slug (opcional - o trigger do banco também gera)
-    const slug = gerarSlug(formData);
+    // 🔥 ADICIONE OS LOGS AQUI 🔥
+    console.log("=== DADOS QUE VÃO PARA O BANCO ===");
+    console.log("acabamentos:", JSON.stringify(formData.acabamentos, null, 2));
+    console.log(
+      "acabamentos.esquadrias:",
+      JSON.stringify(formData.acabamentos?.esquadrias, null, 2),
+    );
+    // ===============================
 
-    // Preparar dados para inserção na tabela imoveis
+    const slug = null;
+
     const dadosParaSupabase = {
-      // Campos diretos
       codigo: formData.codigo,
       titulo: formData.titulo,
       slug: slug,
@@ -1797,7 +1929,6 @@ const CadastrarImovel = () => {
       corretor_id: formData.corretor_id || null,
       ocultar_preco: formData.ocultar_preco,
 
-      // Relacionamento com edificios
       id_edificios: isRural ? null : formData.id_edificios || null,
       unidade: isRural ? "" : formData.unidade || "",
       andar: isRural ? 0 : formData.andar ? parseInt(formData.andar) : 0,
@@ -1805,7 +1936,6 @@ const CadastrarImovel = () => {
       bloco: isRural ? "" : formData.bloco || "",
       quadra: formData.quadra || "",
 
-      // Dependências
       quartos: isRural ? 0 : parseInt(formData.quartos) || 0,
       suites: isRural ? 0 : parseInt(formData.suites) || 0,
       banheiros: isRural ? 0 : parseInt(formData.banheiros) || 0,
@@ -1814,11 +1944,9 @@ const CadastrarImovel = () => {
       area_construida: parseFloat(formData.area_construida) || 0,
       area_privativa: parseFloat(formData.area_privativa) || 0,
 
-      // Custos
       condominio_mensal: parseFloat(formData.condominio_mensal) || 0,
       iptu_anual: parseFloat(formData.iptu_anual) || 0,
 
-      // Localização
       cep: formData.cep || "",
       endereco: formData.endereco || "",
       numero: formData.numero || "",
@@ -1828,11 +1956,9 @@ const CadastrarImovel = () => {
       estado: formData.estado,
       exibir_endereco_site: formData.exibir_endereco_site || false,
 
-      // Textos
       descricao: formData.descricao || "",
       observacoes: formData.observacoes || "",
 
-      // JSONBs
       etiquetas: {
         destaque_semana: formData.etiquetas.destaque_semana || false,
         novo_site: formData.etiquetas.novo_site || false,
@@ -1842,7 +1968,6 @@ const CadastrarImovel = () => {
 
       caracteristicas: {
         ...formData.caracteristicas,
-        // Converter números onde necessário
         ano_construcao: formData.caracteristicas.ano_construcao
           ? parseInt(formData.caracteristicas.ano_construcao)
           : null,
@@ -1865,7 +1990,6 @@ const CadastrarImovel = () => {
     };
 
     try {
-      // Inserir imóvel
       const { data: imovelData, error } = await supabase
         .from("imoveis")
         .insert([dadosParaSupabase])
@@ -1875,7 +1999,6 @@ const CadastrarImovel = () => {
 
       const imovelId = imovelData[0].id;
 
-      // Inserir finalidades na tabela imovel_finalidades
       const finalidadesParaInserir = [];
 
       if (formData.finalidade_venda) {
@@ -1904,7 +2027,6 @@ const CadastrarImovel = () => {
         if (finalidadesError) throw finalidadesError;
       }
 
-      // Inserir fotos
       if (fotos.length > 0) {
         const fotosPromises = fotos.map(async (foto, index) => {
           if (foto.id.startsWith("temp-")) {
@@ -1972,7 +2094,6 @@ const CadastrarImovel = () => {
     }
   };
 
-  // Classes utilitárias para temas
   const getBgClass = () => (isDark ? "bg-gray-900" : "bg-white");
   const getBorderClass = () => (isDark ? "border-gray-700" : "border-gray-200");
   const getTextClass = () => (isDark ? "text-gray-100" : "text-gray-900");
@@ -2013,7 +2134,6 @@ const CadastrarImovel = () => {
     <div
       className={`min-h-screen transition-colors duration-200 ${isDark ? "bg-gray-900" : "bg-gradient-to-b from-[#D4A24D]/5 to-[#31353E]/5"}`}
     >
-      {/* Header da Página */}
       <div
         className={`border-b px-4 py-4 transition-colors duration-200 ${isDark ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"}`}
       >
@@ -2045,10 +2165,8 @@ const CadastrarImovel = () => {
         </div>
       </div>
 
-      {/* Conteúdo Principal */}
       <div className="max-w-7xl mx-auto px-4 py-6">
         <form onSubmit={handleSubmit} className="space-y-8">
-          {/* ========== SEÇÃO 1: INFORMAÇÕES GERAIS ========== */}
           <div
             className={`rounded-xl border p-6 transition-colors duration-200 ${getBgClass()} ${getBorderClass()}`}
           >
@@ -2146,10 +2264,12 @@ const CadastrarImovel = () => {
                 >
                   Finalidade *
                 </label>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 border rounded-lg">
-                  {/* Venda */}
-                  <div className="space-y-4">
-                    <label className="flex items-center space-x-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Box Venda */}
+                  <div
+                    className={`p-4 border rounded-xl transition-all duration-300 ${formData.finalidade_venda ? "border-[#D4A24D] shadow-md" : getBorderClass()}`}
+                  >
+                    <label className="flex items-center space-x-3 cursor-pointer group">
                       <input
                         type="checkbox"
                         name="finalidade_venda"
@@ -2158,14 +2278,14 @@ const CadastrarImovel = () => {
                         className={getCheckboxClass()}
                       />
                       <span
-                        className={`font-medium transition-colors ${getTextClass()}`}
+                        className={`font-medium text-base transition-colors ${formData.finalidade_venda ? "text-[#D4A24D]" : getTextClass()}`}
                       >
-                        Venda
+                        🏷️ Venda
                       </span>
                     </label>
 
                     {formData.finalidade_venda && (
-                      <div className="ml-8">
+                      <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700 animate-fadeIn">
                         <PriceInput
                           name="preco_venda"
                           value={formData.preco_venda}
@@ -2179,9 +2299,11 @@ const CadastrarImovel = () => {
                     )}
                   </div>
 
-                  {/* Aluguel */}
-                  <div className="space-y-4">
-                    <label className="flex items-center space-x-3">
+                  {/* Box Aluguel */}
+                  <div
+                    className={`p-4 border rounded-xl transition-all duration-300 ${formData.finalidade_aluguel ? "border-[#D4A24D] shadow-md" : getBorderClass()}`}
+                  >
+                    <label className="flex items-center space-x-3 cursor-pointer group">
                       <input
                         type="checkbox"
                         name="finalidade_aluguel"
@@ -2190,14 +2312,14 @@ const CadastrarImovel = () => {
                         className={getCheckboxClass()}
                       />
                       <span
-                        className={`font-medium transition-colors ${getTextClass()}`}
+                        className={`font-medium text-base transition-colors ${formData.finalidade_aluguel ? "text-[#D4A24D]" : getTextClass()}`}
                       >
-                        Aluguel
+                        🔑 Aluguel
                       </span>
                     </label>
 
                     {formData.finalidade_aluguel && (
-                      <div className="ml-8">
+                      <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700 animate-fadeIn">
                         <PriceInput
                           name="preco_aluguel"
                           value={formData.preco_aluguel}
@@ -2210,10 +2332,8 @@ const CadastrarImovel = () => {
                       </div>
                     )}
                   </div>
-                </div>{" "}
-                {/* Fecha o grid */}
-              </div>{" "}
-              {/* Fecha o md:col-span-2 */}
+                </div>
+              </div>
               <div>
                 <label
                   className={`block text-sm font-medium mb-2 transition-colors ${getTextSecondaryClass()}`}
@@ -2527,7 +2647,6 @@ const CadastrarImovel = () => {
             )}
           </div>
 
-          {/* ========== SEÇÃO: Dependências do Imóvel ========== */}
           {!isRural && (
             <div
               className={`rounded-xl border p-6 transition-colors duration-200 ${getBgClass()} ${getBorderClass()}`}
@@ -2759,7 +2878,6 @@ const CadastrarImovel = () => {
             </div>
           )}
 
-          {/* ========== SEÇÃO: LOCALIZAÇÃO DO IMÓVEL ========== */}
           <div
             className={`rounded-xl border p-6 transition-colors duration-200 ${getBgClass()} ${getBorderClass()}`}
           >
@@ -3035,7 +3153,8 @@ const CadastrarImovel = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Destaque da Semana */}
               <label
                 className={`flex items-start space-x-3 p-4 border rounded-lg cursor-pointer transition-all duration-300 group hover:shadow-lg ${getBorderClass()} ${getHoverBgClass()}`}
               >
@@ -3058,6 +3177,7 @@ const CadastrarImovel = () => {
                 </div>
               </label>
 
+              {/* Novo no Site */}
               <label
                 className={`flex items-start space-x-3 p-4 border rounded-lg cursor-pointer transition-all duration-300 group hover:shadow-lg ${getBorderClass()} ${getHoverBgClass()}`}
               >
@@ -3080,6 +3200,7 @@ const CadastrarImovel = () => {
                 </div>
               </label>
 
+              {/* Baixou o Preço */}
               <label
                 className={`flex items-start space-x-3 p-4 border rounded-lg cursor-pointer transition-all duration-300 group hover:shadow-lg ${getBorderClass()} ${getHoverBgClass()}`}
               >
@@ -3101,32 +3222,9 @@ const CadastrarImovel = () => {
                   </div>
                 </div>
               </label>
-
-              <label
-                className={`flex items-start space-x-3 p-4 border rounded-lg cursor-pointer transition-all duration-300 group hover:shadow-lg ${getBorderClass()} ${getHoverBgClass()}`}
-              >
-                <input
-                  type="checkbox"
-                  name="etiquetas.financiavel"
-                  checked={formData.etiquetas.financiavel}
-                  onChange={handleChange}
-                  className={getCheckboxClass()}
-                />
-                <div>
-                  <div
-                    className={`font-medium flex items-center gap-1 group-hover:text-[#D4A24D] ${getTextClass()}`}
-                  >
-                    💰 Financiável
-                  </div>
-                  <div className={`text-xs ${getTextSecondaryClass()}`}>
-                    Badge roxo para imóveis com financiamento
-                  </div>
-                </div>
-              </label>
             </div>
           </div>
 
-          {/* ========== SEÇÃO: FOTOS DO IMÓVEL ========== */}
           <div
             className={`rounded-xl border p-6 transition-colors duration-200 ${getBgClass()} ${getBorderClass()}`}
           >
@@ -3216,7 +3314,6 @@ const CadastrarImovel = () => {
             )}
           </div>
 
-          {/* ========== SEÇÃO: CUSTOS ADICIONAIS ========== */}
           <div
             className={`rounded-xl border p-6 transition-colors duration-200 ${getBgClass()} ${getBorderClass()}`}
           >
@@ -3294,10 +3391,8 @@ const CadastrarImovel = () => {
             </div>
           </div>
 
-          {/* ========== SEÇÃO: ACCORDIONS (só para urbanos) ========== */}
           {!isRural && (
             <div className="space-y-4">
-              {/* CARACTERÍSTICAS DO IMÓVEL */}
               <div
                 className={`rounded-xl border overflow-hidden transition-colors duration-200 ${getBgClass()} ${getBorderClass()}`}
               >
@@ -3350,7 +3445,6 @@ const CadastrarImovel = () => {
                     className={`px-6 pb-6 border-t pt-6 transition-colors duration-200 ${getBgClass()} ${getBorderClass()}`}
                   >
                     <div className="space-y-8">
-                      {/* 📐 Medidas e Dimensões */}
                       <div>
                         <h4
                           className={`text-md font-semibold mb-4 ${getTextClass()}`}
@@ -3496,7 +3590,6 @@ const CadastrarImovel = () => {
                         </div>
                       </div>
 
-                      {/* 🏗 Estrutura do Imóvel */}
                       <div className="pt-4 border-t">
                         <h4
                           className={`text-md font-semibold mb-4 ${getTextClass()}`}
@@ -3563,8 +3656,9 @@ const CadastrarImovel = () => {
                           </div>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
-                          <label className="flex items-center space-x-3 p-3 border rounded-lg cursor-pointer transition-all duration-200">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                          {/* Reformado recentemente */}
+                          <label className="flex items-center space-x-3 p-3 border rounded-lg cursor-pointer transition-all duration-200 group hover:shadow-md hover:border-[#D4A24D]/50">
                             <input
                               type="checkbox"
                               name="caracteristicas.reformado_recentemente"
@@ -3575,12 +3669,14 @@ const CadastrarImovel = () => {
                               className={getCheckboxClass()}
                             />
                             <span
-                              className={`transition-colors ${getTextClass()}`}
+                              className={`transition-colors group-hover:text-[#D4A24D] ${getTextClass()}`}
                             >
                               Reformado recentemente?
                             </span>
                           </label>
-                          <label className="flex items-center space-x-3 p-3 border rounded-lg cursor-pointer transition-all duration-200">
+
+                          {/* Imóvel averbado */}
+                          <label className="flex items-center space-x-3 p-3 border rounded-lg cursor-pointer transition-all duration-200 group hover:shadow-md hover:border-[#D4A24D]/50">
                             <input
                               type="checkbox"
                               name="caracteristicas.imovel_averbado"
@@ -3589,26 +3685,14 @@ const CadastrarImovel = () => {
                               className={getCheckboxClass()}
                             />
                             <span
-                              className={`transition-colors ${getTextClass()}`}
+                              className={`transition-colors group-hover:text-[#D4A24D] ${getTextClass()}`}
                             >
                               Imóvel averbado?
                             </span>
                           </label>
-                          <label className="flex items-center space-x-3 p-3 border rounded-lg cursor-pointer transition-all duration-200">
-                            <input
-                              type="checkbox"
-                              name="caracteristicas.financiavel"
-                              checked={formData.caracteristicas.financiavel}
-                              onChange={handleChange}
-                              className={getCheckboxClass()}
-                            />
-                            <span
-                              className={`transition-colors ${getTextClass()}`}
-                            >
-                              Financiável?
-                            </span>
-                          </label>
-                          <label className="flex items-center space-x-3 p-3 border rounded-lg cursor-pointer transition-all duration-200">
+
+                          {/* Aceita permuta */}
+                          <label className="flex items-center space-x-3 p-3 border rounded-lg cursor-pointer transition-all duration-200 group hover:shadow-md hover:border-[#D4A24D]/50">
                             <input
                               type="checkbox"
                               name="caracteristicas.aceita_permuta"
@@ -3617,7 +3701,7 @@ const CadastrarImovel = () => {
                               className={getCheckboxClass()}
                             />
                             <span
-                              className={`transition-colors ${getTextClass()}`}
+                              className={`transition-colors group-hover:text-[#D4A24D] ${getTextClass()}`}
                             >
                               Aceita permuta?
                             </span>
@@ -3629,7 +3713,6 @@ const CadastrarImovel = () => {
                 )}
               </div>
 
-              {/* ACABAMENTOS */}
               <div
                 className={`rounded-xl border overflow-hidden transition-colors duration-200 ${getBgClass()} ${getBorderClass()}`}
               >
@@ -3680,9 +3763,12 @@ const CadastrarImovel = () => {
                   <div
                     className={`px-6 pb-6 border-t pt-6 transition-colors duration-200 ${getBgClass()} ${getBorderClass()}`}
                   >
+                    {/* ACABAMENTOS - SUBSEÇÕES CORRIGIDAS */}
+
+                    {/* Pisos */}
                     <SecaoAcabamento
                       titulo="Pisos"
-                      section="acabamentos"
+                      section="acabamentos.pisos"
                       items={[
                         { key: "piso_porcelanato", label: "Porcelanato" },
                         { key: "piso_ceramica", label: "Cerâmica" },
@@ -3709,9 +3795,10 @@ const CadastrarImovel = () => {
                     />
 
                     <div className="pt-6 border-t mt-6">
+                      {/* Revestimentos de parede */}
                       <SecaoAcabamento
                         titulo="Revestimentos de parede"
-                        section="acabamentos"
+                        section="acabamentos.revestimentos"
                         items={[
                           { key: "revestimento_azulejo", label: "Azulejo" },
                           { key: "revestimento_pastilha", label: "Pastilha" },
@@ -3741,9 +3828,10 @@ const CadastrarImovel = () => {
                     </div>
 
                     <div className="pt-6 border-t mt-6">
+                      {/* Teto e forro */}
                       <SecaoAcabamento
                         titulo="Teto e forro"
-                        section="acabamentos"
+                        section="acabamentos.teto"
                         items={[
                           {
                             key: "teto_gesso_rebaixado",
@@ -3765,9 +3853,10 @@ const CadastrarImovel = () => {
                     </div>
 
                     <div className="pt-6 border-t mt-6">
+                      {/* Esquadrias e portas */}
                       <SecaoAcabamento
                         titulo="Esquadrias e portas"
-                        section="acabamentos"
+                        section="acabamentos.esquadrias"
                         items={[
                           {
                             key: "porta_madeira_macica",
@@ -3793,9 +3882,10 @@ const CadastrarImovel = () => {
                     </div>
 
                     <div className="pt-6 border-t mt-6">
+                      {/* Bancadas */}
                       <SecaoAcabamento
                         titulo="Bancadas"
-                        section="acabamentos"
+                        section="acabamentos.bancadas"
                         items={[
                           { key: "bancada_granito", label: "Granito" },
                           { key: "bancada_marmore", label: "Mármore" },
@@ -3816,7 +3906,6 @@ const CadastrarImovel = () => {
                 )}
               </div>
 
-              {/* ÁREA DE LAZER */}
               <CheckboxAccordion
                 title="Área de Lazer"
                 subtitle="Instalações de lazer e entretenimento"
@@ -3860,7 +3949,6 @@ const CadastrarImovel = () => {
                 getTextSecondaryClass={getTextSecondaryClass}
               />
 
-              {/* LOCALIZAÇÃO E VIZINHANÇA */}
               <CheckboxAccordion
                 title="Localização e Vizinhança"
                 subtitle="Proximidade de serviços e características do entorno"
@@ -3901,7 +3989,6 @@ const CadastrarImovel = () => {
                 getTextSecondaryClass={getTextSecondaryClass}
               />
 
-              {/* SEGURANÇA */}
               <CheckboxAccordion
                 title="Segurança"
                 subtitle="Sistemas de segurança e proteção patrimonial"
@@ -3937,7 +4024,6 @@ const CadastrarImovel = () => {
                 getTextSecondaryClass={getTextSecondaryClass}
               />
 
-              {/* ARMÁRIOS E ARMAZENAMENTO */}
               <CheckboxAccordion
                 title="Armários e Armazenamento"
                 subtitle="Móveis planejados e soluções de armazenamento"
@@ -3974,7 +4060,6 @@ const CadastrarImovel = () => {
                 getTextSecondaryClass={getTextSecondaryClass}
               />
 
-              {/* SERVIÇOS E UTILIDADES */}
               <CheckboxAccordion
                 title="Serviços e Utilidades"
                 subtitle="Serviços coletivos, utilidades e infraestrutura urbana"
@@ -3998,7 +4083,6 @@ const CadastrarImovel = () => {
                     label: "Infra para ar-condicionado",
                   },
                   { key: "internet_fibra", label: "Internet fibra disponível" },
-                  { key: "iluminacao_led", label: "Iluminação em LED" },
                   { key: "energia_solar", label: "Sistema de energia solar" },
                   { key: "elevador", label: "Elevador" },
                   { key: "coleta_lixo", label: "Coleta de lixo regular" },
@@ -4018,7 +4102,6 @@ const CadastrarImovel = () => {
                 getTextSecondaryClass={getTextSecondaryClass}
               />
 
-              {/* DIFERENCIAIS DO IMÓVEL */}
               <CheckboxAccordion
                 title="Diferenciais do Imóvel"
                 subtitle="Características especiais que valorizam o imóvel"
@@ -4058,7 +4141,6 @@ const CadastrarImovel = () => {
             </div>
           )}
 
-          {/* ========== SEÇÃO RURAL (condicional) ========== */}
           {isRural && showRuralFields && (
             <div
               className={`rounded-xl border p-6 transition-colors duration-200 ${getBgClass()} ${getBorderClass()}`}
@@ -4237,7 +4319,6 @@ const CadastrarImovel = () => {
             </div>
           )}
 
-          {/* ========== SEÇÃO: DESCRIÇÃO E OBSERVAÇÕES ========== */}
           <div
             className={`rounded-xl border p-6 transition-colors duration-200 ${getBgClass()} ${getBorderClass()}`}
           >
@@ -4297,7 +4378,6 @@ const CadastrarImovel = () => {
             </div>
           </div>
 
-          {/* ========== BLOCO DE FEEDBACK ========== */}
           {submitMessage.text && (
             <div
               className={`mb-6 p-4 rounded-lg border ${
@@ -4323,7 +4403,6 @@ const CadastrarImovel = () => {
             </div>
           )}
 
-          {/* ========== SEÇÃO: AÇÕES ========== */}
           <div
             className={`rounded-xl border p-6 transition-colors duration-200 ${getBgClass()} ${getBorderClass()}`}
           >
