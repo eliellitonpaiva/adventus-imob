@@ -734,7 +734,7 @@ const DetalheImovel = () => {
         return match ? match[0].replace(",", ".") : null;
       };
 
-      // Mapeamento dos campos com exibição limpa
+      // ===== MEDIDAS E DIMENSÕES =====
       const camposTexto = [
         { chave: "frente_terreno", label: "Frente", unidade: "m" },
         { chave: "fundo", label: "Fundo", unidade: "m" },
@@ -749,25 +749,26 @@ const DetalheImovel = () => {
         if (valor && valor !== "") {
           const numero = extrairNumero(valor);
           if (numero) {
-            // Exibe como: "Frente: 10m"
             itensCaracteristicas.push(
               `${campo.label}: ${numero}${campo.unidade}`,
             );
           } else {
-            // Se não conseguir extrair número, exibe o valor original
             itensCaracteristicas.push(`${campo.label}: ${valor}`);
           }
         }
       });
 
+      // ===== TOPOGRAFIA =====
       if (caracteristicas.topografia && caracteristicas.topografia !== "") {
         itensCaracteristicas.push(`Topografia: ${caracteristicas.topografia}`);
       }
 
+      // ===== ESQUINA =====
       if (caracteristicas.esquina) {
         itensCaracteristicas.push(`Esquina: Sim`);
       }
 
+      // ===== TIPO DE CONSTRUÇÃO =====
       if (
         caracteristicas.tipo_construcao &&
         caracteristicas.tipo_construcao !== ""
@@ -786,6 +787,7 @@ const DetalheImovel = () => {
         );
       }
 
+      // ===== ANO DE CONSTRUÇÃO =====
       if (
         caracteristicas.ano_construcao &&
         caracteristicas.ano_construcao !== ""
@@ -796,18 +798,41 @@ const DetalheImovel = () => {
         );
       }
 
+      // ===== REFORMADO RECENTEMENTE =====
       if (caracteristicas.reformado_recentemente) {
         itensCaracteristicas.push(`Reformado recentemente`);
       }
 
+      // ===== IMÓVEL AVERBADO =====
       if (caracteristicas.imovel_averbado) {
         itensCaracteristicas.push(`Imóvel averbado`);
       }
 
+      // ===== PERMUTA (COM DETALHAMENTO) =====
       if (caracteristicas.aceita_permuta) {
-        itensCaracteristicas.push(`Aceita permuta`);
+        const tiposPermuta = [];
+        if (caracteristicas.permuta_imovel) tiposPermuta.push("Imóvel");
+        if (caracteristicas.permuta_terreno) tiposPermuta.push("Terreno");
+        if (caracteristicas.permuta_veiculo) tiposPermuta.push("Veículo");
+        if (
+          caracteristicas.permuta_outros &&
+          caracteristicas.permuta_descricao
+        ) {
+          tiposPermuta.push(caracteristicas.permuta_descricao);
+        } else if (caracteristicas.permuta_outros) {
+          tiposPermuta.push("Outros");
+        }
+
+        if (tiposPermuta.length > 0) {
+          itensCaracteristicas.push(
+            `Aceita permuta: ${tiposPermuta.join(", ")}`,
+          );
+        } else {
+          itensCaracteristicas.push(`Aceita permuta: Sim`);
+        }
       }
 
+      // ===== TIPO DE ILUMINAÇÃO =====
       if (
         caracteristicas.tipo_iluminacao &&
         caracteristicas.tipo_iluminacao !== ""
@@ -817,10 +842,12 @@ const DetalheImovel = () => {
         );
       }
 
+      // ===== TIPO DE TELHADO =====
       if (caracteristicas.tipo_telhado && caracteristicas.tipo_telhado !== "") {
         itensCaracteristicas.push(`Telhado: ${caracteristicas.tipo_telhado}`);
       }
 
+      // ===== CAIXA D'ÁGUA =====
       if (caracteristicas.caixa_dagua && caracteristicas.caixa_dagua !== "") {
         const numero = extrairNumero(caracteristicas.caixa_dagua);
         itensCaracteristicas.push(
@@ -828,6 +855,7 @@ const DetalheImovel = () => {
         );
       }
 
+      // ===== SISTEMA DE ESGOTO =====
       if (
         caracteristicas.sistema_esgoto &&
         caracteristicas.sistema_esgoto !== ""
@@ -845,6 +873,7 @@ const DetalheImovel = () => {
         );
       }
 
+      // ===== AQUECIMENTO DE ÁGUA =====
       if (
         caracteristicas.aquecimento_agua &&
         caracteristicas.aquecimento_agua !== ""
@@ -859,6 +888,42 @@ const DetalheImovel = () => {
         itensCaracteristicas.push(
           `Aquecimento de água: ${labelsAquecimento[caracteristicas.aquecimento_agua] || caracteristicas.aquecimento_agua}`,
         );
+      }
+
+      // ===== POSIÇÃO SOLAR =====
+      if (
+        caracteristicas.posicao_solar &&
+        caracteristicas.posicao_solar !== ""
+      ) {
+        const labelsPosicao = {
+          nascente: "Nascente",
+          poente: "Poente",
+          norte: "Norte",
+          sul: "Sul",
+        };
+        itensCaracteristicas.push(
+          `Posição solar: ${labelsPosicao[caracteristicas.posicao_solar] || caracteristicas.posicao_solar}`,
+        );
+      }
+
+      // ===== VENTILAÇÃO CRUZADA =====
+      if (caracteristicas.ventilacao_cruzada) {
+        itensCaracteristicas.push(`Ventilação cruzada: Sim`);
+      }
+
+      // ===== VISTA LIVRE =====
+      if (caracteristicas.vista_livre) {
+        itensCaracteristicas.push(`Vista livre: Sim`);
+      }
+
+      // ===== VISTA PERMANENTE =====
+      if (caracteristicas.vista_permanente) {
+        itensCaracteristicas.push(`Vista permanente: Sim`);
+      }
+
+      // ===== RUA SEM SAÍDA =====
+      if (caracteristicas.rua_sem_saida) {
+        itensCaracteristicas.push(`Rua sem saída: Sim`);
       }
 
       if (itensCaracteristicas.length > 0) {

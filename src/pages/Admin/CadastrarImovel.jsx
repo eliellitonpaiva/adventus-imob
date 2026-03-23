@@ -1405,6 +1405,7 @@ const CadastrarImovel = () => {
     },
 
     caracteristicas: {
+      // MEDIDAS E DIMENSÕES
       area_util: "",
       frente_terreno: "",
       fundo: "",
@@ -1414,6 +1415,7 @@ const CadastrarImovel = () => {
       topografia: "",
       esquina: false,
 
+      // ESTRUTURA DO IMÓVEL
       tipo_construcao: "",
       ano_construcao: "",
       numero_pavimentos: "",
@@ -1421,7 +1423,13 @@ const CadastrarImovel = () => {
       imovel_averbado: false,
       financiavel: false,
       aceita_permuta: false,
+      permuta_imovel: false,
+      permuta_terreno: false,
+      permuta_veiculo: false,
+      permuta_outros: false,
+      permuta_descricao: "",
 
+      // INFRAESTRUTURA INTERNA
       tipo_iluminacao: "",
       tipo_telhado: "",
       forro_laje: false,
@@ -1430,12 +1438,14 @@ const CadastrarImovel = () => {
       sistema_esgoto: "",
       aquecimento_agua: "",
 
+      // CARACTERÍSTICAS ESTRATÉGICAS
       posicao_solar: "",
       ventilacao_cruzada: false,
       vista_livre: false,
       vista_permanente: false,
       rua_sem_saida: false,
 
+      // DADOS RURAIS
       area_total_hectares: "",
       area_agricultavel_hectares: "",
       area_preservacao_hectares: "",
@@ -1523,6 +1533,7 @@ const CadastrarImovel = () => {
         personalizados: [],
       },
     },
+
     area_lazer: {
       piscina: false,
       churrasqueira: false,
@@ -1540,7 +1551,6 @@ const CadastrarImovel = () => {
       sauna: false,
       espaco_pet: false,
       brinquedoteca: false,
-
       personalizados: [],
     },
 
@@ -1558,7 +1568,6 @@ const CadastrarImovel = () => {
       rua_asfaltada: false,
       rua_tranquila: false,
       regiao_valorizada: false,
-
       personalizados: [],
     },
 
@@ -1574,7 +1583,6 @@ const CadastrarImovel = () => {
       fechadura_digital: false,
       condominio_fechado: false,
       muros_altos: false,
-
       personalizados: [],
     },
 
@@ -1588,7 +1596,6 @@ const CadastrarImovel = () => {
       deposito: false,
       roupeiro: false,
       maleiro: false,
-
       personalizados: [],
     },
 
@@ -1605,7 +1612,6 @@ const CadastrarImovel = () => {
       energia_solar: false,
       elevador: false,
       coleta_lixo: false,
-
       personalizados: [],
     },
 
@@ -1620,7 +1626,6 @@ const CadastrarImovel = () => {
       pe_direito_duplo: false,
       mezanino: false,
       vista_panoramica: false,
-
       personalizados: [],
     },
   });
@@ -2688,7 +2693,7 @@ const CadastrarImovel = () => {
                     <input
                       type="number"
                       name="quartos"
-                      value={formData.quartos}
+                      value={formData.quartos === 0 ? "" : formData.quartos}
                       onChange={handleChange}
                       min="0"
                       placeholder="0"
@@ -2720,7 +2725,7 @@ const CadastrarImovel = () => {
                     <input
                       type="number"
                       name="banheiros"
-                      value={formData.banheiros}
+                      value={formData.banheiros === 0 ? "" : formData.banheiros}
                       onChange={handleChange}
                       min="0"
                       placeholder="0"
@@ -2752,7 +2757,7 @@ const CadastrarImovel = () => {
                     <input
                       type="number"
                       name="suites"
-                      value={formData.suites}
+                      value={formData.suites === 0 ? "" : formData.suites}
                       onChange={handleChange}
                       min="0"
                       placeholder="0"
@@ -2784,7 +2789,7 @@ const CadastrarImovel = () => {
                     <input
                       type="number"
                       name="vagas"
-                      value={formData.vagas}
+                      value={formData.vagas === 0 ? "" : formData.vagas}
                       onChange={handleChange}
                       min="0"
                       placeholder="0"
@@ -2810,7 +2815,9 @@ const CadastrarImovel = () => {
                     <input
                       type="number"
                       name="area_total"
-                      value={formData.area_total}
+                      value={
+                        formData.area_total === 0 ? "" : formData.area_total
+                      }
                       onChange={handleChange}
                       min="0"
                       step="0.01"
@@ -2835,7 +2842,11 @@ const CadastrarImovel = () => {
                     <input
                       type="number"
                       name="area_construida"
-                      value={formData.area_construida}
+                      value={
+                        formData.area_construida === 0
+                          ? ""
+                          : formData.area_construida
+                      }
                       onChange={handleChange}
                       min="0"
                       step="0.01"
@@ -2860,7 +2871,11 @@ const CadastrarImovel = () => {
                     <input
                       type="number"
                       name="area_privativa"
-                      value={formData.area_privativa}
+                      value={
+                        formData.area_privativa === 0
+                          ? ""
+                          : formData.area_privativa
+                      }
                       onChange={handleChange}
                       min="0"
                       step="0.01"
@@ -3692,20 +3707,112 @@ const CadastrarImovel = () => {
                           </label>
 
                           {/* Aceita permuta */}
-                          <label className="flex items-center space-x-3 p-3 border rounded-lg cursor-pointer transition-all duration-200 group hover:shadow-md hover:border-[#D4A24D]/50">
-                            <input
-                              type="checkbox"
-                              name="caracteristicas.aceita_permuta"
-                              checked={formData.caracteristicas.aceita_permuta}
-                              onChange={handleChange}
-                              className={getCheckboxClass()}
-                            />
-                            <span
-                              className={`transition-colors group-hover:text-[#D4A24D] ${getTextClass()}`}
-                            >
-                              Aceita permuta?
-                            </span>
-                          </label>
+                          <div className="flex flex-col p-3 border rounded-lg transition-all duration-200 group hover:shadow-md hover:border-[#D4A24D]/50">
+                            <label className="flex items-center space-x-3 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                name="caracteristicas.aceita_permuta"
+                                checked={
+                                  formData.caracteristicas.aceita_permuta
+                                }
+                                onChange={handleChange}
+                                className={getCheckboxClass()}
+                              />
+                              <span
+                                className={`transition-colors group-hover:text-[#D4A24D] ${getTextClass()}`}
+                              >
+                                Aceita permuta?
+                              </span>
+                            </label>
+
+                            {formData.caracteristicas.aceita_permuta && (
+                              <div className="mt-3 ml-7 animate-fadeIn">
+                                <label
+                                  className={`block text-sm font-medium mb-2 ${getTextSecondaryClass()}`}
+                                >
+                                  Tipos de permuta aceitos
+                                </label>
+                                <div className="flex flex-wrap gap-3">
+                                  <label className="flex items-center space-x-2">
+                                    <input
+                                      type="checkbox"
+                                      name="caracteristicas.permuta_imovel"
+                                      checked={
+                                        formData.caracteristicas
+                                          .permuta_imovel || false
+                                      }
+                                      onChange={handleChange}
+                                      className={getCheckboxClass()}
+                                    />
+                                    <span className={getTextClass()}>
+                                      🏠 Imóvel
+                                    </span>
+                                  </label>
+                                  <label className="flex items-center space-x-2">
+                                    <input
+                                      type="checkbox"
+                                      name="caracteristicas.permuta_terreno"
+                                      checked={
+                                        formData.caracteristicas
+                                          .permuta_terreno || false
+                                      }
+                                      onChange={handleChange}
+                                      className={getCheckboxClass()}
+                                    />
+                                    <span className={getTextClass()}>
+                                      🌳 Terreno
+                                    </span>
+                                  </label>
+                                  <label className="flex items-center space-x-2">
+                                    <input
+                                      type="checkbox"
+                                      name="caracteristicas.permuta_veiculo"
+                                      checked={
+                                        formData.caracteristicas
+                                          .permuta_veiculo || false
+                                      }
+                                      onChange={handleChange}
+                                      className={getCheckboxClass()}
+                                    />
+                                    <span className={getTextClass()}>
+                                      🚗 Veículo
+                                    </span>
+                                  </label>
+                                  <label className="flex items-center space-x-2">
+                                    <input
+                                      type="checkbox"
+                                      name="caracteristicas.permuta_outros"
+                                      checked={
+                                        formData.caracteristicas
+                                          .permuta_outros || false
+                                      }
+                                      onChange={handleChange}
+                                      className={getCheckboxClass()}
+                                    />
+                                    <span className={getTextClass()}>
+                                      📝 Outros
+                                    </span>
+                                  </label>
+                                </div>
+
+                                {formData.caracteristicas.permuta_outros && (
+                                  <div className="mt-3">
+                                    <input
+                                      type="text"
+                                      name="caracteristicas.permuta_descricao"
+                                      value={
+                                        formData.caracteristicas
+                                          .permuta_descricao || ""
+                                      }
+                                      onChange={handleChange}
+                                      placeholder="Descreva o que aceita (ex: moto, equipamentos, etc.)"
+                                      className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4A24D]/30 focus:border-[#D4A24D] ${getInputClasses()}`}
+                                    />
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>
