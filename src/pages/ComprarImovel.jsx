@@ -134,13 +134,14 @@ const BottomSheet = React.memo(
                   className={`flex items-center w-full h-[56px] px-3 bg-white border ${localDropdownOpen === "cityMobile" ? "border-[#D4A24D] ring-2 ring-[#D4A24D]/20" : "border-gray-200 hover:border-gray-300"} rounded-xl cursor-pointer transition-all shadow-sm`}
                 >
                   <i
-                    className={`fas fa-map-marker-alt mr-2 text-sm ${formValues.city ? "text-[#D4A24D]" : "text-gray-400"}`}
+                    className={`fas fa-map-marker-alt mr-2 text-sm ${formValues.cityId ? "text-[#D4A24D]" : "text-gray-400"}`}
                   />
                   <span
-                    className={`flex-1 text-sm font-semibold truncate ${formValues.city ? "text-gray-800" : "text-gray-400"}`}
+                    className={`flex-1 text-sm font-semibold truncate ${formValues.cityId ? "text-gray-800" : "text-gray-400"}`}
                   >
-                    {formValues.city
-                      ? cityOptions.find((o) => o.id === formValues.city)?.label
+                    {formValues.cityId
+                      ? cityOptions.find((o) => o.id === formValues.cityId)
+                          ?.label
                       : "Cidade"}
                   </span>
                   <i
@@ -152,15 +153,15 @@ const BottomSheet = React.memo(
                     {cityOptions.map((opt) => (
                       <div
                         key={opt.id}
-                        onClick={(e) => selectOption("city", opt.id, e)}
-                        className={`flex items-center justify-between px-4 py-3 hover:bg-[#D4A24D]/10 cursor-pointer border-b border-gray-50 last:border-0 ${formValues.city === opt.id ? "bg-[#D4A24D]/5" : ""}`}
+                        onClick={(e) => selectOption("cityId", opt.id, e)}
+                        className={`flex items-center justify-between px-4 py-3 hover:bg-[#D4A24D]/10 cursor-pointer border-b border-gray-50 last:border-0 ${formValues.cityId === opt.id ? "bg-[#D4A24D]/5" : ""}`}
                       >
                         <span
-                          className={`text-sm font-medium ${formValues.city === opt.id ? "text-[#D4A24D] font-semibold" : "text-gray-700"}`}
+                          className={`text-sm font-medium ${formValues.cityId === opt.id ? "text-[#D4A24D] font-semibold" : "text-gray-700"}`}
                         >
                           {opt.label}
                         </span>
-                        {formValues.city === opt.id && (
+                        {formValues.cityId === opt.id && (
                           <i className="fas fa-check text-[#D4A24D] text-sm" />
                         )}
                       </div>
@@ -233,7 +234,7 @@ const BottomSheet = React.memo(
               >
                 <div
                   onClick={(e) => toggleDropdown("neighborhoodMobile", e)}
-                  className={`flex items-center w-full h-[56px] px-3 bg-white border ${localDropdownOpen === "neighborhoodMobile" ? "border-[#D4A24D] ring-2 ring-[#D4A24D]/20" : "border-gray-200 hover:border-gray-300"} rounded-xl cursor-pointer transition-all shadow-sm ${!formValues.city ? "opacity-50" : ""}`}
+                  className={`flex items-center w-full h-[56px] px-3 bg-white border ${localDropdownOpen === "neighborhoodMobile" ? "border-[#D4A24D] ring-2 ring-[#D4A24D]/20" : "border-gray-200 hover:border-gray-300"} rounded-xl cursor-pointer transition-all shadow-sm ${!formValues.cityId ? "opacity-50" : ""}`}
                 >
                   <i
                     className={`fas fa-map-pin mr-2 text-sm ${formValues.neighborhood ? "text-[#D4A24D]" : "text-gray-400"}`}
@@ -923,9 +924,12 @@ const ComprarImovel = () => {
   const [error, setError] = useState(null);
   const [bairros, setBairros] = useState([]);
   const [bairrosFiltrados, setBairrosFiltrados] = useState([]);
+  const [cidadesAtivas, setCidadesAtivas] = useState([]);
 
   const [formValues, setFormValues] = useState({
-    city: "",
+    cityId: "",
+    cityName: "",
+    cityUf: "",
     propertyType: "",
     neighborhood: "",
     bedrooms: "",
@@ -937,12 +941,7 @@ const ComprarImovel = () => {
     priceRange: "",
   });
 
-  const cityOptions = [
-    { id: "acailandia", label: "Açailândia" },
-    { id: "imperatriz", label: "Imperatriz" },
-    { id: "saoluis", label: "São Luís" },
-    { id: "itinga", label: "Itinga" },
-  ];
+  const [cityOptions, setCityOptions] = useState([]);
 
   const propertyOptions = [
     { id: "apartamento", label: "Apartamento" },
@@ -995,13 +994,41 @@ const ComprarImovel = () => {
   const propertyRef = useRef(null);
   const neighborhoodRef = useRef(null);
 
+  // Carregar cidades ativas
+  useEffect(() => {
+    const fetchCidades = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("cidades")
+          .select("id, nome, uf, cidade_estado")
+          .eq("ativo", true)
+          .order("nome");
+
+        if (error) throw error;
+
+        const options = data.map((cidade) => ({
+          id: cidade.id,
+          label: cidade.nome,
+          uf: cidade.uf,
+          cidade_estado: cidade.cidade_estado || `${cidade.nome}, ${cidade.uf}`,
+        }));
+
+        setCidadesAtivas(data);
+        setCityOptions(options);
+      } catch (err) {
+        console.error("Erro ao carregar cidades:", err);
+      }
+    };
+    fetchCidades();
+  }, []);
+
   // Carregar bairros
   useEffect(() => {
     const fetchBairros = async () => {
       try {
         const { data, error } = await supabase
           .from("bairros")
-          .select("id, nome, cidade_id, cidades(nome)")
+          .select("id, nome, cidade_id")
           .order("nome");
         if (error) throw error;
         setBairros(data || []);
@@ -1012,20 +1039,17 @@ const ComprarImovel = () => {
     fetchBairros();
   }, []);
 
-  // Filtrar bairros por cidade
+  // Filtrar bairros por cidade (usando cityId)
   useEffect(() => {
-    if (formValues.city && formValues.city !== "") {
-      const cidadeSelecionada = cityOptions.find(
-        (c) => c.id === formValues.city,
-      )?.label;
+    if (formValues.cityId && formValues.cityId !== "") {
       const filtrados = bairros.filter(
-        (bairro) => bairro.cidades?.nome === cidadeSelecionada,
+        (bairro) => bairro.cidade_id === formValues.cityId,
       );
       setBairrosFiltrados(filtrados);
     } else {
       setBairrosFiltrados([]);
     }
-  }, [formValues.city, bairros]);
+  }, [formValues.cityId, bairros]);
 
   // Carregar filtros iniciais
   useEffect(() => {
@@ -1036,7 +1060,9 @@ const ComprarImovel = () => {
           const parsed = JSON.parse(savedFilters);
           if (parsed.tipo === "comprar") {
             const heroFilters = {
-              city: parsed.city || "",
+              cityId: parsed.cityId || "",
+              cityName: parsed.cityName || "",
+              cityUf: parsed.cityUf || "",
               propertyType: parsed.propertyType || "",
               neighborhood: parsed.neighborhood || "",
               bedrooms: parsed.bedrooms || "",
@@ -1059,10 +1085,10 @@ const ComprarImovel = () => {
     };
 
     const savedFilters = loadFiltersFromStorage();
-    if (bairros.length > 0) {
+    if (bairros.length > 0 && cityOptions.length > 0) {
       fetchImoveis(savedFilters || formValues);
     }
-  }, [bairros]);
+  }, [bairros, cityOptions]);
 
   // Fechar dropdown ao clicar fora
   useEffect(() => {
@@ -1094,6 +1120,28 @@ const ComprarImovel = () => {
       const bathroomsValue = parseNumericValue(filtros.bathrooms);
       const suiteValue = parseNumericValue(filtros.suite);
 
+      // Buscar cidade pelo ID para pegar o nome
+      let cidadeNome = null;
+      if (filtros.cityId) {
+        const cidadeEncontrada = cityOptions.find(
+          (c) => c.id === filtros.cityId,
+        );
+        if (cidadeEncontrada) {
+          cidadeNome = cidadeEncontrada.label;
+        }
+      }
+
+      // Buscar bairro pelo ID para pegar o nome
+      let bairroNome = null;
+      if (filtros.neighborhood) {
+        const bairroEncontrado = bairros.find(
+          (b) => b.id === filtros.neighborhood,
+        );
+        if (bairroEncontrado) {
+          bairroNome = bairroEncontrado.nome;
+        }
+      }
+
       let query = supabase
         .from("imoveis")
         .select(
@@ -1110,9 +1158,9 @@ const ComprarImovel = () => {
         .eq("imovel_finalidades.status", "ativo")
         .in("status", ["disponivel", "reservado"]);
 
-      if (filtros.city) {
-        const cidadeObj = cityOptions.find((c) => c.id === filtros.city);
-        if (cidadeObj) query = query.eq("cidade", cidadeObj.label);
+      // Buscar pelo nome da cidade (campo de texto)
+      if (cidadeNome) {
+        query = query.eq("cidade", cidadeNome);
       }
 
       if (filtros.propertyType) {
@@ -1122,9 +1170,9 @@ const ComprarImovel = () => {
         if (tipoObj) query = query.eq("tipo", tipoObj.label.toLowerCase());
       }
 
-      if (filtros.neighborhood && filtros.neighborhood !== "") {
-        const bairroObj = bairros.find((b) => b.id === filtros.neighborhood);
-        if (bairroObj) query = query.eq("bairro", bairroObj.nome);
+      // Buscar pelo nome do bairro (campo de texto)
+      if (bairroNome) {
+        query = query.eq("bairro", bairroNome);
       }
 
       const { data: imoveisData, error: supabaseError } = await query;
@@ -1243,20 +1291,19 @@ const ComprarImovel = () => {
   };
 
   const handleSearch = (e) => {
-    // Se for chamado sem evento (vindo do modal)
     if (!e || !e.preventDefault) {
       fetchImoveis(formValues);
       return;
     }
-
-    // Se for chamado com evento (vindo do formulário)
     e.preventDefault();
     fetchImoveis(formValues);
   };
 
   const clearFilters = () => {
     setFormValues({
-      city: "",
+      cityId: "",
+      cityName: "",
+      cityUf: "",
       propertyType: "",
       neighborhood: "",
       bedrooms: "",
@@ -1393,16 +1440,18 @@ const ComprarImovel = () => {
                         className={`flex items-center w-full h-[56px] px-4 bg-white border ${openDropdown === "city" ? "border-[#D4A24D] ring-2 ring-[#D4A24D]/20" : "border-gray-200 hover:border-gray-300"} rounded-xl cursor-pointer transition-all shadow-sm hover:shadow-md`}
                       >
                         <i
-                          className={`fas fa-map-marker-alt mr-2 text-sm ${formValues.city ? "text-[#D4A24D]" : "text-gray-400"}`}
+                          className={`fas fa-map-marker-alt mr-2 text-sm ${formValues.cityId ? "text-[#D4A24D]" : "text-gray-400"}`}
                         />
                         <span
-                          className={`flex-1 text-sm font-semibold truncate ${formValues.city ? "text-gray-800" : "text-gray-400"}`}
+                          className={`flex-1 text-sm font-semibold truncate ${formValues.cityId ? "text-gray-800" : "text-gray-400"}`}
                         >
-                          {formValues.city
+                          {formValues.cityId
                             ? cityOptions.find(
-                                (opt) => opt.id === formValues.city,
+                                (opt) => opt.id === formValues.cityId,
                               )?.label
-                            : "Cidade"}
+                            : formValues.cityName
+                              ? `${formValues.cityName}${formValues.cityUf ? ` (${formValues.cityUf})` : ""}`
+                              : "Cidade"}
                         </span>
                         <i
                           className={`fas fa-chevron-down text-gray-400 text-xs transition-all duration-300 ${openDropdown === "city" ? "rotate-180 text-[#D4A24D]" : ""}`}
@@ -1413,15 +1462,19 @@ const ComprarImovel = () => {
                           {cityOptions.map((opt) => (
                             <div
                               key={opt.id}
-                              onClick={() => handleInputChange("city", opt.id)}
-                              className={`flex items-center justify-between px-4 py-3 hover:bg-[#D4A24D]/10 cursor-pointer border-b border-gray-50 last:border-0 transition-colors ${formValues.city === opt.id ? "bg-[#D4A24D]/5" : ""}`}
+                              onClick={() => {
+                                handleInputChange("cityId", opt.id);
+                                handleInputChange("cityName", opt.label);
+                                handleInputChange("cityUf", opt.uf);
+                              }}
+                              className={`flex items-center justify-between px-4 py-3 hover:bg-[#D4A24D]/10 cursor-pointer border-b border-gray-50 last:border-0 transition-colors ${formValues.cityId === opt.id ? "bg-[#D4A24D]/5" : ""}`}
                             >
                               <span
-                                className={`text-sm font-medium ${formValues.city === opt.id ? "text-[#D4A24D] font-semibold" : "text-gray-700"}`}
+                                className={`text-sm font-medium ${formValues.cityId === opt.id ? "text-[#D4A24D] font-semibold" : "text-gray-700"}`}
                               >
                                 {opt.label}
                               </span>
-                              {formValues.city === opt.id && (
+                              {formValues.cityId === opt.id && (
                                 <i className="fas fa-check text-[#D4A24D] text-sm" />
                               )}
                             </div>
@@ -1480,7 +1533,7 @@ const ComprarImovel = () => {
                     <div className="relative col-span-2" ref={neighborhoodRef}>
                       <div
                         onClick={() => toggleDropdown("neighborhood")}
-                        className={`flex items-center w-full h-[56px] px-4 bg-white border ${openDropdown === "neighborhood" ? "border-[#D4A24D] ring-2 ring-[#D4A24D]/20" : "border-gray-200 hover:border-gray-300"} rounded-xl cursor-pointer transition-all shadow-sm hover:shadow-md ${!formValues.city ? "opacity-50 cursor-not-allowed" : ""}`}
+                        className={`flex items-center w-full h-[56px] px-4 bg-white border ${openDropdown === "neighborhood" ? "border-[#D4A24D] ring-2 ring-[#D4A24D]/20" : "border-gray-200 hover:border-gray-300"} rounded-xl cursor-pointer transition-all shadow-sm hover:shadow-md ${!formValues.cityId ? "opacity-50 cursor-not-allowed" : ""}`}
                       >
                         <i
                           className={`fas fa-map-pin mr-2 text-sm ${formValues.neighborhood ? "text-[#D4A24D]" : "text-gray-400"}`}
@@ -1492,7 +1545,7 @@ const ComprarImovel = () => {
                             ? bairros.find(
                                 (b) => b.id === formValues.neighborhood,
                               )?.nome
-                            : !formValues.city
+                            : !formValues.cityId
                               ? "Selecione uma cidade"
                               : "Bairro"}
                         </span>
@@ -1524,7 +1577,7 @@ const ComprarImovel = () => {
                               ))
                             ) : (
                               <div className="px-4 py-3 text-gray-500 text-sm">
-                                {!formValues.city
+                                {!formValues.cityId
                                   ? "Selecione uma cidade primeiro"
                                   : "Nenhum bairro cadastrado para esta cidade"}
                               </div>
@@ -1625,7 +1678,7 @@ const ComprarImovel = () => {
                       areaTotal={dados.areaTotal}
                       areaConstruida={dados.areaConstruida}
                       emCondominio={imovel.em_condominio || false}
-                      empreendimento={imovel.edificios || null}
+                      empreendimiento={imovel.edificios || null}
                       unidade={imovel.unidade || ""}
                       andar={imovel.andar || ""}
                       bloco={imovel.bloco || ""}

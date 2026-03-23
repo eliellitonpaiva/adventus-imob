@@ -809,8 +809,13 @@ const Hero = () => {
   const [openDropdown, setOpenDropdown] = useState(null);
   const [showMoreFilters, setShowMoreFilters] = useState(false);
 
+  // Estados para busca de cidade com autocomplete
+  const [buscaCidade, setBuscaCidade] = useState("");
+  const [sugestoesCidades, setSugestoesCidades] = useState([]);
+  const [mostrarSugestoes, setMostrarSugestoes] = useState(false);
   const [cidades, setCidades] = useState([]);
   const [loadingCidades, setLoadingCidades] = useState(true);
+  const [cidadesCache, setCidadesCache] = useState([]);
 
   const [imagemHero, setImagemHero] = useState({
     url: null,
@@ -820,6 +825,8 @@ const Hero = () => {
 
   const [formValues, setFormValues] = useState({
     city: "",
+    cityName: "",
+    cityUf: "",
     propertyType: "",
     bedrooms: "",
     minArea: "",
@@ -835,13 +842,6 @@ const Hero = () => {
   const [bairrosFiltrados, setBairrosFiltrados] = useState([]);
 
   const currentPriceOptions = PRICE_RANGE_OPTIONS[activeTab];
-
-  const cityOptions = cidades.map((cidade) => ({
-    id: cidade.slug || cidade.nome.toLowerCase().replace(/\s+/g, "-"),
-    label: cidade.nome,
-    uf: cidade.estado,
-    originalId: cidade.id,
-  }));
 
   const propertyOptions = [
     { id: "apartamento", label: "Apartamento" },
@@ -883,6 +883,7 @@ const Hero = () => {
   const cityRef = useRef(null);
   const propertyRef = useRef(null);
   const neighborhoodRef = useRef(null);
+  const searchInputRef = useRef(null);
   const overflowRef = useRef(null);
 
   const fetchCidades = async () => {
@@ -890,24 +891,90 @@ const Hero = () => {
       setLoadingCidades(true);
       const { data, error } = await supabase
         .from("cidades")
-        .select("*")
+        .select("id, nome, uf, slug, cidade_estado")
         .eq("ativo", true)
         .order("nome");
 
       if (error) throw error;
 
       const cidadesFormatadas = data.map((cidade) => ({
-        ...cidade,
-        estado: cidade.uf,
+        id: cidade.id,
+        nome: cidade.nome,
+        uf: cidade.uf,
+        slug: cidade.slug,
+        cidade_estado: cidade.cidade_estado || `${cidade.nome}, ${cidade.uf}`,
       }));
 
       console.log("✅ Cidades carregadas do banco:", cidadesFormatadas);
       setCidades(cidadesFormatadas || []);
+      setCidadesCache(cidadesFormatadas || []);
     } catch (error) {
       console.error("❌ Erro ao buscar cidades:", error);
     } finally {
       setLoadingCidades(false);
     }
+  };
+
+  const buscarCidadesPorTexto = async (texto) => {
+    if (!texto || texto.length < 2) {
+      setSugestoesCidades([]);
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from("cidades")
+        .select("id, nome, uf, slug, cidade_estado")
+        .eq("ativo", true)
+        .ilike("cidade_estado", `%${texto}%`)
+        .limit(10);
+
+      if (error) throw error;
+
+      const resultados = data.map((cidade) => ({
+        id: cidade.id,
+        nome: cidade.nome,
+        uf: cidade.uf,
+        slug: cidade.slug,
+        cidade_estado: cidade.cidade_estado || `${cidade.nome}, ${cidade.uf}`,
+      }));
+
+      setSugestoesCidades(resultados);
+    } catch (error) {
+      console.error("Erro ao buscar cidades:", error);
+      setSugestoesCidades([]);
+    }
+  };
+
+  const handleBuscaCidadeChange = (e) => {
+    const texto = e.target.value;
+    setBuscaCidade(texto);
+    buscarCidadesPorTexto(texto);
+    setMostrarSugestoes(texto.length >= 2);
+  };
+
+  const selecionarCidade = (cidade) => {
+    setBuscaCidade(cidade.cidade_estado);
+    setFormValues((prev) => ({
+      ...prev,
+      city: cidade.id,
+      cityName: cidade.nome,
+      cityUf: cidade.uf,
+    }));
+    setMostrarSugestoes(false);
+    setSugestoesCidades([]);
+  };
+
+  const limparCidadeSelecionada = () => {
+    setBuscaCidade("");
+    setFormValues((prev) => ({
+      ...prev,
+      city: "",
+      cityName: "",
+      cityUf: "",
+    }));
+    setSugestoesCidades([]);
+    setMostrarSugestoes(false);
   };
 
   const buscarImagemHero = async () => {
@@ -972,7 +1039,7 @@ const Hero = () => {
       try {
         const { data, error } = await supabase
           .from("bairros")
-          .select("id, nome, cidade_id, cidades(nome)")
+          .select("id, nome, cidade_id, cidades(nome, uf)")
           .order("nome");
         if (error) throw error;
         setBairros(data || []);
@@ -985,11 +1052,8 @@ const Hero = () => {
 
   useEffect(() => {
     if (formValues.city && formValues.city !== "") {
-      const cidadeSelecionada = cityOptions.find(
-        (c) => c.id === formValues.city,
-      )?.label;
       const filtrados = bairros.filter(
-        (bairro) => bairro.cidades?.nome === cidadeSelecionada,
+        (bairro) => bairro.cidade_id === formValues.city,
       );
       if (JSON.stringify(bairrosFiltrados) !== JSON.stringify(filtrados)) {
         setBairrosFiltrados(filtrados);
@@ -999,15 +1063,20 @@ const Hero = () => {
         setBairrosFiltrados([]);
       }
     }
-  }, [formValues.city, bairros, cityOptions]);
+  }, [formValues.city, bairros]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (showMoreFilters) return;
+      if (
+        mostrarSugestoes &&
+        searchInputRef.current &&
+        !searchInputRef.current.contains(event.target)
+      ) {
+        setMostrarSugestoes(false);
+      }
       if (!openDropdown) return;
       const isOutside =
-        cityRef.current &&
-        !cityRef.current.contains(event.target) &&
         propertyRef.current &&
         !propertyRef.current.contains(event.target) &&
         neighborhoodRef.current &&
@@ -1020,7 +1089,7 @@ const Hero = () => {
       document.removeEventListener("mousedown", handleClickOutside);
       document.removeEventListener("touchstart", handleClickOutside);
     };
-  }, [openDropdown, showMoreFilters]);
+  }, [openDropdown, showMoreFilters, mostrarSugestoes]);
 
   useEffect(() => {
     if (overflowRef.current === showMoreFilters) return;
@@ -1074,7 +1143,9 @@ const Hero = () => {
     const priceValues = getPriceRangeValues(formValues.priceRange);
     const searchParams = {
       tipo: activeTab,
-      city: formValues.city || "",
+      cityId: formValues.city || "",
+      cityName: formValues.cityName || "",
+      cityUf: formValues.cityUf || "",
       propertyType: formValues.propertyType || "",
       bedrooms: formValues.bedrooms || "",
       minArea: formValues.minArea || "",
@@ -1087,6 +1158,7 @@ const Hero = () => {
       priceMin: priceValues.min,
       priceMax: priceValues.max,
     };
+    console.log("🔍 Buscando com filtros:", searchParams);
     localStorage.setItem("hero_filters", JSON.stringify(searchParams));
     navigate(`/${activeTab}`);
   };
@@ -1094,6 +1166,8 @@ const Hero = () => {
   const clearFilters = () => {
     setFormValues({
       city: "",
+      cityName: "",
+      cityUf: "",
       propertyType: "",
       bedrooms: "",
       minArea: "",
@@ -1104,6 +1178,8 @@ const Hero = () => {
       bathrooms: "",
       priceRange: "",
     });
+    setBuscaCidade("");
+    setSugestoesCidades([]);
   };
 
   return (
@@ -1175,60 +1251,80 @@ const Hero = () => {
 
           <form onSubmit={handleSearch}>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-2 md:gap-2 lg:gap-3">
-              <div className="relative w-full md:col-span-1" ref={cityRef}>
-                <div
-                  onClick={() => toggleDropdown("city")}
-                  className={`flex items-center w-full h-[56px] md:h-[60px] px-4 bg-white border ${openDropdown === "city" ? "border-[#D4A24D] ring-2 ring-[#D4A24D]/20" : "border-gray-200 hover:border-gray-300"} rounded-xl cursor-pointer transition-all shadow-sm hover:shadow-md`}
-                >
+              {/* Campo de busca de cidade com autocomplete */}
+              <div
+                className="relative w-full md:col-span-1"
+                ref={searchInputRef}
+              >
+                <div className="flex items-center w-full h-[56px] md:h-[60px] px-4 bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-all">
                   <i
                     className={`fas fa-map-marker-alt mr-3 text-sm ${formValues.city ? "text-[#D4A24D]" : "text-gray-400"}`}
                   />
-                  <span
-                    className={`flex-1 text-sm md:text-base font-semibold truncate ${formValues.city ? "text-gray-800" : "text-gray-400"}`}
-                  >
-                    {loadingCidades
-                      ? "Carregando cidades..."
-                      : formValues.city
-                        ? cityOptions.find((opt) => opt.id === formValues.city)
-                            ?.label
-                        : cidades.length > 0
-                          ? "Cidade"
-                          : "Nenhuma cidade cadastrada"}
-                  </span>
-                  <i
-                    className={`fas fa-chevron-down text-gray-400 text-xs transition-all duration-300 ${openDropdown === "city" ? "rotate-180 text-[#D4A24D]" : ""}`}
+                  <input
+                    type="text"
+                    value={buscaCidade}
+                    onChange={handleBuscaCidadeChange}
+                    onFocus={() =>
+                      buscaCidade.length >= 2 && setMostrarSugestoes(true)
+                    }
+                    placeholder={
+                      loadingCidades
+                        ? "Carregando cidades..."
+                        : "Digite cidade e estado (ex: Açailândia, MA)"
+                    }
+                    className="flex-1 text-sm md:text-base outline-none bg-transparent placeholder-gray-400"
+                    disabled={loadingCidades}
                   />
+                  {buscaCidade && (
+                    <button
+                      type="button"
+                      onClick={limparCidadeSelecionada}
+                      className="text-gray-400 hover:text-gray-600 transition-colors"
+                    >
+                      <i className="fas fa-times text-sm" />
+                    </button>
+                  )}
                 </div>
-                {openDropdown === "city" && (
+
+                {/* Dropdown de sugestões */}
+                {mostrarSugestoes && sugestoesCidades.length > 0 && (
                   <div className="absolute top-[105%] left-0 w-full bg-white rounded-xl shadow-2xl border border-gray-100 z-[100] overflow-hidden animate-dropdown">
-                    {loadingCidades ? (
-                      <div className="px-4 py-3 text-gray-500 text-center">
-                        Carregando...
-                      </div>
-                    ) : cidades.length > 0 ? (
-                      cityOptions.map((opt) => (
-                        <div
-                          key={opt.id}
-                          onClick={() => handleInputChange("city", opt.id)}
-                          className={`flex items-center justify-between px-4 py-3 hover:bg-[#D4A24D]/10 cursor-pointer border-b border-gray-50 last:border-0 transition-colors ${formValues.city === opt.id ? "bg-[#D4A24D]/5" : ""}`}
-                        >
-                          <span
-                            className={`text-sm md:text-base font-medium ${formValues.city === opt.id ? "text-[#D4A24D] font-semibold" : "text-gray-700"}`}
-                          >
-                            {opt.label} {opt.uf ? `(${opt.uf})` : ""}
-                          </span>
-                          {formValues.city === opt.id && (
-                            <i className="fas fa-check text-[#D4A24D] text-sm" />
-                          )}
+                    {sugestoesCidades.map((cidade) => (
+                      <div
+                        key={cidade.id}
+                        onClick={() => selecionarCidade(cidade)}
+                        className="px-4 py-3 hover:bg-[#D4A24D]/10 cursor-pointer border-b border-gray-50 last:border-0 transition-colors"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <span className="font-medium text-gray-800">
+                              {cidade.nome}
+                            </span>
+                            <span className="text-sm text-gray-500 ml-2">
+                              {cidade.uf}
+                            </span>
+                          </div>
+                          <i className="fas fa-chevron-right text-gray-300 text-xs" />
                         </div>
-                      ))
-                    ) : (
-                      <div className="px-4 py-3 text-gray-500 text-center">
-                        Nenhuma cidade cadastrada
+                        <div className="text-xs text-gray-400 mt-0.5">
+                          {cidade.cidade_estado}
+                        </div>
                       </div>
-                    )}
+                    ))}
                   </div>
                 )}
+
+                {/* Loading ou mensagem quando não há resultados */}
+                {mostrarSugestoes &&
+                  buscaCidade.length >= 2 &&
+                  sugestoesCidades.length === 0 &&
+                  !loadingCidades && (
+                    <div className="absolute top-[105%] left-0 w-full bg-white rounded-xl shadow-2xl border border-gray-100 z-[100] overflow-hidden">
+                      <div className="px-4 py-3 text-gray-500 text-sm text-center">
+                        Nenhuma cidade encontrada
+                      </div>
+                    </div>
+                  )}
               </div>
 
               <div className="relative w-full md:col-span-1" ref={propertyRef}>
@@ -1414,65 +1510,76 @@ const Hero = () => {
 
             <form onSubmit={handleSearch}>
               <div className="flex flex-col space-y-3">
-                <div className="relative w-full" ref={cityRef}>
-                  <div
-                    onClick={() => toggleDropdown("city")}
-                    className={`flex items-center w-full h-[56px] md:h-[60px] px-4 bg-white/30 backdrop-blur-sm border ${
-                      openDropdown === "city"
-                        ? "border-[#D4A24D] ring-2 ring-[#D4A24D]/20"
-                        : "border-gray-300 hover:border-gray-400"
-                    } rounded-xl cursor-pointer transition-all shadow-sm hover:shadow-md`}
-                  >
+                {/* Campo de busca de cidade com autocomplete - Desktop */}
+                <div className="relative w-full" ref={searchInputRef}>
+                  <div className="flex items-center w-full h-[56px] md:h-[60px] px-4 bg-white/30 backdrop-blur-sm border border-gray-300 rounded-xl shadow-sm hover:shadow-md transition-all">
                     <i
                       className={`fas fa-map-marker-alt mr-3 text-sm ${formValues.city ? "text-[#D4A24D]" : "text-gray-600"}`}
                     />
-                    <span
-                      className={`flex-1 text-sm md:text-base font-semibold truncate ${formValues.city ? "text-gray-800" : "text-gray-600"}`}
-                    >
-                      {loadingCidades
-                        ? "Carregando cidades..."
-                        : formValues.city
-                          ? cityOptions.find(
-                              (opt) => opt.id === formValues.city,
-                            )?.label
-                          : cidades.length > 0
-                            ? "Cidade"
-                            : "Nenhuma cidade cadastrada"}
-                    </span>
-                    <i
-                      className={`fas fa-chevron-down text-gray-600 text-xs transition-all duration-300 ${openDropdown === "city" ? "rotate-180 text-[#D4A24D]" : ""}`}
+                    <input
+                      type="text"
+                      value={buscaCidade}
+                      onChange={handleBuscaCidadeChange}
+                      onFocus={() =>
+                        buscaCidade.length >= 2 && setMostrarSugestoes(true)
+                      }
+                      placeholder={
+                        loadingCidades
+                          ? "Carregando cidades..."
+                          : "Digite cidade e estado (ex: Açailândia, MA)"
+                      }
+                      className="flex-1 text-sm md:text-base outline-none bg-transparent placeholder-gray-500"
+                      disabled={loadingCidades}
                     />
+                    {buscaCidade && (
+                      <button
+                        type="button"
+                        onClick={limparCidadeSelecionada}
+                        className="text-gray-500 hover:text-gray-700 transition-colors"
+                      >
+                        <i className="fas fa-times text-sm" />
+                      </button>
+                    )}
                   </div>
-                  {openDropdown === "city" && (
+
+                  {/* Dropdown de sugestões - Desktop */}
+                  {mostrarSugestoes && sugestoesCidades.length > 0 && (
                     <div className="absolute top-[105%] left-0 w-full bg-white/90 backdrop-blur-md rounded-xl shadow-2xl border border-gray-200 z-[100] overflow-hidden animate-dropdown">
-                      {loadingCidades ? (
-                        <div className="px-4 py-3 text-gray-500 text-center">
-                          Carregando...
-                        </div>
-                      ) : cidades.length > 0 ? (
-                        cityOptions.map((opt) => (
-                          <div
-                            key={opt.id}
-                            onClick={() => handleInputChange("city", opt.id)}
-                            className={`flex items-center justify-between px-4 py-3 hover:bg-[#D4A24D]/20 cursor-pointer border-b border-gray-100 last:border-0 transition-colors ${formValues.city === opt.id ? "bg-[#D4A24D]/10" : ""}`}
-                          >
-                            <span
-                              className={`text-sm md:text-base font-medium ${formValues.city === opt.id ? "text-[#D4A24D] font-semibold" : "text-gray-700"}`}
-                            >
-                              {opt.label} {opt.uf ? `(${opt.uf})` : ""}
-                            </span>
-                            {formValues.city === opt.id && (
-                              <i className="fas fa-check text-[#D4A24D] text-sm" />
-                            )}
+                      {sugestoesCidades.map((cidade) => (
+                        <div
+                          key={cidade.id}
+                          onClick={() => selecionarCidade(cidade)}
+                          className="px-4 py-3 hover:bg-[#D4A24D]/20 cursor-pointer border-b border-gray-100 last:border-0 transition-colors"
+                        >
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <span className="font-medium text-gray-800">
+                                {cidade.nome}
+                              </span>
+                              <span className="text-sm text-gray-500 ml-2">
+                                {cidade.uf}
+                              </span>
+                            </div>
+                            <i className="fas fa-chevron-right text-gray-300 text-xs" />
                           </div>
-                        ))
-                      ) : (
-                        <div className="px-4 py-3 text-gray-500 text-center">
-                          Nenhuma cidade cadastrada
+                          <div className="text-xs text-gray-400 mt-0.5">
+                            {cidade.cidade_estado}
+                          </div>
                         </div>
-                      )}
+                      ))}
                     </div>
                   )}
+
+                  {mostrarSugestoes &&
+                    buscaCidade.length >= 2 &&
+                    sugestoesCidades.length === 0 &&
+                    !loadingCidades && (
+                      <div className="absolute top-[105%] left-0 w-full bg-white/90 backdrop-blur-md rounded-xl shadow-2xl border border-gray-200 z-[100] overflow-hidden">
+                        <div className="px-4 py-3 text-gray-500 text-sm text-center">
+                          Nenhuma cidade encontrada
+                        </div>
+                      </div>
+                    )}
                 </div>
 
                 <div className="relative w-full" ref={propertyRef}>

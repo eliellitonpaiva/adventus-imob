@@ -61,7 +61,7 @@ const parseNumericValue = (value) => {
 };
 
 // ===========================================
-// BOTTOM SHEET (MOBILE) - VERSÃO REFATORADA COM ÍCONES
+// BOTTOM SHEET (MOBILE)
 // ===========================================
 const BottomSheet = React.memo(
   ({
@@ -171,13 +171,14 @@ const BottomSheet = React.memo(
                   } rounded-xl cursor-pointer transition-all shadow-sm`}
                 >
                   <i
-                    className={`fas fa-map-marker-alt mr-2 text-sm ${formValues.city ? "text-[#D4A24D]" : "text-gray-400"}`}
+                    className={`fas fa-map-marker-alt mr-2 text-sm ${formValues.cityId ? "text-[#D4A24D]" : "text-gray-400"}`}
                   />
                   <span
-                    className={`flex-1 text-sm font-semibold truncate ${formValues.city ? "text-gray-800" : "text-gray-400"}`}
+                    className={`flex-1 text-sm font-semibold truncate ${formValues.cityId ? "text-gray-800" : "text-gray-400"}`}
                   >
-                    {formValues.city
-                      ? cityOptions.find((o) => o.id === formValues.city)?.label
+                    {formValues.cityId
+                      ? cityOptions.find((o) => o.id === formValues.cityId)
+                          ?.label
                       : "Cidade"}
                   </span>
                   <i
@@ -193,17 +194,17 @@ const BottomSheet = React.memo(
                     {cityOptions.map((opt) => (
                       <div
                         key={opt.id}
-                        onClick={(e) => selectOption("city", opt.id, e)}
+                        onClick={(e) => selectOption("cityId", opt.id, e)}
                         className={`flex items-center justify-between px-4 py-3 hover:bg-[#D4A24D]/10 cursor-pointer border-b border-gray-50 last:border-0 ${
-                          formValues.city === opt.id ? "bg-[#D4A24D]/5" : ""
+                          formValues.cityId === opt.id ? "bg-[#D4A24D]/5" : ""
                         }`}
                       >
                         <span
-                          className={`text-sm font-medium ${formValues.city === opt.id ? "text-[#D4A24D] font-semibold" : "text-gray-700"}`}
+                          className={`text-sm font-medium ${formValues.cityId === opt.id ? "text-[#D4A24D] font-semibold" : "text-gray-700"}`}
                         >
                           {opt.label}
                         </span>
-                        {formValues.city === opt.id && (
+                        {formValues.cityId === opt.id && (
                           <i className="fas fa-check text-[#D4A24D] text-sm" />
                         )}
                       </div>
@@ -298,7 +299,7 @@ const BottomSheet = React.memo(
                     localDropdownOpen === "neighborhoodMobile"
                       ? "border-[#D4A24D] ring-2 ring-[#D4A24D]/20"
                       : "border-gray-200 hover:border-gray-300"
-                  } rounded-xl cursor-pointer transition-all shadow-sm ${!formValues.city ? "opacity-50" : ""}`}
+                  } rounded-xl cursor-pointer transition-all shadow-sm ${!formValues.cityId ? "opacity-50" : ""}`}
                 >
                   <i
                     className={`fas fa-map-pin mr-2 text-sm ${formValues.neighborhood ? "text-[#D4A24D]" : "text-gray-400"}`}
@@ -346,7 +347,7 @@ const BottomSheet = React.memo(
                       ))
                     ) : (
                       <div className="px-4 py-3 text-gray-500 text-sm">
-                        {!formValues.city
+                        {!formValues.cityId
                           ? "Selecione uma cidade primeiro"
                           : "Nenhum bairro cadastrado para esta cidade"}
                       </div>
@@ -696,7 +697,7 @@ const BottomSheet = React.memo(
 );
 
 // ===========================================
-// MODAL DESKTOP - VERSÃO REFATORADA COM ÍCONES
+// MODAL DESKTOP
 // ===========================================
 const DesktopModal = React.memo(
   ({
@@ -1141,13 +1142,16 @@ const AlugarImovel = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // 🔥 ESTADO PARA BAIRROS (vindo do banco)
+  // Estados para cidades e bairros
   const [bairros, setBairros] = useState([]);
   const [bairrosFiltrados, setBairrosFiltrados] = useState([]);
+  const [cityOptions, setCityOptions] = useState([]);
 
-  // Filtros ativos
+  // Filtros ativos - AGORA COM cityId, cityName, cityUf
   const [formValues, setFormValues] = useState({
-    city: "",
+    cityId: "",
+    cityName: "",
+    cityUf: "",
     propertyType: "",
     neighborhood: "",
     bedrooms: "",
@@ -1160,13 +1164,6 @@ const AlugarImovel = () => {
   });
 
   // =============== OPÇÕES ===============
-  const cityOptions = [
-    { id: "acailandia", label: "Açailândia" },
-    { id: "imperatriz", label: "Imperatriz" },
-    { id: "saoluis", label: "São Luís" },
-    { id: "itinga", label: "Itinga" },
-  ];
-
   const propertyOptions = [
     { id: "apartamento", label: "Apartamento" },
     { id: "casa", label: "Casa" },
@@ -1226,6 +1223,36 @@ const AlugarImovel = () => {
   const neighborhoodRef = useRef(null);
 
   // ===========================================
+  // 🔥 CARREGAR CIDADES ATIVAS DO BANCO
+  // ===========================================
+  useEffect(() => {
+    const fetchCidades = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("cidades")
+          .select("id, nome, uf, cidade_estado")
+          .eq("ativo", true)
+          .order("nome");
+
+        if (error) throw error;
+
+        const options = data.map((cidade) => ({
+          id: cidade.id,
+          label: cidade.nome,
+          uf: cidade.uf,
+          cidade_estado: cidade.cidade_estado || `${cidade.nome}, ${cidade.uf}`,
+        }));
+
+        setCityOptions(options);
+      } catch (err) {
+        console.error("Erro ao carregar cidades:", err);
+      }
+    };
+
+    fetchCidades();
+  }, []);
+
+  // ===========================================
   // 🔥 CARREGAR BAIRROS DO BANCO
   // ===========================================
   useEffect(() => {
@@ -1233,7 +1260,7 @@ const AlugarImovel = () => {
       try {
         const { data, error } = await supabase
           .from("bairros")
-          .select("id, nome, cidade_id, cidades(nome)")
+          .select("id, nome, cidade_id")
           .order("nome");
 
         if (error) throw error;
@@ -1246,22 +1273,17 @@ const AlugarImovel = () => {
     fetchBairros();
   }, []);
 
-  // 🔥 FILTRAR BAIRROS POR CIDADE SELECIONADA
+  // 🔥 FILTRAR BAIRROS POR CIDADE SELECIONADA (usando cityId)
   useEffect(() => {
-    if (formValues.city && formValues.city !== "") {
-      const cidadeSelecionada = cityOptions.find(
-        (c) => c.id === formValues.city,
-      )?.label;
-
+    if (formValues.cityId && formValues.cityId !== "") {
       const filtrados = bairros.filter(
-        (bairro) => bairro.cidades?.nome === cidadeSelecionada,
+        (bairro) => bairro.cidade_id === formValues.cityId,
       );
-
       setBairrosFiltrados(filtrados);
     } else {
       setBairrosFiltrados([]);
     }
-  }, [formValues.city, bairros]);
+  }, [formValues.cityId, bairros]);
 
   // Efeito para carregar filtros iniciais
   useEffect(() => {
@@ -1272,7 +1294,9 @@ const AlugarImovel = () => {
           const parsed = JSON.parse(savedFilters);
           if (parsed.tipo === "alugar") {
             const heroFilters = {
-              city: parsed.city || "",
+              cityId: parsed.cityId || "",
+              cityName: parsed.cityName || "",
+              cityUf: parsed.cityUf || "",
               propertyType: parsed.propertyType || "",
               neighborhood: parsed.neighborhood || "",
               bedrooms: parsed.bedrooms || "",
@@ -1295,19 +1319,10 @@ const AlugarImovel = () => {
     };
 
     const savedFilters = loadFiltersFromStorage();
-    console.log("📋 savedFilters retornado:", savedFilters);
-
-    // 🔥 AGUARDA BAIRROS CARREGAREM
-    if (bairros.length > 0) {
-      console.log(
-        "🏁 Bairros carregados, iniciando busca com filtros:",
-        savedFilters,
-      );
+    if (bairros.length > 0 && cityOptions.length > 0) {
       fetchImoveis(savedFilters || formValues);
-    } else {
-      console.log("⏳ Aguardando bairros carregarem...");
     }
-  }, [bairros]);
+  }, [bairros, cityOptions]);
 
   // Fechar dropdown ao clicar fora
   useEffect(() => {
@@ -1340,20 +1355,33 @@ const AlugarImovel = () => {
 
     try {
       // CONVERTER VALORES DOS FILTROS
-      const priceValues = filtros.priceRange
-        ? getPriceRangeValues(filtros.priceRange)
-        : { min: null, max: null };
-
+      const priceValues = getPriceRangeValues(filtros.priceRange);
       const bedroomsValue = parseNumericValue(filtros.bedrooms);
       const garageValue = parseNumericValue(filtros.garage);
       const bathroomsValue = parseNumericValue(filtros.bathrooms);
       const suiteValue = parseNumericValue(filtros.suite);
 
-      console.log("💰 Faixa de preço:", priceValues);
-      console.log("🛏️ Dormitórios mínimo:", bedroomsValue);
-      console.log("🚗 Vagas mínimo:", garageValue);
-      console.log("🚿 Banheiros mínimo:", bathroomsValue);
-      console.log("🛋️ Suítes mínimo:", suiteValue);
+      // Buscar cidade pelo ID para pegar o nome
+      let cidadeNome = null;
+      if (filtros.cityId) {
+        const cidadeEncontrada = cityOptions.find(
+          (c) => c.id === filtros.cityId,
+        );
+        if (cidadeEncontrada) {
+          cidadeNome = cidadeEncontrada.label;
+        }
+      }
+
+      // Buscar bairro pelo ID para pegar o nome
+      let bairroNome = null;
+      if (filtros.neighborhood) {
+        const bairroEncontrado = bairros.find(
+          (b) => b.id === filtros.neighborhood,
+        );
+        if (bairroEncontrado) {
+          bairroNome = bairroEncontrado.nome;
+        }
+      }
 
       // Primeiro, buscar os IDs dos imóveis que têm finalidade de aluguel ativa
       const { data: finalidadesData, error: finalidadesError } = await supabase
@@ -1386,12 +1414,9 @@ const AlugarImovel = () => {
         .in("id", imoveisIds)
         .in("status", ["disponivel", "reservado"]);
 
-      // Aplicar filtros adicionais
-      if (filtros.city) {
-        const cidadeObj = cityOptions.find((c) => c.id === filtros.city);
-        if (cidadeObj) {
-          query = query.eq("cidade", cidadeObj.label);
-        }
+      // Aplicar filtros adicionais - usando nome da cidade (campo texto)
+      if (cidadeNome) {
+        query = query.eq("cidade", cidadeNome);
       }
 
       if (filtros.propertyType) {
@@ -1403,29 +1428,9 @@ const AlugarImovel = () => {
         }
       }
 
-      // FILTRO POR BAIRRO - COM DEBUG
-      if (filtros.neighborhood && filtros.neighborhood !== "") {
-        console.log(
-          "🎯 ALUGAR - Tentando filtrar por bairro ID:",
-          filtros.neighborhood,
-        );
-        console.log("📋 ALUGAR - Bairros disponíveis:", bairros);
-
-        const bairroObj = bairros.find((b) => b.id === filtros.neighborhood);
-        console.log("🔍 ALUGAR - Bairro encontrado:", bairroObj);
-
-        if (bairroObj) {
-          query = query.eq("bairro", bairroObj.nome);
-          console.log(
-            "✅ ALUGAR - Filtro aplicado para bairro:",
-            bairroObj.nome,
-          );
-        } else {
-          console.log(
-            "❌ ALUGAR - Bairro NÃO ENCONTRADO com ID:",
-            filtros.neighborhood,
-          );
-        }
+      // FILTRO POR BAIRRO - usando nome do bairro (campo texto)
+      if (bairroNome) {
+        query = query.eq("bairro", bairroNome);
       }
 
       const { data: imoveisData, error: supabaseError } = await query;
@@ -1578,7 +1583,9 @@ const AlugarImovel = () => {
 
   const clearFilters = () => {
     setFormValues({
-      city: "",
+      cityId: "",
+      cityName: "",
+      cityUf: "",
       propertyType: "",
       neighborhood: "",
       bedrooms: "",
@@ -1751,18 +1758,22 @@ const AlugarImovel = () => {
                         } rounded-xl cursor-pointer transition-all shadow-sm hover:shadow-md`}
                       >
                         <i
-                          className={`fas fa-map-marker-alt mr-2 text-sm ${formValues.city ? "text-[#D4A24D]" : "text-gray-400"}`}
+                          className={`fas fa-map-marker-alt mr-2 text-sm ${formValues.cityId ? "text-[#D4A24D]" : "text-gray-400"}`}
                         />
                         <span
                           className={`flex-1 text-sm font-semibold truncate ${
-                            formValues.city ? "text-gray-800" : "text-gray-400"
+                            formValues.cityId
+                              ? "text-gray-800"
+                              : "text-gray-400"
                           }`}
                         >
-                          {formValues.city
+                          {formValues.cityId
                             ? cityOptions.find(
-                                (opt) => opt.id === formValues.city,
+                                (opt) => opt.id === formValues.cityId,
                               )?.label
-                            : "Cidade"}
+                            : formValues.cityName
+                              ? `${formValues.cityName}${formValues.cityUf ? ` (${formValues.cityUf})` : ""}`
+                              : "Cidade"}
                         </span>
                         <i
                           className={`fas fa-chevron-down text-gray-400 text-xs transition-all duration-300 ${
@@ -1778,23 +1789,27 @@ const AlugarImovel = () => {
                           {cityOptions.map((opt) => (
                             <div
                               key={opt.id}
-                              onClick={() => handleInputChange("city", opt.id)}
+                              onClick={() => {
+                                handleInputChange("cityId", opt.id);
+                                handleInputChange("cityName", opt.label);
+                                handleInputChange("cityUf", opt.uf);
+                              }}
                               className={`flex items-center justify-between px-4 py-3 hover:bg-[#D4A24D]/10 cursor-pointer border-b border-gray-50 last:border-0 transition-colors ${
-                                formValues.city === opt.id
+                                formValues.cityId === opt.id
                                   ? "bg-[#D4A24D]/5"
                                   : ""
                               }`}
                             >
                               <span
                                 className={`text-sm font-medium ${
-                                  formValues.city === opt.id
+                                  formValues.cityId === opt.id
                                     ? "text-[#D4A24D] font-semibold"
                                     : "text-gray-700"
                                 }`}
                               >
                                 {opt.label}
                               </span>
-                              {formValues.city === opt.id && (
+                              {formValues.cityId === opt.id && (
                                 <i className="fas fa-check text-[#D4A24D] text-sm" />
                               )}
                             </div>
@@ -1881,7 +1896,7 @@ const AlugarImovel = () => {
                             ? "border-[#D4A24D] ring-2 ring-[#D4A24D]/20"
                             : "border-gray-200 hover:border-gray-300"
                         } rounded-xl cursor-pointer transition-all shadow-sm hover:shadow-md ${
-                          !formValues.city
+                          !formValues.cityId
                             ? "opacity-50 cursor-not-allowed"
                             : ""
                         }`}
@@ -1900,7 +1915,7 @@ const AlugarImovel = () => {
                             ? bairros.find(
                                 (b) => b.id === formValues.neighborhood,
                               )?.nome
-                            : !formValues.city
+                            : !formValues.cityId
                               ? "Selecione uma cidade"
                               : "Bairro"}
                         </span>
@@ -1945,7 +1960,7 @@ const AlugarImovel = () => {
                               ))
                             ) : (
                               <div className="px-4 py-3 text-gray-500 text-sm">
-                                {!formValues.city
+                                {!formValues.cityId
                                   ? "Selecione uma cidade primeiro"
                                   : "Nenhum bairro cadastrado para esta cidade"}
                               </div>
@@ -2087,7 +2102,7 @@ const AlugarImovel = () => {
         )}
       </main>
 
-      {/* BOTTOM SHEET (MOBILE) - ATUALIZADO */}
+      {/* BOTTOM SHEET (MOBILE) */}
       {showMoreFilters && (
         <BottomSheet
           show={showMoreFilters}
@@ -2108,7 +2123,7 @@ const AlugarImovel = () => {
         />
       )}
 
-      {/* MODAL DESKTOP - ATUALIZADO */}
+      {/* MODAL DESKTOP */}
       {showMoreFilters && (
         <DesktopModal
           show={showMoreFilters}
