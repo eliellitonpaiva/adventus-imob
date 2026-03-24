@@ -1078,6 +1078,7 @@ const Hero = () => {
     try {
       const textoLower = texto.toLowerCase();
 
+      // Lista completa dos estados brasileiros
       const ESTADOS_BRASILEIROS = {
         AC: "Acre",
         AL: "Alagoas",
@@ -1108,6 +1109,7 @@ const Hero = () => {
         TO: "Tocantins",
       };
 
+      // Encontra o melhor match de estado
       let estadoEncontrado = null;
       let nomeEstadoEncontrado = "";
       let melhorScore = 0;
@@ -1131,42 +1133,42 @@ const Hero = () => {
 
       let resultados = [];
 
+      // CASO 1: BUSCA POR ESTADO
       if (estadoEncontrado && melhorScore > 0) {
-        // 🔥 BUSCA POR ESTADO: mostra apenas o nome da cidade (sem UF)
+        // Cabeçalho do estado
         resultados.push({
           id: `estado_${estadoEncontrado}`,
           nome: `Cidades do ${nomeEstadoEncontrado}`,
           uf: estadoEncontrado,
           tipo: "estado",
-          cidade_estado: `Todas as cidades de ${nomeEstadoEncontrado}`,
         });
 
-        const { data: cidadesDoEstado, error: cidadesEstadoError } =
-          await supabase
-            .from("cidades")
-            .select("id, nome, uf, slug, cidade_estado")
-            .eq("ativo", true)
-            .eq("uf", estadoEncontrado)
-            .order("nome")
-            .limit(20);
+        // Busca as cidades do estado
+        const { data: cidadesDoEstado } = await supabase
+          .from("cidades")
+          .select("id, nome, uf, slug")
+          .eq("ativo", true)
+          .eq("uf", estadoEncontrado)
+          .order("nome")
+          .limit(20);
 
         if (requestId !== lastRequestId) return;
 
-        if (!cidadesEstadoError && cidadesDoEstado) {
+        if (cidadesDoEstado) {
           const cidadesFormatadas = cidadesDoEstado.map((cidade) => ({
             id: cidade.id,
-            nome: cidade.nome, // 🔥 APENAS o nome
+            nome: cidade.nome, // 🔥 APENAS O NOME
             uf: cidade.uf,
             slug: cidade.slug,
-            cidade_estado: `${cidade.nome}, ${cidade.uf}`,
             tipo: "cidade",
-            exibirComUf: false, // 🔥 NÃO mostra UF
+            buscaPorEstado: true, // 🔥 Flag para identificar que veio de busca por estado
           }));
           resultados = [...resultados, ...cidadesFormatadas];
         }
-      } else {
-        // 🔥 BUSCA POR NOME DA CIDADE: mostra "nome, UF"
-        const { data: cidadesData, error: cidadesError } = await supabase
+      }
+      // CASO 2: BUSCA POR NOME DA CIDADE
+      else {
+        const { data: cidadesData } = await supabase
           .from("cidades")
           .select("id, nome, uf, slug, cidade_estado")
           .eq("ativo", true)
@@ -1175,16 +1177,14 @@ const Hero = () => {
 
         if (requestId !== lastRequestId) return;
 
-        if (!cidadesError && cidadesData) {
+        if (cidadesData) {
           resultados = cidadesData.map((cidade) => ({
             id: cidade.id,
-            nome: `${cidade.nome}, ${cidade.uf}`, // 🔥 JÁ VEM COM UF
+            nome: `${cidade.nome}, ${cidade.uf}`, // 🔥 EXIBE "Açailândia, MA"
             uf: cidade.uf,
             slug: cidade.slug,
-            cidade_estado:
-              cidade.cidade_estado || `${cidade.nome}, ${cidade.uf}`,
             tipo: "cidade",
-            exibirComUf: true, // 🔥 MOSTRA UF
+            buscaPorEstado: false, // 🔥 Flag para identificar que veio de busca por cidade
           }));
         }
       }
@@ -1203,7 +1203,6 @@ const Hero = () => {
       }
     }
   };
-
   // 👈 FUNÇÃO CORRIGIDA COM DEBOUNCE
   const handleBuscaCidadeChange = (e) => {
     const texto = e.target.value;
@@ -1228,6 +1227,7 @@ const Hero = () => {
 
   const selecionarCidade = (cidade) => {
     if (cidade.tipo === "estado") {
+      // Busca por estado
       setBuscaCidade(cidade.nome);
       setFormValues((prev) => ({
         ...prev,
@@ -1237,13 +1237,19 @@ const Hero = () => {
         searchByState: cidade.uf,
       }));
     } else {
-      // Para cidade: se tiver vírgula, extrai só o nome
-      const nomeSemUf = cidade.nome.split(",")[0].trim();
-      setBuscaCidade(nomeSemUf);
+      // Busca por cidade - sempre extrai só o nome
+      let nomeCidade = cidade.nome;
+
+      // Se tiver vírgula (formato "Açailândia, MA"), extrai só o nome
+      if (nomeCidade.includes(",")) {
+        nomeCidade = nomeCidade.split(",")[0].trim();
+      }
+
+      setBuscaCidade(nomeCidade);
       setFormValues((prev) => ({
         ...prev,
         city: cidade.id,
-        cityName: nomeSemUf,
+        cityName: nomeCidade,
         cityUf: cidade.uf,
         searchByState: null,
       }));
@@ -1900,7 +1906,9 @@ const Hero = () => {
                               e.stopPropagation();
                               selecionarCidade(cidade);
                             }}
-                            className={`px-4 py-3 hover:bg-[#D4A24D]/20 cursor-pointer border-b border-gray-100 last:border-0 transition-colors ${cidade.tipo === "estado" ? "bg-[#D4A24D]/10" : ""}`}
+                            className={`px-4 py-3 hover:bg-[#D4A24D]/20 cursor-pointer border-b border-gray-100 last:border-0 transition-colors ${
+                              cidade.tipo === "estado" ? "bg-[#D4A24D]/10" : ""
+                            }`}
                           >
                             <div className="flex items-center justify-between">
                               <div>
@@ -1909,21 +1917,11 @@ const Hero = () => {
                                 >
                                   {cidade.nome}
                                 </span>
-                                {cidade.tipo !== "estado" && (
-                                  <span className="text-sm text-gray-500 ml-2">
-                                    {cidade.uf}
-                                  </span>
-                                )}
                               </div>
                               {cidade.tipo !== "estado" && (
                                 <i className="fas fa-chevron-right text-gray-300 text-xs" />
                               )}
                             </div>
-                            {cidade.tipo !== "estado" && (
-                              <div className="text-xs text-gray-400 mt-0.5">
-                                {cidade.cidade_estado}
-                              </div>
-                            )}
                           </div>
                         ))}
                       </div>
