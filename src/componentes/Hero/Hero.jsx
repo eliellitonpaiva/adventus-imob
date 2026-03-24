@@ -957,12 +957,14 @@ const Hero = () => {
   const [showMoreFilters, setShowMoreFilters] = useState(false);
 
   const isScrollingRef = useRef(false);
+  const searchTimeoutRef = useRef(null); // 👈 NOVO ref para debounce
 
   const [buscaCidade, setBuscaCidade] = useState("");
   const [sugestoesCidades, setSugestoesCidades] = useState([]);
   const [mostrarSugestoes, setMostrarSugestoes] = useState(false);
   const [cidades, setCidades] = useState([]);
   const [loadingCidades, setLoadingCidades] = useState(true);
+  const [loadingSugestoes, setLoadingSugestoes] = useState(false); // 👈 NOVO estado
 
   const [imagemHero, setImagemHero] = useState({
     url: null,
@@ -974,6 +976,7 @@ const Hero = () => {
     city: "",
     cityName: "",
     cityUf: "",
+    searchByState: null,
     propertyType: "",
     bedrooms: "",
     minArea: "",
@@ -1059,52 +1062,192 @@ const Hero = () => {
     }
   };
 
+  let lastRequestId = 0;
+
   const buscarCidadesPorTexto = async (texto) => {
     if (!texto || texto.length < 2) {
       setSugestoesCidades([]);
+      setMostrarSugestoes(false);
       return;
     }
 
+    const requestId = ++lastRequestId;
+    setLoadingSugestoes(true);
+    setMostrarSugestoes(true);
+
     try {
-      const { data, error } = await supabase
-        .from("cidades")
-        .select("id, nome, uf, slug, cidade_estado")
-        .eq("ativo", true)
-        .ilike("cidade_estado", `%${texto}%`)
-        .limit(10);
+      const textoLower = texto.toLowerCase();
 
-      if (error) throw error;
+      const ESTADOS_BRASILEIROS = {
+        AC: "Acre",
+        AL: "Alagoas",
+        AP: "Amapá",
+        AM: "Amazonas",
+        BA: "Bahia",
+        CE: "Ceará",
+        DF: "Distrito Federal",
+        ES: "Espírito Santo",
+        GO: "Goiás",
+        MA: "Maranhão",
+        MT: "Mato Grosso",
+        MS: "Mato Grosso do Sul",
+        MG: "Minas Gerais",
+        PA: "Pará",
+        PB: "Paraíba",
+        PR: "Paraná",
+        PE: "Pernambuco",
+        PI: "Piauí",
+        RJ: "Rio de Janeiro",
+        RN: "Rio Grande do Norte",
+        RS: "Rio Grande do Sul",
+        RO: "Rondônia",
+        RR: "Roraima",
+        SC: "Santa Catarina",
+        SP: "São Paulo",
+        SE: "Sergipe",
+        TO: "Tocantins",
+      };
 
-      const resultados = data.map((cidade) => ({
-        id: cidade.id,
-        nome: cidade.nome,
-        uf: cidade.uf,
-        slug: cidade.slug,
-        cidade_estado: cidade.cidade_estado || `${cidade.nome}, ${cidade.uf}`,
-      }));
+      let estadoEncontrado = null;
+      let nomeEstadoEncontrado = "";
+      let melhorScore = 0;
+
+      for (const [uf, nomeEstado] of Object.entries(ESTADOS_BRASILEIROS)) {
+        const ufLower = uf.toLowerCase();
+        const nomeLower = nomeEstado.toLowerCase();
+
+        let score = 0;
+        if (ufLower === textoLower) score = 4;
+        else if (nomeLower.startsWith(textoLower)) score = 3;
+        else if (ufLower.startsWith(textoLower)) score = 2;
+        else if (nomeLower.includes(textoLower)) score = 1;
+
+        if (score > melhorScore) {
+          melhorScore = score;
+          estadoEncontrado = uf;
+          nomeEstadoEncontrado = nomeEstado;
+        }
+      }
+
+      let resultados = [];
+
+      if (estadoEncontrado && melhorScore > 0) {
+        // 🔥 BUSCA POR ESTADO: mostra apenas o nome da cidade (sem UF)
+        resultados.push({
+          id: `estado_${estadoEncontrado}`,
+          nome: `Cidades do ${nomeEstadoEncontrado}`,
+          uf: estadoEncontrado,
+          tipo: "estado",
+          cidade_estado: `Todas as cidades de ${nomeEstadoEncontrado}`,
+        });
+
+        const { data: cidadesDoEstado, error: cidadesEstadoError } =
+          await supabase
+            .from("cidades")
+            .select("id, nome, uf, slug, cidade_estado")
+            .eq("ativo", true)
+            .eq("uf", estadoEncontrado)
+            .order("nome")
+            .limit(20);
+
+        if (requestId !== lastRequestId) return;
+
+        if (!cidadesEstadoError && cidadesDoEstado) {
+          const cidadesFormatadas = cidadesDoEstado.map((cidade) => ({
+            id: cidade.id,
+            nome: cidade.nome, // 🔥 APENAS o nome
+            uf: cidade.uf,
+            slug: cidade.slug,
+            cidade_estado: `${cidade.nome}, ${cidade.uf}`,
+            tipo: "cidade",
+            exibirComUf: false, // 🔥 NÃO mostra UF
+          }));
+          resultados = [...resultados, ...cidadesFormatadas];
+        }
+      } else {
+        // 🔥 BUSCA POR NOME DA CIDADE: mostra "nome, UF"
+        const { data: cidadesData, error: cidadesError } = await supabase
+          .from("cidades")
+          .select("id, nome, uf, slug, cidade_estado")
+          .eq("ativo", true)
+          .ilike("cidade_estado", `%${texto}%`)
+          .limit(15);
+
+        if (requestId !== lastRequestId) return;
+
+        if (!cidadesError && cidadesData) {
+          resultados = cidadesData.map((cidade) => ({
+            id: cidade.id,
+            nome: `${cidade.nome}, ${cidade.uf}`, // 🔥 JÁ VEM COM UF
+            uf: cidade.uf,
+            slug: cidade.slug,
+            cidade_estado:
+              cidade.cidade_estado || `${cidade.nome}, ${cidade.uf}`,
+            tipo: "cidade",
+            exibirComUf: true, // 🔥 MOSTRA UF
+          }));
+        }
+      }
+
+      if (requestId !== lastRequestId) return;
 
       setSugestoesCidades(resultados);
+      setMostrarSugestoes(resultados.length > 0);
     } catch (error) {
       console.error("Erro ao buscar cidades:", error);
+      if (requestId !== lastRequestId) return;
       setSugestoesCidades([]);
+    } finally {
+      if (requestId === lastRequestId) {
+        setLoadingSugestoes(false);
+      }
     }
   };
 
+  // 👈 FUNÇÃO CORRIGIDA COM DEBOUNCE
   const handleBuscaCidadeChange = (e) => {
     const texto = e.target.value;
     setBuscaCidade(texto);
-    buscarCidadesPorTexto(texto);
-    setMostrarSugestoes(texto.length >= 2);
+
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    if (texto.length < 2) {
+      setSugestoesCidades([]);
+      setMostrarSugestoes(false);
+      return;
+    }
+
+    setMostrarSugestoes(true);
+
+    searchTimeoutRef.current = setTimeout(() => {
+      buscarCidadesPorTexto(texto);
+    }, 500);
   };
 
   const selecionarCidade = (cidade) => {
-    setBuscaCidade(cidade.cidade_estado);
-    setFormValues((prev) => ({
-      ...prev,
-      city: cidade.id,
-      cityName: cidade.nome,
-      cityUf: cidade.uf,
-    }));
+    if (cidade.tipo === "estado") {
+      setBuscaCidade(cidade.nome);
+      setFormValues((prev) => ({
+        ...prev,
+        city: "",
+        cityName: "",
+        cityUf: cidade.uf,
+        searchByState: cidade.uf,
+      }));
+    } else {
+      // Para cidade: se tiver vírgula, extrai só o nome
+      const nomeSemUf = cidade.nome.split(",")[0].trim();
+      setBuscaCidade(nomeSemUf);
+      setFormValues((prev) => ({
+        ...prev,
+        city: cidade.id,
+        cityName: nomeSemUf,
+        cityUf: cidade.uf,
+        searchByState: null,
+      }));
+    }
     setMostrarSugestoes(false);
     setSugestoesCidades([]);
   };
@@ -1116,6 +1259,7 @@ const Hero = () => {
       city: "",
       cityName: "",
       cityUf: "",
+      searchByState: null,
     }));
     setSugestoesCidades([]);
     setMostrarSugestoes(false);
@@ -1195,7 +1339,6 @@ const Hero = () => {
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (isScrollingRef.current) return;
-
       if (!openDropdown && !mostrarSugestoes) return;
 
       const target = event.target;
@@ -1239,7 +1382,6 @@ const Hero = () => {
     setOpenDropdown(null);
   };
 
-  // 🔥 CORREÇÃO CRÍTICA: toggleDropdown com evento e stopPropagation
   const toggleDropdown = (name, e) => {
     e.stopPropagation();
     setOpenDropdown((prev) => (prev === name ? null : name));
@@ -1279,7 +1421,8 @@ const Hero = () => {
       tipo: activeTab,
       cityId: formValues.city || "",
       cityName: cidadeSelecionada?.nome || formValues.cityName || "",
-      cityUf: cidadeSelecionada?.uf || formValues.cityUf || "",
+      cityUf: formValues.searchByState || formValues.cityUf || "",
+      searchByState: formValues.searchByState || "",
       propertyType: formValues.propertyType || "",
       bedrooms: formValues.bedrooms || "",
       minArea: formValues.minArea || "",
@@ -1301,6 +1444,7 @@ const Hero = () => {
       city: "",
       cityName: "",
       cityUf: "",
+      searchByState: null,
       propertyType: "",
       bedrooms: "",
       minArea: "",
@@ -1392,7 +1536,7 @@ const Hero = () => {
               >
                 <div className="flex items-center w-full h-[56px] md:h-[60px] px-4 bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-all">
                   <i
-                    className={`fas fa-map-marker-alt mr-3 text-sm ${formValues.city ? "text-[#D4A24D]" : "text-gray-400"}`}
+                    className={`fas fa-map-marker-alt mr-3 text-sm ${formValues.city || formValues.searchByState ? "text-[#D4A24D]" : "text-gray-400"}`}
                   />
                   <input
                     type="text"
@@ -1401,7 +1545,7 @@ const Hero = () => {
                     placeholder={
                       loadingCidades
                         ? "Carregando cidades..."
-                        : "Digite cidade e estado"
+                        : "Digite cidade ou estado (ex: Maranhão, MA)"
                     }
                     className="flex-1 text-sm md:text-base outline-none bg-transparent placeholder-gray-400"
                     disabled={loadingCidades}
@@ -1417,6 +1561,7 @@ const Hero = () => {
                   )}
                 </div>
 
+                {/* SUGESTÕES */}
                 {mostrarSugestoes && sugestoesCidades.length > 0 && (
                   <div className="absolute top-[105%] left-0 w-full bg-white rounded-xl shadow-2xl border border-gray-100 z-[1000] overflow-hidden animate-dropdown">
                     <div
@@ -1445,30 +1590,53 @@ const Hero = () => {
                             e.stopPropagation();
                             selecionarCidade(cidade);
                           }}
-                          className="px-4 py-3 hover:bg-[#D4A24D]/10 cursor-pointer border-b border-gray-50 last:border-0 transition-colors"
+                          className={`px-4 py-3 hover:bg-[#D4A24D]/10 cursor-pointer border-b border-gray-50 last:border-0 transition-colors ${
+                            cidade.tipo === "estado" ? "bg-[#D4A24D]/5" : ""
+                          }`}
                         >
                           <div className="flex items-center justify-between">
                             <div>
-                              <span className="font-medium text-gray-800">
+                              <span
+                                className={`font-medium ${cidade.tipo === "estado" ? "text-[#D4A24D] font-semibold" : "text-gray-800"}`}
+                              >
                                 {cidade.nome}
                               </span>
-                              <span className="text-sm text-gray-500 ml-2">
-                                {cidade.uf}
-                              </span>
                             </div>
-                            <i className="fas fa-chevron-right text-gray-300 text-xs" />
-                          </div>
-                          <div className="text-xs text-gray-400 mt-0.5">
-                            {cidade.cidade_estado}
+                            {cidade.tipo !== "estado" && (
+                              <i className="fas fa-chevron-right text-gray-300 text-xs" />
+                            )}
                           </div>
                         </div>
                       ))}
                     </div>
                   </div>
                 )}
+
+                {/* LOADING */}
+                {loadingSugestoes && (
+                  <div className="absolute top-[105%] left-0 w-full bg-white rounded-xl shadow-2xl border border-gray-100 z-[1000] overflow-hidden">
+                    <div className="px-4 py-3 text-gray-500 text-sm text-center">
+                      <i className="fas fa-spinner fa-spin mr-2" />
+                      Buscando cidades...
+                    </div>
+                  </div>
+                )}
+
+                {/* NENHUMA CIDADE ENCONTRADA */}
+                {mostrarSugestoes &&
+                  buscaCidade.length >= 2 &&
+                  sugestoesCidades.length === 0 &&
+                  !loadingCidades &&
+                  !loadingSugestoes && (
+                    <div className="absolute top-[105%] left-0 w-full bg-white rounded-xl shadow-2xl border border-gray-100 z-[1000] overflow-hidden">
+                      <div className="px-4 py-3 text-gray-500 text-sm text-center">
+                        Nenhuma cidade encontrada
+                      </div>
+                    </div>
+                  )}
               </div>
 
-              {/* Tipo de Imóvel - CORRIGIDO */}
+              {/* Tipo de Imóvel */}
               <div className="relative w-full md:col-span-1" ref={propertyRef}>
                 <div
                   onClick={(e) => toggleDropdown("propertyType", e)}
@@ -1535,7 +1703,7 @@ const Hero = () => {
                 )}
               </div>
 
-              {/* Bairro - CORRIGIDO */}
+              {/* Bairro */}
               <div
                 className="relative w-full md:col-span-1"
                 ref={neighborhoodRef}
@@ -1692,10 +1860,11 @@ const Hero = () => {
 
             <form onSubmit={handleSearch}>
               <div className="flex flex-col space-y-3">
+                {/* Campo de Cidade Desktop */}
                 <div className="relative w-full" ref={searchInputRef}>
                   <div className="flex items-center w-full h-[56px] md:h-[60px] px-4 bg-white/30 backdrop-blur-sm border border-gray-300 rounded-xl shadow-sm hover:shadow-md transition-all">
                     <i
-                      className={`fas fa-map-marker-alt mr-3 text-sm ${formValues.city ? "text-[#D4A24D]" : "text-gray-600"}`}
+                      className={`fas fa-map-marker-alt mr-3 text-sm ${formValues.city || formValues.searchByState ? "text-[#D4A24D]" : "text-gray-600"}`}
                     />
                     <input
                       type="text"
@@ -1704,7 +1873,7 @@ const Hero = () => {
                       placeholder={
                         loadingCidades
                           ? "Carregando cidades..."
-                          : "Digite cidade e estado"
+                          : "Digite cidade ou estado (ex: Maranhão, MA)"
                       }
                       className="flex-1 text-sm md:text-base outline-none bg-transparent placeholder-gray-500"
                       disabled={loadingCidades}
@@ -1720,6 +1889,7 @@ const Hero = () => {
                     )}
                   </div>
 
+                  {/* SUGESTÕES DESKTOP */}
                   {mostrarSugestoes && sugestoesCidades.length > 0 && (
                     <div className="absolute top-[105%] left-0 w-full bg-white/90 backdrop-blur-md rounded-xl shadow-2xl border border-gray-200 z-[100] overflow-hidden animate-dropdown">
                       <div className="max-h-[300px] overflow-y-auto custom-scrollbar">
@@ -1730,30 +1900,60 @@ const Hero = () => {
                               e.stopPropagation();
                               selecionarCidade(cidade);
                             }}
-                            className="px-4 py-3 hover:bg-[#D4A24D]/20 cursor-pointer border-b border-gray-100 last:border-0 transition-colors"
+                            className={`px-4 py-3 hover:bg-[#D4A24D]/20 cursor-pointer border-b border-gray-100 last:border-0 transition-colors ${cidade.tipo === "estado" ? "bg-[#D4A24D]/10" : ""}`}
                           >
                             <div className="flex items-center justify-between">
                               <div>
-                                <span className="font-medium text-gray-800">
+                                <span
+                                  className={`font-medium ${cidade.tipo === "estado" ? "text-[#D4A24D] font-semibold" : "text-gray-800"}`}
+                                >
                                   {cidade.nome}
                                 </span>
-                                <span className="text-sm text-gray-500 ml-2">
-                                  {cidade.uf}
-                                </span>
+                                {cidade.tipo !== "estado" && (
+                                  <span className="text-sm text-gray-500 ml-2">
+                                    {cidade.uf}
+                                  </span>
+                                )}
                               </div>
-                              <i className="fas fa-chevron-right text-gray-300 text-xs" />
+                              {cidade.tipo !== "estado" && (
+                                <i className="fas fa-chevron-right text-gray-300 text-xs" />
+                              )}
                             </div>
-                            <div className="text-xs text-gray-400 mt-0.5">
-                              {cidade.cidade_estado}
-                            </div>
+                            {cidade.tipo !== "estado" && (
+                              <div className="text-xs text-gray-400 mt-0.5">
+                                {cidade.cidade_estado}
+                              </div>
+                            )}
                           </div>
                         ))}
                       </div>
                     </div>
                   )}
+
+                  {/* LOADING DESKTOP */}
+                  {loadingSugestoes && (
+                    <div className="absolute top-[105%] left-0 w-full bg-white/90 backdrop-blur-md rounded-xl shadow-2xl border border-gray-200 z-[100] overflow-hidden">
+                      <div className="px-4 py-3 text-gray-500 text-sm text-center">
+                        <i className="fas fa-spinner fa-spin mr-2" />
+                        Buscando cidades...
+                      </div>
+                    </div>
+                  )}
+
+                  {/* NENHUMA CIDADE DESKTOP */}
+                  {mostrarSugestoes &&
+                    buscaCidade.length >= 2 &&
+                    sugestoesCidades.length === 0 &&
+                    !loadingCidades &&
+                    !loadingSugestoes && (
+                      <div className="absolute top-[105%] left-0 w-full bg-white/90 backdrop-blur-md rounded-xl shadow-2xl border border-gray-200 z-[100] overflow-hidden">
+                        <div className="px-4 py-3 text-gray-500 text-sm text-center">
+                          Nenhuma cidade encontrada
+                        </div>
+                      </div>
+                    )}
                 </div>
 
-                {/* Tipo de Imóvel Desktop - CORRIGIDO */}
                 <div className="relative w-full" ref={propertyRef}>
                   <div
                     onClick={(e) => toggleDropdown("propertyType", e)}
@@ -1806,7 +2006,6 @@ const Hero = () => {
                   )}
                 </div>
 
-                {/* Bairro Desktop - CORRIGIDO */}
                 <div className="relative w-full" ref={neighborhoodRef}>
                   <div
                     onClick={(e) => toggleDropdown("neighborhood", e)}
