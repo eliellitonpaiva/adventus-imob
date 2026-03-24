@@ -68,22 +68,25 @@ const BottomSheet = React.memo(
     const contentRef = useRef(null);
     const [localDropdownOpen, setLocalDropdownOpen] = useState(null);
     const dropdownRef = useRef(null);
+    const isScrollingRef = useRef(false);
 
     useEffect(() => {
       const handleClickOutside = (event) => {
+        if (isScrollingRef.current) return;
+        if (!localDropdownOpen) return;
+
         if (
-          localDropdownOpen &&
           dropdownRef.current &&
           !dropdownRef.current.contains(event.target)
         ) {
           setLocalDropdownOpen(null);
         }
       };
-      document.addEventListener("mousedown", handleClickOutside);
-      document.addEventListener("touchstart", handleClickOutside);
+
+      document.addEventListener("click", handleClickOutside);
+
       return () => {
-        document.removeEventListener("mousedown", handleClickOutside);
-        document.removeEventListener("touchstart", handleClickOutside);
+        document.removeEventListener("click", handleClickOutside);
       };
     }, [localDropdownOpen]);
 
@@ -94,15 +97,12 @@ const BottomSheet = React.memo(
 
     const toggleDropdown = (dropdownName, e) => {
       e.stopPropagation();
-      e.preventDefault();
       setLocalDropdownOpen((prev) =>
         prev === dropdownName ? null : dropdownName,
       );
     };
 
-    const selectOption = (field, value, e) => {
-      e.stopPropagation();
-      e.preventDefault();
+    const selectOption = (field, value) => {
       onInputChange(field, value);
       setLocalDropdownOpen(null);
     };
@@ -133,6 +133,7 @@ const BottomSheet = React.memo(
           </div>
 
           <div className="p-6 space-y-4">
+            {/* Faixa de Preço */}
             <div
               className="relative"
               ref={localDropdownOpen === "priceRange" ? dropdownRef : null}
@@ -166,28 +167,54 @@ const BottomSheet = React.memo(
 
               {localDropdownOpen === "priceRange" && (
                 <div className="absolute top-[105%] left-0 w-full bg-white rounded-xl shadow-2xl border border-gray-100 z-[100] overflow-hidden animate-dropdown">
-                  {priceRangeOptions.map((opt) => (
-                    <div
-                      key={opt.id}
-                      onClick={(e) => selectOption("priceRange", opt.id, e)}
-                      className={`flex items-center justify-between px-4 py-3 hover:bg-[#D4A24D]/10 cursor-pointer border-b border-gray-50 last:border-0 ${
-                        formValues.priceRange === opt.id ? "bg-[#D4A24D]/5" : ""
-                      }`}
-                    >
-                      <span
-                        className={`text-sm font-medium ${formValues.priceRange === opt.id ? "text-[#D4A24D] font-semibold" : "text-gray-700"}`}
+                  <div
+                    className="max-h-[300px] overflow-y-auto custom-scrollbar"
+                    style={{
+                      WebkitOverflowScrolling: "touch",
+                      touchAction: "pan-y",
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                    onTouchStart={() => {
+                      isScrollingRef.current = false;
+                    }}
+                    onTouchMove={() => {
+                      isScrollingRef.current = true;
+                    }}
+                    onTouchEnd={() => {
+                      setTimeout(() => {
+                        isScrollingRef.current = false;
+                      }, 100);
+                    }}
+                  >
+                    {priceRangeOptions.map((opt) => (
+                      <div
+                        key={opt.id}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          selectOption("priceRange", opt.id);
+                        }}
+                        className={`flex items-center justify-between px-4 py-3 hover:bg-[#D4A24D]/10 cursor-pointer border-b border-gray-50 last:border-0 ${
+                          formValues.priceRange === opt.id
+                            ? "bg-[#D4A24D]/5"
+                            : ""
+                        }`}
                       >
-                        {opt.label}
-                      </span>
-                      {formValues.priceRange === opt.id && (
-                        <i className="fas fa-check text-[#D4A24D] text-sm" />
-                      )}
-                    </div>
-                  ))}
+                        <span
+                          className={`text-sm font-medium ${formValues.priceRange === opt.id ? "text-[#D4A24D] font-semibold" : "text-gray-700"}`}
+                        >
+                          {opt.label}
+                        </span>
+                        {formValues.priceRange === opt.id && (
+                          <i className="fas fa-check text-[#D4A24D] text-sm" />
+                        )}
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
 
+            {/* Vagas */}
             <div
               className="relative"
               ref={localDropdownOpen === "garage" ? dropdownRef : null}
@@ -218,28 +245,52 @@ const BottomSheet = React.memo(
 
               {localDropdownOpen === "garage" && (
                 <div className="absolute top-[105%] left-0 w-full bg-white rounded-xl shadow-2xl border border-gray-100 z-[100] overflow-hidden animate-dropdown">
-                  {garageOptions.map((opt) => (
-                    <div
-                      key={opt.id}
-                      onClick={(e) => selectOption("garage", opt.id, e)}
-                      className={`flex items-center justify-between px-4 py-3 hover:bg-[#D4A24D]/10 cursor-pointer border-b border-gray-50 last:border-0 ${
-                        formValues.garage === opt.id ? "bg-[#D4A24D]/5" : ""
-                      }`}
-                    >
-                      <span
-                        className={`text-sm font-medium ${formValues.garage === opt.id ? "text-[#D4A24D] font-semibold" : "text-gray-700"}`}
+                  <div
+                    className="max-h-[300px] overflow-y-auto custom-scrollbar"
+                    style={{
+                      WebkitOverflowScrolling: "touch",
+                      touchAction: "pan-y",
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                    onTouchStart={() => {
+                      isScrollingRef.current = false;
+                    }}
+                    onTouchMove={() => {
+                      isScrollingRef.current = true;
+                    }}
+                    onTouchEnd={() => {
+                      setTimeout(() => {
+                        isScrollingRef.current = false;
+                      }, 100);
+                    }}
+                  >
+                    {garageOptions.map((opt) => (
+                      <div
+                        key={opt.id}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          selectOption("garage", opt.id);
+                        }}
+                        className={`flex items-center justify-between px-4 py-3 hover:bg-[#D4A24D]/10 cursor-pointer border-b border-gray-50 last:border-0 ${
+                          formValues.garage === opt.id ? "bg-[#D4A24D]/5" : ""
+                        }`}
                       >
-                        {opt.label}
-                      </span>
-                      {formValues.garage === opt.id && (
-                        <i className="fas fa-check text-[#D4A24D] text-sm" />
-                      )}
-                    </div>
-                  ))}
+                        <span
+                          className={`text-sm font-medium ${formValues.garage === opt.id ? "text-[#D4A24D] font-semibold" : "text-gray-700"}`}
+                        >
+                          {opt.label}
+                        </span>
+                        {formValues.garage === opt.id && (
+                          <i className="fas fa-check text-[#D4A24D] text-sm" />
+                        )}
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
 
+            {/* Suítes */}
             <div
               className="relative"
               ref={localDropdownOpen === "suite" ? dropdownRef : null}
@@ -269,28 +320,52 @@ const BottomSheet = React.memo(
 
               {localDropdownOpen === "suite" && (
                 <div className="absolute top-[105%] left-0 w-full bg-white rounded-xl shadow-2xl border border-gray-100 z-[100] overflow-hidden animate-dropdown">
-                  {suiteOptions.map((opt) => (
-                    <div
-                      key={opt.id}
-                      onClick={(e) => selectOption("suite", opt.id, e)}
-                      className={`flex items-center justify-between px-4 py-3 hover:bg-[#D4A24D]/10 cursor-pointer border-b border-gray-50 last:border-0 ${
-                        formValues.suite === opt.id ? "bg-[#D4A24D]/5" : ""
-                      }`}
-                    >
-                      <span
-                        className={`text-sm font-medium ${formValues.suite === opt.id ? "text-[#D4A24D] font-semibold" : "text-gray-700"}`}
+                  <div
+                    className="max-h-[300px] overflow-y-auto custom-scrollbar"
+                    style={{
+                      WebkitOverflowScrolling: "touch",
+                      touchAction: "pan-y",
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                    onTouchStart={() => {
+                      isScrollingRef.current = false;
+                    }}
+                    onTouchMove={() => {
+                      isScrollingRef.current = true;
+                    }}
+                    onTouchEnd={() => {
+                      setTimeout(() => {
+                        isScrollingRef.current = false;
+                      }, 100);
+                    }}
+                  >
+                    {suiteOptions.map((opt) => (
+                      <div
+                        key={opt.id}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          selectOption("suite", opt.id);
+                        }}
+                        className={`flex items-center justify-between px-4 py-3 hover:bg-[#D4A24D]/10 cursor-pointer border-b border-gray-50 last:border-0 ${
+                          formValues.suite === opt.id ? "bg-[#D4A24D]/5" : ""
+                        }`}
                       >
-                        {opt.label}
-                      </span>
-                      {formValues.suite === opt.id && (
-                        <i className="fas fa-check text-[#D4A24D] text-sm" />
-                      )}
-                    </div>
-                  ))}
+                        <span
+                          className={`text-sm font-medium ${formValues.suite === opt.id ? "text-[#D4A24D] font-semibold" : "text-gray-700"}`}
+                        >
+                          {opt.label}
+                        </span>
+                        {formValues.suite === opt.id && (
+                          <i className="fas fa-check text-[#D4A24D] text-sm" />
+                        )}
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
 
+            {/* Banheiros */}
             <div
               className="relative"
               ref={localDropdownOpen === "bathrooms" ? dropdownRef : null}
@@ -321,28 +396,54 @@ const BottomSheet = React.memo(
 
               {localDropdownOpen === "bathrooms" && (
                 <div className="absolute top-[105%] left-0 w-full bg-white rounded-xl shadow-2xl border border-gray-100 z-[100] overflow-hidden animate-dropdown">
-                  {bathroomOptions.map((opt) => (
-                    <div
-                      key={opt.id}
-                      onClick={(e) => selectOption("bathrooms", opt.id, e)}
-                      className={`flex items-center justify-between px-4 py-3 hover:bg-[#D4A24D]/10 cursor-pointer border-b border-gray-50 last:border-0 ${
-                        formValues.bathrooms === opt.id ? "bg-[#D4A24D]/5" : ""
-                      }`}
-                    >
-                      <span
-                        className={`text-sm font-medium ${formValues.bathrooms === opt.id ? "text-[#D4A24D] font-semibold" : "text-gray-700"}`}
+                  <div
+                    className="max-h-[300px] overflow-y-auto custom-scrollbar"
+                    style={{
+                      WebkitOverflowScrolling: "touch",
+                      touchAction: "pan-y",
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                    onTouchStart={() => {
+                      isScrollingRef.current = false;
+                    }}
+                    onTouchMove={() => {
+                      isScrollingRef.current = true;
+                    }}
+                    onTouchEnd={() => {
+                      setTimeout(() => {
+                        isScrollingRef.current = false;
+                      }, 100);
+                    }}
+                  >
+                    {bathroomOptions.map((opt) => (
+                      <div
+                        key={opt.id}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          selectOption("bathrooms", opt.id);
+                        }}
+                        className={`flex items-center justify-between px-4 py-3 hover:bg-[#D4A24D]/10 cursor-pointer border-b border-gray-50 last:border-0 ${
+                          formValues.bathrooms === opt.id
+                            ? "bg-[#D4A24D]/5"
+                            : ""
+                        }`}
                       >
-                        {opt.label}
-                      </span>
-                      {formValues.bathrooms === opt.id && (
-                        <i className="fas fa-check text-[#D4A24D] text-sm" />
-                      )}
-                    </div>
-                  ))}
+                        <span
+                          className={`text-sm font-medium ${formValues.bathrooms === opt.id ? "text-[#D4A24D] font-semibold" : "text-gray-700"}`}
+                        >
+                          {opt.label}
+                        </span>
+                        {formValues.bathrooms === opt.id && (
+                          <i className="fas fa-check text-[#D4A24D] text-sm" />
+                        )}
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
 
+            {/* Dormitórios */}
             <div
               className="relative"
               ref={localDropdownOpen === "bedrooms" ? dropdownRef : null}
@@ -373,24 +474,47 @@ const BottomSheet = React.memo(
 
               {localDropdownOpen === "bedrooms" && (
                 <div className="absolute top-[105%] left-0 w-full bg-white rounded-xl shadow-2xl border border-gray-100 z-[100] overflow-hidden animate-dropdown">
-                  {bedroomOptions.map((opt) => (
-                    <div
-                      key={opt.id}
-                      onClick={(e) => selectOption("bedrooms", opt.id, e)}
-                      className={`flex items-center justify-between px-4 py-3 hover:bg-[#D4A24D]/10 cursor-pointer border-b border-gray-50 last:border-0 ${
-                        formValues.bedrooms === opt.id ? "bg-[#D4A24D]/5" : ""
-                      }`}
-                    >
-                      <span
-                        className={`text-sm font-medium ${formValues.bedrooms === opt.id ? "text-[#D4A24D] font-semibold" : "text-gray-700"}`}
+                  <div
+                    className="max-h-[300px] overflow-y-auto custom-scrollbar"
+                    style={{
+                      WebkitOverflowScrolling: "touch",
+                      touchAction: "pan-y",
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                    onTouchStart={() => {
+                      isScrollingRef.current = false;
+                    }}
+                    onTouchMove={() => {
+                      isScrollingRef.current = true;
+                    }}
+                    onTouchEnd={() => {
+                      setTimeout(() => {
+                        isScrollingRef.current = false;
+                      }, 100);
+                    }}
+                  >
+                    {bedroomOptions.map((opt) => (
+                      <div
+                        key={opt.id}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          selectOption("bedrooms", opt.id);
+                        }}
+                        className={`flex items-center justify-between px-4 py-3 hover:bg-[#D4A24D]/10 cursor-pointer border-b border-gray-50 last:border-0 ${
+                          formValues.bedrooms === opt.id ? "bg-[#D4A24D]/5" : ""
+                        }`}
                       >
-                        {opt.label}
-                      </span>
-                      {formValues.bedrooms === opt.id && (
-                        <i className="fas fa-check text-[#D4A24D] text-sm" />
-                      )}
-                    </div>
-                  ))}
+                        <span
+                          className={`text-sm font-medium ${formValues.bedrooms === opt.id ? "text-[#D4A24D] font-semibold" : "text-gray-700"}`}
+                        >
+                          {opt.label}
+                        </span>
+                        {formValues.bedrooms === opt.id && (
+                          <i className="fas fa-check text-[#D4A24D] text-sm" />
+                        )}
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
@@ -451,9 +575,8 @@ const DesktopModal = React.memo(
           setLocalDropdownOpen(null);
         }
       };
-      document.addEventListener("mousedown", handleClickOutside);
-      return () =>
-        document.removeEventListener("mousedown", handleClickOutside);
+      document.addEventListener("click", handleClickOutside);
+      return () => document.removeEventListener("click", handleClickOutside);
     }, [localDropdownOpen]);
 
     if (!show) return null;
@@ -465,15 +588,12 @@ const DesktopModal = React.memo(
 
     const toggleDropdown = (dropdownName, e) => {
       e.stopPropagation();
-      e.preventDefault();
       setLocalDropdownOpen((prev) =>
         prev === dropdownName ? null : dropdownName,
       );
     };
 
-    const selectOption = (field, value, e) => {
-      e.stopPropagation();
-      e.preventDefault();
+    const selectOption = (field, value) => {
       onInputChange(field, value);
       setLocalDropdownOpen(null);
     };
@@ -535,26 +655,31 @@ const DesktopModal = React.memo(
 
                 {localDropdownOpen === "priceRangeDesktop" && (
                   <div className="absolute top-[105%] left-0 w-full bg-white rounded-xl shadow-2xl border border-gray-100 z-[100] overflow-hidden animate-dropdown">
-                    {priceRangeOptions.map((opt) => (
-                      <div
-                        key={opt.id}
-                        onClick={(e) => selectOption("priceRange", opt.id, e)}
-                        className={`flex items-center justify-between px-4 py-3 hover:bg-[#D4A24D]/10 cursor-pointer border-b border-gray-50 last:border-0 ${
-                          formValues.priceRange === opt.id
-                            ? "bg-[#D4A24D]/5"
-                            : ""
-                        }`}
-                      >
-                        <span
-                          className={`text-sm font-medium ${formValues.priceRange === opt.id ? "text-[#D4A24D] font-semibold" : "text-gray-700"}`}
+                    <div className="max-h-[300px] overflow-y-auto custom-scrollbar">
+                      {priceRangeOptions.map((opt) => (
+                        <div
+                          key={opt.id}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            selectOption("priceRange", opt.id);
+                          }}
+                          className={`flex items-center justify-between px-4 py-3 hover:bg-[#D4A24D]/10 cursor-pointer border-b border-gray-50 last:border-0 ${
+                            formValues.priceRange === opt.id
+                              ? "bg-[#D4A24D]/5"
+                              : ""
+                          }`}
                         >
-                          {opt.label}
-                        </span>
-                        {formValues.priceRange === opt.id && (
-                          <i className="fas fa-check text-[#D4A24D] text-sm" />
-                        )}
-                      </div>
-                    ))}
+                          <span
+                            className={`text-sm font-medium ${formValues.priceRange === opt.id ? "text-[#D4A24D] font-semibold" : "text-gray-700"}`}
+                          >
+                            {opt.label}
+                          </span>
+                          {formValues.priceRange === opt.id && (
+                            <i className="fas fa-check text-[#D4A24D] text-sm" />
+                          )}
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
@@ -589,24 +714,29 @@ const DesktopModal = React.memo(
 
                 {localDropdownOpen === "garageDesktop" && (
                   <div className="absolute top-[105%] left-0 w-full bg-white rounded-xl shadow-2xl border border-gray-100 z-[100] overflow-hidden animate-dropdown">
-                    {garageOptions.map((opt) => (
-                      <div
-                        key={opt.id}
-                        onClick={(e) => selectOption("garage", opt.id, e)}
-                        className={`flex items-center justify-between px-4 py-3 hover:bg-[#D4A24D]/10 cursor-pointer border-b border-gray-50 last:border-0 ${
-                          formValues.garage === opt.id ? "bg-[#D4A24D]/5" : ""
-                        }`}
-                      >
-                        <span
-                          className={`text-sm font-medium ${formValues.garage === opt.id ? "text-[#D4A24D] font-semibold" : "text-gray-700"}`}
+                    <div className="max-h-[300px] overflow-y-auto custom-scrollbar">
+                      {garageOptions.map((opt) => (
+                        <div
+                          key={opt.id}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            selectOption("garage", opt.id);
+                          }}
+                          className={`flex items-center justify-between px-4 py-3 hover:bg-[#D4A24D]/10 cursor-pointer border-b border-gray-50 last:border-0 ${
+                            formValues.garage === opt.id ? "bg-[#D4A24D]/5" : ""
+                          }`}
                         >
-                          {opt.label}
-                        </span>
-                        {formValues.garage === opt.id && (
-                          <i className="fas fa-check text-[#D4A24D] text-sm" />
-                        )}
-                      </div>
-                    ))}
+                          <span
+                            className={`text-sm font-medium ${formValues.garage === opt.id ? "text-[#D4A24D] font-semibold" : "text-gray-700"}`}
+                          >
+                            {opt.label}
+                          </span>
+                          {formValues.garage === opt.id && (
+                            <i className="fas fa-check text-[#D4A24D] text-sm" />
+                          )}
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
@@ -641,24 +771,29 @@ const DesktopModal = React.memo(
 
                 {localDropdownOpen === "suiteDesktop" && (
                   <div className="absolute top-[105%] left-0 w-full bg-white rounded-xl shadow-2xl border border-gray-100 z-[100] overflow-hidden animate-dropdown">
-                    {suiteOptions.map((opt) => (
-                      <div
-                        key={opt.id}
-                        onClick={(e) => selectOption("suite", opt.id, e)}
-                        className={`flex items-center justify-between px-4 py-3 hover:bg-[#D4A24D]/10 cursor-pointer border-b border-gray-50 last:border-0 ${
-                          formValues.suite === opt.id ? "bg-[#D4A24D]/5" : ""
-                        }`}
-                      >
-                        <span
-                          className={`text-sm font-medium ${formValues.suite === opt.id ? "text-[#D4A24D] font-semibold" : "text-gray-700"}`}
+                    <div className="max-h-[300px] overflow-y-auto custom-scrollbar">
+                      {suiteOptions.map((opt) => (
+                        <div
+                          key={opt.id}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            selectOption("suite", opt.id);
+                          }}
+                          className={`flex items-center justify-between px-4 py-3 hover:bg-[#D4A24D]/10 cursor-pointer border-b border-gray-50 last:border-0 ${
+                            formValues.suite === opt.id ? "bg-[#D4A24D]/5" : ""
+                          }`}
                         >
-                          {opt.label}
-                        </span>
-                        {formValues.suite === opt.id && (
-                          <i className="fas fa-check text-[#D4A24D] text-sm" />
-                        )}
-                      </div>
-                    ))}
+                          <span
+                            className={`text-sm font-medium ${formValues.suite === opt.id ? "text-[#D4A24D] font-semibold" : "text-gray-700"}`}
+                          >
+                            {opt.label}
+                          </span>
+                          {formValues.suite === opt.id && (
+                            <i className="fas fa-check text-[#D4A24D] text-sm" />
+                          )}
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
@@ -696,26 +831,31 @@ const DesktopModal = React.memo(
 
                 {localDropdownOpen === "bathroomsDesktop" && (
                   <div className="absolute top-[105%] left-0 w-full bg-white rounded-xl shadow-2xl border border-gray-100 z-[100] overflow-hidden animate-dropdown">
-                    {bathroomOptions.map((opt) => (
-                      <div
-                        key={opt.id}
-                        onClick={(e) => selectOption("bathrooms", opt.id, e)}
-                        className={`flex items-center justify-between px-4 py-3 hover:bg-[#D4A24D]/10 cursor-pointer border-b border-gray-50 last:border-0 ${
-                          formValues.bathrooms === opt.id
-                            ? "bg-[#D4A24D]/5"
-                            : ""
-                        }`}
-                      >
-                        <span
-                          className={`text-sm font-medium ${formValues.bathrooms === opt.id ? "text-[#D4A24D] font-semibold" : "text-gray-700"}`}
+                    <div className="max-h-[300px] overflow-y-auto custom-scrollbar">
+                      {bathroomOptions.map((opt) => (
+                        <div
+                          key={opt.id}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            selectOption("bathrooms", opt.id);
+                          }}
+                          className={`flex items-center justify-between px-4 py-3 hover:bg-[#D4A24D]/10 cursor-pointer border-b border-gray-50 last:border-0 ${
+                            formValues.bathrooms === opt.id
+                              ? "bg-[#D4A24D]/5"
+                              : ""
+                          }`}
                         >
-                          {opt.label}
-                        </span>
-                        {formValues.bathrooms === opt.id && (
-                          <i className="fas fa-check text-[#D4A24D] text-sm" />
-                        )}
-                      </div>
-                    ))}
+                          <span
+                            className={`text-sm font-medium ${formValues.bathrooms === opt.id ? "text-[#D4A24D] font-semibold" : "text-gray-700"}`}
+                          >
+                            {opt.label}
+                          </span>
+                          {formValues.bathrooms === opt.id && (
+                            <i className="fas fa-check text-[#D4A24D] text-sm" />
+                          )}
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
@@ -752,24 +892,31 @@ const DesktopModal = React.memo(
 
                 {localDropdownOpen === "bedroomsDesktop" && (
                   <div className="absolute top-[105%] left-0 w-full bg-white rounded-xl shadow-2xl border border-gray-100 z-[100] overflow-hidden animate-dropdown">
-                    {bedroomOptions.map((opt) => (
-                      <div
-                        key={opt.id}
-                        onClick={(e) => selectOption("bedrooms", opt.id, e)}
-                        className={`flex items-center justify-between px-4 py-3 hover:bg-[#D4A24D]/10 cursor-pointer border-b border-gray-50 last:border-0 ${
-                          formValues.bedrooms === opt.id ? "bg-[#D4A24D]/5" : ""
-                        }`}
-                      >
-                        <span
-                          className={`text-sm font-medium ${formValues.bedrooms === opt.id ? "text-[#D4A24D] font-semibold" : "text-gray-700"}`}
+                    <div className="max-h-[300px] overflow-y-auto custom-scrollbar">
+                      {bedroomOptions.map((opt) => (
+                        <div
+                          key={opt.id}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            selectOption("bedrooms", opt.id);
+                          }}
+                          className={`flex items-center justify-between px-4 py-3 hover:bg-[#D4A24D]/10 cursor-pointer border-b border-gray-50 last:border-0 ${
+                            formValues.bedrooms === opt.id
+                              ? "bg-[#D4A24D]/5"
+                              : ""
+                          }`}
                         >
-                          {opt.label}
-                        </span>
-                        {formValues.bedrooms === opt.id && (
-                          <i className="fas fa-check text-[#D4A24D] text-sm" />
-                        )}
-                      </div>
-                    ))}
+                          <span
+                            className={`text-sm font-medium ${formValues.bedrooms === opt.id ? "text-[#D4A24D] font-semibold" : "text-gray-700"}`}
+                          >
+                            {opt.label}
+                          </span>
+                          {formValues.bedrooms === opt.id && (
+                            <i className="fas fa-check text-[#D4A24D] text-sm" />
+                          )}
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
@@ -809,13 +956,13 @@ const Hero = () => {
   const [openDropdown, setOpenDropdown] = useState(null);
   const [showMoreFilters, setShowMoreFilters] = useState(false);
 
-  // Estados para busca de cidade com autocomplete
+  const isScrollingRef = useRef(false);
+
   const [buscaCidade, setBuscaCidade] = useState("");
   const [sugestoesCidades, setSugestoesCidades] = useState([]);
   const [mostrarSugestoes, setMostrarSugestoes] = useState(false);
   const [cidades, setCidades] = useState([]);
   const [loadingCidades, setLoadingCidades] = useState(true);
-  const [cidadesCache, setCidadesCache] = useState([]);
 
   const [imagemHero, setImagemHero] = useState({
     url: null,
@@ -880,7 +1027,6 @@ const Hero = () => {
     { id: "3", label: "3+ Banheiros" },
   ];
 
-  const cityRef = useRef(null);
   const propertyRef = useRef(null);
   const neighborhoodRef = useRef(null);
   const searchInputRef = useRef(null);
@@ -905,9 +1051,7 @@ const Hero = () => {
         cidade_estado: cidade.cidade_estado || `${cidade.nome}, ${cidade.uf}`,
       }));
 
-      console.log("✅ Cidades carregadas do banco:", cidadesFormatadas);
       setCidades(cidadesFormatadas || []);
-      setCidadesCache(cidadesFormatadas || []);
     } catch (error) {
       console.error("❌ Erro ao buscar cidades:", error);
     } finally {
@@ -979,10 +1123,7 @@ const Hero = () => {
 
   const buscarImagemHero = async () => {
     try {
-      console.log("🔍 Iniciando busca de imagem do hero...");
-
       const hoje = new Date().toISOString().split("T")[0];
-      console.log("📅 Data de hoje:", hoje);
 
       const { data, error } = await supabase
         .from("hero_images")
@@ -993,22 +1134,13 @@ const Hero = () => {
         .order("ordem")
         .limit(1);
 
-      if (error) {
-        console.error("❌ Erro na busca:", error);
-        throw error;
-      }
-
-      console.log("📦 Dados retornados:", data);
+      if (error) throw error;
 
       if (data && data.length > 0) {
         const imagem = data[0];
-        console.log("🖼️ Imagem encontrada:", imagem);
-
         const {
           data: { publicUrl },
         } = supabase.storage.from("hero").getPublicUrl(imagem.image_path);
-
-        console.log("🔗 URL gerada:", publicUrl);
 
         setImagemHero({
           url: publicUrl,
@@ -1016,7 +1148,6 @@ const Hero = () => {
           loading: false,
         });
       } else {
-        console.log("⚠️ Nenhuma imagem ativa encontrada para a data", hoje);
         setImagemHero({
           url: null,
           titulo: null,
@@ -1055,41 +1186,38 @@ const Hero = () => {
       const filtrados = bairros.filter(
         (bairro) => bairro.cidade_id === formValues.city,
       );
-      if (JSON.stringify(bairrosFiltrados) !== JSON.stringify(filtrados)) {
-        setBairrosFiltrados(filtrados);
-      }
+      setBairrosFiltrados(filtrados);
     } else {
-      if (bairrosFiltrados.length > 0) {
-        setBairrosFiltrados([]);
-      }
+      setBairrosFiltrados([]);
     }
   }, [formValues.city, bairros]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (showMoreFilters) return;
+      if (isScrollingRef.current) return;
+
+      if (!openDropdown && !mostrarSugestoes) return;
+
+      const target = event.target;
+
       if (
-        mostrarSugestoes &&
-        searchInputRef.current &&
-        !searchInputRef.current.contains(event.target)
+        propertyRef.current?.contains(target) ||
+        neighborhoodRef.current?.contains(target) ||
+        searchInputRef.current?.contains(target)
       ) {
-        setMostrarSugestoes(false);
+        return;
       }
-      if (!openDropdown) return;
-      const isOutside =
-        propertyRef.current &&
-        !propertyRef.current.contains(event.target) &&
-        neighborhoodRef.current &&
-        !neighborhoodRef.current.contains(event.target);
-      if (isOutside) setOpenDropdown(null);
+
+      setOpenDropdown(null);
+      setMostrarSugestoes(false);
     };
-    document.addEventListener("mousedown", handleClickOutside);
-    document.addEventListener("touchstart", handleClickOutside);
+
+    document.addEventListener("click", handleClickOutside);
+
     return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-      document.removeEventListener("touchstart", handleClickOutside);
+      document.removeEventListener("click", handleClickOutside);
     };
-  }, [openDropdown, showMoreFilters, mostrarSugestoes]);
+  }, [openDropdown, mostrarSugestoes]);
 
   useEffect(() => {
     if (overflowRef.current === showMoreFilters) return;
@@ -1111,13 +1239,16 @@ const Hero = () => {
     setOpenDropdown(null);
   };
 
-  const toggleDropdown = (name) => {
-    setOpenDropdown(openDropdown === name ? null : name);
+  // 🔥 CORREÇÃO CRÍTICA: toggleDropdown com evento e stopPropagation
+  const toggleDropdown = (name, e) => {
+    e.stopPropagation();
+    setOpenDropdown((prev) => (prev === name ? null : name));
   };
 
-  const handleTouchStart = (e) => setTouchStart(e.targetTouches[0].clientX);
+  const handleTouchStartSwipe = (e) =>
+    setTouchStart(e.targetTouches[0].clientX);
 
-  const handleTouchEnd = (e) => {
+  const handleTouchEndSwipe = (e) => {
     if (!touchStart) return;
     const touchEnd = e.changedTouches[0].clientX;
     const swipeDistance = touchEnd - touchStart;
@@ -1141,11 +1272,14 @@ const Hero = () => {
   const handleSearch = (e) => {
     e.preventDefault();
     const priceValues = getPriceRangeValues(formValues.priceRange);
+
+    const cidadeSelecionada = cidades.find((c) => c.id === formValues.city);
+
     const searchParams = {
       tipo: activeTab,
       cityId: formValues.city || "",
-      cityName: formValues.cityName || "",
-      cityUf: formValues.cityUf || "",
+      cityName: cidadeSelecionada?.nome || formValues.cityName || "",
+      cityUf: cidadeSelecionada?.uf || formValues.cityUf || "",
       propertyType: formValues.propertyType || "",
       bedrooms: formValues.bedrooms || "",
       minArea: formValues.minArea || "",
@@ -1158,7 +1292,6 @@ const Hero = () => {
       priceMin: priceValues.min,
       priceMax: priceValues.max,
     };
-    console.log("🔍 Buscando com filtros:", searchParams);
     localStorage.setItem("hero_filters", JSON.stringify(searchParams));
     navigate(`/${activeTab}`);
   };
@@ -1208,6 +1341,7 @@ const Hero = () => {
         <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-[#31363E]"></div>
       </div>
 
+      {/* MOBILE */}
       <div className="relative top-[220px] md:hidden z-20 mx-auto max-w-7xl px-0 sm:px-6 lg:px-8">
         <div className="mb-3 md:mb-4 text-center px-4">
           <h1 className="text-[28px] md:text-[42px] lg:text-[48px] font-extrabold text-white drop-shadow-[0_4px_15px_rgba(0,0,0,0.9)] tracking-tight leading-tight">
@@ -1219,8 +1353,8 @@ const Hero = () => {
           <div className="mb-6 w-full px-0 md:px-0">
             <div className="max-w-[280px] md:max-w-[300px] mx-auto lg:mx-0">
               <div
-                onTouchStart={handleTouchStart}
-                onTouchEnd={handleTouchEnd}
+                onTouchStart={handleTouchStartSwipe}
+                onTouchEnd={handleTouchEndSwipe}
                 className="relative bg-gray-900/95 rounded-full h-12 md:h-14 w-full p-1.5 flex items-center border border-gray-300 shadow-inner overflow-hidden cursor-pointer touch-pan-x"
               >
                 <div
@@ -1251,7 +1385,7 @@ const Hero = () => {
 
           <form onSubmit={handleSearch}>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-2 md:gap-2 lg:gap-3">
-              {/* Campo de busca de cidade com autocomplete */}
+              {/* Campo de Cidade */}
               <div
                 className="relative w-full md:col-span-1"
                 ref={searchInputRef}
@@ -1264,13 +1398,10 @@ const Hero = () => {
                     type="text"
                     value={buscaCidade}
                     onChange={handleBuscaCidadeChange}
-                    onFocus={() =>
-                      buscaCidade.length >= 2 && setMostrarSugestoes(true)
-                    }
                     placeholder={
                       loadingCidades
                         ? "Carregando cidades..."
-                        : "Digite cidade e estado (ex: Açailândia, MA)"
+                        : "Digite cidade e estado"
                     }
                     className="flex-1 text-sm md:text-base outline-none bg-transparent placeholder-gray-400"
                     disabled={loadingCidades}
@@ -1286,50 +1417,61 @@ const Hero = () => {
                   )}
                 </div>
 
-                {/* Dropdown de sugestões */}
                 {mostrarSugestoes && sugestoesCidades.length > 0 && (
-                  <div className="absolute top-[105%] left-0 w-full bg-white rounded-xl shadow-2xl border border-gray-100 z-[100] overflow-hidden animate-dropdown">
-                    {sugestoesCidades.map((cidade) => (
-                      <div
-                        key={cidade.id}
-                        onClick={() => selecionarCidade(cidade)}
-                        className="px-4 py-3 hover:bg-[#D4A24D]/10 cursor-pointer border-b border-gray-50 last:border-0 transition-colors"
-                      >
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <span className="font-medium text-gray-800">
-                              {cidade.nome}
-                            </span>
-                            <span className="text-sm text-gray-500 ml-2">
-                              {cidade.uf}
-                            </span>
+                  <div className="absolute top-[105%] left-0 w-full bg-white rounded-xl shadow-2xl border border-gray-100 z-[1000] overflow-hidden animate-dropdown">
+                    <div
+                      className="max-h-[300px] overflow-y-auto custom-scrollbar"
+                      style={{
+                        WebkitOverflowScrolling: "touch",
+                        touchAction: "pan-y",
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                      onTouchStart={() => {
+                        isScrollingRef.current = false;
+                      }}
+                      onTouchMove={() => {
+                        isScrollingRef.current = true;
+                      }}
+                      onTouchEnd={() => {
+                        setTimeout(() => {
+                          isScrollingRef.current = false;
+                        }, 100);
+                      }}
+                    >
+                      {sugestoesCidades.map((cidade) => (
+                        <div
+                          key={cidade.id}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            selecionarCidade(cidade);
+                          }}
+                          className="px-4 py-3 hover:bg-[#D4A24D]/10 cursor-pointer border-b border-gray-50 last:border-0 transition-colors"
+                        >
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <span className="font-medium text-gray-800">
+                                {cidade.nome}
+                              </span>
+                              <span className="text-sm text-gray-500 ml-2">
+                                {cidade.uf}
+                              </span>
+                            </div>
+                            <i className="fas fa-chevron-right text-gray-300 text-xs" />
                           </div>
-                          <i className="fas fa-chevron-right text-gray-300 text-xs" />
+                          <div className="text-xs text-gray-400 mt-0.5">
+                            {cidade.cidade_estado}
+                          </div>
                         </div>
-                        <div className="text-xs text-gray-400 mt-0.5">
-                          {cidade.cidade_estado}
-                        </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
                 )}
-
-                {/* Loading ou mensagem quando não há resultados */}
-                {mostrarSugestoes &&
-                  buscaCidade.length >= 2 &&
-                  sugestoesCidades.length === 0 &&
-                  !loadingCidades && (
-                    <div className="absolute top-[105%] left-0 w-full bg-white rounded-xl shadow-2xl border border-gray-100 z-[100] overflow-hidden">
-                      <div className="px-4 py-3 text-gray-500 text-sm text-center">
-                        Nenhuma cidade encontrada
-                      </div>
-                    </div>
-                  )}
               </div>
 
+              {/* Tipo de Imóvel - CORRIGIDO */}
               <div className="relative w-full md:col-span-1" ref={propertyRef}>
                 <div
-                  onClick={() => toggleDropdown("propertyType")}
+                  onClick={(e) => toggleDropdown("propertyType", e)}
                   className={`flex items-center w-full h-[56px] md:h-[60px] px-4 bg-white border ${openDropdown === "propertyType" ? "border-[#D4A24D] ring-2 ring-[#D4A24D]/20" : "border-gray-200 hover:border-gray-300"} rounded-xl cursor-pointer transition-all shadow-sm hover:shadow-md`}
                 >
                   <i
@@ -1350,13 +1492,32 @@ const Hero = () => {
                 </div>
                 {openDropdown === "propertyType" && (
                   <div className="absolute top-[105%] left-0 w-full bg-white rounded-xl shadow-2xl border border-gray-100 z-[100] overflow-hidden animate-dropdown">
-                    <div className="max-h-[200px] overflow-y-auto custom-scrollbar">
+                    <div
+                      className="max-h-[300px] overflow-y-auto custom-scrollbar"
+                      style={{
+                        WebkitOverflowScrolling: "touch",
+                        touchAction: "pan-y",
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                      onTouchStart={() => {
+                        isScrollingRef.current = false;
+                      }}
+                      onTouchMove={() => {
+                        isScrollingRef.current = true;
+                      }}
+                      onTouchEnd={() => {
+                        setTimeout(() => {
+                          isScrollingRef.current = false;
+                        }, 100);
+                      }}
+                    >
                       {propertyOptions.map((opt) => (
                         <div
                           key={opt.id}
-                          onClick={() =>
-                            handleInputChange("propertyType", opt.id)
-                          }
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleInputChange("propertyType", opt.id);
+                          }}
                           className={`flex items-center justify-between px-4 py-3 hover:bg-[#D4A24D]/10 cursor-pointer border-b border-gray-50 last:border-0 transition-colors ${formValues.propertyType === opt.id ? "bg-[#D4A24D]/5" : ""}`}
                         >
                           <span
@@ -1374,12 +1535,13 @@ const Hero = () => {
                 )}
               </div>
 
+              {/* Bairro - CORRIGIDO */}
               <div
                 className="relative w-full md:col-span-1"
                 ref={neighborhoodRef}
               >
                 <div
-                  onClick={() => toggleDropdown("neighborhood")}
+                  onClick={(e) => toggleDropdown("neighborhood", e)}
                   className={`flex items-center w-full h-[56px] md:h-[60px] px-4 bg-white border ${openDropdown === "neighborhood" ? "border-[#D4A24D] ring-2 ring-[#D4A24D]/20" : "border-gray-200 hover:border-gray-300"} rounded-xl cursor-pointer transition-all shadow-sm hover:shadow-md ${!formValues.city ? "opacity-50 cursor-not-allowed" : ""}`}
                 >
                   <i
@@ -1401,14 +1563,33 @@ const Hero = () => {
                 </div>
                 {openDropdown === "neighborhood" && (
                   <div className="absolute top-[105%] left-0 w-full bg-white rounded-xl shadow-2xl border border-gray-100 z-[100] overflow-hidden animate-dropdown">
-                    <div className="max-h-[200px] overflow-y-auto custom-scrollbar">
+                    <div
+                      className="max-h-[300px] overflow-y-auto custom-scrollbar"
+                      style={{
+                        WebkitOverflowScrolling: "touch",
+                        touchAction: "pan-y",
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                      onTouchStart={() => {
+                        isScrollingRef.current = false;
+                      }}
+                      onTouchMove={() => {
+                        isScrollingRef.current = true;
+                      }}
+                      onTouchEnd={() => {
+                        setTimeout(() => {
+                          isScrollingRef.current = false;
+                        }, 100);
+                      }}
+                    >
                       {bairrosFiltrados.length > 0 ? (
                         bairrosFiltrados.map((bairro) => (
                           <div
                             key={bairro.id}
-                            onClick={() =>
-                              handleInputChange("neighborhood", bairro.id)
-                            }
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleInputChange("neighborhood", bairro.id);
+                            }}
                             className={`flex items-center justify-between px-4 py-3 hover:bg-[#D4A24D]/10 cursor-pointer border-b border-gray-50 last:border-0 transition-colors ${formValues.neighborhood === bairro.id ? "bg-[#D4A24D]/5" : ""}`}
                           >
                             <span
@@ -1472,14 +1653,15 @@ const Hero = () => {
         </div>
       </div>
 
+      {/* DESKTOP */}
       <div className="hidden md:block relative z-20 mx-auto max-w-7xl px-0 sm:px-6 lg:px-8">
         <div className="absolute top-[128px] left-[40px] w-[400px] lg:w-[450px]">
           <div className="bg-white/50 backdrop-blur-xl rounded-2xl p-6 md:p-7 border border-white/30 shadow-2xl">
             <div className="mb-6 w-full flex justify-start">
               <div className="w-[200px] md:w-[220px]">
                 <div
-                  onTouchStart={handleTouchStart}
-                  onTouchEnd={handleTouchEnd}
+                  onTouchStart={handleTouchStartSwipe}
+                  onTouchEnd={handleTouchEndSwipe}
                   className="relative bg-gray-900/95 rounded-full h-12 md:h-14 w-full p-1.5 flex items-center shadow-lg overflow-hidden cursor-pointer touch-pan-x"
                 >
                   <div
@@ -1510,7 +1692,6 @@ const Hero = () => {
 
             <form onSubmit={handleSearch}>
               <div className="flex flex-col space-y-3">
-                {/* Campo de busca de cidade com autocomplete - Desktop */}
                 <div className="relative w-full" ref={searchInputRef}>
                   <div className="flex items-center w-full h-[56px] md:h-[60px] px-4 bg-white/30 backdrop-blur-sm border border-gray-300 rounded-xl shadow-sm hover:shadow-md transition-all">
                     <i
@@ -1520,13 +1701,10 @@ const Hero = () => {
                       type="text"
                       value={buscaCidade}
                       onChange={handleBuscaCidadeChange}
-                      onFocus={() =>
-                        buscaCidade.length >= 2 && setMostrarSugestoes(true)
-                      }
                       placeholder={
                         loadingCidades
                           ? "Carregando cidades..."
-                          : "Digite cidade e estado (ex: Açailândia, MA)"
+                          : "Digite cidade e estado"
                       }
                       className="flex-1 text-sm md:text-base outline-none bg-transparent placeholder-gray-500"
                       disabled={loadingCidades}
@@ -1542,49 +1720,43 @@ const Hero = () => {
                     )}
                   </div>
 
-                  {/* Dropdown de sugestões - Desktop */}
                   {mostrarSugestoes && sugestoesCidades.length > 0 && (
                     <div className="absolute top-[105%] left-0 w-full bg-white/90 backdrop-blur-md rounded-xl shadow-2xl border border-gray-200 z-[100] overflow-hidden animate-dropdown">
-                      {sugestoesCidades.map((cidade) => (
-                        <div
-                          key={cidade.id}
-                          onClick={() => selecionarCidade(cidade)}
-                          className="px-4 py-3 hover:bg-[#D4A24D]/20 cursor-pointer border-b border-gray-100 last:border-0 transition-colors"
-                        >
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <span className="font-medium text-gray-800">
-                                {cidade.nome}
-                              </span>
-                              <span className="text-sm text-gray-500 ml-2">
-                                {cidade.uf}
-                              </span>
+                      <div className="max-h-[300px] overflow-y-auto custom-scrollbar">
+                        {sugestoesCidades.map((cidade) => (
+                          <div
+                            key={cidade.id}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              selecionarCidade(cidade);
+                            }}
+                            className="px-4 py-3 hover:bg-[#D4A24D]/20 cursor-pointer border-b border-gray-100 last:border-0 transition-colors"
+                          >
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <span className="font-medium text-gray-800">
+                                  {cidade.nome}
+                                </span>
+                                <span className="text-sm text-gray-500 ml-2">
+                                  {cidade.uf}
+                                </span>
+                              </div>
+                              <i className="fas fa-chevron-right text-gray-300 text-xs" />
                             </div>
-                            <i className="fas fa-chevron-right text-gray-300 text-xs" />
+                            <div className="text-xs text-gray-400 mt-0.5">
+                              {cidade.cidade_estado}
+                            </div>
                           </div>
-                          <div className="text-xs text-gray-400 mt-0.5">
-                            {cidade.cidade_estado}
-                          </div>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
                     </div>
                   )}
-
-                  {mostrarSugestoes &&
-                    buscaCidade.length >= 2 &&
-                    sugestoesCidades.length === 0 &&
-                    !loadingCidades && (
-                      <div className="absolute top-[105%] left-0 w-full bg-white/90 backdrop-blur-md rounded-xl shadow-2xl border border-gray-200 z-[100] overflow-hidden">
-                        <div className="px-4 py-3 text-gray-500 text-sm text-center">
-                          Nenhuma cidade encontrada
-                        </div>
-                      </div>
-                    )}
                 </div>
 
+                {/* Tipo de Imóvel Desktop - CORRIGIDO */}
                 <div className="relative w-full" ref={propertyRef}>
                   <div
-                    onClick={() => toggleDropdown("propertyType")}
+                    onClick={(e) => toggleDropdown("propertyType", e)}
                     className={`flex items-center w-full h-[56px] md:h-[60px] px-4 bg-white/30 backdrop-blur-sm border ${
                       openDropdown === "propertyType"
                         ? "border-[#D4A24D] ring-2 ring-[#D4A24D]/20"
@@ -1609,13 +1781,14 @@ const Hero = () => {
                   </div>
                   {openDropdown === "propertyType" && (
                     <div className="absolute top-[105%] left-0 w-full bg-white/90 backdrop-blur-md rounded-xl shadow-2xl border border-gray-200 z-[100] overflow-hidden animate-dropdown">
-                      <div className="max-h-[200px] overflow-y-auto custom-scrollbar">
+                      <div className="max-h-[300px] overflow-y-auto custom-scrollbar">
                         {propertyOptions.map((opt) => (
                           <div
                             key={opt.id}
-                            onClick={() =>
-                              handleInputChange("propertyType", opt.id)
-                            }
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleInputChange("propertyType", opt.id);
+                            }}
                             className={`flex items-center justify-between px-4 py-3 hover:bg-[#D4A24D]/20 cursor-pointer border-b border-gray-100 last:border-0 transition-colors ${formValues.propertyType === opt.id ? "bg-[#D4A24D]/10" : ""}`}
                           >
                             <span
@@ -1633,9 +1806,10 @@ const Hero = () => {
                   )}
                 </div>
 
+                {/* Bairro Desktop - CORRIGIDO */}
                 <div className="relative w-full" ref={neighborhoodRef}>
                   <div
-                    onClick={() => toggleDropdown("neighborhood")}
+                    onClick={(e) => toggleDropdown("neighborhood", e)}
                     className={`flex items-center w-full h-[56px] md:h-[60px] px-4 bg-white/30 backdrop-blur-sm border ${
                       openDropdown === "neighborhood"
                         ? "border-[#D4A24D] ring-2 ring-[#D4A24D]/20"
@@ -1661,14 +1835,15 @@ const Hero = () => {
                   </div>
                   {openDropdown === "neighborhood" && (
                     <div className="absolute top-[105%] left-0 w-full bg-white/90 backdrop-blur-md rounded-xl shadow-2xl border border-gray-200 z-[100] overflow-hidden animate-dropdown">
-                      <div className="max-h-[200px] overflow-y-auto custom-scrollbar">
+                      <div className="max-h-[300px] overflow-y-auto custom-scrollbar">
                         {bairrosFiltrados.length > 0 ? (
                           bairrosFiltrados.map((bairro) => (
                             <div
                               key={bairro.id}
-                              onClick={() =>
-                                handleInputChange("neighborhood", bairro.id)
-                              }
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleInputChange("neighborhood", bairro.id);
+                              }}
                               className={`flex items-center justify-between px-4 py-3 hover:bg-[#D4A24D]/20 cursor-pointer border-b border-gray-100 last:border-0 transition-colors ${formValues.neighborhood === bairro.id ? "bg-[#D4A24D]/10" : ""}`}
                             >
                               <span
